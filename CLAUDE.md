@@ -1,68 +1,59 @@
-# CLAUDE.md
+# Claude Directives
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-@README.md
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository.
 
 ## Claude Directives
 
 Claude MUST follow these directives when working in this repository:
 
-### Teaching Approach
-- **ALWAYS take a teaching approach** - explain concepts, processes, and technical details
-- **NEVER assume user knowledge level** - provide context and background for technical concepts
-- **STOP and explain** before proceeding with complex operations or when introducing new concepts
-- **Define technical terms** when first using them in conversation
-- **Provide examples** when explaining abstract concepts or commands
+### Teaching Protocol
+Claude MUST always take a teaching approach, explain concepts and technical details, never assume
+user knowledge level, provide context for technical concepts, stop and explain before complex
+operations, define technical terms when first using them, and provide examples when explaining
+abstract concepts or commands.
 
-### Documentation Standards
-- **Update memory bank** at significant milestones and when important decisions are made
-- **Reference specific files and line numbers** when discussing code (e.g., `file.yaml:123`)
-- **Explain the "why" not just the "what"** when making recommendations
-- **Document assumptions** and verify them when possible
+### Documentation Protocol
+Claude MUST update memory bank at significant milestones and important decisions, reference
+specific files and line numbers when discussing code (e.g., `file.yaml:123`), explain the "why"
+not just the "what" when making recommendations, and document assumptions while verifying them
+when possible.
 
-### Operational Approach
-- **Ask for confirmation** before making significant changes or running potentially disruptive commands
-- **Verify understanding** by asking clarifying questions when instructions are ambiguous
-- **Provide step-by-step explanations** for multi-part processes
-- **Explain expected outcomes** before executing commands
+### Operational Protocol
+Claude MUST ask for confirmation before making significant changes or running potentially
+disruptive commands, verify understanding by asking clarifying questions when instructions are
+ambiguous, provide step-by-step explanations for multi-part processes, and explain expected
+outcomes before executing commands.
+
+### MCP Server Protocol
+Claude MUST always prioritize MCP servers over CLI commands for Kubernetes operations, attempt
+MCP operation 3 times before falling back to CLI, self-diagnose failures by checking tool usage
+and parameters before declaring MCP failure, use granular fallback for specific failing
+operations while continuing MCP for other functions, utilize flux-server for Flux operations and
+k8s-server for Kubernetes operations, and continue using CLI for Talos operations, bootstrap
+scripts, and template operations.
 
 ## Repository Overview
 
-This is a Kubernetes cluster template for deploying a single cluster using Talos Linux and Flux GitOps. The project uses makejinja for template rendering to generate cluster configurations from YAML configuration files.
+This is a **deployed and operational** Talos Kubernetes cluster with Flux GitOps. The cluster was
+deployed using a template system (now archived) and is currently managed through direct
+configuration files and operational tasks.
 
 ## Core Architecture
 
-- **Operating System**: Talos Linux - A minimal, secure OS designed for Kubernetes
+- **Operating System**: Talos Linux - Minimal, secure OS designed for Kubernetes
 - **GitOps**: Flux v2 - Manages cluster state from Git repository
-- **Templating**: makejinja - Renders Jinja2 templates from cluster/node configuration
 - **Secret Management**: SOPS with Age encryption for secrets
-- **Task Runner**: Taskfile (task) - All automation is handled through tasks
+- **Task Runner**: Taskfile (task) - All automation handled through tasks
 - **Package Management**: mise - Manages CLI tool versions
+- **Configuration**: talhelper - Manages Talos configuration generation
 
-## Essential Commands
+## Current Operations (Post-Cleanup)
 
-### Development Environment Setup
+### Environment Setup
 ```bash
 # Install required CLI tools
-mise trust
-pip install pipx
-mise install
-
-# Initialize configuration files from samples
-task init
-
-# Template out configurations (run after editing cluster.yaml/nodes.yaml)
-task configure
-```
-
-### Cluster Deployment
-```bash
-# Bootstrap Talos Linux on nodes
-task bootstrap:talos
-
-# Bootstrap applications (flux, cilium, etc.)
-task bootstrap:apps
+mise trust && mise install
 
 # Force Flux to sync repository changes
 task reconcile
@@ -74,10 +65,10 @@ task reconcile
 task talos:generate-config
 
 # Apply config to specific node (IP and MODE required)
-task talos:apply-node IP=10.0.0.10 MODE=auto
+task talos:apply-node IP=192.168.1.50 MODE=auto
 
 # Upgrade Talos on single node
-task talos:upgrade-node IP=10.0.0.10
+task talos:upgrade-node IP=192.168.1.50
 
 # Upgrade Kubernetes version
 task talos:upgrade-k8s
@@ -86,31 +77,13 @@ task talos:upgrade-k8s
 task talos:reset
 ```
 
-### Template Management
-```bash
-# Debug cluster resources (outputs to debug/ directory)
-task template:debug
-
-# Clean up repository after initial setup
-task template:tidy
-```
-
 ## Key Configuration Files
 
-- `cluster.yaml` - Primary cluster configuration (created from cluster.sample.yaml)
-- `nodes.yaml` - Node-specific configuration (created from nodes.sample.yaml)
-- `makejinja.toml` - Template rendering configuration
-- `Taskfile.yaml` - Main task definitions with includes from .taskfiles/
+- `talos/talconfig.yaml` - Current Talos cluster configuration
+- `Taskfile.yaml` - Main task definitions with includes
 - `.mise.toml` - CLI tool version management
-
-## Template System
-
-The repository uses a sophisticated template system:
-
-1. **Input Templates**: Located in `templates/` directory with `.j2` extension
-2. **Configuration Data**: Read from `cluster.yaml` and `nodes.yaml`
-3. **Output Generation**: Templates render to root directory and subdirectories
-4. **Custom Delimiters**: Uses `#{variable}#` syntax instead of standard Jinja2
+- `age.key` - SOPS encryption key (excluded from Git)
+- `kubeconfig` - Kubernetes cluster access credentials
 
 ## Secret Management
 
@@ -121,28 +94,18 @@ The repository uses a sophisticated template system:
 
 ## Directory Structure
 
-- `templates/` - Jinja2 templates for all configurations
-- `kubernetes/` - Generated Kubernetes manifests (Git-tracked)
-- `talos/` - Generated Talos configurations (Git-tracked)
-- `bootstrap/` - Generated bootstrap configurations (Git-tracked)
+- `kubernetes/` - Kubernetes manifests (Git-tracked)
+- `talos/` - Talos configurations (Git-tracked)
+- `bootstrap/` - Bootstrap configurations (Git-tracked)
 - `scripts/` - Shell scripts for cluster operations
-- `.taskfiles/` - Modular task definitions
-- `.private/` - Private files (Git-ignored)
-
-## Validation and Linting
-
-The template system includes comprehensive validation:
-- **CUE schemas** for cluster/node configuration validation
-- **kubeconform** for Kubernetes manifest validation
-- **YAML linting** during template rendering
+- `.private/` - Private files (Git-ignored, includes archived template files)
 
 ## GitOps Workflow
 
-1. Modify `cluster.yaml` or `nodes.yaml` configurations
-2. Run `task configure` to render templates
-3. Commit and push changes to Git
-4. Flux automatically applies changes to cluster
-5. Use `task reconcile` to force immediate sync
+1. Modify Kubernetes manifests in `kubernetes/` directory
+2. Commit and push changes to Git
+3. Flux automatically applies changes to cluster
+4. Use `task reconcile` to force immediate sync
 
 ## My Cluster Configuration
 
@@ -172,13 +135,14 @@ This section documents the specific configuration and setup details for this dep
 - **Legacy System**: SWAG reverse proxy on Nezuko (192.168.1.58)
 - **Legacy Path**: *.<domain> → WAN IP (99.61.133.53) → UDMP → Nezuko:30443
 - **New Path**: Specific subdomains → Cloudflare tunnel → 192.168.1.73
-- **Current State**: Parallel operation - new K8s services get tunnel routing, existing SWAG services continue via wildcard DNS
+- **Current State**: Parallel operation - new K8s services get tunnel routing, existing SWAG
+  services continue via wildcard DNS
 
 ### Key Files (Local Only)
-- `cluster.yaml` - Contains Cloudflare API token, network configuration
-- `nodes.yaml` - Contains MAC addresses, node-specific details
-- `cloudflare-tunnel.json` - Tunnel credentials
 - `age.key` - SOPS encryption key (synced with Bitwarden)
+- `cloudflare-tunnel.json` - Tunnel credentials
+- `kubeconfig` - Kubernetes cluster access credentials
+- `talos/clusterconfig/talosconfig` - Talos cluster access credentials
 
 ### Legacy Infrastructure
 - **Docker Setup**: All services mounted at `/mnt/fast/docker/`
@@ -191,10 +155,12 @@ This section documents the specific configuration and setup details for this dep
 This section documents key learnings about migrating services from SWAG to Kubernetes.
 
 ### DNS Record Management
-- **external-dns**: Automatically creates Cloudflare DNS records for HTTPRoutes using `external` gateway
-- **DNS precedence**: Specific records (echo.<domain>) override wildcard (*.<domain>) 
+- **external-dns**: Automatically creates Cloudflare DNS records for HTTPRoutes using `external`
+  gateway
+- **DNS precedence**: Specific records (echo.<domain>) override wildcard (*.<domain>)
 - **TXT records**: Track which DNS records external-dns created (k8s.subdomain.domain.app)
-- **Parallel operation**: New K8s services get tunnel routing, existing SWAG services continue via wildcard
+- **Parallel operation**: New K8s services get tunnel routing, existing SWAG services continue via
+  wildcard
 
 ### Application Deployment Patterns
 - **HelmRelease**: Use when good Helm charts exist (Plex, Sonarr, etc.)
@@ -230,13 +196,52 @@ This section documents key learnings about migrating services from SWAG to Kuber
 - **Secret management**: All secrets encrypted with Age, stored in Git
 - **Automatic deployment**: Changes to main branch deploy immediately
 
+## Initial Deployment (Historical - 2025-06-29)
+
+This section documents the original template-based deployment process for reference and disaster
+recovery purposes. These files and commands are no longer active but provide crucial context.
+
+### Template System (Archived)
+The cluster was originally deployed using a sophisticated template system:
+- **Input Templates**: Located in `templates/` directory with `.j2` extension
+- **Configuration Data**: Read from `cluster.yaml` and `nodes.yaml`
+- **Output Generation**: Templates rendered to root directory and subdirectories
+- **Custom Delimiters**: Used `#{variable}#` syntax instead of standard Jinja2
+
+### Original Deployment Commands (Historical)
+```bash
+# Initialize configuration files from samples
+task init
+
+# Template out configurations (run after editing cluster.yaml/nodes.yaml)
+task configure
+
+# Bootstrap Talos Linux on nodes
+task bootstrap:talos
+
+# Bootstrap applications (flux, cilium, etc.)
+task bootstrap:apps
+
+# Clean up repository after initial setup
+task template:tidy
+```
+
+### Original Configuration Files (Archived)
+- `cluster.yaml` - Primary cluster configuration (contained Cloudflare API token, network config)
+- `nodes.yaml` - Node-specific configuration (contained MAC addresses, node details)
+- `makejinja.toml` - Template rendering configuration
+- `templates/` - Jinja2 templates for all configurations
+
+### Template Cleanup Process
+After successful deployment, `task template:tidy` moved all template files to
+`.private/[timestamp]/` directory, transitioning the repository from deployment mode to
+operational mode.
+
 ## Important Notes
 
 - All operations should use the task runner - avoid running commands directly
-- Template rendering must be done after any configuration changes to cluster.yaml/nodes.yaml
 - SOPS-encrypted files should never be committed unencrypted
-- The repository supports both bare-metal and VM deployments
 - Cloudflare integration is required for external access
 - External-DNS automatically manages DNS records for new Kubernetes services
 - Migration strategy allows parallel operation of SWAG and Kubernetes systems
-- Template cleanup via `task template:tidy` archives files but doesn't prevent future node management
+- Node management uses `talos/talconfig.yaml` directly after template cleanup
