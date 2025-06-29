@@ -2,8 +2,8 @@
 
 ## Status
 
-- **Phase**: Talos Bootstrap Complete
-- **Progress**: 4/15 major stages complete
+- **Phase**: README Complete - Cluster Operational
+- **Progress**: 6/8 README stages complete
 
 ## Objective
 
@@ -11,7 +11,7 @@ Deploy a 3-node Talos Kubernetes cluster with Flux GitOps, following the cluster
 
 ## Current Focus
 
-Talos bootstrap successful. Next: Push talhelper secret to git, then bootstrap Kubernetes applications.
+All core README steps completed. Cluster fully operational with external access via Cloudflare tunnel. Only GitHub webhook and optional cleanup remaining.
 
 ## Task Checklist
 
@@ -36,20 +36,23 @@ Talos bootstrap successful. Next: Push talhelper secret to git, then bootstrap K
 - [x] Run `task configure` to generate all Talos/K8s manifests
 - [x] Commit initial configuration to git
 
-### Phase 5: Bootstrap Talos, Kubernetes, and Flux ✅🔄
+### Phase 5: Bootstrap Talos, Kubernetes, and Flux ✅
 - [x] Boot nami and marin from Talos ISO using USB/KVM
 - [x] Run `task bootstrap:talos` to install Talos on all nodes  
-- [ ] **NEXT STEP**: Push talhelper encrypted secret to git
-- [ ] Run `task bootstrap:apps` to install cilium, flux, etc.
-- [ ] Watch cluster rollout with `kubectl get pods --all-namespaces --watch`
+- [x] Push talhelper encrypted secret to git
+- [x] Run `task bootstrap:apps` to install cilium, flux, etc.
+- [x] Watch cluster rollout with `kubectl get pods --all-namespaces --watch`
 
-### Phase 6: Post-Installation Verification
-- [ ] Check Cilium status: `cilium status`
-- [ ] Verify Flux: `flux check`, `flux get sources git flux-system`
-- [ ] Test connectivity to gateways (192.168.1.72, 192.168.1.73)
-- [ ] Verify DNS resolution for echo.dailey.app
-- [ ] Check wildcard certificate status
-- [ ] Configure GitHub webhook for flux-webhook.dailey.app
+### Phase 6: Post-Installation Verification ✅
+- [x] Check Cilium status: `cilium status` - All networking healthy (3/3 nodes)
+- [x] Verify Flux: `flux check`, `flux get sources git flux-system` - All controllers operational, 16 Kustomizations applied
+- [x] Test connectivity to gateways (192.168.1.72, 192.168.1.73) - Both responding on port 443
+- [x] Verify DNS resolution for echo.dailey.app - Resolves to 192.168.1.73 via k8s_gateway
+- [x] Check wildcard certificate status - *.dailey.app cert issued and ready
+- [ ] **NEXT STEP**: Configure GitHub webhook for flux-webhook.dailey.app
+
+### Phase 7: README Cleanup ⭐ 
+- [ ] **OPTIONAL**: Run `task template:tidy` to clean up template files
 
 ### Phase 7: Migration Strategy Planning
 - [ ] Plan gradual migration from SWAG/Nginx on Nezuko
@@ -133,5 +136,18 @@ Successfully completed Talos installation on all 3 nodes:
 - Talos cluster initialized with 3-node HA control plane
 - Generated kubeconfig and talosconfig files
 
-All nodes now running Talos and ready for Kubernetes applications.
-Next: Push talhelper secret to git, then bootstrap apps with `task bootstrap:apps`.
+### 2025-06-29 - Kubernetes Bootstrap Complete
+
+Successfully bootstrapped all core Kubernetes applications:
+- Pushed talhelper encrypted secret to git repository
+- Bootstrap apps completed successfully installing:
+  - Cilium 1.17.5 (CNI networking)
+  - CoreDNS 1.12.2 (DNS resolution)  
+  - Spegel v0.3.0 (container registry mirror)
+  - cert-manager v1.17.2 (TLS certificate management)
+  - Flux operator and instance (GitOps)
+- All Helm releases deployed successfully in ~3 minutes
+- Flux is now syncing from Git repository
+
+Cluster is fully operational with all core components running.
+Next: Watch pod rollout and verify system health.
