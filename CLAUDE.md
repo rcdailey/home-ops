@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+@README.md
+
 ## Repository Overview
 
 This is a Kubernetes cluster template for deploying a single cluster using Talos Linux and Flux GitOps. The project uses makejinja for template rendering to generate cluster configurations from YAML configuration files.
@@ -90,7 +92,7 @@ The repository uses a sophisticated template system:
 ## Secret Management
 
 - All secrets use SOPS encryption with Age keys
-- Secret files follow pattern `*.sops.*` 
+- Secret files follow pattern `*.sops.*`
 - Age key stored in `age.key` (excluded from Git)
 - SOPS configuration in `.sops.yaml`
 
