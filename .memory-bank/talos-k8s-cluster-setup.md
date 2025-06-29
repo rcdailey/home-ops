@@ -2,8 +2,8 @@
 
 ## Status
 
-- **Phase**: Configuration Complete
-- **Progress**: 3/15 major stages complete
+- **Phase**: Talos Bootstrap Complete
+- **Progress**: 4/15 major stages complete
 
 ## Objective
 
@@ -11,7 +11,7 @@ Deploy a 3-node Talos Kubernetes cluster with Flux GitOps, following the cluster
 
 ## Current Focus
 
-Configuration phase completed. Next: Bootstrap Talos on physical nodes (requires USB/KVM access).
+Talos bootstrap successful. Next: Push talhelper secret to git, then bootstrap Kubernetes applications.
 
 ## Task Checklist
 
@@ -36,10 +36,10 @@ Configuration phase completed. Next: Bootstrap Talos on physical nodes (requires
 - [x] Run `task configure` to generate all Talos/K8s manifests
 - [x] Commit initial configuration to git
 
-### Phase 5: Bootstrap Talos, Kubernetes, and Flux 🔄
-- [ ] **NEXT STEP**: Boot nami and marin from Talos ISO using USB/KVM
-- [ ] Run `task bootstrap:talos` to install Talos on all nodes  
-- [ ] Push talhelper encrypted secret to git
+### Phase 5: Bootstrap Talos, Kubernetes, and Flux ✅🔄
+- [x] Boot nami and marin from Talos ISO using USB/KVM
+- [x] Run `task bootstrap:talos` to install Talos on all nodes  
+- [ ] **NEXT STEP**: Push talhelper encrypted secret to git
 - [ ] Run `task bootstrap:apps` to install cilium, flux, etc.
 - [ ] Watch cluster rollout with `kubectl get pods --all-namespaces --watch`
 
@@ -83,9 +83,9 @@ Configuration phase completed. Next: Bootstrap Talos on physical nodes (requires
 ### Node Details
 | Node | IP | Hardware | Disk | MAC Address | Status |
 |------|----|-----------|----|-------------|---------|
-| rias | 192.168.1.61 | VM on lucy/Proxmox | /dev/sda | bc:24:11:a7:98:2d | Configured ✅ |
-| nami | 192.168.1.50 | Intel NUC | /dev/sda | 94:c6:91:a1:e5:e8 | Needs Talos install |
-| marin | 192.168.1.59 | Intel NUC | /dev/nvme0n1 | 1c:69:7a:0d:8d:99 | Needs Talos install |
+| rias | 192.168.1.61 | VM on lucy/Proxmox | /dev/sda | bc:24:11:a7:98:2d | Talos Installed ✅ |
+| nami | 192.168.1.50 | Intel NUC | /dev/sda | 94:c6:91:a1:e5:e8 | Talos Installed ✅ |
+| marin | 192.168.1.59 | Intel NUC | /dev/nvme0n1 | 1c:69:7a:0d:8d:99 | Talos Installed ✅ |
 
 ### Key Files (Not in Git)
 - `cluster.yaml` - Contains Cloudflare token, network config
@@ -124,4 +124,14 @@ Successfully completed Stages 1-4 of README workflow:
 Key decisions: All 3 nodes configured as controllers for HA. Used existing age key from Bitwarden.
 Tunnel created successfully with proper credentials.
 
-Current blocker: Need physical access to nami/marin for Talos ISO boot before proceeding to Stage 5.
+### 2025-06-29 - Talos Bootstrap Complete
+
+Successfully completed Talos installation on all 3 nodes:
+- Reset cluster to clean maintenance mode using `task talos:reset` 
+- Resolved certificate errors by ensuring nodes were properly in maintenance mode
+- Bootstrap process generated configuration for all nodes (rias, nami, marin)
+- Talos cluster initialized with 3-node HA control plane
+- Generated kubeconfig and talosconfig files
+
+All nodes now running Talos and ready for Kubernetes applications.
+Next: Push talhelper secret to git, then bootstrap apps with `task bootstrap:apps`.
