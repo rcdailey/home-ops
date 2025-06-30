@@ -33,6 +33,23 @@ operations while continuing MCP for other functions, utilize flux-server for Flu
 k8s-server for Kubernetes operations, and continue using CLI for Talos operations, bootstrap
 scripts, and template operations.
 
+### Task Command Protocol
+Claude MUST prioritize task commands over direct CLI operations when available, check
+Taskfile.yaml and included task files for relevant tasks before running commands directly, and
+explain task purpose and parameters when using task commands.
+
+### Documentation Protocol Extended
+Claude MUST always check documentation, README files, and existing configuration examples before
+experimenting with commands or configurations, verify syntax and options through official
+documentation when available, and ask for clarification rather than guessing when documentation
+is unclear or unavailable.
+
+### Hardware Configuration Protocol
+Claude MUST always use diskSelector and similar hardware selectors when configuring Talos or
+other hardware-related tasks, never assume generic device paths or names, reference the specific
+hardware identifiers documented in the Node Details section, and verify hardware selectors
+through talhelper or direct configuration validation.
+
 ## Repository Overview
 
 This is a **deployed and operational** Talos Kubernetes cluster with Flux GitOps. The cluster was
@@ -120,9 +137,9 @@ This section documents the specific configuration and setup details for this dep
 - **External Gateway**: 192.168.1.73 (for external/public services)
 
 ### Node Details
-- **rias**: 192.168.1.61 - VM on lucy/Proxmox, /dev/sda, MAC: bc:24:11:a7:98:2d
-- **nami**: 192.168.1.50 - Intel NUC, /dev/sda, MAC: 94:c6:91:a1:e5:e8
-- **marin**: 192.168.1.59 - Intel NUC, /dev/nvme0n1, MAC: 1c:69:7a:0d:8d:99
+- **rias**: 192.168.1.61 - VM on lucy/Proxmox, `diskSelector: model: QEMU HARDDISK`, MAC: bc:24:11:a7:98:2d
+- **nami**: 192.168.1.50 - Intel NUC, `diskSelector: model: CT500MX500SSD4`, MAC: 94:c6:91:a1:e5:e8
+- **marin**: 192.168.1.59 - Intel NUC, `diskSelector: model: Samsung SSD 870`, MAC: 1c:69:7a:0d:8d:99
 - All nodes configured as controllers for 3-node HA control plane
 
 ### Domain and External Access
