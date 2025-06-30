@@ -21,7 +21,8 @@ cniConfig:
 nodes:
   - hostname: "rias"
     ipAddress: "192.168.1.61"
-    installDisk: "/dev/sda"
+    installDiskSelector:
+      model: "QEMU HARDDISK"
     machineSpec:
       secureboot: false
     talosImageURL: factory.talos.dev/installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba
@@ -40,7 +41,8 @@ nodes:
           ip: "192.168.1.70"
   - hostname: "nami"
     ipAddress: "192.168.1.50"
-    installDisk: "/dev/sda"
+    installDiskSelector:
+      model: "CT500MX500SSD4"
     machineSpec:
       secureboot: false
     talosImageURL: factory.talos.dev/installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba
@@ -59,7 +61,8 @@ nodes:
           ip: "192.168.1.70"
   - hostname: "marin"
     ipAddress: "192.168.1.59"
-    installDisk: "/dev/nvme0n1"
+    installDiskSelector:
+      model: "Samsung SSD 870"
     machineSpec:
       secureboot: false
     talosImageURL: factory.talos.dev/installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba

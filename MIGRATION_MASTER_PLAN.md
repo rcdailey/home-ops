@@ -4,6 +4,8 @@
 
 This document outlines the comprehensive migration strategy for transitioning 42+ Docker services from Nezuko (Unraid) to the Talos Kubernetes cluster. The migration prioritizes infrastructure readiness, dependency management, and incremental learning while maintaining service availability.
 
+For template repo (cluster-template) details read @README.md
+
 ## Infrastructure Context
 
 ### Current State
@@ -15,7 +17,7 @@ This document outlines the comprehensive migration strategy for transitioning 42
 
 ### Node Hardware Capabilities
 - **rias**: 192.168.1.61 - VM on Proxmox, Intel CPU with integrated GPU
-- **nami**: 192.168.1.50 - Intel NUC, Intel CPU with integrated GPU  
+- **nami**: 192.168.1.50 - Intel NUC, Intel CPU with integrated GPU
 - **marin**: 192.168.1.59 - Intel NUC, Intel CPU with integrated GPU, NVMe storage
 
 ### Storage Strategy
@@ -128,7 +130,7 @@ Based on analysis of 17 Docker Compose stacks, identified **42+ individual servi
 
 - [ ] **Prowlarr** - Indexer management hub (deploy first)
 - [ ] **Sonarr** - TV show automation
-- [ ] **Sonarr Anime** - Anime TV management  
+- [ ] **Sonarr Anime** - Anime TV management
 - [ ] **Radarr** - Movie automation
 - [ ] **Radarr 4K** - 4K movie management
 - [ ] **Radarr Anime** - Anime movie management
@@ -299,7 +301,7 @@ Based on analysis of 17 Docker Compose stacks, identified **42+ individual servi
 ## Timeline Estimates
 
 - **Phase 1 (Infrastructure)**: 1-2 weeks
-- **Phase 2 (Authentication/Core)**: 1-2 weeks  
+- **Phase 2 (Authentication/Core)**: 1-2 weeks
 - **Phase 3 (Media Infrastructure)**: 2-3 weeks
 - **Phase 4 (Productivity Apps)**: 2-3 weeks
 - **Phase 5 (Utilities)**: 1 week
