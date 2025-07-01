@@ -50,6 +50,15 @@ other hardware-related tasks, never assume generic device paths or names, refere
 hardware identifiers documented in the Node Details section, and verify hardware selectors
 through talhelper or direct configuration validation.
 
+### Helm Chart Deployment Protocol
+Claude MUST research Helm chart structure before implementation, examine official chart
+values.yaml for default configurations and potential conflicts, analyze all existing repository
+HelmRelease patterns before choosing an approach, start with minimal configuration and add
+complexity incrementally, use `helm template` or `helm show values` to validate configuration
+before deployment, check official documentation and community issues for known configuration
+conflicts, and test operator components separately from application components when deploying
+complex systems.
+
 ## Repository Overview
 
 This is a **deployed and operational** Talos Kubernetes cluster with Flux GitOps. The cluster was
