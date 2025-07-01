@@ -2,8 +2,8 @@
 
 ## Status
 
-- **Phase**: Planning
-- **Progress**: 0/275 items complete
+- **Phase**: Implementation
+- **Progress**: 1/275 items complete
 
 ## Objective
 
@@ -11,7 +11,7 @@ Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes 
 
 ## Current Focus
 
-Phase 1 preparation - establishing storage infrastructure with Rook Ceph deployment across all 3 nodes.
+Implementing Rook Ceph storage infrastructure following repository conventions with official Helm charts and proper device selectors.
 
 ## Task Checklist
 
@@ -191,6 +191,14 @@ Phase 1 preparation - establishing storage infrastructure with Rook Ceph deploym
 - Total Estimated Duration: 8-12 weeks with learning and testing time
 
 ## Progress & Context Log
+
+### 2025-06-30 - Rook Ceph Infrastructure Implementation
+
+Implemented Rook Ceph storage infrastructure following repository conventions. Created complete directory structure with operator and cluster components using official Helm charts. Fixed Talos disk selector ambiguity on rias node with size filter. 
+
+Resolved multiple YAML configuration conflicts by analyzing repository patterns and removing inline values from HelmReleases. Added proper top-level monitoring configuration for Helm chart Prometheus integration alongside cephClusterSpec monitoring.
+
+Current status: Rook operator deployed successfully and Ready. Ceph cluster deployment experiencing persistent YAML merge issues with Flux reconciliation stuck on old revision. Technical debt from failed deployments blocking progress - may require manual intervention.
 
 ### 2025-06-29 - Session Created
 
