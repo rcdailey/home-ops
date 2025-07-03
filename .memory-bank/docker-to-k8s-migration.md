@@ -11,13 +11,14 @@ Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes 
 
 ## Current Focus
 
-Rook Ceph storage infrastructure successfully deployed. Ready to proceed with NFS CSI driver setup for Unraid share access or test storage performance scenarios.
+Helm chart research and selection tooling completed. Ready to begin individual service migrations using systematic analysis approach with helm-search.py tool for configuration discovery and comparison.
 
 ## Task Checklist
 
 ### Phase 1: Infrastructure Foundation
 - [x] Deploy Rook Ceph cluster across all 3 nodes
 - [x] Configure Ceph storage classes (SSD performance tier)
+- [x] Create Helm chart research and analysis tooling (helm-search.py)
 - [ ] Set up NFS CSI driver for Unraid share access
 - [ ] Create persistent volume claims for major applications
 - [ ] Test storage performance and failover scenarios
@@ -121,6 +122,88 @@ Rook Ceph storage infrastructure successfully deployed. Ready to proceed with NF
 4. Deploy external-dns for automatic DNS record management
 5. Establish weekly progress reviews and checkpoint meetings
 
+## Service Migration Methodology
+
+### **Systematic Analysis Workflow**
+
+For each service migration, we follow this proven 4-step process using the helm-search.py tool and Claude for analysis:
+
+#### **Step 1: Chart Discovery**
+```bash
+# Find available charts and app-template examples
+scripts/helm-search.py search <service-name>
+
+# Example output shows:
+# - Repository names with star counts
+# - Chart types (official vs app-template)
+# - URLs to actual configurations
+# - Release names and versions
+```
+
+#### **Step 2: Configuration Analysis**
+```bash
+# Fetch specific repository's configuration
+scripts/helm-search.py fetch <service-name> --repo <repo-name> --type both
+
+# Downloads and displays:
+# - HelmRelease YAML (Flux integration)
+# - values.yaml files (detailed configuration)
+# - Companion configuration files
+```
+
+#### **Step 3: Docker Compose Comparison**
+Claude analyzes:
+- Current Docker Compose setup vs Helm chart capabilities
+- Storage requirements (NFS mounts, Rook Ceph PVCs)
+- Network configuration (ports, ingress, DNS)
+- Environment variables and secrets management
+- Resource requirements and security contexts
+- Hardware requirements (GPU access, special capabilities)
+
+#### **Step 4: Migration Decision & Implementation**
+Based on analysis, Claude recommends:
+- Best chart option (app-template vs official chart)
+- Required repository additions to Flux
+- HelmRelease configuration following repository patterns
+- Storage class selections and PVC requirements
+- Secret management and configuration approach
+
+### **Chart Selection Strategy**
+
+**Primary Choice: bjw-s app-template**
+- 6,395+ community deployments
+- Consistent patterns across all services
+- Maximum flexibility for custom configurations
+- Best integration with repository conventions
+
+**Secondary Choice: Official Helm Charts**
+- Complex applications (Authentik, databases)
+- Charts with significant operational value
+- Active maintenance and community support
+
+**Decision Factors:**
+1. **Complexity**: Simple apps → app-template, complex → official charts
+2. **Community**: Higher star repositories = proven configurations
+3. **Flexibility**: Custom needs → app-template, standard needs → official charts
+4. **Maintenance**: Repository activity and chart update frequency
+
+### **Tool Reference**
+
+**scripts/helm-search.py Commands:**
+```bash
+# Discovery commands (JSON output)
+scripts/helm-search.py search <chart-name> [--limit N]
+scripts/helm-search.py stats <chart-name>
+scripts/helm-search.py app-template [--limit N]
+scripts/helm-search.py migration-batch
+
+# Configuration fetching (human-readable output)
+scripts/helm-search.py fetch <chart-name> --repo <repo-name> [--type helm|values|both]
+```
+
+**Database Location:** `scripts/repos.db` and `scripts/repos-extended.db`
+**Data Source:** kubesearch.dev community repository index
+
 ## Resources
 
 ### Configuration Files
@@ -191,6 +274,16 @@ Rook Ceph storage infrastructure successfully deployed. Ready to proceed with NF
 - Total Estimated Duration: 8-12 weeks with learning and testing time
 
 ## Progress & Context Log
+
+### 2025-07-02 - Helm Chart Research Tooling Implementation
+
+Created comprehensive helm-search.py tool for systematic service migration analysis. Tool provides programmatic access to kubesearch.dev community data with 6,395+ app-template deployments and examples from 38+ repositories.
+
+Implemented 4-step migration methodology: discovery → configuration analysis → Docker Compose comparison → implementation decision. Tool fetches actual HelmRelease and values.yaml files from community repositories for direct configuration comparison.
+
+Key capabilities: search charts by popularity, fetch configurations from specific repositories, analyze app-template vs official chart usage patterns, export JSON data for programmatic analysis. Database files (repos.db, repos-extended.db) stored in scripts directory with relative path resolution.
+
+Established systematic approach for all future service migrations using community-proven configurations as starting points. Ready to begin individual service analysis and migration planning.
 
 ### 2025-06-30 - Rook Ceph Infrastructure Implementation
 
