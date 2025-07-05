@@ -11,7 +11,7 @@ Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes 
 
 ## Current Focus
 
-NFS infrastructure setup completed with static PersistentVolumes for existing Unraid data. Branch ready for main branch merge and beginning individual service migrations using systematic analysis approach with helm-search.py tool for configuration discovery and comparison.
+NFS infrastructure successfully deployed to main branch and operational in cluster. Ready to begin storage performance testing and individual service migrations using systematic analysis approach with helm-search.py tool for configuration discovery and comparison.
 
 ## Task Checklist
 
@@ -19,7 +19,7 @@ NFS infrastructure setup completed with static PersistentVolumes for existing Un
 - [x] Deploy Rook Ceph cluster across all 3 nodes
 - [x] Configure Ceph storage classes (SSD performance tier)
 - [x] Create Helm chart research and analysis tooling (helm-search.py)
-- [x] Set up NFS CSI driver for Unraid share access
+- [x] Set up NFS static PersistentVolumes for Unraid share access
 - [ ] Create persistent volume claims for major applications
 - [ ] Test storage performance and failover scenarios
 - [ ] Deploy external-dns for automatic DNS record management
@@ -116,7 +116,7 @@ NFS infrastructure setup completed with static PersistentVolumes for existing Un
 
 ## Next Steps
 
-1. Merge nfs-setup branch to main branch
+1. Verify NFS and Rook Ceph infrastructure health in k9s
 2. Test storage performance and failover scenarios for Rook Ceph
 3. Create persistent volume claims for major applications
 4. Deploy external-dns for automatic DNS record management
@@ -276,13 +276,17 @@ scripts/helm-search.py fetch <chart-name> --repo <repo-name> [--type helm|values
 
 ## Progress & Context Log
 
+### 2025-07-05 - NFS Infrastructure Deployment
+
+NFS infrastructure successfully merged to main branch and deployed via Flux GitOps. All three static PersistentVolumes (media-pv, photos-pv, filerun-pv) are now available in the cluster with proper NFSv4.1 configurations.
+
+Infrastructure verification in progress using k9s to validate both NFS and Rook Ceph component health. Next phase focuses on storage performance testing and beginning individual service migrations.
+
 ### 2025-07-04 - NFS Infrastructure Implementation
 
 Completed NFS infrastructure setup with static PersistentVolumes for existing Unraid data. Created comprehensive storage structure with three main PVs: media-pv (100Ti), photos-pv (10Ti), and filerun-pv (5Ti) pointing to existing Nezuko shares.
 
 Implemented security configurations with NFSv4.1 and Private mode for local network access. PVs configured with ReadWriteMany access mode for shared storage access patterns. All configurations follow repository conventions with proper labeling and documentation.
-
-NFS setup tested successfully with pod mounting verification. Infrastructure foundation complete with both Rook Ceph and NFS storage systems operational. Ready for main branch merge and beginning individual service migrations.
 
 ### 2025-07-02 - Helm Chart Research Tooling Implementation
 
