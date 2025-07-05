@@ -3,7 +3,7 @@
 ## Status
 
 - **Phase**: Implementation
-- **Progress**: 4/275 items complete
+- **Progress**: 7/275 items complete
 
 ## Objective
 
@@ -11,18 +11,20 @@ Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes 
 
 ## Current Focus
 
-NFS infrastructure successfully deployed to main branch and operational in cluster. Ready to begin storage performance testing and individual service migrations using systematic analysis approach with helm-search.py tool for configuration discovery and comparison.
+Helm chart research infrastructure now complete with refactored helm-search.py tool providing comprehensive two-phase analysis system. Script enables informed migration decisions through landscape discovery and targeted configuration inspection. Ready to begin systematic service migration analysis using proven community configurations.
 
 ## Task Checklist
 
 ### Phase 1: Infrastructure Foundation
 - [x] Deploy Rook Ceph cluster across all 3 nodes
 - [x] Configure Ceph storage classes (SSD performance tier)
+- [x] Resolve Rook Ceph OSD creation with stable device identifiers
+- [x] Achieve HEALTH_OK status with 3 OSDs operational
 - [x] Create Helm chart research and analysis tooling (helm-search.py)
+- [x] Refactor helm-search.py with two-phase discovery system and GitHub CLI integration
 - [x] Set up NFS static PersistentVolumes for Unraid share access
 - [ ] Create persistent volume claims for major applications
-- [ ] Test storage performance and failover scenarios
-- [ ] Deploy external-dns for automatic DNS record management
+- [x] Deploy external-dns for automatic DNS record management
 - [ ] Configure additional network policies for service isolation
 - [ ] Set up VPN integration solution for qBittorrent
 - [ ] Validate internal and external gateway routing
@@ -116,12 +118,12 @@ NFS infrastructure successfully deployed to main branch and operational in clust
 
 ## Next Steps
 
-1. Verify NFS and Rook Ceph infrastructure health in k9s
-2. Test storage performance and failover scenarios for Rook Ceph
-3. Create persistent volume claims for major applications
-4. Deploy external-dns for automatic DNS record management
-5. Begin individual service migrations using systematic analysis approach
-6. Establish weekly progress reviews and checkpoint meetings
+1. Begin systematic service migration analysis using refactored helm-search.py tool
+2. Start with Authentik authentication services deployment
+3. Apply two-phase discovery methodology for service selection decisions
+4. Create persistent volume claims during first application migrations
+5. Configure additional network policies for service isolation
+6. Set up VPN integration solution for qBittorrent
 
 ## Service Migration Methodology
 
@@ -276,11 +278,25 @@ scripts/helm-search.py fetch <chart-name> --repo <repo-name> [--type helm|values
 
 ## Progress & Context Log
 
+### 2025-07-05 - Helm Chart Research Tool Refactoring Complete
+
+Successfully completed comprehensive refactoring of helm-search.py script implementing approved two-phase discovery system. Script now provides discover command for complete landscape analysis and inspect command for targeted file fetching using exact GitHub paths.
+
+Key improvements: Replaced legacy commands with unified landscape approach, implemented GitHub CLI integration for file operations eliminating rate limiting issues, added exact file path discovery removing configuration guesswork, comprehensive error handling and validation throughout.
+
+Script capabilities: Discovery phase shows complete landscape view for any app including dedicated charts vs app-template usage patterns, inspection phase provides targeted file fetching using exact repository paths from discovery data. Testing with authentik and plex demonstrated different usage patterns and successful file retrieval.
+
+Tool now provides infrastructure needed for informed migration decisions with community-proven configurations as starting points. Ready to begin systematic service migration analysis.
+
+### 2025-07-05 - Rook Ceph Storage Infrastructure Completion
+
+Rook Ceph cluster achieved full operational status with HEALTH_OK across all components. Successfully resolved OSD creation issues by implementing stable device identifiers using /dev/disk/by-id/ paths instead of volatile device filters.
+
+Key achievements: All 3 OSDs operational (rias 2TB, nami 2TB, marin 1TB), ~5TB total storage available, wipeDevicesFromOtherClusters enabled for device cleaning, rias VM memory increased to 8GB. Storage infrastructure foundation complete with both NFS and Ceph systems ready for applications.
+
 ### 2025-07-05 - NFS Infrastructure Deployment
 
 NFS infrastructure successfully merged to main branch and deployed via Flux GitOps. All three static PersistentVolumes (media-pv, photos-pv, filerun-pv) are now available in the cluster with proper NFSv4.1 configurations.
-
-Infrastructure verification in progress using k9s to validate both NFS and Rook Ceph component health. Next phase focuses on storage performance testing and beginning individual service migrations.
 
 ### 2025-07-04 - NFS Infrastructure Implementation
 
