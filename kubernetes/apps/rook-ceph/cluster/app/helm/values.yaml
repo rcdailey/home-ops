@@ -35,20 +35,19 @@ cephClusterSpec:
     useAllDevices: false
     nodes:
       - name: "rias"
-        deviceFilter: "QEMU HARDDISK"
-        devicePathFilter: "^/dev/sdb$"
+        devicePathFilter: "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi2"
         config:
           deviceClass: "ssd"
           metadataDevice: ""
           osdsPerDevice: "1"
       - name: "nami"
-        deviceFilter: "CT2000BX500SSD1"
+        devicePathFilter: "/dev/disk/by-id/ata-CT2000BX500SSD1_2513E9B2B5A5"
         config:
           deviceClass: "ssd"
           metadataDevice: ""
           osdsPerDevice: "1"
       - name: "marin"
-        deviceFilter: "Samsung SSD 970 EVO Plus 1TB"
+        devicePathFilter: "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NJ0TB03807K"
         config:
           deviceClass: "ssd"
           metadataDevice: ""
