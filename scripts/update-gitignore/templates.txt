@@ -1,0 +1,17 @@
+# Core languages and frameworks
+python
+go
+node
+
+# Infrastructure tools
+terraform
+helm
+
+# Development environments
+visualstudiocode
+vim
+
+# Operating systems (covers .DS_Store, Thumbs.db, .venv, etc)
+linux
+macos
+windows

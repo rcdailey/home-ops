@@ -1,0 +1,7 @@
+# Project-specific files
+.private/
+.task/
+
+# Script temp files
+*.db
+*.backup

@@ -1,0 +1,5 @@
+# Kubernetes and cluster files
+kubeconfig
+talosconfig
+/cluster.yaml
+/nodes.yaml
