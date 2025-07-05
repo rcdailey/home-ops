@@ -1,0 +1,5 @@
+# Dependency tracking
+.deps-installed
+
+# Database cache
+repos.db
