@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(helm list:*)",
+      "Bash(helm status:*)",
+      "Bash(kubectl debug:*)",
+      "Bash(kubectl exec:*)",
+      "Bash(kubectl get:*)",
+      "Bash(kubectl logs:*)",
+      "Bash(mise env:*)",
+      "Bash(mise ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(scripts/app-scout.sh discover:*)",
+      "Bash(scripts/app-scout.sh inspect:*)",
+      "Bash(sqlite3:*)",
+      "Bash(talosctl dmesg:*)",
+      "Bash(talosctl get:*)",
+      "Bash(talosctl list:*)",
+      "Bash(task reconcile)",
+      "Bash(wget:*)",
+      "mcp__flux__get_kubernetes_resources",
+      "mcp__k8s__exec_in_pod",
+      "mcp__k8s__kubectl_describe",
+      "mcp__k8s__kubectl_get",
+      "mcp__k8s__kubectl_logs",
+      "mcp__kubernetes__kubectl_describe",
+      "mcp__kubernetes__kubectl_logs",
+      "WebFetch(domain:docs.k0sproject.io)",
+      "WebFetch(domain:docs.k3s.io)",
+      "WebFetch(domain:kubesearch.dev)"
+    ],
+    "deny": []
+  },
+  "enabledMcpjsonServers": [
+    "k8s"
+  ]
+}

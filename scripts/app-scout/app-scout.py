@@ -39,13 +39,7 @@ from datetime import datetime, timedelta
 import urllib.request
 import urllib.error
 import shutil
-
-try:
-    import httpx
-except ImportError:
-    print("Error: httpx is required for performance optimizations.", file=sys.stderr)
-    print("Install with: pip install httpx", file=sys.stderr)
-    sys.exit(1)
+import httpx
 
 
 class AppMigrationDiscovery:
@@ -214,24 +208,24 @@ class AppMigrationDiscovery:
         # Process top repositories with batch GitHub API calls
         repositories = []
         limited_rows = rows[:sample_count]
-        
+
         # Extract repo names for batch metadata fetching
         repo_names = [row["repo_name"] for row in limited_rows]
         batch_metadata = await self._gh_get_repo_metadata_batch(repo_names)
-        
+
         for row in limited_rows:
             repo_data = dict(row)
-            
+
             # Add batch-fetched metadata
             if repo_data["repo_name"] in batch_metadata:
                 repo_data.update(batch_metadata[repo_data["repo_name"]])
-            
+
             # Discover available files and their paths
             file_paths = await self._discover_file_paths(
                 repo_data["repo_name"], repo_data["url"], "dedicated"
             )
             repo_data["available_files"] = file_paths
-            
+
             repositories.append(repo_data)
 
         return {
@@ -260,7 +254,7 @@ class AppMigrationDiscovery:
             fhr.helm_repo_name
         FROM flux_helm_release fhr
         JOIN repo r ON fhr.repo_name = r.repo_name
-        WHERE fhr.chart_name = 'app-template' 
+        WHERE fhr.chart_name = 'app-template'
         AND fhr.release_name LIKE ?
         ORDER BY r.stars DESC, fhr.release_name
         LIMIT ?
@@ -274,7 +268,7 @@ class AppMigrationDiscovery:
 
         # Get total usage count
         count_query = """
-        SELECT COUNT(*) as total FROM flux_helm_release 
+        SELECT COUNT(*) as total FROM flux_helm_release
         WHERE chart_name = 'app-template' AND release_name LIKE ?
         """
         count_cursor = self.conn.execute(count_query, (f"%{app_name}%",))
@@ -283,24 +277,24 @@ class AppMigrationDiscovery:
         # Process top repositories with batch GitHub API calls
         repositories = []
         limited_rows = rows[:sample_count]
-        
+
         # Extract repo names for batch metadata fetching
         repo_names = [row["repo_name"] for row in limited_rows]
         batch_metadata = await self._gh_get_repo_metadata_batch(repo_names)
-        
+
         for row in limited_rows:
             repo_data = dict(row)
-            
+
             # Add batch-fetched metadata
             if repo_data["repo_name"] in batch_metadata:
                 repo_data.update(batch_metadata[repo_data["repo_name"]])
-            
+
             # Discover available files and their paths
             file_paths = await self._discover_file_paths(
                 repo_data["repo_name"], repo_data["url"], "app-template"
             )
             repo_data["available_files"] = file_paths
-            
+
             repositories.append(repo_data)
 
         return {"usage_count": total_count, "repositories": repositories}
@@ -386,7 +380,7 @@ class AppMigrationDiscovery:
             # Try dedicated chart first
             """
             SELECT fhr.url FROM flux_helm_release fhr
-            JOIN repo r ON fhr.repo_name = r.repo_name  
+            JOIN repo r ON fhr.repo_name = r.repo_name
             WHERE r.repo_name = ? AND fhr.chart_name = ?
             LIMIT 1
             """,
@@ -434,7 +428,7 @@ class AppMigrationDiscovery:
                 f"https://api.github.com/repos/{repo_name}/contents/{path}",
                 timeout=30.0
             )
-            
+
             if response.status_code == 200:
                 contents = response.json()
                 if isinstance(contents, list):
@@ -576,9 +570,9 @@ class AppMigrationDiscovery:
             ''')
 
         query = f"query {{ {' '.join(repo_queries)} }}"
-        
+
         data = await self._github_graphql_request(query)
-        
+
         results = {}
         if "data" in data:
             for i, repo in enumerate(repos):
@@ -591,7 +585,7 @@ class AppMigrationDiscovery:
                     }
                 else:
                     results[repo] = {"stars": 0, "last_commit": "", "description": ""}
-        
+
         return results
 
     async def _gh_get_file_contents_batch(self, repo_name: str, file_paths: Dict[str, str], file_types: List[str]) -> Dict[str, str]:
@@ -602,7 +596,7 @@ class AppMigrationDiscovery:
         # Build GraphQL query for multiple files
         file_queries = []
         requested_files = []
-        
+
         for file_type in file_types:
             if file_type in file_paths:
                 file_path = file_paths[file_type]
@@ -626,9 +620,9 @@ class AppMigrationDiscovery:
             }}
         }}
         '''
-        
+
         data = await self._github_graphql_request(query)
-        
+
         results = {}
         if "data" in data and "repository" in data["data"]:
             repo_data = data["data"]["repository"]
@@ -644,7 +638,7 @@ class AppMigrationDiscovery:
         else:
             for file_type in file_types:
                 results[file_type] = f"Error: Could not access repository {repo_name}"
-        
+
         return results
 
     async def close(self):
@@ -668,10 +662,10 @@ async def main():
 Examples:
   # Discover all deployment patterns for authentik
   python3 app-scout.py discover authentik
-  
+
   # Inspect specific files from a repository
   python3 app-scout.py inspect authentik --repo angelnu/k8s-gitops --files helmrelease,values
-  
+
   # Get larger sample size for discovery
   python3 app-scout.py discover plex --sample-count 5
         """,

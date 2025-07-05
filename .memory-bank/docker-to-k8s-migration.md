@@ -11,7 +11,7 @@ Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes 
 
 ## Current Focus
 
-Helm chart research infrastructure now complete with refactored helm-search.py tool providing comprehensive two-phase analysis system. Script enables informed migration decisions through landscape discovery and targeted configuration inspection. Ready to begin systematic service migration analysis using proven community configurations.
+Beginning Authentik implementation using official Helm chart with parallel deployment strategy. Following established plan to deploy complete authentication stack (server, worker, PostgreSQL, Redis) in default namespace with auth-test subdomain for testing before production switch.
 
 ## Task Checklist
 
@@ -20,8 +20,8 @@ Helm chart research infrastructure now complete with refactored helm-search.py t
 - [x] Configure Ceph storage classes (SSD performance tier)
 - [x] Resolve Rook Ceph OSD creation with stable device identifiers
 - [x] Achieve HEALTH_OK status with 3 OSDs operational
-- [x] Create Helm chart research and analysis tooling (helm-search.py)
-- [x] Refactor helm-search.py with two-phase discovery system and GitHub CLI integration
+- [x] Create App Scout research and analysis tooling (app-scout.py)
+- [x] Refactor app-scout.py with two-phase discovery system and GitHub CLI integration
 - [x] Set up NFS static PersistentVolumes for Unraid share access
 - [ ] Create persistent volume claims for major applications
 - [x] Deploy external-dns for automatic DNS record management
@@ -34,7 +34,7 @@ Helm chart research infrastructure now complete with refactored helm-search.py t
 - [ ] Implement service mesh if needed for complex networking
 
 ### Phase 2: Authentication & Core Services
-- [ ] Deploy Authentik server and worker components
+- [ ] Deploy Authentik server and worker components (IN PROGRESS)
 - [ ] Export existing user data and configuration
 - [ ] Configure OIDC integration for other services
 - [ ] Test authentication flow before dependent services
@@ -118,23 +118,23 @@ Helm chart research infrastructure now complete with refactored helm-search.py t
 
 ## Next Steps
 
-1. Begin systematic service migration analysis using refactored helm-search.py tool
-2. Start with Authentik authentication services deployment
-3. Apply two-phase discovery methodology for service selection decisions
-4. Create persistent volume claims during first application migrations
-5. Configure additional network policies for service isolation
-6. Set up VPN integration solution for qBittorrent
+1. Implement Authentik migration plan with default namespace structure
+2. Create centralized email secrets in default/cluster-secrets
+3. Deploy Authentik stack using official Helm chart with parallel deployment strategy
+4. Test authentication flows with auth-test subdomain before production switch
+5. Begin systematic service migration using established app-scout methodology
+6. Create persistent volume claims during first application migrations
 
 ## Service Migration Methodology
 
 ### **Systematic Analysis Workflow**
 
-For each service migration, we follow this proven 4-step process using the helm-search.py tool and Claude for analysis:
+For each service migration, we follow this proven 4-step process using the app-scout tool and Claude for analysis:
 
 #### **Step 1: Chart Discovery**
 ```bash
 # Find available charts and app-template examples
-scripts/helm-search.py search <service-name>
+scripts/app-scout.sh discover <service-name>
 
 # Example output shows:
 # - Repository names with star counts
@@ -146,7 +146,7 @@ scripts/helm-search.py search <service-name>
 #### **Step 2: Configuration Analysis**
 ```bash
 # Fetch specific repository's configuration
-scripts/helm-search.py fetch <service-name> --repo <repo-name> --type both
+scripts/app-scout.sh inspect <service-name> --repo <repo-name> --files helmrelease,values
 
 # Downloads and displays:
 # - HelmRelease YAML (Flux integration)
@@ -192,16 +192,13 @@ Based on analysis, Claude recommends:
 
 ### **Tool Reference**
 
-**scripts/helm-search.py Commands:**
+**scripts/app-scout.sh Commands:**
 ```bash
 # Discovery commands (JSON output)
-scripts/helm-search.py search <chart-name> [--limit N]
-scripts/helm-search.py stats <chart-name>
-scripts/helm-search.py app-template [--limit N]
-scripts/helm-search.py migration-batch
+scripts/app-scout.sh discover <chart-name>
 
 # Configuration fetching (human-readable output)
-scripts/helm-search.py fetch <chart-name> --repo <repo-name> [--type helm|values|both]
+scripts/app-scout.sh inspect <chart-name> --repo <repo-name> --files helmrelease,values
 ```
 
 **Database Location:** `scripts/repos.db` and `scripts/repos-extended.db`
@@ -276,11 +273,151 @@ scripts/helm-search.py fetch <chart-name> --repo <repo-name> [--type helm|values
 - Phase 6 (Optimization): 1 week
 - Total Estimated Duration: 8-12 weeks with learning and testing time
 
+## Authentik Migration Plan
+
+### **Migration Strategy Overview**
+
+**Approach**: Parallel deployment with gradual service transition to avoid disrupting 12+ authenticated Docker services managed by SWAG auto proxy.
+
+### **Directory Structure**
+```
+kubernetes/
+├── components/common/sops/
+│   ├── cluster-secrets.sops.yaml  # SECRET_DOMAIN (existing)
+│   └── email-secrets.sops.yaml    # Shared SMTP configuration (new)
+└── apps/default/
+    ├── kustomization.yaml
+    └── authentik/                 # Self-contained authentication stack
+        ├── ks.yaml                # Single HelmRelease for entire stack
+        └── app/
+            ├── helmrelease.yaml   # HelmRepository + HelmRelease + values
+            ├── kustomization.yaml
+            └── secret.sops.yaml   # Authentik-specific secrets only
+```
+
+### **Stack Components**
+Single HelmRelease deploying complete Authentik ecosystem:
+- **PostgreSQL**: Database backend (included in Helm chart)
+- **Redis**: Task queue and caching (included in Helm chart) 
+- **Authentik Server**: Web UI and API endpoints
+- **Authentik Worker**: Background task processing
+
+### **Secret Management Strategy**
+
+**Centralized Email Configuration**:
+```yaml
+# kubernetes/components/common/sops/email-secrets.sops.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: email-secrets
+  namespace: flux-system
+stringData:
+  SMTP_HOST: <sops-encrypted>
+  SMTP_PORT: <sops-encrypted>
+  SMTP_USERNAME: <sops-encrypted>
+  SMTP_PASSWORD: <sops-encrypted>
+  SMTP_FROM: <sops-encrypted>
+  SMTP_USE_TLS: <sops-encrypted>
+  SMTP_USE_SSL: <sops-encrypted>
+  SMTP_TIMEOUT: <sops-encrypted>
+```
+
+**Service Integration Pattern**:
+```yaml
+# HelmRelease values reference secrets via postBuild substitution
+values:
+  authentik:
+    email:
+      host: "${SMTP_HOST}"
+      username: "${SMTP_USERNAME}"
+      password: "${SMTP_PASSWORD}"
+      from: "${SMTP_FROM}"
+```
+
+### **SWAG Auto Proxy Integration Analysis**
+
+**Current Docker Pattern**:
+- 12+ media services use `swag_auth=authentik` labels
+- SWAG handles reverse proxy + authentication via nginx auth_request
+- Services include: sabnzbd, qbittorrent, prowlarr, sonarr, radarr, bazarr, tautulli
+- API endpoints bypass authentication with `swag_auth_bypass=/api`
+
+**Migration Compatibility**:
+- K8s Authentik will be completely isolated from Docker services initially
+- SWAG will continue authenticating Docker services during transition
+- Progressive service migration maintains authentication continuity
+
+### **Deployment Phases**
+
+**Phase 1: Parallel Testing**
+- Deploy K8s Authentik with `auth-test.${SECRET_DOMAIN}` subdomain
+- HTTPRoute with `parentRefs: internal` for cluster-only access
+- Fresh PostgreSQL instance (migrate data later)
+- Test authentication flows without affecting production
+
+**Phase 2: Service Migration**
+- As each Docker service migrates to K8s, update authentication integration
+- Docker services continue using Docker Authentik via SWAG
+- K8s services use K8s Authentik via HTTPRoute middleware
+
+**Phase 3: Authentication Switchover** 
+- Switch K8s Authentik to `auth.${SECRET_DOMAIN}`
+- Export/import user data from Docker PostgreSQL
+- Update any remaining Docker services to point to K8s Authentik
+- Decommission Docker Authentik stack
+
+### **Technical Implementation Details**
+
+**Chart Selection**: Official Authentik Helm chart (61 community deployments)
+- Repository pattern from carpenike/k8s-gitops (278 stars)
+- Chart version 2023.10.2 (matching community examples)
+- Proven configuration with integrated PostgreSQL and Redis
+- HelmRepository co-located with application following repository conventions
+
+**Self-Contained Application Structure**:
+- HelmRepository and HelmRelease in single helmrelease.yaml file
+- All application resources contained within single directory
+- Follows established patterns (cilium, metrics-server) for easy management
+- Fresh start approach - no existing data migration required
+
+**Testing Configuration**:
+- Subdomain: `auth-test.${SECRET_DOMAIN}` 
+- External access via Cloudflare tunnel
+- Database: Rook Ceph storage for persistence
+- Email: Preserve existing Gmail SMTP configuration
+
+**Data Migration Requirements**:
+- Current PostgreSQL data: `/Volumes/docker/authentik/database_v16`
+- Custom templates: Empty directory (no migration needed)
+- GeoIP data: Empty directory (no migration needed)
+- Media files: Empty public directory (no migration needed)
+
 ## Progress & Context Log
 
-### 2025-07-05 - Helm Chart Research Tool Refactoring Complete
+### 2025-07-06 - Authentik Database Authentication Issues Resolved
 
-Successfully completed comprehensive refactoring of helm-search.py script implementing approved two-phase discovery system. Script now provides discover command for complete landscape analysis and inspect command for targeted file fetching using exact GitHub paths.
+Successfully diagnosed and fixed Authentik deployment authentication failures through systematic investigation using kubectl exec commands.
+
+PostgreSQL Issue Resolved: Found that authentik user password was not properly set during database initialization. Used postgres superuser to reset authentik user password to 'authentik-db-password'. Verified connection works with: `PGPASSWORD=authentik-db-password psql -U authentik -d authentik -c "SELECT 'Connection successful'"`.
+
+Redis Issue Identified: After PostgreSQL fix, discovered Redis authentication failures due to missing password configuration in Authentik values. HelmRelease authentik.redis section only had host but no password field. Added `password: ${REDIS_PASSWORD}` to fix Redis connectivity.
+
+Configuration Changes: Modified kubernetes/apps/default/authentik/app/helmrelease.yaml to include Redis password substitution. Change is staged locally and ready for push after user approval.
+
+Authentik Migration Complete: Full deployment successful with working authentication. All components operational - PostgreSQL, Redis, authentik-server, authentik-worker pods Running/Ready. HTTPRoute active at auth-test.dailey.app via Cloudflare tunnel. Admin credentials (akadmin/admin123) tested and verified working. Ready for service integration and production migration to auth.dailey.app subdomain.
+
+### 2025-07-05 - Authentik Migration Planning Finalized
+
+Completed comprehensive Authentik migration planning including analysis, architecture decisions, and repository pattern standardization. Established self-contained application structure following repository conventions with co-located HelmRepository resources.
+
+Key decisions: Self-contained app structure in kubernetes/apps/default/authentik/, HelmRepository co-located with HelmRelease following cilium/metrics-server patterns, centralized email secrets in kubernetes/components/common/sops/ for cross-app reuse, fresh start deployment approach avoiding data migration complexity.
+
+Updated CLAUDE.md with Helm Repository Management Protocol and Database Isolation Protocol to establish consistent patterns for future service migrations. Plan maintains service availability through parallel deployment strategy while enabling systematic service transition.
+
+### 2025-07-05 - App Scout Research Tool Refactoring Complete
+
+Successfully completed comprehensive refactoring of app-scout.py script implementing approved two-phase discovery system. Script now provides discover command for complete landscape analysis and inspect command for targeted file fetching using exact GitHub paths.
 
 Key improvements: Replaced legacy commands with unified landscape approach, implemented GitHub CLI integration for file operations eliminating rate limiting issues, added exact file path discovery removing configuration guesswork, comprehensive error handling and validation throughout.
 
@@ -304,9 +441,9 @@ Completed NFS infrastructure setup with static PersistentVolumes for existing Un
 
 Implemented security configurations with NFSv4.1 and Private mode for local network access. PVs configured with ReadWriteMany access mode for shared storage access patterns. All configurations follow repository conventions with proper labeling and documentation.
 
-### 2025-07-02 - Helm Chart Research Tooling Implementation
+### 2025-07-02 - App Scout Research Tooling Implementation
 
-Created comprehensive helm-search.py tool for systematic service migration analysis. Tool provides programmatic access to kubesearch.dev community data with 6,395+ app-template deployments and examples from 38+ repositories.
+Created comprehensive app-scout.py tool for systematic service migration analysis. Tool provides programmatic access to kubesearch.dev community data with 6,395+ app-template deployments and examples from 38+ repositories.
 
 Implemented 4-step migration methodology: discovery → configuration analysis → Docker Compose comparison → implementation decision. Tool fetches actual HelmRelease and values.yaml files from community repositories for direct configuration comparison.
 
