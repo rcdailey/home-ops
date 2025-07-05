@@ -19,3 +19,7 @@ talosconfig
 .venv/
 .DS_Store
 Thumbs.db
+
+# Script temp files
+*.db
+*.backup
