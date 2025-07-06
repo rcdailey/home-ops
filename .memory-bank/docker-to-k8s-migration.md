@@ -118,12 +118,28 @@ Beginning Authentik implementation using official Helm chart with parallel deplo
 
 ## Next Steps
 
-1. Implement Authentik migration plan with default namespace structure
-2. Create centralized email secrets in default/cluster-secrets
-3. Deploy Authentik stack using official Helm chart with parallel deployment strategy
-4. Test authentication flows with auth-test subdomain before production switch
-5. Begin systematic service migration using established app-scout methodology
-6. Create persistent volume claims during first application migrations
+### Immediate Focus: qBittorrent Migration with Authentik Integration
+
+1. **Authentik Forward Auth Provider**: Complete setup of qBittorrent forward auth provider in Authentik UI with HTTP-Basic authentication injection
+2. **qBittorrent Kubernetes Deployment**: Deploy using bjw-s app-template with VPN sidecar and NFS storage configuration  
+3. **HTTPRoute Configuration**: Create Gateway HTTPRoute with Authentik forward auth integration for qbt-test subdomain
+4. **Authentication Flow Testing**: Verify automatic login via HTTP-Basic header injection and API bypass functionality
+5. **Storage Validation**: Test hardlinking between NFS download directories and confirm Trash Guide compatibility
+
+### qBittorrent Architecture Decisions
+
+**Authentication Pattern**: Forward Auth (not Proxy)
+- Maintains Gateway as single ingress point (critical for cluster template infrastructure)
+- Preserves external-dns automation for DNS record creation
+- Avoids double-proxy scenario (Cloudflare → Tunnel → Gateway → Authentik → qBittorrent)
+- Enables HTTP-Basic header injection for automatic qBittorrent login
+
+**Traffic Flow**: User → Cloudflare → Tunnel → Gateway → qBittorrent (with auth check to Authentik)
+
+**Implementation Approach**: bjw-s app-template pattern
+- 128 community deployments vs 2 dedicated charts provides better flexibility
+- VPN sidecar capability for WireGuard integration
+- Proven configuration from onedr0p (2,415 stars) and bjw-s-labs (701 stars)
 
 ## Service Migration Methodology
 
@@ -256,8 +272,28 @@ scripts/app-scout.sh inspect <chart-name> --repo <repo-name> --files helmrelease
 - Deck Chores - Replace with Kubernetes CronJobs
 - Plex Bloat Fix - Evaluate need in K8s environment
 
+### qBittorrent Current Configuration Analysis
+
+**Docker Setup**:
+- Image: `ghcr.io/hotio/qbittorrent:release-4.6.7`
+- VPN: WireGuard enabled (`VPN_CONF=wg0`) with `NET_ADMIN` capability
+- Auth: Basic auth with username `voidpointer`, subnet whitelist `192.168.1.0/24`
+- Ports: WebUI 8080, BitTorrent 14477
+- Download paths: `/media/.torrents/complete` and `/media/.torrents/incomplete`
+
+**Critical Settings to Preserve**:
+- Speed limits: 20MB/s down/up
+- Seeding limits: 4.0 ratio, 12 hours max seed time
+- Hardlinking: Both download directories on same NFS mount for instant moves
+
+**Storage Strategy Considerations**:
+- Current setup uses hardlinking between complete/incomplete directories on same NFS mount
+- Need to evaluate NFS vs Rook Ceph options for download directories vs config storage
+- Must consider Trash Guide compatibility and *arr stack integration requirements
+- Volume mount strategy and path structure still to be determined
+
 ### High-Complexity Migration Considerations
-- qBittorrent: Requires VPN connectivity for all traffic
+- qBittorrent: VPN sidecar integration with WireGuard configuration
 - AdGuard Home: Needs UDP port 53 for DNS (host networking)
 - Authentik: Critical dependency for many services
 - Plex: Intel GPU access for hardware transcoding
@@ -395,17 +431,29 @@ values:
 
 ## Progress & Context Log
 
+### 2025-07-06 - qBittorrent Kubernetes Configuration Complete
+
+Successfully created complete qBittorrent Kubernetes deployment configuration using bjw-s app-template pattern. Implemented hybrid storage strategy with NFS for downloads (preserving hardlinking) and Rook Ceph for application config.
+
+Key Configuration Decisions: Used Forward Auth pattern to maintain Gateway as single ingress point and preserve external-dns automation. Created Authentik forward auth provider and application in UI for qbt-test subdomain integration.
+
+Storage Implementation: NFS mounts for downloads-complete and downloads-incomplete directories pointing to existing Nezuko paths (/mnt/user/media/.torrents/). Rook Ceph PVC for qBittorrent config storage. This preserves current hardlinking workflow while gaining Kubernetes benefits.
+
+Deployment Structure: Created kubernetes/apps/default/qbittorrent/ with standard repository patterns - ks.yaml, app/ directory with helmrelease.yaml, httproute.yaml, pvc.yaml, and kustomization.yaml. Updated default namespace kustomization to include qBittorrent.
+
+Ready for Deployment: All configuration files created and validated with kustomize build. Basic HTTPRoute configured for qbt-test subdomain via external gateway. Next step is deployment testing followed by Authentik forward auth integration.
+
 ### 2025-07-06 - Authentik Database Authentication Issues Resolved
 
 Successfully diagnosed and fixed Authentik deployment authentication failures through systematic investigation using kubectl exec commands.
 
-PostgreSQL Issue Resolved: Found that authentik user password was not properly set during database initialization. Used postgres superuser to reset authentik user password to 'authentik-db-password'. Verified connection works with: `PGPASSWORD=authentik-db-password psql -U authentik -d authentik -c "SELECT 'Connection successful'"`.
+PostgreSQL Issue Resolved: Found that authentik user password was not properly set during database initialization. Used postgres superuser to reset authentik user password. Verified connection works with proper credentials.
 
-Redis Issue Identified: After PostgreSQL fix, discovered Redis authentication failures due to missing password configuration in Authentik values. HelmRelease authentik.redis section only had host but no password field. Added `password: ${REDIS_PASSWORD}` to fix Redis connectivity.
+Redis Issue Identified: After PostgreSQL fix, discovered Redis authentication failures due to missing password configuration in Authentik values. HelmRelease authentik.redis section only had host but no password field. Added password field to fix Redis connectivity.
 
-Configuration Changes: Modified kubernetes/apps/default/authentik/app/helmrelease.yaml to include Redis password substitution. Change is staged locally and ready for push after user approval.
+Configuration Changes: Modified kubernetes/apps/default/authentik/app/helmrelease.yaml to include Redis password substitution.
 
-Authentik Migration Complete: Full deployment successful with working authentication. All components operational - PostgreSQL, Redis, authentik-server, authentik-worker pods Running/Ready. HTTPRoute active at auth-test.dailey.app via Cloudflare tunnel. Admin credentials (akadmin/admin123) tested and verified working. Ready for service integration and production migration to auth.dailey.app subdomain.
+Authentik Migration Complete: Full deployment successful with working authentication. All components operational - PostgreSQL, Redis, authentik-server, authentik-worker pods Running/Ready. HTTPRoute active at auth-test.dailey.app via Cloudflare tunnel. Admin access tested and verified working. Ready for service integration and production migration to auth.dailey.app subdomain.
 
 ### 2025-07-05 - Authentik Migration Planning Finalized
 

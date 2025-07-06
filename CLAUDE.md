@@ -37,6 +37,7 @@ Claude MUST:
 - Verify understanding by asking clarifying questions when instructions are ambiguous
 - Provide step-by-step explanations for multi-part processes
 - Explain expected outcomes before executing commands
+- NEVER run git commit, git push, or any git operations that modify repository state unless explicitly requested by the user
 
 ### Validation Methodology Protocol
 

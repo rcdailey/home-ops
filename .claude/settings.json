@@ -1,40 +1,29 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(helm list:*)",
-      "Bash(helm status:*)",
-      "Bash(kubectl debug:*)",
+      "Bash(black:*)",
+      "Bash(flux build:*)",
+      "Bash(flux diff:*)",
+      "Bash(helm:*)",
+      "Bash(kubeconform:*)",
       "Bash(kubectl exec:*)",
       "Bash(kubectl get:*)",
       "Bash(kubectl logs:*)",
+      "Bash(kustomize build:*)",
       "Bash(mise env:*)",
       "Bash(mise ls:*)",
-      "Bash(mkdir:*)",
-      "Bash(scripts/app-scout.sh discover:*)",
-      "Bash(scripts/app-scout.sh inspect:*)",
-      "Bash(sqlite3:*)",
-      "Bash(talosctl dmesg:*)",
-      "Bash(talosctl get:*)",
-      "Bash(talosctl list:*)",
-      "Bash(task reconcile)",
-      "Bash(wget:*)",
-      "mcp__flux__get_kubernetes_resources",
+      "Bash(scripts/app-scout.sh:*)",
+      "Bash(sops:*)",
+      "Bash(talosctl:*)",
+      "Bash(task:*)",
+      "mcp__github__get_*",
+      "mcp__github__search_*",
       "mcp__k8s__exec_in_pod",
-      "mcp__k8s__kubectl_describe",
-      "mcp__k8s__kubectl_get",
-      "mcp__k8s__kubectl_logs",
-      "mcp__kubernetes__kubectl_describe",
-      "mcp__kubernetes__kubectl_logs",
-      "WebFetch(domain:docs.k0sproject.io)",
-      "WebFetch(domain:docs.k3s.io)",
-      "WebFetch(domain:kubesearch.dev)"
+      "mcp__k8s__kubectl_*"
     ],
-    "deny": []
+    "deny": [
+      "mcp__k8s__kubectl_delete"
+    ]
   },
-  "enabledMcpjsonServers": [
-    "k8s"
-  ]
+  "enabledMcpjsonServers": ["k8s"]
 }
