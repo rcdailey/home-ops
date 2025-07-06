@@ -121,25 +121,39 @@ Beginning Authentik implementation using official Helm chart with parallel deplo
 ### Immediate Focus: qBittorrent Migration with Authentik Integration
 
 1. **Authentik Forward Auth Provider**: Complete setup of qBittorrent forward auth provider in Authentik UI with HTTP-Basic authentication injection
-2. **qBittorrent Kubernetes Deployment**: Deploy using bjw-s app-template with VPN sidecar and NFS storage configuration  
+2. **qBittorrent Kubernetes Deployment**: Deploy using bjw-s app-template with VPN sidecar and agreed storage configuration  
 3. **HTTPRoute Configuration**: Create Gateway HTTPRoute with Authentik forward auth integration for qbt-test subdomain
 4. **Authentication Flow Testing**: Verify automatic login via HTTP-Basic header injection and API bypass functionality
-5. **Storage Validation**: Test hardlinking between NFS download directories and confirm Trash Guide compatibility
+5. **Storage Validation**: Test volume mounts and verify application functionality
 
-### qBittorrent Architecture Decisions
+### Authentication Integration Patterns
 
-**Authentication Pattern**: Forward Auth (not Proxy)
-- Maintains Gateway as single ingress point (critical for cluster template infrastructure)
-- Preserves external-dns automation for DNS record creation
-- Avoids double-proxy scenario (Cloudflare → Tunnel → Gateway → Authentik → qBittorrent)
-- Enables HTTP-Basic header injection for automatic qBittorrent login
+**Forward Auth vs Proxy Decision Framework**:
+- **Use Forward Auth when**: Gateway must remain single ingress point, external-dns automation required, avoiding double-proxy scenarios
+- **Use Proxy when**: Service requires full request transformation, legacy service protection needed, simple single-component setup preferred
+- **Key insight**: Cluster template infrastructure always requires Gateway-first architecture
 
-**Traffic Flow**: User → Cloudflare → Tunnel → Gateway → qBittorrent (with auth check to Authentik)
+**Services Without OIDC Support (qBittorrent pattern)**:
+- Forward Auth with HTTP-Basic header injection eliminates double authentication
+- API bypass patterns: Configure unauthenticated paths regex in Authentik provider
+- Traffic flow: User → Gateway → Service (with auth check to Authentik for UI, bypass for API)
+- Maintains compatibility with *arr stack API integrations
 
-**Implementation Approach**: bjw-s app-template pattern
+**Storage Strategy for Media Services**:
+- **Storage decisions**: Volume mappings and storage configurations require intentional discussion per application
+- **Available options**: NFS static PVs, Rook Ceph PVCs, and emptyDir volumes based on service requirements
+
+### qBittorrent Implementation Decisions
+
+**Chart Selection**: bjw-s app-template pattern
 - 128 community deployments vs 2 dedicated charts provides better flexibility
-- VPN sidecar capability for WireGuard integration
+- VPN sidecar capability for WireGuard integration  
 - Proven configuration from onedr0p (2,415 stars) and bjw-s-labs (701 stars)
+
+**VPN Integration Requirements**:
+- WireGuard configuration preservation from Docker environment
+- NET_ADMIN capability requirement for network control
+- Sidecar pattern for VPN isolation without affecting other pods
 
 ## Service Migration Methodology
 
@@ -284,13 +298,11 @@ scripts/app-scout.sh inspect <chart-name> --repo <repo-name> --files helmrelease
 **Critical Settings to Preserve**:
 - Speed limits: 20MB/s down/up
 - Seeding limits: 4.0 ratio, 12 hours max seed time
-- Hardlinking: Both download directories on same NFS mount for instant moves
+- Download paths: `/media/.torrents/complete` and `/media/.torrents/incomplete`
 
-**Storage Strategy Considerations**:
-- Current setup uses hardlinking between complete/incomplete directories on same NFS mount
-- Need to evaluate NFS vs Rook Ceph options for download directories vs config storage
-- Must consider Trash Guide compatibility and *arr stack integration requirements
-- Volume mount strategy and path structure still to be determined
+**Storage Configuration**:
+- Volume mappings and storage decisions require discussion per application
+- Current Docker paths documented for reference during migration planning
 
 ### High-Complexity Migration Considerations
 - qBittorrent: VPN sidecar integration with WireGuard configuration
@@ -433,11 +445,11 @@ values:
 
 ### 2025-07-06 - qBittorrent Kubernetes Configuration Complete
 
-Successfully created complete qBittorrent Kubernetes deployment configuration using bjw-s app-template pattern. Implemented hybrid storage strategy with NFS for downloads (preserving hardlinking) and Rook Ceph for application config.
+Successfully created complete qBittorrent Kubernetes deployment configuration using bjw-s app-template pattern. Implemented storage configuration with NFS for downloads and Rook Ceph for application config.
 
 Key Configuration Decisions: Used Forward Auth pattern to maintain Gateway as single ingress point and preserve external-dns automation. Created Authentik forward auth provider and application in UI for qbt-test subdomain integration.
 
-Storage Implementation: NFS mounts for downloads-complete and downloads-incomplete directories pointing to existing Nezuko paths (/mnt/user/media/.torrents/). Rook Ceph PVC for qBittorrent config storage. This preserves current hardlinking workflow while gaining Kubernetes benefits.
+Storage Implementation: NFS mounts for downloads directories pointing to existing Nezuko paths (/mnt/user/media/.torrents/). Rook Ceph PVC for qBittorrent config storage. Configuration provides foundation for testing deployment functionality.
 
 Deployment Structure: Created kubernetes/apps/default/qbittorrent/ with standard repository patterns - ks.yaml, app/ directory with helmrelease.yaml, httproute.yaml, pvc.yaml, and kustomization.yaml. Updated default namespace kustomization to include qBittorrent.
 
