@@ -1,0 +1,27 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cups
+spec:
+  interval: 30m
+  driftDetection:
+    mode: enabled
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  install:
+    timeout: 10m
+    remediation:
+      retries: 1
+  upgrade:
+    timeout: 5m
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 1
+  valuesFrom:
+    - kind: ConfigMap
+      name: cups-values
+      valuesKey: values.yaml

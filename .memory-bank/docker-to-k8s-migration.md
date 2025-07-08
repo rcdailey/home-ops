@@ -298,7 +298,7 @@ kubernetes/
 ### **Stack Components**
 Single HelmRelease deploying complete Authentik ecosystem:
 - **PostgreSQL**: Database backend (included in Helm chart)
-- **Redis**: Task queue and caching (included in Helm chart) 
+- **Redis**: Task queue and caching (included in Helm chart)
 - **Authentik Server**: Web UI and API endpoints
 - **Authentik Worker**: Background task processing
 
@@ -361,7 +361,7 @@ values:
 - Docker services continue using Docker Authentik via SWAG
 - K8s services use K8s Authentik via HTTPRoute middleware
 
-**Phase 3: Authentication Switchover** 
+**Phase 3: Authentication Switchover**
 - Switch K8s Authentik to `auth.${SECRET_DOMAIN}`
 - Export/import user data from Docker PostgreSQL
 - Update any remaining Docker services to point to K8s Authentik
@@ -382,7 +382,7 @@ values:
 - Fresh start approach - no existing data migration required
 
 **Testing Configuration**:
-- Subdomain: `auth-test.${SECRET_DOMAIN}` 
+- Subdomain: `auth-test.${SECRET_DOMAIN}`
 - External access via Cloudflare tunnel
 - Database: Rook Ceph storage for persistence
 - Email: Preserve existing Gmail SMTP configuration
@@ -453,7 +453,7 @@ Established systematic approach for all future service migrations using communit
 
 ### 2025-06-30 - Rook Ceph Infrastructure Implementation
 
-Implemented Rook Ceph storage infrastructure following repository conventions. Created complete directory structure with operator and cluster components using official Helm charts. Fixed Talos disk selector ambiguity on rias node with size filter. 
+Implemented Rook Ceph storage infrastructure following repository conventions. Created complete directory structure with operator and cluster components using official Helm charts. Fixed Talos disk selector ambiguity on rias node with size filter.
 
 Resolved multiple YAML configuration conflicts by analyzing repository patterns and removing inline values from HelmReleases. Added proper top-level monitoring configuration for Helm chart Prometheus integration alongside cephClusterSpec monitoring.
 

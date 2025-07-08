@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+controllers:
+  cups:
+    annotations:
+      reloader.stakater.com/auto: "true"
+    containers:
+      app:
+        image:
+          repository: docker.io/olbat/cupsd
+          tag: latest
+        env:
+          TZ: America/New_York
+        # Use default CMD from image - it already handles ulimit fix
+        probes:
+          liveness:
+            enabled: false
+          readiness:
+            enabled: false
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+          limits:
+            memory: 512Mi
+
+    pod:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        kubernetes.io/hostname: nami
+
+service:
+  app:
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    annotations:
+      io.cilium/lb-ipam-ips: 192.168.1.74
+    controller: cups
+    ports:
+      http:
+        port: &port 631
+        targetPort: 631
+      udp:
+        port: *port
+        targetPort: 631
+        protocol: UDP
+
+route:
+  app:
+    hostnames: ["cups.${SECRET_DOMAIN}"]
+    parentRefs:
+      - name: internal
+        namespace: kube-system
+        sectionName: https
+    rules:
+      - backendRefs:
+          - identifier: app
+            port: *port
+
+persistence:
+  config:
+    type: configMap
+    name: cups-config
+    globalMounts:
+      - path: /etc/cups/cupsd.conf
+        subPath: cupsd.conf
+  dbus:
+    type: hostPath
+    hostPath: /var/run/dbus
+    globalMounts:
+      - path: /var/run/dbus
+  usb:
+    type: hostPath
+    hostPath: /dev/bus/usb
+    globalMounts:
+      - path: /dev/bus/usb
