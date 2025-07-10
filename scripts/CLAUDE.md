@@ -7,3 +7,7 @@
 ## Python
 
 - Use black to format python scripts after changes are made
+
+## How to use tools
+
+- For app-scout: @app-scout/README.md
