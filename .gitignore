@@ -4,7 +4,7 @@
 # This .gitignore file is automatically generated. To make changes:
 #
 # 1. Edit custom patterns in: scripts/update-gitignore/custom/*.gitignore
-# 2. Edit template list in: scripts/update-gitignore/templates.txt  
+# 2. Edit template list in: scripts/update-gitignore/templates.txt
 # 3. Regenerate with: task scripts:gitignore:update
 #
 # =============================================================================
@@ -90,7 +90,7 @@ go.work
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
 
 # Thumbnails
 ._*
