@@ -118,7 +118,7 @@ class AppMigrationDiscovery:
 
     async def inspect_app_config(
         self, app_name: str, repo_name: str, file_types: List[str]
-    ) -> Dict:
+    ) -> Dict[str, str]:
         """
         Phase 2: Inspect specific configuration files from a repository.
 
@@ -129,16 +129,14 @@ class AppMigrationDiscovery:
             app_name: Application name for context
             repo_name: Repository name (e.g., "angelnu/k8s-gitops")
             file_types: List of file types to fetch (e.g., ["helmrelease", "values"])
+                       or arbitrary file paths (starting with /)
 
         Returns:
-            Dict with file contents:
+            Dict mapping file types/paths to their contents:
             {
-                "app_name": str,
-                "repo_name": str,
-                "files": {
-                    "helmrelease": "file_content...",
-                    "values": "file_content..."
-                }
+                "helmrelease": "file_content...",
+                "values": "file_content...",
+                "/path/to/file.yaml": "file_content..."
             }
         """
         print(
@@ -146,17 +144,26 @@ class AppMigrationDiscovery:
             file=sys.stderr,
         )
 
-        # First, get file paths for this specific repo/app combination
-        file_paths = await self._get_file_paths_for_repo(app_name, repo_name)
+        # Check if file_types contains arbitrary file paths (starts with /)
+        arbitrary_files = [f for f in file_types if f.startswith('/')]
+        predefined_types = [f for f in file_types if not f.startswith('/')]
 
-        if not file_paths:
-            return {
-                "error": f"No file paths found for {app_name} in repository {repo_name}. Run discover first."
-            }
+        file_contents = {}
 
-        # Batch fetch requested files using GraphQL
-        file_contents = await self._gh_get_file_contents_batch(repo_name, file_paths, file_types)
-        return {"app_name": app_name, "repo_name": repo_name, "files": file_contents}
+        # Handle predefined file types using discovery
+        if predefined_types:
+            file_paths = await self._get_file_paths_for_repo(app_name, repo_name)
+            if file_paths:
+                predefined_contents = await self._gh_get_file_contents_batch(repo_name, file_paths, predefined_types)
+                file_contents.update(predefined_contents)
+
+        # Handle arbitrary file paths directly
+        if arbitrary_files:
+            arbitrary_paths = {f: f for f in arbitrary_files}  # Map filename to path
+            arbitrary_contents = await self._gh_get_file_contents_batch(repo_name, arbitrary_paths, arbitrary_files)
+            file_contents.update(arbitrary_contents)
+
+        return file_contents
 
     async def _discover_dedicated_charts(self, app_name: str, sample_count: int) -> Dict:
         """
@@ -207,7 +214,8 @@ class AppMigrationDiscovery:
 
         # Process top repositories with batch GitHub API calls
         repositories = []
-        limited_rows = rows[:sample_count]
+        seen_repos = set()
+        limited_rows = rows[:sample_count * 2]  # Get extra to account for deduplication
 
         # Extract repo names for batch metadata fetching
         repo_names = [row["repo_name"] for row in limited_rows]
@@ -215,6 +223,15 @@ class AppMigrationDiscovery:
 
         for row in limited_rows:
             repo_data = dict(row)
+
+            # Skip if we've already processed this repository
+            if repo_data["repo_name"] in seen_repos:
+                continue
+            seen_repos.add(repo_data["repo_name"])
+
+            # Stop if we have enough unique repositories
+            if len(repositories) >= sample_count:
+                break
 
             # Add batch-fetched metadata
             if repo_data["repo_name"] in batch_metadata:
@@ -276,7 +293,8 @@ class AppMigrationDiscovery:
 
         # Process top repositories with batch GitHub API calls
         repositories = []
-        limited_rows = rows[:sample_count]
+        seen_repos = set()
+        limited_rows = rows[:sample_count * 2]  # Get extra to account for deduplication
 
         # Extract repo names for batch metadata fetching
         repo_names = [row["repo_name"] for row in limited_rows]
@@ -284,6 +302,15 @@ class AppMigrationDiscovery:
 
         for row in limited_rows:
             repo_data = dict(row)
+
+            # Skip if we've already processed this repository
+            if repo_data["repo_name"] in seen_repos:
+                continue
+            seen_repos.add(repo_data["repo_name"])
+
+            # Stop if we have enough unique repositories
+            if len(repositories) >= sample_count:
+                break
 
             # Add batch-fetched metadata
             if repo_data["repo_name"] in batch_metadata:
@@ -306,11 +333,12 @@ class AppMigrationDiscovery:
         Discover available configuration files and their exact paths in a repository.
 
         Explores the directory structure around the known HelmRelease location to find
-        related configuration files (values, configmaps, secrets, etc.).
+        all files in the vicinity, not just predefined patterns.
 
         Returns:
-            Dict mapping file types to exact repository paths:
-            {"helmrelease": "path/to/file.yaml", "values": "path/to/values.yaml"}
+            Dict mapping file types/names to exact repository paths:
+            {"helmrelease": "path/to/file.yaml", "values": "path/to/values.yaml",
+             "cupsd.conf": "path/to/cupsd.conf", "all_files": ["file1.yaml", "file2.conf"]}
         """
         # Extract the directory path from the HelmRelease URL
         # URL format: https://github.com/user/repo/blob/branch/path/to/file.yaml
@@ -329,7 +357,7 @@ class AppMigrationDiscovery:
         # The file_path includes the filename, get just the directory
         dir_path = "/".join(file_path.split("/")[:-1])
 
-        # File type patterns to search for
+        # File type patterns to search for (for categorization)
         file_patterns = {
             "helmrelease": ["helmrelease.yaml", "helm-release.yaml", "hr.yaml"],
             "values": ["values.yaml", "values.yml"],
@@ -340,19 +368,33 @@ class AppMigrationDiscovery:
         }
 
         discovered_files = {}
+        all_files = []
 
         # Start with the known HelmRelease file
         discovered_files["helmrelease"] = file_path
 
-        # Search for other files in the same directory and parent directories
+        # Search for files in the same directory, parent directories, and subdirectories
         search_paths = [dir_path]
         if "/" in dir_path:
             parent_path = "/".join(dir_path.split("/")[:-1])
             search_paths.append(parent_path)
 
+        # Add common subdirectories
+        for subdir in ["resources", "config", "configs", "files"]:
+            search_paths.append(f"{dir_path}/{subdir}")
+
         for search_path in search_paths:
             files_in_dir = await self._gh_list_files(repo_name, search_path)
 
+            # Add all files to the list with their full paths
+            for filename in files_in_dir:
+                full_path = f"{search_path}/{filename}" if search_path else filename
+                all_files.append(full_path)
+
+                # Also add individual files by their filename (for easy access)
+                discovered_files[filename] = full_path
+
+            # Categorize files by type for backward compatibility
             for file_type, patterns in file_patterns.items():
                 if file_type in discovered_files:  # Already found
                     continue
@@ -364,6 +406,9 @@ class AppMigrationDiscovery:
                         )
                         discovered_files[file_type] = full_path
                         break
+
+        # Add summary of all files found
+        discovered_files["all_files"] = all_files
 
         return discovered_files
 
@@ -600,14 +645,16 @@ class AppMigrationDiscovery:
         for file_type in file_types:
             if file_type in file_paths:
                 file_path = file_paths[file_type]
+                # Create a valid GraphQL field name from file_type
+                field_name = file_type.replace('/', '_').replace('-', '_').replace('.', '_')
                 file_queries.append(f'''
-                    {file_type}: object(expression: "HEAD:{file_path}") {{
+                    {field_name}: object(expression: "HEAD:{file_path}") {{
                         ... on Blob {{
                             text
                         }}
                     }}
                 ''')
-                requested_files.append(file_type)
+                requested_files.append((file_type, field_name))
 
         if not file_queries:
             return {file_type: f"Error: File type '{file_type}' not available in this repository" for file_type in file_types}
@@ -626,14 +673,16 @@ class AppMigrationDiscovery:
         results = {}
         if "data" in data and "repository" in data["data"]:
             repo_data = data["data"]["repository"]
-            for file_type in file_types:
-                if file_type in requested_files:
-                    file_data = repo_data.get(file_type)
-                    if file_data and file_data.get("text"):
-                        results[file_type] = file_data["text"]
-                    else:
-                        results[file_type] = f"Error: Could not fetch {file_paths.get(file_type, 'unknown path')}"
+            for file_type, field_name in requested_files:
+                file_data = repo_data.get(field_name)
+                if file_data and file_data.get("text"):
+                    results[file_type] = file_data["text"]
                 else:
+                    results[file_type] = f"Error: Could not fetch {file_paths.get(file_type, 'unknown path')}"
+
+            # Handle file_types that weren't in requested_files
+            for file_type in file_types:
+                if file_type not in results:
                     results[file_type] = f"Error: File type '{file_type}' not available in this repository"
         else:
             for file_type in file_types:
@@ -665,6 +714,9 @@ Examples:
 
   # Inspect specific files from a repository
   python3 app-scout.py inspect authentik --repo angelnu/k8s-gitops --files helmrelease,values
+
+  # Inspect arbitrary file paths
+  python3 app-scout.py inspect authentik --repo angelnu/k8s-gitops --files /path/to/file.yaml,/another/file.yml
 
   # Get larger sample size for discovery
   python3 app-scout.py discover plex --sample-count 5
@@ -698,7 +750,7 @@ Examples:
     inspect_parser.add_argument(
         "--files",
         required=True,
-        help="Comma-separated file types (helmrelease,values,configmaps,secrets,pvcs,ingress)",
+        help="Comma-separated file types (helmrelease,values,configmaps,secrets,pvcs,ingress) or arbitrary file paths (starting with /)",
     )
 
     args = parser.parse_args()
@@ -717,7 +769,14 @@ Examples:
         elif args.command == "inspect":
             file_types = [f.strip() for f in args.files.split(",")]
             result = await discovery.inspect_app_config(args.app_name, args.repo, file_types)
-            print(json.dumps(result, indent=2))
+
+            # Output file contents verbatim with clear separation
+            for i, (file_type, content) in enumerate(result.items()):
+                if i > 0:
+                    print("\n" + "=" * 80 + "\n")
+                print(f"# File: {file_type}")
+                print("=" * 80)
+                print(content)
 
     except KeyboardInterrupt:
         print("\nOperation cancelled by user", file=sys.stderr)

@@ -17,7 +17,7 @@ task scripts:gitignore:update
 ## Current Structure
 
 - `custom/01-secrets.gitignore` - Project secrets and sensitive files
-- `custom/02-kubernetes.gitignore` - Cluster and config files  
+- `custom/02-kubernetes.gitignore` - Cluster and config files
 - `custom/03-project.gitignore` - Project-specific artifacts
 - `templates.txt` - Gitignore.io template names (one per line)
 
@@ -25,7 +25,7 @@ task scripts:gitignore:update
 
 The `templates.txt` already includes templates that cover common patterns:
 - `.DS_Store` (macOS template)
-- `Thumbs.db` (Windows template)  
+- `Thumbs.db` (Windows template)
 - `.venv/` (Python template)
 
 Only add custom patterns for project-specific needs.

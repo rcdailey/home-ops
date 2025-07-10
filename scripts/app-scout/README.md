@@ -1,52 +1,84 @@
-# App Scout
+# App Scout - Kubernetes Migration Discovery Tool
 
-**Kubernetes Application Discovery Tool for Migration Planning**
-
-App Scout helps you migrate Docker Compose services to Kubernetes by discovering real-world
-deployment patterns from thousands of GitOps repositories. It searches the
-[kubesearch.dev](https://kubesearch.dev) database to find how others deploy the same applications
-you're trying to migrate.
-
-## What It Does
-
-**Two-phase workflow:**
-1. **Discover** - Find all deployment patterns for an app (dedicated Helm charts vs app-template
-   usage)
-2. **Inspect** - Fetch actual configuration files from specific repositories
-
-**Key Features:**
-- Searches 1000+ real GitOps repositories automatically
-- Finds both dedicated Helm charts AND app-template configurations
-- Returns exact file paths and repository metadata
-- No API tokens needed (uses your `gh auth` setup)
-- JSON output perfect for AI analysis
+**Find real-world Kubernetes deployments to guide your Docker Compose migrations.**
 
 ## Quick Start
 
-**Prerequisites:**
-- GitHub CLI installed and authenticated (`gh auth login`)
-- Python 3.6+
-
-**Basic Usage:**
 ```bash
-# Discover deployment patterns for Plex
-task scripts:app-scout:discover -- plex
+# Discover deployment patterns
+./scripts/app-scout.sh discover plex
 
-# Get actual configuration files from a specific repo
-task scripts:app-scout:inspect -- plex --repo angelnu/k8s-gitops --files helmrelease,values
+# Inspect configuration files
+./scripts/app-scout.sh inspect plex --repo onedr0p/home-ops --files helmrelease,values
 ```
 
-## Example Output
+## Commands
 
-**Discovery reveals two deployment approaches:**
+### Discovery Command
+
+```bash
+./scripts/app-scout.sh discover <app_name> [--sample-count N]
+```
+
+**Purpose**: Find all deployment patterns for an application
+**Output**: JSON showing dedicated charts vs app-template usage with available files
+
+**Example**:
+
+```bash
+./scripts/app-scout.sh discover authentik --sample-count 5
+```
+
+### Inspect Command
+
+```bash
+./scripts/app-scout.sh inspect <app_name> --repo <repo_name> --files <file_list>
+```
+
+**Purpose**: Get raw file contents from specific repositories
+**Output**: Raw file contents with clear separation between files
+
+**File Types**: `helmrelease`, `values`, `configmaps`, `secrets`, `pvcs`, `ingress`, or any filename from discovery
+**File Paths**: Use `/path/to/file.yaml` for arbitrary files
+
+**Examples**:
+
+```bash
+# Standard file types
+./scripts/app-scout.sh inspect plex --repo onedr0p/home-ops --files helmrelease,values
+
+# Specific files found in discovery
+./scripts/app-scout.sh inspect cups --repo wipash/homelab --files cupsd.conf
+
+# Arbitrary file paths
+./scripts/app-scout.sh inspect app --repo user/repo --files /path/to/config.yaml
+```
+
+## Workflow
+
+1. **Discover** → Find deployment patterns and available files
+2. **Inspect** → Get actual configuration files
+
+## Discovery Output Structure
 
 ```json
 {
-  "plex": {
+  "app_name": {
     "dedicated_charts": {
       "usage_count": 89,
       "chart_sources": ["k8s-at-home", "truecharts"],
-      "repositories": [...]
+      "repositories": [
+        {
+          "repo_name": "onedr0p/home-ops",
+          "stars": 1500,
+          "available_files": {
+            "helmrelease": "path/to/helmrelease.yaml",
+            "values": "path/to/values.yaml",
+            "cupsd.conf": "path/to/resources/cupsd.conf",
+            "all_files": ["file1.yaml", "file2.conf", "..."]
+          }
+        }
+      ]
     },
     "app_template": {
       "usage_count": 156,
@@ -56,45 +88,37 @@ task scripts:app-scout:inspect -- plex --repo angelnu/k8s-gitops --files helmrel
 }
 ```
 
-**Inspection fetches real files:**
-```json
-{
-  "app_name": "plex",
-  "repo_name": "angelnu/k8s-gitops",
-  "files": {
-    "helmrelease": "apiVersion: helm.toolkit.fluxcd.io/v2beta1...",
-    "values": "replicaCount: 1\nimage:\n  repository: plexinc/pms-docker..."
-  }
-}
-```
+## Key Features
 
-## Commands
+- **Real-world Examples**: Searches 1000+ GitOps repositories
+- **Complete File Discovery**: Finds all files in app directories including subdirectories
+- **Dual Deployment Patterns**: Shows both dedicated Helm charts and app-template usage
+- **Raw File Access**: Returns unmodified file contents
+- **No Setup Required**: Proxy script handles dependencies automatically
 
-| Command | Purpose | Example |
-|---------|---------|---------|
-| `discover <app>` | Find all deployment patterns | `task scripts:app-scout:discover -- authentik` |
-| `inspect <app> --repo <repo> --files <types>` | Get specific config files | `task scripts:app-scout:inspect -- plex --repo onedr0p/home-ops --files helmrelease,values` |
+## File Discovery Scope
 
-**File types:** `helmrelease`, `values`, `configmaps`, `secrets`, `pvcs`, `ingress`
+Searches these locations around each HelmRelease:
 
-## Why This Helps
+- Same directory as HelmRelease
+- Parent directory
+- Common subdirectories: `resources/`, `config/`, `configs/`, `files/`
 
-**Instead of guessing how to deploy an app, you can:**
-- See which approach is more popular (dedicated chart vs app-template)
-- Find the most-starred repositories using your target app
-- Copy proven configurations from active GitOps setups
-- Discover what additional resources (PVCs, secrets, etc.) you'll need
+## Use Cases
 
-**Perfect for:** Docker Compose → Kubernetes migrations, finding deployment best practices, avoiding
-configuration trial-and-error.
+- **Migration Planning**: See how others deploy the same app
+- **Configuration Examples**: Get proven configurations from active deployments
+- **Best Practices**: Learn from most-starred repositories
+- **Troubleshooting**: Compare your setup against working examples
 
-## Technical Details
+## Prerequisites
 
-- **Data Source:** [kubesearch.dev](https://kubesearch.dev) database (auto-downloads weekly)
-- **File Access:** GitHub CLI API calls (respects your rate limits)
-- **Storage:** Local SQLite database (~50MB), auto-refreshes weekly
-- **Dependencies:** Python 3.6+, GitHub CLI, internet connection
+- GitHub CLI installed and authenticated (`gh auth login`)
+- Python 3.6+ (handled by proxy script)
+- Internet connection for database download
 
----
+## Data Source
 
-*Built for the home-ops community - making Kubernetes migrations less painful, one app at a time.*
+- **Database**: kubesearch.dev (auto-downloads weekly)
+- **File Access**: GitHub API via your authenticated `gh` CLI
+- **Updates**: Database refreshes automatically when >7 days old

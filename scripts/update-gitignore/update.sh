@@ -45,7 +45,7 @@ write_header() {
 # This .gitignore file is automatically generated. To make changes:
 #
 # 1. Edit custom patterns in: scripts/update-gitignore/custom/*.gitignore
-# 2. Edit template list in: scripts/update-gitignore/templates.txt  
+# 2. Edit template list in: scripts/update-gitignore/templates.txt
 # 3. Regenerate with: task scripts:gitignore:update
 #
 # =============================================================================
@@ -62,18 +62,18 @@ EOF
 
 main() {
     echo "Generating .gitignore from component files..."
-    
+
     # Validate API is reachable first
     validate_api
-    
+
     # Create temporary file
     local temp_file
     temp_file=$(mktemp)
-    
+
     # Write header
     write_header > "$temp_file"
     echo "" >> "$temp_file"
-    
+
     # Add custom gitignore files in sorted order from custom/ directory
     if ls "$SCRIPT_DIR/custom"/*.gitignore &> /dev/null; then
         echo "Adding custom patterns..."
@@ -85,11 +85,11 @@ main() {
             echo "" >> "$temp_file"
         done
     fi
-    
+
     # Add gitignore.io templates
     local templates
     templates=$(get_templates)
-    
+
     if [[ -n "$templates" ]]; then
         echo "Adding gitignore.io templates..."
         echo "   - Templates: $templates"
@@ -98,13 +98,13 @@ main() {
         generate_gitignore "$templates" >> "$temp_file"
         echo "" >> "$temp_file"
     fi
-    
+
     # Write footer
     write_footer >> "$temp_file"
-    
+
     # Replace original file
     mv "$temp_file" "$GITIGNORE_FILE"
-    
+
     echo ".gitignore updated successfully!"
     echo "Location: $GITIGNORE_FILE"
     echo "Total lines: $(wc -l < "$GITIGNORE_FILE")"
