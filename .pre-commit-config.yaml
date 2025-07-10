@@ -1,0 +1,44 @@
+# Pre-commit hooks for Kubernetes manifest validation
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-yaml
+    name: Check YAML syntax
+    description: Validates YAML files for syntax errors
+    files: '\.ya?ml$'
+    args: [--allow-multiple-documents]
+  - id: check-merge-conflict
+    name: Check for merge conflicts
+  - id: trailing-whitespace
+    name: Trim trailing whitespace
+  - id: end-of-file-fixer
+    name: Fix end of files
+
+- repo: local
+  hooks:
+  - id: kustomize-build
+    name: Kustomize build validation
+    entry: bash -c 'for dir in $(find kubernetes/apps -name kustomization.yaml -printf "%h\n"); do (cd "$dir" && kustomize build . >/dev/null); done'
+    language: system
+    files: '^kubernetes/.*\.ya?ml$'
+    pass_filenames: false
+    description: Validates that all kustomizations can build successfully
+
+  - id: kubectl-dry-run
+    name: Kubectl dry-run validation
+    entry: bash
+    args: [-c, 'for file in "$@"; do kubectl apply --dry-run=client -f "$file" >/dev/null 2>&1 || echo "Failed: $file"; done', --]
+    language: system
+    files: '^kubernetes/apps/.*/app/.*\.yaml$'
+    exclude: '(values\.yaml|kustomizeconfig\.yaml)$'
+    description: Validates Kubernetes manifests with kubectl dry-run
+
+- repo: https://github.com/adrienverge/yamllint
+  rev: v1.37.1
+  hooks:
+  - id: yamllint
+    name: YAML Lint
+    description: Lints YAML files for formatting and syntax issues
+    args: [-c=.yamllint.yaml]
+    files: '\.ya?ml$'

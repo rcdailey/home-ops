@@ -1,0 +1,51 @@
+# yamllint configuration for Kubernetes manifests
+extends: default
+
+rules:
+  # Allow longer lines for Kubernetes manifests (schema URLs, etc.)
+  line-length:
+    max: 200
+    level: warning
+    ignore: |
+      .*\.sops\.yaml$
+
+  # Document start markers are optional in Kubernetes
+  document-start: disable
+
+  # Allow truthy values common in Kubernetes (yes/no, on/off)
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+    check-keys: false
+
+  # Allow empty values in Kubernetes manifests
+  empty-values:
+    forbid-in-block-mappings: false
+    forbid-in-flow-mappings: false
+
+  # Relaxed comment spacing
+  comments:
+    min-spaces-from-content: 1
+
+  # Relaxed colon spacing
+  colons:
+    max-spaces-before: 0
+    max-spaces-after: 1
+
+  # Flexible indentation - only require consistency within each file
+  indentation:
+    spaces: consistent
+    indent-sequences: consistent
+    check-multi-line-strings: false
+
+  # Don't be strict about brackets spacing
+  brackets:
+    max-spaces-inside: 1
+    max-spaces-inside-empty: 0
+
+  # Allow extra spaces in braces for templating
+  braces:
+    max-spaces-inside: 2
+    max-spaces-inside-empty: 0
+
+  # Don't enforce key ordering
+  key-ordering: disable
