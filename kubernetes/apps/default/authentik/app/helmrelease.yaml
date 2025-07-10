@@ -43,7 +43,7 @@ spec:
       redis:
         host: authentik-redis-master
         password: ${REDIS_PASSWORD}
-    
+
     # PostgreSQL configuration
     postgresql:
       enabled: true
@@ -58,7 +58,7 @@ spec:
           enabled: true
           storageClass: ceph-block
           size: 8Gi
-    
+
     # Redis configuration
     redis:
       enabled: true
@@ -70,12 +70,12 @@ spec:
           enabled: true
           storageClass: ceph-block
           size: 8Gi
-    
+
     # Server configuration - disable ingress as we'll use HTTPRoute
     server:
       ingress:
         enabled: false
-    
+
     # Worker configuration
     worker:
       replicas: 1
