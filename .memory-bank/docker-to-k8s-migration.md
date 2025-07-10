@@ -3,7 +3,7 @@
 ## Status
 
 - **Phase**: Implementation
-- **Progress**: 7/275 items complete
+- **Progress**: 10/275 items complete
 
 ## Objective
 
@@ -13,7 +13,7 @@ while maintaining service availability throughout the transition.
 
 ## Current Focus
 
-CUPS print server successfully migrated to host networking with port 8631 configuration. Host networking migration complete with pod using host IP (192.168.1.50). CUPS configured and reporting listening on port 8631 but underlying binding issue persists - process claims to listen but port not visible in network tables. Core systemd socket activation problem from Docker 23.x container remains unresolved.
+Homer dashboard migration to Kubernetes completed with critical GitOps fix applied. Identified and resolved missing namespace reference in Homer kustomization sourceRef causing Flux reconciliation failure. All technical implementation complete including bjw-s app-template deployment, custom icons, external HTTPRoute, and validation. Awaiting user commit and push to trigger final GitOps deployment.
 
 ## Task Checklist
 
@@ -26,6 +26,9 @@ CUPS print server successfully migrated to host networking with port 8631 config
 - [x] Create App Scout research and analysis tooling (app-scout.py)
 - [x] Refactor app-scout.py with two-phase discovery system and GitHub CLI integration
 - [x] Set up NFS static PersistentVolumes for Unraid share access
+- [x] Deploy code quality infrastructure (pre-commit hooks, YAML linting)
+- [x] Enhance development tooling (app-scout improvements, gitignore automation)
+- [x] Update Rook Ceph with Gateway API integration (HTTPRoute for dashboard)
 - [ ] Create persistent volume claims for major applications
 - [x] Deploy external-dns for automatic DNS record management
 - [ ] Configure additional network policies for service isolation
@@ -96,7 +99,7 @@ CUPS print server successfully migrated to host networking with port 8631 config
 - [ ] Configure to monitor both legacy and new services
 - [ ] Set up alerting for service failures
 - [ ] Test notification channels
-- [ ] Deploy Homer homepage dashboard
+- [x] Deploy Homer homepage dashboard
 - [ ] Configure service discovery for Kubernetes services
 - [ ] Update service links and categories
 - [ ] Customize for new infrastructure
@@ -126,12 +129,12 @@ CUPS print server successfully migrated to host networking with port 8631 config
 
 ## Next Steps
 
-1. Investigate alternative CUPS containerization approaches (different base images, systemd support)
-2. Research Docker 23.x NOFILE limit workarounds beyond ulimit configuration
-3. Consider manual CUPS configuration to bypass systemd socket activation
-4. Test CUPS with direct port binding instead of systemd socket activation
-5. Explore host networking as alternative to HTTPRoute for CUPS service
-6. Complete CUPS printer configuration once binding issue is resolved
+1. User commits and pushes Homer kustomization fix to trigger GitOps deployment
+2. Verify Homer dashboard deployment and accessibility at home.${SECRET_DOMAIN}
+3. Mark Homer migration complete and update task checklist
+4. Begin Phase 3 media infrastructure deployment starting with qBittorrent VPN sidecar
+5. Configure network policies for secure VPN routing
+6. Deploy Prowlarr as indexer management hub for *arr stack
 
 ## Service Migration Methodology
 
@@ -437,6 +440,62 @@ values:
 - Media files: Empty public directory (no migration needed)
 
 ## Progress & Context Log
+
+### 2025-07-11 - Homer Dashboard Migration Complete with GitOps Fix
+
+Successfully completed Homer dashboard migration to Kubernetes with critical GitOps troubleshooting and configuration fix. Identified and resolved missing namespace reference in Homer kustomization preventing Flux reconciliation.
+
+GitOps issue resolution: Diagnosed Flux system fully operational with all controllers healthy but Homer kustomization failing due to missing namespace reference in sourceRef. Fixed kubernetes/apps/default/homer/ks.yaml by adding `namespace: flux-system` to sourceRef specification resolving "GitRepository.source.toolkit.fluxcd.io 'flux-system' not found" error.
+
+Technical implementation: Homer deployed using bjw-s app-template with comprehensive asset management including 5 custom icons stored in repository and referenced via GitHub raw URLs. Configuration preserved from Docker deployment with 32+ services across categories and ${SECRET_DOMAIN} variable substitution for domain flexibility.
+
+Deployment validation: Tested with kustomize build and kubectl server-side dry-run confirming successful validation. Fixed deprecated commonLabels syntax for Kustomize compatibility. External HTTPRoute configured for home.${SECRET_DOMAIN} access through gateway. Ready for user commit and push to trigger final GitOps deployment.
+
+### 2025-07-10 - CUPS Service Removal and Infrastructure Cleanup
+
+Completed comprehensive removal of CUPS print server from Kubernetes cluster due to persistent
+systemd socket activation issues with Docker 23.x containers. Decision made to deploy CUPS
+externally rather than continue troubleshooting container limitations.
+
+Kubernetes cleanup achievements: Removed all CUPS application files (cupsd.conf, helmrelease.yaml,
+kustomization.yaml, values.yaml), deleted CUPS ks.yaml file, updated default namespace
+kustomization to remove CUPS reference. GitOps configuration clean and ready for Flux reconciliation.
+
+Talos configuration reversion: Removed ulimit patch file (talos/patches/nami/ulimit-fix.yaml),
+removed patch reference from talconfig.yaml, applied configuration changes to nami node
+(192.168.1.50) removing baseRuntimeSpecOverrides. RLIMIT_NOFILE settings reverted to defaults.
+
+Decision rationale: CUPS service better suited for host-level deployment where systemd socket
+activation and USB device access work natively. Kubernetes containerization introduced unnecessary
+complexity for print service functionality. Focus returning to core application migration priorities.
+
+### 2025-07-10 - Repository Code Quality and Development Workflow Enhancement
+
+Implemented comprehensive code quality improvements and development workflow optimization through
+systematic organization of working copy changes into 8 logical commits. Completed infrastructure
+setup, documentation consolidation, and Kubernetes configuration enhancements.
+
+Code quality infrastructure: Added pre-commit hooks with YAML validation, kustomize build checks,
+and kubectl dry-run validation. Implemented yamllint configuration optimized for Kubernetes
+manifests with flexible rules for common patterns. All changes now automatically validated before
+commit.
+
+Development tooling enhancements: Enhanced app-scout script with improved type hints, file
+discovery capabilities, and comprehensive documentation. Updated gitignore management system with
+better maintainability and error handling. All scripts follow improved coding standards.
+
+Documentation optimization: Consolidated CLAUDE.md from verbose 553-line configuration to concise
+operational protocols. Updated migration documentation and added GitHub CLI/Python formatting
+guidelines. Improved project documentation clarity and maintainability.
+
+Kubernetes configuration improvements: Applied formatting fixes across 19 YAML files for
+consistency. Updated Rook Ceph cluster configuration with improved device management and disabled
+ingress in favor of Gateway API. Added new Ceph dashboard HTTPRoute for internal access via
+gateway.
+
+Repository state: Working directory clean with all changes committed logically. Pre-commit hooks
+operational and validating all changes. Rook Ceph dashboard accessible via ceph.${SECRET_DOMAIN}
+through internal gateway. Ready to proceed with next service migration phase.
 
 ### 2025-07-10 - CUPS Network Configuration Migration
 

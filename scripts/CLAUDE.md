@@ -7,7 +7,4 @@
 ## Python
 
 - Use black to format python scripts after changes are made
-
-## How to use tools
-
-- For app-scout: @app-scout/README.md
+- When using python CLI, ensure you activate the python virtual environment first.
