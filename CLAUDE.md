@@ -130,6 +130,15 @@ configuration.
 - NFS: Static PVs from Nezuko (`192.168.1.58`) - Media (100Ti), Photos (10Ti), FileRun (5Ti)
 - Access: Apps create PVCs with subPath mounting, NFSv4.1 private security
 
+### Core Infrastructure Namespaces
+
+- `kube-system` - Kubernetes system components, Gateways (internal/external)
+- `flux-system` - Flux GitOps controllers and configurations
+- `network` - Network infrastructure (external-dns, cloudflare-dns)
+- `rook-ceph` - Ceph storage system components
+- `nfs` - NFS storage components
+- `cert-manager` - Certificate management infrastructure
+
 ## Historical Deployment (2025-06-29)
 
 Original template-based deployment using Jinja2 templates in `templates/` directory with
@@ -149,3 +158,7 @@ Original template-based deployment using Jinja2 templates in `templates/` direct
 - Node management via `talos/talconfig.yaml` post-cleanup
 - Never specify explicit timeouts, intervals, or other timing related settings unless there's an
   explicit reason for them to solve an issue.
+
+## How to use tools
+
+- For app-scout: @scripts/app-scout/README.md

@@ -8,3 +8,4 @@ components:
 resources:
   - ./authentik/ks.yaml
   - ./echo/ks.yaml
+  - ./homer/ks.yaml
