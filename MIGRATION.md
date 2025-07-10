@@ -6,7 +6,7 @@ Kubernetes.
 ## Migration Context
 
 - **Legacy System**: SWAG reverse proxy on Nezuko (192.168.1.58)
-- **Legacy Path**: *.<domain> → WAN IP (99.61.133.53) → UDMP → Nezuko:30443
+- **Legacy Path**: *.<domain> → WAN IP → UDMP → Nezuko:30443
 - **New Path**: Specific subdomains → Cloudflare tunnel → 192.168.1.73
 - **Current State**: Parallel operation - new K8s services get tunnel routing, existing SWAG
   services continue via wildcard DNS
