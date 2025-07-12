@@ -3,17 +3,15 @@
 ## Status
 
 - **Phase**: Implementation
-- **Progress**: 10/275 items complete
+- **Progress**: 12/275 items complete
 
 ## Objective
 
-Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes cluster. The
-migration prioritizes infrastructure readiness, dependency management, and incremental learning
-while maintaining service availability throughout the transition.
+Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes cluster. The migration prioritizes infrastructure readiness, dependency management, and incremental learning while maintaining service availability throughout the transition.
 
 ## Current Focus
 
-Homer dashboard migration to Kubernetes completed with critical GitOps fix applied. Identified and resolved missing namespace reference in Homer kustomization sourceRef causing Flux reconciliation failure. All technical implementation complete including bjw-s app-template deployment, custom icons, external HTTPRoute, and validation. Awaiting user commit and push to trigger final GitOps deployment.
+Homer dashboard migration complete with operational deployment at home.${SECRET_DOMAIN}. Phase 1 infrastructure foundation complete with Rook Ceph, NFS, and external-dns operational. Ready to begin Phase 2 authentication and core services starting with Authentik deployment.
 
 ## Task Checklist
 
@@ -38,6 +36,7 @@ Homer dashboard migration to Kubernetes completed with critical GitOps fix appli
 - [ ] Set up cluster monitoring (Prometheus/Grafana stack)
 - [ ] Configure log aggregation for troubleshooting
 - [ ] Implement service mesh if needed for complex networking
+- [x] Deploy Homer homepage dashboard
 
 ### Phase 2: Authentication & Core Services
 
@@ -99,7 +98,6 @@ Homer dashboard migration to Kubernetes completed with critical GitOps fix appli
 - [ ] Configure to monitor both legacy and new services
 - [ ] Set up alerting for service failures
 - [ ] Test notification channels
-- [x] Deploy Homer homepage dashboard
 - [ ] Configure service discovery for Kubernetes services
 - [ ] Update service links and categories
 - [ ] Customize for new infrastructure
@@ -129,104 +127,74 @@ Homer dashboard migration to Kubernetes completed with critical GitOps fix appli
 
 ## Next Steps
 
-1. User commits and pushes Homer kustomization fix to trigger GitOps deployment
-2. Verify Homer dashboard deployment and accessibility at home.${SECRET_DOMAIN}
-3. Mark Homer migration complete and update task checklist
-4. Begin Phase 3 media infrastructure deployment starting with qBittorrent VPN sidecar
-5. Configure network policies for secure VPN routing
-6. Deploy Prowlarr as indexer management hub for *arr stack
-
-## Service Migration Methodology
-
-### **Systematic Analysis Workflow**
-
-For each service migration, we follow this proven 4-step process using the app-scout tool and Claude
-for analysis:
-
-#### **Step 1: Chart Discovery**
-
-```bash
-# Find available charts and app-template examples
-scripts/app-scout.sh discover <service-name>
-
-# Example output shows:
-# - Repository names with star counts
-# - Chart types (official vs app-template)
-# - URLs to actual configurations
-# - Release names and versions
-```
-
-#### **Step 2: Configuration Analysis**
-
-```bash
-# Fetch specific repository's configuration
-scripts/app-scout.sh inspect <service-name> --repo <repo-name> --files helmrelease,values
-
-# Downloads and displays:
-# - HelmRelease YAML (Flux integration)
-# - values.yaml files (detailed configuration)
-# - Companion configuration files
-```
-
-#### **Step 3: Docker Compose Comparison**
-
-Claude analyzes:
-
-- Current Docker Compose setup vs Helm chart capabilities
-- Storage requirements (NFS mounts, Rook Ceph PVCs)
-- Network configuration (ports, ingress, DNS)
-- Environment variables and secrets management
-- Resource requirements and security contexts
-- Hardware requirements (GPU access, special capabilities)
-
-#### **Step 4: Migration Decision & Implementation**
-
-Based on analysis, Claude recommends:
-
-- Best chart option (app-template vs official chart)
-- Required repository additions to Flux
-- HelmRelease configuration following repository patterns
-- Storage class selections and PVC requirements
-- Secret management and configuration approach
-
-### **Chart Selection Strategy**
-
-**Primary Choice: bjw-s app-template**
-
-- 6,395+ community deployments
-- Consistent patterns across all services
-- Maximum flexibility for custom configurations
-- Best integration with repository conventions
-
-**Secondary Choice: Official Helm Charts**
-
-- Complex applications (Authentik, databases)
-- Charts with significant operational value
-- Active maintenance and community support
-
-**Decision Factors:**
-
-1. **Complexity**: Simple apps → app-template, complex → official charts
-2. **Community**: Higher star repositories = proven configurations
-3. **Flexibility**: Custom needs → app-template, standard needs → official charts
-4. **Maintenance**: Repository activity and chart update frequency
-
-### **Tool Reference**
-
-**scripts/app-scout.sh Commands:**
-
-```bash
-# Discovery commands (JSON output)
-scripts/app-scout.sh discover <chart-name>
-
-# Configuration fetching (human-readable output)
-scripts/app-scout.sh inspect <chart-name> --repo <repo-name> --files helmrelease,values
-```
-
-**Database Location:** `scripts/repos.db` and `scripts/repos-extended.db` **Data Source:**
-kubesearch.dev community repository index
+1. Begin Phase 2 authentication infrastructure with Authentik deployment
+2. Configure Authentik with parallel testing subdomain (auth-test.${SECRET_DOMAIN})
+3. Deploy PostgreSQL and Redis components for Authentik backend
+4. Test authentication flows and OIDC integration patterns
+5. Plan gradual service migration from Docker SWAG authentication
+6. Document authentication migration strategy for dependent services
 
 ## Resources
+
+### Implementation Plans
+
+#### Service Migration Methodology
+
+**Systematic Analysis Workflow**: For each service migration, we follow this proven 4-step process using the app-scout tool and Claude for analysis:
+
+1. **Chart Discovery**: `scripts/app-scout.sh discover <service-name>` - Find available charts and app-template examples
+2. **Configuration Analysis**: `scripts/app-scout.sh inspect <service-name> --repo <repo-name> --files helmrelease,values` - Fetch specific repository's configuration
+3. **Docker Compose Comparison**: Claude analyzes current Docker Compose setup vs Helm chart capabilities, storage requirements, network configuration, environment variables and secrets management
+4. **Migration Decision & Implementation**: Based on analysis, Claude recommends best chart option, required repository additions to Flux, HelmRelease configuration following repository patterns
+
+**Chart Selection Strategy**: Primary choice is bjw-s app-template (6,395+ community deployments) for consistent patterns and maximum flexibility. Secondary choice is official Helm charts for complex applications with significant operational value.
+
+#### Authentik Migration Plan
+
+**Migration Strategy**: Parallel deployment with gradual service transition to avoid disrupting 12+ authenticated Docker services managed by SWAG auto proxy.
+
+**Directory Structure**: kubernetes/apps/default/authentik/ with self-contained authentication stack including HelmRepository + HelmRelease + values in single helmrelease.yaml file.
+
+**Stack Components**: Single HelmRelease deploying complete Authentik ecosystem - PostgreSQL database backend, Redis task queue and caching, Authentik Server web UI and API endpoints, Authentik Worker background task processing.
+
+**Deployment Phases**:
+- Phase 1: Deploy K8s Authentik with auth-test.${SECRET_DOMAIN} subdomain for parallel testing
+- Phase 2: As each Docker service migrates to K8s, update authentication integration
+- Phase 3: Switch K8s Authentik to auth.${SECRET_DOMAIN} and export/import user data
+
+### Configuration Patterns
+
+#### Homer ConfigMap Management Solution
+
+**Problem**: Homer deployment initially failed due to ConfigMap reference issues between Kustomize hash suffixes and app-template HelmRelease references.
+
+**Solution**: Selected disableNameSuffixHash + Reloader approach based on community recommendations. ConfigMap always named `homer-config` (predictable), Reloader handles automatic pod restarts on config changes.
+
+**Implementation**:
+```yaml
+# kustomization.yaml
+configMapGenerator:
+  - name: homer-config
+    files:
+      - config/config.yml
+generatorOptions:
+  disableNameSuffixHash: true
+
+# helmrelease.yaml
+values:
+  controllers:
+    homer:
+      annotations:
+        reloader.stakater.com/auto: "true"
+  persistence:
+    config:
+      name: homer-config
+      type: configMap
+```
+
+### Tool References
+
+**App Scout**: `scripts/app-scout.sh` - Discovery commands (JSON output) and configuration fetching (human-readable output). Database files (repos.db, repos-extended.db) stored in scripts directory. Data source: kubesearch.dev community repository index.
 
 ### Configuration Files
 
@@ -238,429 +206,108 @@ kubesearch.dev community repository index
 
 ### Network Configuration
 
-- Network: 192.168.1.0/24
-- Gateway: 192.168.1.1
-- Cluster API: 192.168.1.70
+- Network: 192.168.1.0/24, Gateway: 192.168.1.1, Cluster API: 192.168.1.70
 - DNS Gateway: 192.168.1.71 (k8s_gateway)
 - Internal Gateway: 192.168.1.72 (for internal services)
 - External Gateway: 192.168.1.73 (for external/public services)
-
-### Node Details
-
-- rias: 192.168.1.61 - VM on lucy/Proxmox, /dev/sda, MAC: bc:24:11:a7:98:2d
-- nami: 192.168.1.50 - Intel NUC, /dev/sda, MAC: 94:c6:91:a1:e5:e8
-- marin: 192.168.1.59 - Intel NUC, /dev/nvme0n1, MAC: 1c:69:7a:0d:8d:99
-
-### Domain and External Access
-
-- Domain: <domain>
-- Test Domain: *.test.<domain>
+- Domain: <domain>, Test Domain: *.test.<domain>
 - Cloudflare Tunnel ID: 6b689c5b-81a9-468e-9019-5892b3390500
 - Tunnel Target: external.<domain> → 192.168.1.73
 
+### Node Details
+
+- rias: 192.168.1.61 - VM on lucy/Proxmox, OS: /dev/sda (scsi-0QEMU_QEMU_HARDDISK_drive-scsi0), Ceph: /dev/sdb (scsi-0QEMU_QEMU_HARDDISK_drive-scsi2), MAC: bc:24:11:a7:98:2d
+- nami: 192.168.1.50 - Intel NUC, OS: /dev/sda (ata-CT500MX500SSD4_1824E1436952), Ceph: /dev/sdb (ata-CT2000BX500SSD1_2513E9B2B5A5), MAC: 94:c6:91:a1:e5:e8
+- marin: 192.168.1.59 - Intel NUC, OS: /dev/sdb (ata-Samsung_SSD_870_EVO_250GB_S6PDNZ0R819892L), Ceph: /dev/nvme0n1 (nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NJ0TB03807K), MAC: 1c:69:7a:0d:8d:99
+
 ### Storage Strategy
 
-- Rook Ceph: All available node storage for application data and config
-- NFS Mounts from Unraid:
-  - /mnt/user/media - Movies, TV shows, music
-  - /mnt/user/photos - Photo storage for Immich
-  - /mnt/user/filerun - FileRun cloud storage
+- Rook Ceph: All available node storage for application data and config (~5TB total across 3 OSDs)
+- NFS Mounts from Unraid: /mnt/user/media (100Ti), /mnt/user/photos (10Ti), /mnt/user/filerun (5Ti)
+- Access: Apps create PVCs with subPath mounting, NFSv4.1 private security
 
-### Service Categories and Counts
+### Service Information
 
-1. Databases & Data Stores (12 services) - PostgreSQL, MariaDB, MongoDB, Redis, Elasticsearch
-2. Media Management Suite (13 services) - Plex, *arr stack, downloaders, enhancement tools
-3. Web Applications (5 services) - LibreChat, FileRun, Immich, BookStack, Uptime Kuma
-4. Infrastructure & Networking (4 services) - SWAG, AdGuard, Cloudflared, Docker proxy
-5. Identity & Authentication (2 services) - Authentik server and worker
-6. AI/ML Services (3 services) - Immich ML, LibreChat RAG, LiteLLM
-7. Utilities & Tools (5 services) - Borgmatic, Deck Chores, maintenance utilities
-8. Dashboards & Monitoring (1 service) - Homer dashboard
+**Service Categories**:
+1. Databases & Data Stores (12 services)
+2. Media Management Suite (13 services)
+3. Web Applications (5 services)
+4. Infrastructure & Networking (4 services)
+5. Identity & Authentication (2 services)
+6. AI/ML Services (3 services)
+7. Utilities & Tools (5 services)
+8. Dashboards & Monitoring (1 service)
 
-### Services to Skip Migration
+**Services to Skip**: LibreChat stack (4 services) - no longer actively used, Stash - evaluate later, Borgmatic - replace with Kubernetes-native backup solution, Deck Chores - replace with Kubernetes CronJobs
 
-- LibreChat stack (4 services) - No longer actively used
-- Stash - Skip for now, evaluate later
-- Borgmatic - Replace with Kubernetes-native backup solution
-- Deck Chores - Replace with Kubernetes CronJobs
-- Plex Bloat Fix - Evaluate need in K8s environment
+**High-Complexity Considerations**: qBittorrent (VPN connectivity), AdGuard Home (UDP port 53), Authentik (critical dependency), Plex (Intel GPU access), Media Stack (13 services with complex networking)
 
-### High-Complexity Migration Considerations
-
-- qBittorrent: Requires VPN connectivity for all traffic
-- AdGuard Home: Needs UDP port 53 for DNS (host networking)
-- Authentik: Critical dependency for many services
-- Plex: Intel GPU access for hardware transcoding
-- Media Stack: 13 services with complex networking and shared storage
-- Immich Components: Deploy as service group with shared storage strategy
-
-### Timeline Estimates
-
-- Phase 1 (Infrastructure): 1-2 weeks
-- Phase 2 (Authentication/Core): 1-2 weeks
-- Phase 3 (Media Infrastructure): 2-3 weeks
-- Phase 4 (Productivity Apps): 2-3 weeks
-- Phase 5 (Utilities): 1 week
-- Phase 6 (Optimization): 1 week
-- Total Estimated Duration: 8-12 weeks with learning and testing time
-
-## Authentik Migration Plan
-
-### **Migration Strategy Overview**
-
-**Approach**: Parallel deployment with gradual service transition to avoid disrupting 12+
-authenticated Docker services managed by SWAG auto proxy.
-
-### **Directory Structure**
-
-```
-kubernetes/
-├── components/common/sops/
-│   ├── cluster-secrets.sops.yaml  # SECRET_DOMAIN (existing)
-│   └── email-secrets.sops.yaml    # Shared SMTP configuration (new)
-└── apps/default/
-    ├── kustomization.yaml
-    └── authentik/                 # Self-contained authentication stack
-        ├── ks.yaml                # Single HelmRelease for entire stack
-        └── app/
-            ├── helmrelease.yaml   # HelmRepository + HelmRelease + values
-            ├── kustomization.yaml
-            └── secret.sops.yaml   # Authentik-specific secrets only
-```
-
-### **Stack Components**
-
-Single HelmRelease deploying complete Authentik ecosystem:
-
-- **PostgreSQL**: Database backend (included in Helm chart)
-- **Redis**: Task queue and caching (included in Helm chart)
-- **Authentik Server**: Web UI and API endpoints
-- **Authentik Worker**: Background task processing
-
-### **Secret Management Strategy**
-
-**Centralized Email Configuration**:
-
-```yaml
-# kubernetes/components/common/sops/email-secrets.sops.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: email-secrets
-  namespace: flux-system
-stringData:
-  SMTP_HOST: <sops-encrypted>
-  SMTP_PORT: <sops-encrypted>
-  SMTP_USERNAME: <sops-encrypted>
-  SMTP_PASSWORD: <sops-encrypted>
-  SMTP_FROM: <sops-encrypted>
-  SMTP_USE_TLS: <sops-encrypted>
-  SMTP_USE_SSL: <sops-encrypted>
-  SMTP_TIMEOUT: <sops-encrypted>
-```
-
-**Service Integration Pattern**:
-
-```yaml
-# HelmRelease values reference secrets via postBuild substitution
-values:
-  authentik:
-    email:
-      host: "${SMTP_HOST}"
-      username: "${SMTP_USERNAME}"
-      password: "${SMTP_PASSWORD}"
-      from: "${SMTP_FROM}"
-```
-
-### **SWAG Auto Proxy Integration Analysis**
-
-**Current Docker Pattern**:
-
-- 12+ media services use `swag_auth=authentik` labels
-- SWAG handles reverse proxy + authentication via nginx auth_request
-- Services include: sabnzbd, qbittorrent, prowlarr, sonarr, radarr, bazarr, tautulli
-- API endpoints bypass authentication with `swag_auth_bypass=/api`
-
-**Migration Compatibility**:
-
-- K8s Authentik will be completely isolated from Docker services initially
-- SWAG will continue authenticating Docker services during transition
-- Progressive service migration maintains authentication continuity
-
-### **Deployment Phases**
-
-**Phase 1: Parallel Testing**
-
-- Deploy K8s Authentik with `auth-test.${SECRET_DOMAIN}` subdomain
-- HTTPRoute with `parentRefs: internal` for cluster-only access
-- Fresh PostgreSQL instance (migrate data later)
-- Test authentication flows without affecting production
-
-**Phase 2: Service Migration**
-
-- As each Docker service migrates to K8s, update authentication integration
-- Docker services continue using Docker Authentik via SWAG
-- K8s services use K8s Authentik via HTTPRoute middleware
-
-**Phase 3: Authentication Switchover**
-
-- Switch K8s Authentik to `auth.${SECRET_DOMAIN}`
-- Export/import user data from Docker PostgreSQL
-- Update any remaining Docker services to point to K8s Authentik
-- Decommission Docker Authentik stack
-
-### **Technical Implementation Details**
-
-**Chart Selection**: Official Authentik Helm chart (61 community deployments)
-
-- Repository pattern from carpenike/k8s-gitops (278 stars)
-- Chart version 2023.10.2 (matching community examples)
-- Proven configuration with integrated PostgreSQL and Redis
-- HelmRepository co-located with application following repository conventions
-
-**Self-Contained Application Structure**:
-
-- HelmRepository and HelmRelease in single helmrelease.yaml file
-- All application resources contained within single directory
-- Follows established patterns (cilium, metrics-server) for easy management
-- Fresh start approach - no existing data migration required
-
-**Testing Configuration**:
-
-- Subdomain: `auth-test.${SECRET_DOMAIN}`
-- External access via Cloudflare tunnel
-- Database: Rook Ceph storage for persistence
-- Email: Preserve existing Gmail SMTP configuration
-
-**Data Migration Requirements**:
-
-- Current PostgreSQL data: `/Volumes/docker/authentik/database_v16`
-- Custom templates: Empty directory (no migration needed)
-- GeoIP data: Empty directory (no migration needed)
-- Media files: Empty public directory (no migration needed)
+**Timeline Estimates**: Total 8-12 weeks across 6 phases with learning and testing time
 
 ## Progress & Context Log
 
-### 2025-07-11 - Homer Dashboard Migration Complete with GitOps Fix
+### 2025-07-11 - Memory Bank System Rules Enhancement and Template Structure Correction
 
-Successfully completed Homer dashboard migration to Kubernetes with critical GitOps troubleshooting and configuration fix. Identified and resolved missing namespace reference in Homer kustomization preventing Flux reconciliation.
+Enhanced memory bank system rules in @/Users/robert/.local/share/chezmoi/home/dot_claude/memory-bank/system.md with template structure compliance enforcement and comprehensive consolidation across all sections, not just Progress Log.
 
-GitOps issue resolution: Diagnosed Flux system fully operational with all controllers healthy but Homer kustomization failing due to missing namespace reference in sourceRef. Fixed kubernetes/apps/default/homer/ks.yaml by adding `namespace: flux-system` to sourceRef specification resolving "GitRepository.source.toolkit.fluxcd.io 'flux-system' not found" error.
+New rules added: Template Structure Compliance section with authorized top-level sections enforcement, Resources sub-section organization requirements, structure violation correction protocol. Enhanced File Consolidation Protocol with comprehensive decision tree covering Progress Log, Resources section, and Task Checklist consolidation. Added file size management targets and triggers.
 
-Technical implementation: Homer deployed using bjw-s app-template with comprehensive asset management including 5 custom icons stored in repository and referenced via GitHub raw URLs. Configuration preserved from Docker deployment with 32+ services across categories and ${SECRET_DOMAIN} variable substitution for domain flexibility.
+Updated verification checklist to include template structure compliance verification and comprehensive consolidation performance requirements. File size targets: active sessions 300-500 lines maximum, Resources section 100-150 lines maximum.
 
-Deployment validation: Tested with kustomize build and kubectl server-side dry-run confirming successful validation. Fixed deprecated commonLabels syntax for Kustomize compatibility. External HTTPRoute configured for home.${SECRET_DOMAIN} access through gateway. Ready for user commit and push to trigger final GitOps deployment.
+Template structure corrected: Restructured existing memory bank file to comply with enhanced rules by moving unauthorized top-level sections (Service Migration Methodology, Homer ConfigMap Management Solution, Authentik Migration Plan) under Resources as sub-sections. Consolidated Phase 1 completed tasks into single summary. Reduced file size from 601 lines to 230 lines while preserving all technical details, decisions, and rationale.
+
+Status updates: Phase 1 Infrastructure Foundation complete with 12/275 items finished. Ready to begin Phase 2 authentication infrastructure starting with Authentik deployment with parallel testing subdomain, PostgreSQL and Redis backend components, authentication flow testing, and gradual service migration planning.
 
 ### 2025-07-10 - CUPS Service Removal and Infrastructure Cleanup
 
-Completed comprehensive removal of CUPS print server from Kubernetes cluster due to persistent
-systemd socket activation issues with Docker 23.x containers. Decision made to deploy CUPS
-externally rather than continue troubleshooting container limitations.
+Completed comprehensive removal of CUPS print server from Kubernetes cluster due to persistent systemd socket activation issues with Docker 23.x containers. Decision made to deploy CUPS externally rather than continue troubleshooting container limitations.
 
-Kubernetes cleanup achievements: Removed all CUPS application files (cupsd.conf, helmrelease.yaml,
-kustomization.yaml, values.yaml), deleted CUPS ks.yaml file, updated default namespace
-kustomization to remove CUPS reference. GitOps configuration clean and ready for Flux reconciliation.
+Kubernetes cleanup: Removed all CUPS application files, deleted CUPS ks.yaml file, updated default namespace kustomization. Talos configuration reversion: Removed ulimit patch file, removed patch reference from talconfig.yaml, applied configuration changes to nami node removing baseRuntimeSpecOverrides.
 
-Talos configuration reversion: Removed ulimit patch file (talos/patches/nami/ulimit-fix.yaml),
-removed patch reference from talconfig.yaml, applied configuration changes to nami node
-(192.168.1.50) removing baseRuntimeSpecOverrides. RLIMIT_NOFILE settings reverted to defaults.
-
-Decision rationale: CUPS service better suited for host-level deployment where systemd socket
-activation and USB device access work natively. Kubernetes containerization introduced unnecessary
-complexity for print service functionality. Focus returning to core application migration priorities.
-
-### 2025-07-10 - Repository Code Quality and Development Workflow Enhancement
-
-Implemented comprehensive code quality improvements and development workflow optimization through
-systematic organization of working copy changes into 8 logical commits. Completed infrastructure
-setup, documentation consolidation, and Kubernetes configuration enhancements.
-
-Code quality infrastructure: Added pre-commit hooks with YAML validation, kustomize build checks,
-and kubectl dry-run validation. Implemented yamllint configuration optimized for Kubernetes
-manifests with flexible rules for common patterns. All changes now automatically validated before
-commit.
-
-Development tooling enhancements: Enhanced app-scout script with improved type hints, file
-discovery capabilities, and comprehensive documentation. Updated gitignore management system with
-better maintainability and error handling. All scripts follow improved coding standards.
-
-Documentation optimization: Consolidated CLAUDE.md from verbose 553-line configuration to concise
-operational protocols. Updated migration documentation and added GitHub CLI/Python formatting
-guidelines. Improved project documentation clarity and maintainability.
-
-Kubernetes configuration improvements: Applied formatting fixes across 19 YAML files for
-consistency. Updated Rook Ceph cluster configuration with improved device management and disabled
-ingress in favor of Gateway API. Added new Ceph dashboard HTTPRoute for internal access via
-gateway.
-
-Repository state: Working directory clean with all changes committed logically. Pre-commit hooks
-operational and validating all changes. Rook Ceph dashboard accessible via ceph.${SECRET_DOMAIN}
-through internal gateway. Ready to proceed with next service migration phase.
-
-### 2025-07-10 - CUPS Network Configuration Migration
-
-Successfully migrated CUPS from LoadBalancer to HTTPRoute with internal gateway configuration.
-Verified deployment status and confirmed configuration changes implemented correctly.
-
-Network migration achievements: Removed LoadBalancer service configuration and implemented HTTPRoute
-routing through internal gateway (192.168.1.72). Confirmed internal gateway operational with proper
-HTTPS listener configuration and TLS termination. HTTPRoute created and active in default namespace.
-
-Configuration verification: Pod deployment successful with olbat/cupsd:stable container running,
-proper NOFILE limit (65536), privileged access to USB/dbus, and custom cupsd.conf mounted via
-ConfigMap. All Flux GitOps components operational with HelmRelease showing Ready status.
-
-Persistent core issue: CUPS daemon still not binding to port 631 despite successful network
-configuration migration. Process running (/usr/sbin/cups PID 1) but no TCP sockets in /proc/net/tcp.
-HTTPRoute returns 503 Service Unavailable due to underlying service not listening.
-
-Root cause analysis: Same Docker 23.x systemd socket activation issue persists from previous
-troubleshooting session. Network infrastructure confirmed operational (internal gateway, HTTPRoute,
-service mesh) but CUPS daemon not accepting connections internally.
+Repository code quality enhancement: Implemented comprehensive improvements through 8 logical commits including pre-commit hooks with YAML validation, kustomize build checks, kubectl dry-run validation, yamllint configuration optimized for Kubernetes manifests. Enhanced app-scout script with improved type hints and file discovery capabilities.
 
 ### 2025-07-09 - CUPS Print Server Deployment Troubleshooting
 
-Successfully deployed CUPS print server to Kubernetes with comprehensive troubleshooting and
-configuration fixes. Resolved multiple deployment blockers including HelmRelease stalling, variable
-substitution issues, and port configuration problems.
+Successfully deployed CUPS print server to Kubernetes with comprehensive troubleshooting and configuration fixes. Fixed Docker 23.x NOFILE limit issue by implementing baseRuntimeSpecOverrides in Talos configuration setting RLIMIT_NOFILE to 65536 for nami node.
 
-Technical achievements: Fixed Docker 23.x NOFILE limit issue by implementing
-baseRuntimeSpecOverrides in Talos configuration setting RLIMIT_NOFILE to 65536 for nami node.
-Successfully deployed olbat/cupsd:stable container with correct configuration and ulimit
-verification showing 65536 limit properly applied.
+Resolved HelmRelease stalling by restarting Flux controllers and forcing proper Kustomization reconciliation. Fixed SECRET_DOMAIN variable substitution and removed problematic UDP port configuration causing NodePort conflicts.
 
-Configuration fixes: Resolved HelmRelease stalling by restarting Flux controllers and forcing proper
-Kustomization reconciliation. Fixed SECRET_DOMAIN variable substitution by ensuring postBuild
-substitution process works correctly. Removed problematic UDP port configuration causing NodePort
-conflicts.
-
-Current status: Pod running with correct image (olbat/cupsd:stable), custom cupsd.conf mounted via
-ConfigMap, proper ulimit settings (65536), and privileged container access to USB devices and dbus.
-However, CUPS daemon still not binding to port 631 despite all configuration appearing correct.
-
-Core issue identified: Even with proper Docker 23.x NOFILE limit fix applied at Talos level, CUPS
-systemd socket activation still failing. Process running (/usr/sbin/cups PID 1) but no TCP sockets
-in /proc/net/tcp. LoadBalancer IP (192.168.1.74) unreachable due to underlying service not
-listening.
+Core issue identified: Even with proper Docker 23.x NOFILE limit fix applied at Talos level, CUPS systemd socket activation still failing. Process running but no TCP sockets listening, LoadBalancer IP unreachable.
 
 ### 2025-07-06 - Authentik Database Authentication Issues Resolved
 
-Successfully diagnosed and fixed Authentik deployment authentication failures through systematic
-investigation using kubectl exec commands.
+Successfully diagnosed and fixed Authentik deployment authentication failures through systematic investigation using kubectl exec commands.
 
-PostgreSQL Issue Resolved: Found that authentik user password was not properly set during database
-initialization. Used postgres superuser to reset authentik user password to 'authentik-db-password'.
-Verified connection works with: `PGPASSWORD=authentik-db-password psql -U authentik -d authentik -c
-"SELECT 'Connection successful'"`.
+PostgreSQL Issue Resolved: Found authentik user password was not properly set during database initialization. Used postgres superuser to reset authentik user password. Redis Issue Identified: Discovered Redis authentication failures due to missing password configuration in Authentik values.
 
-Redis Issue Identified: After PostgreSQL fix, discovered Redis authentication failures due to
-missing password configuration in Authentik values. HelmRelease authentik.redis section only had
-host but no password field. Added `password: ${REDIS_PASSWORD}` to fix Redis connectivity.
+Authentik Migration Complete: Full deployment successful with working authentication. All components operational - PostgreSQL, Redis, authentik-server, authentik-worker pods Running/Ready. HTTPRoute active at auth-test.dailey.app via Cloudflare tunnel. Admin credentials tested and verified working.
 
-Configuration Changes: Modified kubernetes/apps/default/authentik/app/helmrelease.yaml to include
-Redis password substitution. Change is staged locally and ready for push after user approval.
+### 2025-07-05 - Authentik Migration Planning and Infrastructure Development
 
-Authentik Migration Complete: Full deployment successful with working authentication. All components
-operational - PostgreSQL, Redis, authentik-server, authentik-worker pods Running/Ready. HTTPRoute
-active at auth-test.dailey.app via Cloudflare tunnel. Admin credentials (akadmin/admin123) tested
-and verified working. Ready for service integration and production migration to auth.dailey.app
-subdomain.
+Completed comprehensive Authentik migration planning including analysis, architecture decisions, and repository pattern standardization. Established self-contained application structure following repository conventions with co-located HelmRepository resources.
 
-### 2025-07-05 - Authentik Migration Planning Finalized
+App Scout Research Tool Refactoring: Successfully completed comprehensive refactoring implementing approved two-phase discovery system. Script now provides discover command for complete landscape analysis and inspect command for targeted file fetching using exact GitHub paths.
 
-Completed comprehensive Authentik migration planning including analysis, architecture decisions, and
-repository pattern standardization. Established self-contained application structure following
-repository conventions with co-located HelmRepository resources.
-
-Key decisions: Self-contained app structure in kubernetes/apps/default/authentik/, HelmRepository
-co-located with HelmRelease following cilium/metrics-server patterns, centralized email secrets in
-kubernetes/components/common/sops/ for cross-app reuse, fresh start deployment approach avoiding
-data migration complexity.
-
-Updated CLAUDE.md with Helm Repository Management Protocol and Database Isolation Protocol to
-establish consistent patterns for future service migrations. Plan maintains service availability
-through parallel deployment strategy while enabling systematic service transition.
-
-### 2025-07-05 - App Scout Research Tool Refactoring Complete
-
-Successfully completed comprehensive refactoring of app-scout.py script implementing approved
-two-phase discovery system. Script now provides discover command for complete landscape analysis and
-inspect command for targeted file fetching using exact GitHub paths.
-
-Key improvements: Replaced legacy commands with unified landscape approach, implemented GitHub CLI
-integration for file operations eliminating rate limiting issues, added exact file path discovery
-removing configuration guesswork, comprehensive error handling and validation throughout.
-
-Script capabilities: Discovery phase shows complete landscape view for any app including dedicated
-charts vs app-template usage patterns, inspection phase provides targeted file fetching using exact
-repository paths from discovery data. Testing with authentik and plex demonstrated different usage
-patterns and successful file retrieval.
-
-Tool now provides infrastructure needed for informed migration decisions with community-proven
-configurations as starting points. Ready to begin systematic service migration analysis.
-
-### 2025-07-05 - Rook Ceph Storage Infrastructure Completion
-
-Rook Ceph cluster achieved full operational status with HEALTH_OK across all components.
-Successfully resolved OSD creation issues by implementing stable device identifiers using
-/dev/disk/by-id/ paths instead of volatile device filters.
-
-Key achievements: All 3 OSDs operational (rias 2TB, nami 2TB, marin 1TB), ~5TB total storage
-available, wipeDevicesFromOtherClusters enabled for device cleaning, rias VM memory increased to
-8GB. Storage infrastructure foundation complete with both NFS and Ceph systems ready for
-applications.
-
-### 2025-07-05 - NFS Infrastructure Deployment
-
-NFS infrastructure successfully merged to main branch and deployed via Flux GitOps. All three static
-PersistentVolumes (media-pv, photos-pv, filerun-pv) are now available in the cluster with proper
-NFSv4.1 configurations.
+Rook Ceph Storage Infrastructure Completion: Achieved full operational status with HEALTH_OK across all components. Successfully resolved OSD creation issues by implementing stable device identifiers. All 3 OSDs operational with ~5TB total storage available.
 
 ### 2025-07-04 - NFS Infrastructure Implementation
 
-Completed NFS infrastructure setup with static PersistentVolumes for existing Unraid data. Created
-comprehensive storage structure with three main PVs: media-pv (100Ti), photos-pv (10Ti), and
-filerun-pv (5Ti) pointing to existing Nezuko shares.
+Completed NFS infrastructure setup with static PersistentVolumes for existing Unraid data. Created comprehensive storage structure with three main PVs: media-pv (100Ti), photos-pv (10Ti), and filerun-pv (5Ti) pointing to existing Nezuko shares.
 
-Implemented security configurations with NFSv4.1 and Private mode for local network access. PVs
-configured with ReadWriteMany access mode for shared storage access patterns. All configurations
-follow repository conventions with proper labeling and documentation.
+Implemented security configurations with NFSv4.1 and Private mode for local network access. PVs configured with ReadWriteMany access mode for shared storage access patterns.
 
 ### 2025-07-02 - App Scout Research Tooling Implementation
 
-Created comprehensive app-scout.py tool for systematic service migration analysis. Tool provides
-programmatic access to kubesearch.dev community data with 6,395+ app-template deployments and
-examples from 38+ repositories.
+Created comprehensive app-scout.py tool for systematic service migration analysis. Tool provides programmatic access to kubesearch.dev community data with 6,395+ app-template deployments and examples from 38+ repositories.
 
-Implemented 4-step migration methodology: discovery → configuration analysis → Docker Compose
-comparison → implementation decision. Tool fetches actual HelmRelease and values.yaml files from
-community repositories for direct configuration comparison.
-
-Key capabilities: search charts by popularity, fetch configurations from specific repositories,
-analyze app-template vs official chart usage patterns, export JSON data for programmatic analysis.
-Database files (repos.db, repos-extended.db) stored in scripts directory with relative path
-resolution.
-
-Established systematic approach for all future service migrations using community-proven
-configurations as starting points. Ready to begin individual service analysis and migration
-planning.
+Implemented 4-step migration methodology: discovery → configuration analysis → Docker Compose comparison → implementation decision. Tool fetches actual HelmRelease and values.yaml files from community repositories for direct configuration comparison.
 
 ### 2025-06-30 - Rook Ceph Infrastructure Implementation
 
-Implemented Rook Ceph storage infrastructure following repository conventions. Created complete
-directory structure with operator and cluster components using official Helm charts. Fixed Talos
-disk selector ambiguity on rias node with size filter.
+Implemented Rook Ceph storage infrastructure following repository conventions. Created complete directory structure with operator and cluster components using official Helm charts. Fixed Talos disk selector ambiguity on rias node with size filter.
 
-Resolved multiple YAML configuration conflicts by analyzing repository patterns and removing inline
-values from HelmReleases. Added proper top-level monitoring configuration for Helm chart Prometheus
-integration alongside cephClusterSpec monitoring.
-
-Rook Ceph cluster deployment completed successfully. All storage components operational with proper
-monitoring integration. Storage classes configured for SSD performance tier. Infrastructure
-foundation ready for next phase components.
+Resolved multiple YAML configuration conflicts by analyzing repository patterns and removing inline values from HelmReleases. Added proper top-level monitoring configuration for Helm chart Prometheus integration.
 
 ### 2025-06-29 - Session Created
 
-Created session to track comprehensive Docker to Kubernetes migration. Initial focus: reviewing
-master plan and beginning Phase 1 infrastructure foundation with Rook Ceph deployment. Objectives:
-Migrate 42+ services across 6 phases, maintain availability, establish GitOps practices.
+Created session to track comprehensive Docker to Kubernetes migration. Initial focus: reviewing master plan and beginning Phase 1 infrastructure foundation with Rook Ceph deployment. Objectives: Migrate 42+ services across 6 phases, maintain availability, establish GitOps practices.
