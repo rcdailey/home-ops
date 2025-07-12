@@ -13,7 +13,7 @@ Kubernetes.
 
 ## Legacy Infrastructure
 
-- **Docker Setup**: All services mounted at `/mnt/fast/docker/`
+- **Docker Setup**: All services mounted at `/mnt/fast/docker/` (`/Volumes/docker` on macos)
 - **SWAG Location**: `/mnt/fast/docker/swag/`
 - **Active SWAG Services**: adguard.subdomain.conf, homeassistant.subdomain.conf
 - **Port Mapping**: SWAG uses ports 30080:80 and 30443:443

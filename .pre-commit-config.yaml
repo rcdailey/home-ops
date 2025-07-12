@@ -25,14 +25,13 @@ repos:
     pass_filenames: false
     description: Validates that all kustomizations can build successfully
 
-  - id: kubectl-dry-run
-    name: Kubectl dry-run validation
-    entry: bash
-    args: [-c, 'for file in "$@"; do kubectl apply --dry-run=client -f "$file" >/dev/null 2>&1 || echo "Failed: $file"; done', --]
-    language: system
+  - id: kubectl-dry-run-server
+    name: Kubectl server-side validation with SOPS and template support
+    entry: scripts/validate-sops-k8s.sh
+    language: script
     files: '^kubernetes/apps/.*/app/.*\.yaml$'
     exclude: '(values\.yaml|kustomizeconfig\.yaml)$'
-    description: Validates Kubernetes manifests with kubectl dry-run
+    description: Server-side validation with SOPS decryption and template variable resolution
 
 - repo: https://github.com/adrienverge/yamllint
   rev: v1.37.1
