@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://github.com/datreeio/CRDs-catalog/raw/refs/heads/main/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: qbittorrent-auth
+  namespace: default
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: qbittorrent
+  extAuth:
+    http:
+      backendRef:
+        name: authentik-server
+        namespace: default
+        port: 80
+      path: /outpost.goauthentik.io/auth
+      headersToBackend:
+        - x-authentik-user
+        - x-authentik-groups
+      backendSettings:
+        retry:
+          numRetries: 3
