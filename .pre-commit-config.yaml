@@ -9,30 +9,44 @@ repos:
     files: '\.ya?ml$'
     args: [--allow-multiple-documents]
   - id: check-merge-conflict
-    name: Check for merge conflicts
+    name: Merge Conflict Check
   - id: trailing-whitespace
-    name: Trim trailing whitespace
+    name: Trim Whitespace
   - id: end-of-file-fixer
-    name: Fix end of files
+    name: Fix End of Files
 
 - repo: local
   hooks:
+  - id: check-dependencies
+    name: Dependency Check
+    entry: scripts/pre-commit/check-dependencies.sh
+    language: script
+    always_run: true
+    pass_filenames: false
+    description: Ensures all required tools are available before running other hooks
+
   - id: kustomize-build
-    name: Kustomize build validation
-    entry: bash -c 'for dir in $(find kubernetes/apps -name kustomization.yaml -printf "%h\n"); do (cd "$dir" && kustomize build . >/dev/null); done'
-    language: system
+    name: Kustomize Build Check
+    entry: scripts/pre-commit/kustomize-build-check.sh
+    language: script
     files: '^kubernetes/.*\.ya?ml$'
     pass_filenames: false
     description: Validates that all kustomizations can build successfully
 
-  - id: kubectl-dry-run
-    name: Kubectl dry-run validation
-    entry: bash
-    args: [-c, 'for file in "$@"; do kubectl apply --dry-run=client -f "$file" >/dev/null 2>&1 || echo "Failed: $file"; done', --]
-    language: system
+  - id: kubectl-dry-run-server
+    name: Server-Side K8s Validation
+    entry: scripts/pre-commit/validate-sops-k8s.sh
+    language: script
     files: '^kubernetes/apps/.*/app/.*\.yaml$'
     exclude: '(values\.yaml|kustomizeconfig\.yaml)$'
-    description: Validates Kubernetes manifests with kubectl dry-run
+    description: Server-side validation with SOPS decryption and template variable resolution
+
+  - id: validate-sops-config
+    name: SOPS Config Validation
+    entry: scripts/pre-commit/validate-sops-config.sh
+    language: script
+    files: '^kubernetes/apps/.*/(ks\.yaml|secrets/.*\.sops\.yaml|secrets/kustomization\.yaml)$'
+    description: Ensures SOPS secrets have proper decryption configuration in Kustomizations
 
 - repo: https://github.com/adrienverge/yamllint
   rev: v1.37.1
