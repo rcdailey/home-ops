@@ -8,3 +8,7 @@
 
 - Use black to format python scripts after changes are made
 - When using python CLI, ensure you activate the python virtual environment first.
+
+## Pre-Commit
+
+- Pre-commit specific scripts go under @pre-commit/

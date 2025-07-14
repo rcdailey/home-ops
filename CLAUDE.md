@@ -38,6 +38,10 @@ Claude MUST:
   lifecycle. Multiple ks.yaml when different namespaces OR different timing OR independent lifecycle
   OR operator+instance pattern
 - Deployment Timing: Fast (<5min) = 5m timeout, Slow (>5min) = 15m+ timeout based on complexity
+- Stop and wait for the user to commit & push changes after modifications are made and before
+  checking cluster status.
+- Don't perform reconcilation manually unless necessary.
+- Always use `pre-commit run` to verify changes.
 
 ## Infrastructure & Storage Protocols
 
@@ -162,3 +166,31 @@ Original template-based deployment using Jinja2 templates in `templates/` direct
 ## How to use tools
 
 - For app-scout: @scripts/app-scout/README.md
+
+### SOPS Commands
+
+#### Set values in encrypted files
+```bash
+# Syntax: sops set file index value
+sops set secret.sops.yaml '["stringData"]["KEY_NAME"]' "value"
+
+# Examples:
+sops set secret.sops.yaml '["stringData"]["API_KEY"]' "abc123"
+sops set secret.sops.yaml '["stringData"]["WIREGUARD_PRIVATE_KEY"]' "wOEI9rqq..."
+```
+
+#### Remove values from encrypted files
+```bash
+# Syntax: sops unset file index
+sops unset secret.sops.yaml '["stringData"]["KEY_NAME"]'
+
+# Examples:
+sops unset secret.sops.yaml '["stringData"]["MULLVAD_ACCOUNT"]'
+sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
+```
+
+#### Key points:
+- Index format: `'["section"]["key"]'` for YAML files
+- Values must be JSON-encoded strings
+- Always use single quotes around index path
+- Use `--idempotent` flag to avoid errors if key exists/doesn't exist
