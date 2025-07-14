@@ -1,0 +1,22 @@
+---
+# Stable service name for external gateway (used by Cloudflare tunnel)
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-gateway
+  namespace: network
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/managed-by: envoy-gateway
+    app.kubernetes.io/name: envoy
+    gateway.envoyproxy.io/owning-gateway-name: external
+    gateway.envoyproxy.io/owning-gateway-namespace: network
+  ports:
+    - name: http
+      port: 80
+      targetPort: 10080
+    - name: https
+      port: 443
+      targetPort: 10443
