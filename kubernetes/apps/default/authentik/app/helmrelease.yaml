@@ -53,11 +53,16 @@ spec:
         password: ${POSTGRES_PASSWORD}
       primary:
         extendedConfiguration: |
-          max_connections = 500
+          max_connections = 100
         persistence:
           enabled: true
           storageClass: ceph-block
           size: 8Gi
+        resources:
+          requests:
+            memory: 256Mi
+          limits:
+            memory: 512Mi
 
     # Redis configuration
     redis:
@@ -70,12 +75,27 @@ spec:
           enabled: true
           storageClass: ceph-block
           size: 8Gi
+        resources:
+          requests:
+            memory: 64Mi
+          limits:
+            memory: 128Mi
 
     # Server configuration - disable ingress as we'll use HTTPRoute
     server:
       ingress:
         enabled: false
+      resources:
+        requests:
+          memory: 512Mi
+        limits:
+          memory: 1Gi
 
     # Worker configuration
     worker:
       replicas: 1
+      resources:
+        requests:
+          memory: 400Mi
+        limits:
+          memory: 750Mi
