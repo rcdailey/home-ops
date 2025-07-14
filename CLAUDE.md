@@ -42,19 +42,13 @@ Claude MUST:
   checking cluster status.
 - Don't perform reconcilation manually unless necessary.
 - Always use `pre-commit run` to verify changes.
+- Never specify explicit timeouts, intervals, or other timing related settings unless there's an
+  explicit reason for them to solve an issue.
 
 ## Infrastructure & Storage Protocols
 
 Claude MUST:
 
-- Hardware Configuration: Always use diskSelector, reference Node Details section hardware
-  identifiers, verify through talhelper
-- Talos Hardware: Use `talosctl get disks -n <ip>` to inspect hardware, use stable
-  `/dev/disk/by-id/` paths, enable cleanup for previous installations
-- Stable Device Priority: 1) `/dev/disk/by-id/ata-*` or `nvme-*`, 2) WWN identifiers, 3) SCSI for
-  VMs, 4) Model+serial
-- Rook Ceph: Use `devices` array with stable paths, enable `wipeDevicesFromOtherClusters: true`,
-  avoid OS disks
 - NFS Storage: Use static PVs for existing data, create PVCs in app directories, use subPath
   mounting, configure appropriate access modes
 - Database Isolation: Never share databases between applications, deploy dedicated instances,
@@ -70,12 +64,6 @@ Claude MUST:
   ClusterIP services with HTTPRoute
 - LoadBalancer Restrictions: NEVER create LoadBalancer services without explicit user discussion,
   reserve for core infrastructure requiring direct network access
-- VIP Allocation: ONLY k8s-gateway (192.168.1.71), internal gateway (192.168.1.72), external gateway
-  (192.168.1.73), rare infrastructure exceptions
-- LoadBalancer Decision Matrix: Create ONLY when ALL criteria met: Infrastructure component +
-  Non-HTTP protocol + Direct access required + No HTTPRoute alternative
-- VIP Testing: Use service-specific ports not ping, test with `dig @192.168.1.71` for DNS, `curl -I
-  http://192.168.1.72` for gateways
 
 ## Repository Overview
 
@@ -150,18 +138,12 @@ Original template-based deployment using Jinja2 templates in `templates/` direct
 `task bootstrap:talos` → `task bootstrap:apps` → `task template:tidy`. Templates archived to
 `.private/[timestamp]/` directory post-deployment.
 
-@MIGRATION.md
-
 ## Important Notes
 
-- Use task runner for all operations
 - SOPS-encrypted files must never be committed unencrypted
-- Cloudflare integration required for external access
 - External-DNS auto-manages DNS records for new services
 - Migration allows parallel SWAG/Kubernetes operation
 - Node management via `talos/talconfig.yaml` post-cleanup
-- Never specify explicit timeouts, intervals, or other timing related settings unless there's an
-  explicit reason for them to solve an issue.
 
 ## How to use tools
 
@@ -170,16 +152,18 @@ Original template-based deployment using Jinja2 templates in `templates/` direct
 ### SOPS Commands
 
 #### Set values in encrypted files
+
 ```bash
 # Syntax: sops set file index value
-sops set secret.sops.yaml '["stringData"]["KEY_NAME"]' "value"
+sops set secret.sops.yaml '["stringData"]["KEY_NAME"]' '"value"'
 
 # Examples:
-sops set secret.sops.yaml '["stringData"]["API_KEY"]' "abc123"
-sops set secret.sops.yaml '["stringData"]["WIREGUARD_PRIVATE_KEY"]' "wOEI9rqq..."
+sops set secret.sops.yaml '["stringData"]["API_KEY"]' '"abc123"'
+sops set secret.sops.yaml '["stringData"]["WIREGUARD_PRIVATE_KEY"]' '"wOEI9rqq..."'
 ```
 
 #### Remove values from encrypted files
+
 ```bash
 # Syntax: sops unset file index
 sops unset secret.sops.yaml '["stringData"]["KEY_NAME"]'
@@ -189,7 +173,8 @@ sops unset secret.sops.yaml '["stringData"]["MULLVAD_ACCOUNT"]'
 sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 ```
 
-#### Key points:
+#### Key points
+
 - Index format: `'["section"]["key"]'` for YAML files
 - Values must be JSON-encoded strings
 - Always use single quotes around index path
