@@ -1,6 +1,10 @@
 # App Scout - Kubernetes Migration Discovery Tool
 
-**Find real-world Kubernetes deployments to guide your Docker Compose migrations.**
+App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.dev), designed to
+automate the discovery of real-world Kubernetes deployment patterns. This tool enables AI-assisted
+analysis and automated searches across thousands of GitOps repositories, making it ideal for
+migrating Docker Compose services to Kubernetes and learning deployment best practices from
+production environments.
 
 ## Quick Start
 
