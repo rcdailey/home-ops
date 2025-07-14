@@ -3,7 +3,7 @@
 ## Status
 
 - **Phase**: Implementation
-- **Progress**: 16/275 items complete (Phase 1 Infrastructure Foundation complete, qBittorrent authentication operational)
+- **Progress**: 17/275 items complete (Phase 1 Infrastructure Foundation complete, qBittorrent fully configured and operational)
 
 ## Objective
 
@@ -11,7 +11,7 @@ Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes 
 
 ## Current Focus
 
-qBittorrent forward authentication successfully implemented with Authentik embedded outpost and Envoy Gateway SecurityPolicy. Authentication flow operational with OAuth redirects for unauthenticated users and proper session handling for authenticated access. VPN connectivity maintained with ProtonVPN WireGuard and active port forwarding.
+qBittorrent deployment complete with optimized configuration applied via WebUI. Production-ready setup includes VueTorrent UI, 20MB/s speed limits, 4:1 share ratios, 12-hour seeding limits, proper download paths, and subnet authentication whitelist. Forward authentication operational with Authentik, VPN connectivity stable with ProtonVPN port forwarding.
 
 ## Task Checklist
 
@@ -60,6 +60,7 @@ qBittorrent forward authentication successfully implemented with Authentik embed
 - [x] Mount NFS downloads (unraid-media-pv) and Ceph config storage
 - [x] Configure VPN credentials and validate Wireguard connectivity
 - [x] Configure SecurityPolicy for Envoy Gateway forward authentication
+- [x] Apply optimized configuration via WebUI (VueTorrent, speed limits, share ratios, paths)
 - [ ] Deploy SABnzbd for usenet downloads
 - [ ] Configure for usenet provider integration
 - [ ] Test download and processing pipeline
@@ -128,10 +129,10 @@ qBittorrent forward authentication successfully implemented with Authentik embed
 
 ## Next Steps
 
-1. Production cutover to torrent.dailey.app after authentication validation
-2. Begin next media infrastructure service (SABnzbd or Prowlarr)
-3. Apply forward authentication pattern to additional applications
-4. Continue Phase 3 media infrastructure deployment
+1. Begin next media infrastructure service (SABnzbd or Prowlarr)
+2. Apply forward authentication pattern to additional applications
+3. Continue Phase 3 media infrastructure deployment
+4. Consider production cutover to torrent.dailey.app after stability validation
 
 ## Resources
 
@@ -266,6 +267,18 @@ values:
 **Timeline Estimates**: Total 8-12 weeks across 6 phases with learning and testing time
 
 ## Progress & Context Log
+
+### 2025-07-14 - qBittorrent Configuration Complete
+
+Completed qBittorrent deployment with optimized configuration applied through WebUI manual settings. Service now production-ready with all performance and functionality enhancements configured.
+
+Configuration Applied: Updated WebUI settings to match optimized Docker configuration including username change to 'voidpointer', VueTorrent alternative UI enabled (/app/vuetorrent), speed limits set to 20MB/s up/down, share ratio limiting at 4:1, seeding time limit 12 hours. Download paths configured: /media/.torrents/complete and /media/.torrents/incomplete. Authentication subnet whitelist 192.168.1.0/24 enabled, queuing system disabled for optimal performance.
+
+Config Migration Approach: Direct WebUI configuration chosen over file copying due to qBittorrent overwriting config files on graceful shutdown. Manual configuration ensures persistence through container restarts while maintaining all optimizations from previous Docker deployment. Authentication credentials now use container-specific password rather than inherited hash.
+
+Operational Status: qBittorrent fully functional with forward authentication via Authentik, VPN connectivity through ProtonVPN WireGuard, automatic port forwarding (current port 51967), and optimized performance settings. Ready for production workloads with all Docker Compose feature parity achieved.
+
+Deployment Pattern: Established complete qBittorrent deployment template including VPN integration, forward authentication, performance optimization, and manual configuration workflow. Pattern ready for replication across additional torrent services if needed.
 
 ### 2025-07-14 - qBittorrent Forward Authentication Success
 
