@@ -1,0 +1,15 @@
+---
+apiVersion: nfd.k8s-sigs.io/v1alpha1
+kind: NodeFeatureRule
+metadata:
+  name: intel-gpu-rule
+spec:
+  rules:
+    - name: intel-gpu
+      labels:
+        feature.node.kubernetes.io/custom-intel-gpu: "true"
+      matchFeatures:
+        - feature: pci.device
+          matchExpressions:
+            vendor: {op: In, value: ["8086"]}
+            class: {op: In, value: ["0300"]}
