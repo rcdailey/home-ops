@@ -73,12 +73,11 @@ configuration.
 
 ## Operations
 
-```bash
-# Setup: mise trust && mise install
-# Sync: task reconcile
-# Node config: task talos:apply-node IP=192.168.1.50 MODE=auto
-# Upgrades: task talos:upgrade-node IP=192.168.1.50
-```
+- **Setup**: `mise trust && mise install`
+- **Sync**: `task reconcile`
+- **Node config**: `task talos:apply-node IP=192.168.1.50 MODE=auto`
+- **Upgrades**: `task talos:upgrade-node IP=192.168.1.50`
+- **Image changes**: `talosctl upgrade --image` (apply-config only updates config, not running image)
 
 ## Key Files
 
