@@ -14,16 +14,16 @@ spec:
     secretRef:
       name: sops-age
   healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: *app
-      namespace: *namespace
+  - apiVersion: helm.toolkit.fluxcd.io/v2
+    kind: HelmRelease
+    name: *app
+    namespace: *namespace
   interval: 1h
   path: ./kubernetes/apps/flux-system/flux-operator/app
   postBuild:
     substituteFrom:
-      - name: cluster-secrets
-        kind: Secret
+    - name: cluster-secrets
+      kind: Secret
   prune: true
   retryInterval: 2m
   sourceRef:

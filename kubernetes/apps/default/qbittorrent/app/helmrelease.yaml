@@ -39,14 +39,14 @@ spec:
               FIREWALL_VPN_INPUT_PORTS: ""
               BLOCK_IPV6: "on"
             envFrom:
-              - secretRef:
-                  name: qbittorrent-secret
+            - secretRef:
+                name: qbittorrent-secret
             restartPolicy: Always
             securityContext:
               privileged: true
               capabilities:
                 add:
-                  - NET_ADMIN
+                - NET_ADMIN
 
         containers:
           app:
@@ -58,8 +58,8 @@ spec:
               UMASK: "022"
               QBT_WEBUI_PORT: &port 8080
             envFrom:
-              - secretRef:
-                  name: qbittorrent-secret
+            - secretRef:
+                name: qbittorrent-secret
             probes:
               liveness:
                 enabled: true
@@ -84,7 +84,7 @@ spec:
               readOnlyRootFilesystem: true
               capabilities:
                 drop:
-                  - ALL
+                - ALL
 
           port-forward:
             image:
@@ -106,7 +106,7 @@ spec:
               readOnlyRootFilesystem: true
               capabilities:
                 drop:
-                  - ALL
+                - ALL
 
     service:
       app:
@@ -123,14 +123,14 @@ spec:
         advancedMounts:
           qbittorrent:
             app:
-              - path: /config
+            - path: /config
 
       empty-config:
         type: emptyDir
         advancedMounts:
           qbittorrent:
             port-forward:
-              - path: /config
+            - path: /config
 
       media:
         type: persistentVolumeClaim
@@ -138,7 +138,7 @@ spec:
         advancedMounts:
           qbittorrent:
             app:
-              - path: /media
+            - path: /media
 
       tun:
         type: hostPath
@@ -146,4 +146,4 @@ spec:
         advancedMounts:
           qbittorrent:
             gluetun:
-              - path: /dev/net/tun
+            - path: /dev/net/tun

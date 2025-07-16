@@ -32,5 +32,5 @@ spec:
     remediation:
       retries: 3
   valuesFrom:
-    - kind: ConfigMap
-      name: rook-ceph-operator-values
+  - kind: ConfigMap
+    name: rook-ceph-operator-values

@@ -28,8 +28,8 @@ spec:
               tag: 0.25.0
               pullPolicy: IfNotPresent
             args:
-              - -shared-dev-num
-              - "4"
+            - -shared-dev-num
+            - "4"
             resources:
               requests:
                 cpu: 15m
@@ -43,28 +43,28 @@ spec:
           nodeSelector:
             feature.node.kubernetes.io/custom-intel-gpu: "true"
           tolerations:
-            - effect: NoSchedule
-              operator: Exists
-            - effect: NoExecute
-              operator: Exists
+          - effect: NoSchedule
+            operator: Exists
+          - effect: NoExecute
+            operator: Exists
     persistence:
       devfs:
         type: hostPath
         hostPath: /dev/dri
         hostPathType: Directory
         globalMounts:
-          - path: /dev/dri
-            readOnly: true
+        - path: /dev/dri
+          readOnly: true
       sysfs:
         type: hostPath
         hostPath: /sys/class/drm
         hostPathType: Directory
         globalMounts:
-          - path: /sys/class/drm
-            readOnly: true
+        - path: /sys/class/drm
+          readOnly: true
       kubeletsockets:
         type: hostPath
         hostPath: /var/lib/kubelet/device-plugins
         hostPathType: Directory
         globalMounts:
-          - path: /var/lib/kubelet/device-plugins
+        - path: /var/lib/kubelet/device-plugins

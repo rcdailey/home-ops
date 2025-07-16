@@ -10,11 +10,11 @@ metadata:
 spec:
   hostnames: ["torrent-test.${SECRET_DOMAIN}"]
   parentRefs:
-    - name: external
-      namespace: network
-      sectionName: https
+  - name: external
+    namespace: network
+    sectionName: https
   rules:
-    - backendRefs:
-        - name: qbittorrent
-          namespace: default
-          port: 8080
+  - backendRefs:
+    - name: qbittorrent
+      namespace: default
+      port: 8080

@@ -14,9 +14,9 @@ spec:
     gateway.envoyproxy.io/owning-gateway-name: external
     gateway.envoyproxy.io/owning-gateway-namespace: network
   ports:
-    - name: http
-      port: 80
-      targetPort: 10080
-    - name: https
-      port: 443
-      targetPort: 10443
+  - name: http
+    port: 80
+    targetPort: 10080
+  - name: https
+    port: 443
+    targetPort: 10443

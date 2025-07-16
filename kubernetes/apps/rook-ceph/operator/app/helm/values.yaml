@@ -1,6 +1,6 @@
+---
 # Rook Ceph Operator Configuration
 # Basic operator configuration with monitoring enabled
----
 monitoring:
   enabled: true
 

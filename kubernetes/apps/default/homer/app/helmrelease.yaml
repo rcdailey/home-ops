@@ -42,7 +42,7 @@ spec:
               allowPrivilegeEscalation: false
               capabilities:
                 drop:
-                  - ALL
+                - ALL
               readOnlyRootFilesystem: true
 
     defaultPodOptions:
@@ -66,13 +66,13 @@ spec:
         name: homer-config
         type: configMap
         globalMounts:
-          - path: /www/assets/config.yml
-            subPath: config.yml
+        - path: /www/assets/config.yml
+          subPath: config.yml
 
     route:
       app:
         hostnames: ["home.${SECRET_DOMAIN}"]
         parentRefs:
-          - name: external
-            namespace: network
-            sectionName: https
+        - name: external
+          namespace: network
+          sectionName: https

@@ -3,14 +3,14 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - ./helmrelease.yaml
+- ./helmrelease.yaml
 configMapGenerator:
-  - name: homer-config
-    files:
-      - config/config.yml
+- name: homer-config
+  files:
+  - config/config.yml
 generatorOptions:
   disableNameSuffixHash: true
 labels:
-  - pairs:
-      app.kubernetes.io/name: homer
-      app.kubernetes.io/instance: homer
+- pairs:
+    app.kubernetes.io/name: homer
+    app.kubernetes.io/instance: homer

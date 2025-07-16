@@ -1,6 +1,6 @@
+---
 # Rook Ceph Cluster Configuration
 # 3-node cluster with device selectors for each node
----
 monitoring:
   enabled: true
   createPrometheusRules: true

@@ -15,8 +15,8 @@ spec:
         name: rook-ceph
         namespace: rook-ceph
   dependsOn:
-    - name: rook-ceph-operator
-      namespace: rook-ceph
+  - name: rook-ceph-operator
+    namespace: rook-ceph
   install:
     remediation:
       retries: -1
@@ -25,5 +25,5 @@ spec:
     remediation:
       retries: 3
   valuesFrom:
-    - kind: ConfigMap
-      name: rook-ceph-cluster-values
+  - kind: ConfigMap
+    name: rook-ceph-cluster-values

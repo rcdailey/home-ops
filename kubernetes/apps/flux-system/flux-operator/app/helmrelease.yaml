@@ -32,5 +32,5 @@ spec:
       strategy: rollback
       retries: 3
   valuesFrom:
-    - kind: ConfigMap
-      name: flux-operator-values
+  - kind: ConfigMap
+    name: flux-operator-values

@@ -10,8 +10,8 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: node-feature-discovery
-      namespace: kube-system
+  - name: node-feature-discovery
+    namespace: kube-system
   interval: 1h
   path: ./kubernetes/apps/kube-system/intel-gpu-plugin/app
   prune: true
