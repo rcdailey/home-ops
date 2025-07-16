@@ -17,8 +17,8 @@ spec:
   path: ./kubernetes/apps/rook-ceph/operator/app
   postBuild:
     substituteFrom:
-      - name: cluster-secrets
-        kind: Secret
+    - name: cluster-secrets
+      kind: Secret
   prune: true
   retryInterval: 2m
   sourceRef:

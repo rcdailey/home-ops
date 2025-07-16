@@ -15,5 +15,5 @@ spec:
   wait: false
   postBuild:
     substituteFrom:
-      - kind: Secret
-        name: cluster-secrets
+    - kind: Secret
+      name: cluster-secrets

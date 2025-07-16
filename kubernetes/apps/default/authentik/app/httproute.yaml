@@ -9,11 +9,11 @@ metadata:
 spec:
   hostnames: ["auth-test.${SECRET_DOMAIN}"]
   parentRefs:
-    - name: external
-      namespace: network
-      sectionName: https
+  - name: external
+    namespace: network
+    sectionName: https
   rules:
-    - backendRefs:
-        - name: authentik-server
-          namespace: default
-          port: 80
+  - backendRefs:
+    - name: authentik-server
+      namespace: default
+      port: 80

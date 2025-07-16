@@ -35,15 +35,15 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: qbittorrent-secrets
+  - name: qbittorrent-secrets
   interval: 30m
   path: ./kubernetes/apps/default/qbittorrent/app
   postBuild:
     substituteFrom:
-      - name: cluster-secrets
-        kind: Secret
-      - name: qbittorrent-secret
-        kind: Secret
+    - name: cluster-secrets
+      kind: Secret
+    - name: qbittorrent-secret
+      kind: Secret
   prune: true
   retryInterval: 1m
   sourceRef:

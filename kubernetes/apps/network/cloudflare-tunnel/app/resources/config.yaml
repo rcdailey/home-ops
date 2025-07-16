@@ -3,8 +3,8 @@ originRequest:
   originServerName: "external.${SECRET_DOMAIN}"
 
 ingress:
-  - hostname: "${SECRET_DOMAIN}"
-    service: &svc https://external-gateway.network.svc.cluster.local
-  - hostname: "*.${SECRET_DOMAIN}"
-    service: *svc
-  - service: http_status:404
+- hostname: "${SECRET_DOMAIN}"
+  service: &svc https://external-gateway.network.svc.cluster.local
+- hostname: "*.${SECRET_DOMAIN}"
+  service: *svc
+- service: http_status:404

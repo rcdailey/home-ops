@@ -7,15 +7,15 @@ metadata:
 spec:
   hostnames: ["flux-webhook.${SECRET_DOMAIN}"]
   parentRefs:
-    - name: external
-      namespace: network
-      sectionName: https
+  - name: external
+    namespace: network
+    sectionName: https
   rules:
-    - backendRefs:
-        - name: webhook-receiver
-          namespace: flux-system
-          port: 80
-      matches:
-        - path:
-            type: PathPrefix
-            value: /hook/
+  - backendRefs:
+    - name: webhook-receiver
+      namespace: flux-system
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /hook/

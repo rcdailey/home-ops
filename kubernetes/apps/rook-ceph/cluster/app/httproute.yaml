@@ -6,12 +6,12 @@ metadata:
   namespace: rook-ceph
 spec:
   hostnames:
-    - ceph.${SECRET_DOMAIN}
+  - ceph.${SECRET_DOMAIN}
   parentRefs:
-    - name: internal
-      namespace: network
-      sectionName: https
+  - name: internal
+    namespace: network
+    sectionName: https
   rules:
-    - backendRefs:
-        - name: rook-ceph-mgr-dashboard
-          port: 7000
+  - backendRefs:
+    - name: rook-ceph-mgr-dashboard
+      port: 7000

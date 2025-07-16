@@ -10,10 +10,10 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-production
     solvers:
-      - dns01:
-          cloudflare:
-            apiTokenSecretRef:
-              name: cert-manager-secret
-              key: api-token
-        selector:
-          dnsZones: ["${SECRET_DOMAIN}"]
+    - dns01:
+        cloudflare:
+          apiTokenSecretRef:
+            name: cert-manager-secret
+            key: api-token
+      selector:
+        dnsZones: ["${SECRET_DOMAIN}"]

@@ -14,14 +14,14 @@ spec:
     secretRef:
       name: sops-age
   dependsOn:
-    - name: rook-ceph-operator
-      namespace: rook-ceph
+  - name: rook-ceph-operator
+    namespace: rook-ceph
   interval: 1h
   path: ./kubernetes/apps/rook-ceph/cluster/app
   postBuild:
     substituteFrom:
-      - name: cluster-secrets
-        kind: Secret
+    - name: cluster-secrets
+      kind: Secret
   prune: true
   retryInterval: 2m
   sourceRef:

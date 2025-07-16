@@ -91,9 +91,30 @@ validate_manifest() {
     fi
 }
 
+# Check Kubernetes connectivity
+check_kubectl_connection() {
+    echo "INFO - Checking Kubernetes cluster connectivity..."
+
+    if ! command -v kubectl >/dev/null 2>&1; then
+        echo "ERROR - kubectl command not found"
+        exit 1
+    fi
+
+    if ! kubectl cluster-info >/dev/null 2>&1; then
+        echo "ERROR - Cannot connect to Kubernetes cluster"
+        echo "       Ensure kubeconfig is properly configured and cluster is accessible"
+        exit 1
+    fi
+
+    echo "INFO - Kubernetes cluster connection verified"
+}
+
 # Main execution
 main() {
     echo "Starting Kubernetes manifest validation..."
+
+    # Check cluster connectivity before proceeding
+    check_kubectl_connection
 
     # Load template variables once
     load_template_vars

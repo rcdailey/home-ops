@@ -7,15 +7,15 @@ spec:
   capacity:
     storage: 100Ti
   accessModes:
-    - ReadWriteMany
+  - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    server: 192.168.1.58  # Nezuko IP
+    server: 192.168.1.58 # Nezuko IP
     path: /mnt/user/media
   mountOptions:
-    - nfsvers=4.1
-    - hard
-    - intr
+  - nfsvers=4.1
+  - hard
+  - intr
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -25,15 +25,15 @@ spec:
   capacity:
     storage: 10Ti
   accessModes:
-    - ReadWriteMany
+  - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    server: 192.168.1.58  # Nezuko IP
+    server: 192.168.1.58 # Nezuko IP
     path: /mnt/user/photos
   mountOptions:
-    - nfsvers=4.1
-    - hard
-    - intr
+  - nfsvers=4.1
+  - hard
+  - intr
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -43,12 +43,12 @@ spec:
   capacity:
     storage: 5Ti
   accessModes:
-    - ReadWriteMany
+  - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    server: 192.168.1.58  # Nezuko IP
+    server: 192.168.1.58 # Nezuko IP
     path: /mnt/user/filerun
   mountOptions:
-    - nfsvers=4.1
-    - hard
-    - intr
+  - nfsvers=4.1
+  - hard
+  - intr
