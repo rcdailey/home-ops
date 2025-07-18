@@ -3,17 +3,13 @@ repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0
   hooks:
-  - id: check-yaml
-    name: Check YAML syntax
-    description: Validates YAML files for syntax errors
-    files: '\.ya?ml$'
-    args: [--allow-multiple-documents]
   - id: check-merge-conflict
     name: Merge Conflict Check
   - id: trailing-whitespace
     name: Trim Whitespace
   - id: end-of-file-fixer
     name: Fix End of Files
+
 - repo: local
   hooks:
   - id: check-dependencies
@@ -43,13 +39,15 @@ repos:
     language: script
     files: '^kubernetes/apps/.*/(ks\.yaml|secrets/.*\.sops\.yaml|secrets/kustomization\.yaml)$'
     description: Ensures SOPS secrets have proper decryption configuration in Kustomizations
+
 - repo: https://github.com/google/yamlfmt
-  rev: v0.13.0
+  rev: v0.17.2
   hooks:
   - id: yamlfmt
     name: Format YAML with yamlfmt
     description: Formats YAML files with Google's yamlfmt tool
     files: '^kubernetes/.*\.ya?ml$'
+
 - repo: https://github.com/adrienverge/yamllint
   rev: v1.37.1
   hooks:
@@ -58,3 +56,11 @@ repos:
     description: Lints YAML files for formatting and syntax issues
     args: [-c=.yamllint.yaml]
     files: '\.ya?ml$'
+
+# Security scanning
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.5.0
+  hooks:
+  - id: detect-secrets
+    args: [--baseline, .secrets.baseline]
+    exclude: ^home/dot_ssh/
