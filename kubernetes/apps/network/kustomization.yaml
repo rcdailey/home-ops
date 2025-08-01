@@ -8,5 +8,7 @@ components:
 resources:
 - ./cloudflare-dns/ks.yaml
 - ./cloudflare-tunnel/ks.yaml
+- ./dns-gateway/ks.yaml
 - ./envoy-gateway/ks.yaml
-- ./k8s-gateway/ks.yaml
+- ./technitium-dns/ks.yaml
+- ./technitium-external-dns/ks.yaml

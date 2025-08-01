@@ -127,3 +127,11 @@ spec:
         existingClaim: mcp-memory-service-data
         globalMounts:
         - path: /app/data
+
+    route:
+      app:
+        hostnames: ["mcp-memory.${SECRET_DOMAIN}"]
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https

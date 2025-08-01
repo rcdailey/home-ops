@@ -2,7 +2,7 @@
   "mcpServers": {
     "k8s": {
       "command": "npx",
-      "args": ["mcp-server-kubernetes"]
+      "args": ["-y", "mcp-server-kubernetes"]
     }
   }
 }
