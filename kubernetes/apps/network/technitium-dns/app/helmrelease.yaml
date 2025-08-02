@@ -112,5 +112,5 @@ spec:
           sectionName: https
         rules:
         - backendRefs:
-          - name: app
+          - name: technitium-dns
             port: 5380
