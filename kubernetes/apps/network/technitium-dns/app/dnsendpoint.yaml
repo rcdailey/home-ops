@@ -3,11 +3,14 @@
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
-  name: cloudflare-tunnel
+  name: gateway-a-records
   labels:
-    dns-provider: cloudflare
+    dns-provider: technitium
 spec:
   endpoints:
+  - dnsName: "internal.${SECRET_DOMAIN}"
+    recordType: A
+    targets: ["192.168.1.72"]
   - dnsName: "external.${SECRET_DOMAIN}"
-    recordType: CNAME
-    targets: ["6b689c5b-81a9-468e-9019-5892b3390500.cfargotunnel.com"]
+    recordType: A
+    targets: ["192.168.1.73"]

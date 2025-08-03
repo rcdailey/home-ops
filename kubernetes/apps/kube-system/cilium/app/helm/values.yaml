@@ -22,7 +22,7 @@ envoy:
   prometheus:
     serviceMonitor:
       enabled: true
-gatewayAPI:
+gatewayAPI: # Disabled in favor of Envoy Gateway for Authentik forward auth support
   enabled: false
 hubble:
   enabled: false

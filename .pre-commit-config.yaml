@@ -63,4 +63,4 @@ repos:
   hooks:
   - id: detect-secrets
     args: [--baseline, .secrets.baseline]
-    exclude: ^home/dot_ssh/
+    exclude: ^(home/dot_ssh/|docs/external/)

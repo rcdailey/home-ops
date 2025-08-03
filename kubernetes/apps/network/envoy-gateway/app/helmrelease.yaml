@@ -37,3 +37,7 @@ spec:
       envoyGateway:
         gateway:
           controllerName: gateway.envoyproxy.io/gatewayclass-controller
+        provider:
+          kubernetes:
+            envoyService:
+              type: LoadBalancer

@@ -132,7 +132,7 @@ qBittorrent deployment complete with optimized configuration applied via WebUI. 
 1. Begin next media infrastructure service (SABnzbd or Prowlarr)
 2. Apply forward authentication pattern to additional applications
 3. Continue Phase 3 media infrastructure deployment
-4. Consider production cutover to torrent.dailey.app after stability validation
+4. Consider production cutover to torrent.${SECRET_DOMAIN} after stability validation
 
 ## Resources
 
@@ -161,7 +161,7 @@ qBittorrent deployment complete with optimized configuration applied via WebUI. 
 
 **Storage Configuration**: NFS unraid-media-pv (100Ti) for downloads at /media/.torrents subpath, Rook Ceph ceph-block StorageClass for configuration persistence. Mirrors Docker mapping with enhanced replication and persistence.
 
-**Deployment Components**: bjw-s app-template chart, default namespace, ProtonVPN WireGuard provider with manual key configuration, automatic port forwarding via NAT-PMP, simplified DNS architecture (no dnsdist), torrent-test.dailey.app initial subdomain.
+**Deployment Components**: bjw-s app-template chart, default namespace, ProtonVPN WireGuard provider with manual key configuration, automatic port forwarding via NAT-PMP, simplified DNS architecture (no dnsdist), torrent-test.${SECRET_DOMAIN} initial subdomain.
 
 #### Authentik Migration Plan
 
@@ -232,9 +232,9 @@ values:
 - DNS Gateway: 192.168.1.71 (k8s_gateway)
 - Internal Gateway: 192.168.1.72 (Envoy Gateway - internal services)
 - External Gateway: 192.168.1.73 (Envoy Gateway - external/public services)
-- Domain: dailey.app, Test Domain: *.test.dailey.app
+- Domain: ${SECRET_DOMAIN}, Test Domain: *.test.${SECRET_DOMAIN}
 - Cloudflare Tunnel ID: 6b689c5b-81a9-468e-9019-5892b3390500
-- Tunnel Target: external.dailey.app → 192.168.1.73
+- Tunnel Target: external.${SECRET_DOMAIN} → 192.168.1.73
 
 ### Node Details
 
@@ -288,11 +288,11 @@ Root Cause Analysis: Initial authentication failures caused by missing headersTo
 
 Configuration Solution: Added critical headersToExtAuth field to SecurityPolicy with cookie, x-forwarded-host, and x-forwarded-proto headers. Updated headersToBackend to include set-cookie and corrected header names to match Authentik specifications. Configured Authentik proxy provider in "Forward auth (domain level)" mode with proper external/internal host settings.
 
-Authentik Integration: Created dedicated proxy provider for qBittorrent with domain-level forward auth mode, external host https://torrent-test.dailey.app, internal host http://qbittorrent.default.svc.cluster.local:8080. Configured embedded outpost with authentik_host set to https://auth-test.dailey.app and assigned qBittorrent application.
+Authentik Integration: Created dedicated proxy provider for qBittorrent with domain-level forward auth mode, external host https://torrent-test.${SECRET_DOMAIN}, internal host http://qbittorrent.default.svc.cluster.local:8080. Configured embedded outpost with authentik_host set to https://auth-test.${SECRET_DOMAIN} and assigned qBittorrent application.
 
 Technical Implementation: SecurityPolicy targeting ak-outpost-authentik-embedded-outpost:9000 service with correct /outpost.goauthentik.io/auth/envoy endpoint. Headers configuration enables session cookie forwarding and proper host detection for Authentik provider matching. Authentication flow: unauthenticated requests → 302 OAuth redirect → Authentik login → authenticated access to qBittorrent.
 
-Validation Results: Forward authentication operational with proper OAuth flow redirecting unauthenticated users to auth-test.dailey.app login. Post-authentication access to torrent-test.dailey.app succeeds with user context headers forwarded to qBittorrent. VPN connectivity maintained through ProtonVPN WireGuard with port forwarding active.
+Validation Results: Forward authentication operational with proper OAuth flow redirecting unauthenticated users to auth-test.${SECRET_DOMAIN} login. Post-authentication access to torrent-test.${SECRET_DOMAIN} succeeds with user context headers forwarded to qBittorrent. VPN connectivity maintained through ProtonVPN WireGuard with port forwarding active.
 
 Pattern Established: Envoy Gateway SecurityPolicy + Authentik embedded outpost integration provides reusable authentication pattern for additional applications. Configuration template ready for SABnzbd, Prowlarr, and other media infrastructure services requiring forward authentication.
 
@@ -338,17 +338,17 @@ Forward Auth Architecture Design: Researched Envoy Gateway SecurityPolicy extern
 
 VPN Architecture Clarification: Developed simplified visualization of 4-container pod concept. Single pod network namespace shared by dnsdist (DNS proxy), gluetun (VPN tunnel), qbittorrent (application), port-forward (sync). VPN container establishes tunnel first, all subsequent containers automatically route through VPN. Eliminates complex networking - containers share localhost communication.
 
-Authentik Integration Strategy: Current setup uses auth-test.dailey.app subdomain for testing, production auth.dailey.app planned. Outpost configuration required for /outpost.goauthentik.io/auth forward auth endpoint. Application and provider setup needed in Authentik for domain-level protection. Policy configuration determines access control for qBittorrent.
+Authentik Integration Strategy: Current setup uses auth-test.${SECRET_DOMAIN} subdomain for testing, production auth.${SECRET_DOMAIN} planned. Outpost configuration required for /outpost.goauthentik.io/auth forward auth endpoint. Application and provider setup needed in Authentik for domain-level protection. Policy configuration determines access control for qBittorrent.
 
 Directory Structure Refinement: Corrected to follow repository conventions - kubernetes/apps/default/qbittorrent/ structure with app/ (helmrelease, httproute, securitypolicy), secrets/ (secret.sops.yaml), and ks.yaml at root. Eliminates proposed media namespace and separate security directory. SOPS encryption for Mullvad VPN credentials following established pattern.
 
-Subdomain Correction: Updated from torrent.dailey.app to torrent-test.dailey.app for initial deployment testing, matching auth-test pattern. Production cutover to torrent.dailey.app after validation. External gateway usage confirmed (192.168.1.73) for public-facing services requiring forward authentication.
+Subdomain Correction: Updated from torrent.${SECRET_DOMAIN} to torrent-test.${SECRET_DOMAIN} for initial deployment testing, matching auth-test pattern. Production cutover to torrent.${SECRET_DOMAIN} after validation. External gateway usage confirmed (192.168.1.73) for public-facing services requiring forward authentication.
 
 ### 2025-07-12 - Cloudflare Tunnel Fix and External Access Restoration
 
-Successfully resolved external access failure for home.dailey.app by diagnosing and fixing Cloudflare tunnel configuration after Envoy Gateway migration. Root cause was outdated service reference preventing tunnel from reaching new gateway infrastructure.
+Successfully resolved external access failure for home.${SECRET_DOMAIN} by diagnosing and fixing Cloudflare tunnel configuration after Envoy Gateway migration. Root cause was outdated service reference preventing tunnel from reaching new gateway infrastructure.
 
-Tunnel Issue Diagnosis: External DNS correctly resolved home.dailey.app to Cloudflare IPs but resulted in "Bad gateway" 502 errors. Investigation revealed tunnel config still referenced obsolete cilium-gateway-external.kube-system.svc.cluster.local service which no longer existed after Envoy migration. Tunnel logs showed DNS lookup failures preventing connection to backend services.
+Tunnel Issue Diagnosis: External DNS correctly resolved home.${SECRET_DOMAIN} to Cloudflare IPs but resulted in "Bad gateway" 502 errors. Investigation revealed tunnel config still referenced obsolete cilium-gateway-external.kube-system.svc.cluster.local service which no longer existed after Envoy migration. Tunnel logs showed DNS lookup failures preventing connection to backend services.
 
 Stable Service Implementation: Created external-gateway.network.svc.cluster.local as stable service abstraction pointing to Envoy Gateway pods using selector-based targeting. Avoided fragile random hash service names and hardcoded IP addresses for maintainable configuration. Service provides consistent DNS endpoint regardless of underlying Envoy infrastructure changes.
 
@@ -398,7 +398,7 @@ Deployed CUPS print server with comprehensive troubleshooting including Docker 2
 
 ### 2025-07-06 - Authentik Migration Complete
 
-Successfully completed Authentik deployment with systematic authentication troubleshooting. Resolved PostgreSQL user password initialization and Redis authentication configuration. All components operational with HTTPRoute active at auth-test.dailey.app and admin credentials verified working.
+Successfully completed Authentik deployment with systematic authentication troubleshooting. Resolved PostgreSQL user password initialization and Redis authentication configuration. All components operational with HTTPRoute active at auth-test.${SECRET_DOMAIN} and admin credentials verified working.
 
 ### 2025-07-05 - Authentik Planning and Infrastructure Development
 

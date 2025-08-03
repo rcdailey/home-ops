@@ -64,6 +64,15 @@ Claude MUST:
   ClusterIP services with HTTPRoute
 - LoadBalancer Restrictions: NEVER create LoadBalancer services without explicit user discussion,
   reserve for core infrastructure requiring direct network access
+- Gateway IP Assignment: Use externalIPs approach for Envoy Gateway services (192.168.1.72 internal,
+  192.168.1.73 external) rather than LoadBalancer + IPAM for predictable, simple IP management
+- NEVER use executable commands for health probes.
+- External-DNS Architecture: Configure target annotations on Gateways only, never on HTTPRoutes.
+  Use gateway-httproute source exclusively. This ensures CNAME-only records via inheritance and
+  prevents A record fallbacks to LoadBalancer IPs.
+- App-Template Route Priority: Always use app-template `route` field over standalone HTTPRoute
+  when application uses app-template. Only use standalone HTTPRoute for external charts or
+  operator-managed resources. Co-locate routing configuration with application configuration.
 
 ## Repository Overview
 
@@ -98,9 +107,9 @@ configuration.
 ### Network
 
 - Network: `192.168.1.0/24`, Gateway: `192.168.1.1`, Cluster API: `192.168.1.70`
-- DNS Gateway: `192.168.1.71` (k8s_gateway)
-- Internal Gateway: `192.168.1.72` (LAN services)
-- External Gateway: `192.168.1.73` (WAN services)
+- DNS Gateway: `192.168.1.71` (Technitium DNS)
+- Internal Gateway: `192.168.1.72` (Envoy Gateway - LAN services)
+- External Gateway: `192.168.1.73` (Envoy Gateway - WAN services)
 - Cloudflare Tunnel: `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.1.73`
 
 ### Node Details
@@ -178,3 +187,4 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 - Values must be JSON-encoded strings
 - Always use single quotes around index path
 - Use `--idempotent` flag to avoid errors if key exists/doesn't exist
+q
