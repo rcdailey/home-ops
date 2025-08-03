@@ -110,9 +110,9 @@ services:
     url: https://ai.${SECRET_DOMAIN}/
     logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/librechat.svg
     tag: service
-  - name: Adguard Home
+  - name: Technitium DNS
     url: https://dns.${SECRET_DOMAIN}/
-    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/adguard-home.svg
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/technitium-dns-server.svg
     tag: service
   - name: BookStack (Wiki)
     url: https://wiki.${SECRET_DOMAIN}/

@@ -6,6 +6,7 @@ resources:
 - ./certificate.yaml
 - ./gatewayclass.yaml
 - ./helmrelease.yaml
+- ./envoyproxy-config.yaml
 - ./internal.yaml
 - ./external.yaml
 - ./external-gateway-service.yaml

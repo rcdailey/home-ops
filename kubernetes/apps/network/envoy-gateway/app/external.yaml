@@ -6,15 +6,18 @@ metadata:
   name: external
   namespace: network
   annotations:
-    external-dns.alpha.kubernetes.io/target: "external.${SECRET_DOMAIN}"
+    external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
 spec:
   gatewayClassName: envoy
-  addresses:
-  - type: IPAddress
-    value: "192.168.1.73"
   infrastructure:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "external.${SECRET_DOMAIN}"
+      # Static IP assignment via Cilium IPAM
+      lbipam.cilium.io/ips: "192.168.1.73"
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: cluster-traffic-policy
   listeners:
   - name: http
     protocol: HTTP

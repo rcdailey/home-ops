@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app cloudflare-dns
+  name: &app technitium-external-dns
 spec:
   interval: 1h
   chart:
@@ -24,24 +24,32 @@ spec:
       retries: 3
   values:
     fullnameOverride: *app
-    provider: cloudflare
+    provider: rfc2136
     env:
-    - name: CF_API_TOKEN
+    - name: EXTERNAL_DNS_RFC2136_HOST
+      value: dns-gateway.network.svc.cluster.local
+    - name: EXTERNAL_DNS_RFC2136_PORT
+      value: "53"
+    - name: EXTERNAL_DNS_RFC2136_ZONE
+      value: "${SECRET_DOMAIN}"
+    - name: EXTERNAL_DNS_RFC2136_TSIG_KEYNAME
+      value: external-dns-key
+    - name: EXTERNAL_DNS_RFC2136_TSIG_SECRET_ALG
+      value: hmac-sha256
+    - name: EXTERNAL_DNS_RFC2136_TSIG_SECRET
       valueFrom:
         secretKeyRef:
-          name: &secret cloudflare-dns-secret
-          key: api-token
+          name: &secret technitium-external-dns-secret
+          key: tsig-secret
     extraArgs:
-    - --cloudflare-dns-records-per-page=1000
-    - --cloudflare-proxied
+    - --label-filter=dns-provider=technitium
     - --crd-source-apiversion=externaldns.k8s.io/v1alpha1
     - --crd-source-kind=DNSEndpoint
-    - --gateway-name=external
     triggerLoopOnEvent: true
     policy: sync
     sources: ["crd", "gateway-httproute"]
     txtPrefix: k8s.
-    txtOwnerId: cloudflare
+    txtOwnerId: technitium
     domainFilters: ["${SECRET_DOMAIN}"]
     serviceMonitor:
       enabled: true
