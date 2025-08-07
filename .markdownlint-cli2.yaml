@@ -1,0 +1,5 @@
+config:
+  no-inline-html:
+    allowed_elements: ["br"]
+  no-trailing-spaces:
+    br_spaces: 0
