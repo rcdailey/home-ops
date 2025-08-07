@@ -1,14 +1,23 @@
-# Script Specific Rules
+# Scripts Directory Rules
 
-## Github CLI
+**IMPORTANT:** Scripts-specific directives that extend root CLAUDE.md
 
-- Favor GraphQL to batch queries as appropriate based on the requirements to improve performance.
+## Python Development
 
-## Python
+- **Dependencies**: Use virtual environments with requirements.txt
+- **App-Scout**: Reference @scripts/app-scout/README.md for deployment discovery patterns
 
-- Use black to format python scripts after changes are made
-- When using python CLI, ensure you activate the python virtual environment first.
+## GitHub CLI Optimization
 
-## Pre-Commit
+- **GraphQL Priority**: Batch queries with GraphQL over REST for performance
 
-- Pre-commit specific scripts go under @pre-commit/
+## Hook Locations
+
+- **Pre-commit scripts**: @pre-commit/ directory
+- **Available validators**: check-dependencies.sh, kustomize-build-check.sh, validate-sops-*.sh
+
+## Organization
+
+- **Common functions**: lib/common.sh
+- **Bootstrap**: Cluster initialization scripts
+- **Tools**: app-scout (K8s patterns), update-gitignore (template maintenance)
