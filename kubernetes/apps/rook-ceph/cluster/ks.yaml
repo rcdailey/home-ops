@@ -17,7 +17,7 @@ spec:
   - name: rook-ceph-operator
     namespace: rook-ceph
   interval: 1h
-  path: ./kubernetes/apps/rook-ceph/cluster/app
+  path: ./kubernetes/apps/rook-ceph/cluster
   postBuild:
     substituteFrom:
     - name: cluster-secrets

@@ -1,0 +1,26 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dns-gateway
+  namespace: dns-private
+  labels:
+    # For IP pool selector - marks this as infrastructure proxy service
+    app.kubernetes.io/component: proxy
+  annotations:
+    lbipam.cilium.io/ips: "192.168.1.71"
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  selector:
+    # For finding backend DNS pods to route traffic to
+    app.kubernetes.io/component: dns-server
+  ports:
+  - name: dns-tcp
+    port: 53
+    protocol: TCP
+    targetPort: 5353
+  - name: dns-udp
+    port: 53
+    protocol: UDP
+    targetPort: 5353
