@@ -1,0 +1,79 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrepository-source-v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: authentik
+spec:
+  interval: 1h
+  url: https://charts.goauthentik.io
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: authentik
+spec:
+  chart:
+    spec:
+      chart: authentik
+      version: 2025.6.3
+      sourceRef:
+        kind: HelmRepository
+        name: authentik
+  interval: 1h
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+    force: true
+  valuesFrom:
+  - kind: Secret
+    name: authentik-secret
+    valuesKey: AUTHENTIK_POSTGRESQL__PASSWORD
+    targetPath: postgresql.auth.password
+  values:
+    # Global configuration
+    global:
+      envFrom:
+      - secretRef:
+          name: authentik-secret
+
+    # Core Authentik configuration
+    authentik:
+      email:
+        host: ${SMTP_HOST}
+        port: ${SMTP_PORT}
+        username: ${SMTP_USER}
+        password: ${SMTP_PASSWORD}
+        use_tls: true
+        from: ${SMTP_FROM}
+      postgresql:
+        host: authentik-postgresql
+        name: authentik
+        user: authentik
+      redis:
+        host: authentik-redis-master
+
+    # PostgreSQL configuration
+    postgresql:
+      enabled: true
+      auth:
+        username: authentik
+        database: authentik
+        # PostgreSQL password injected via valuesFrom
+      primary:
+        extendedConfiguration: |
+          max_connections = 100
+        persistence:
+          enabled: true
+          storageClass: ceph-block
+          size: 8Gi
+
+    redis:
+      enabled: true
+
+    # Server configuration - disable ingress as we'll use HTTPRoute
+    server:
+      ingress:
+        enabled: false

@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1h
-  path: ./kubernetes/apps/default/homer/app
+  path: ./kubernetes/apps/default/homer
   prune: true
   sourceRef:
     kind: GitRepository

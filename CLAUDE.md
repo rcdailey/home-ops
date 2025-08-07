@@ -15,8 +15,9 @@ Claude MUST:
   reconcile.
 - Task Commands: Prioritize task commands over direct CLI, check Taskfile.yaml first, explain task
   purpose
-- MCP Servers: Prioritize MCP over CLI for Kubernetes operations, attempt 3x before CLI fallback,
-  use flux-server/k8s-server
+- MCP Servers: Prioritize MCP over CLI for Kubernetes operations
+- Favor defaults over being unnecessarily explicit in configuration: this yields cleaner, less
+  verbose, easier to maintain YAML
 
 ## Development & Deployment Protocols
 
@@ -55,24 +56,30 @@ Claude MUST:
   maintain independent isolation
 - Secret Management: Keep secrets isolated per application, use centralized only for truly shared
   config, use `sops unset` for removal, use `sops --set` for modification
+- Secret Integration Methods (priority order): 1) `envFrom` at app layer, 2) `env.valueFrom` for
+  specific values, 3) HelmRelease `valuesFrom` for Helm chart values, 4) Flux variable substitution
+  with `postBuild.substituteFrom` as last resort
+- Helm Chart Analysis: Always run `helm show values <chart-name>/<chart> --version <version>` to
+  check for `envFrom`, `env`, or other secret integration capabilities before choosing method
 
 ## Network & Access Protocols
 
 Claude MUST:
 
-- HTTPRoute Preference: Always favor HTTPRoute over Ingress, route through existing gateways, use
-  ClusterIP services with HTTPRoute
+- HTTPRoute Preference: Always favor HTTPRoute over Ingress and route through existing gateways.
 - LoadBalancer Restrictions: NEVER create LoadBalancer services without explicit user discussion,
   reserve for core infrastructure requiring direct network access
 - Gateway IP Assignment: Use externalIPs approach for Envoy Gateway services (192.168.1.72 internal,
   192.168.1.73 external) rather than LoadBalancer + IPAM for predictable, simple IP management
 - NEVER use executable commands for health probes.
-- External-DNS Architecture: Configure target annotations on Gateways only, never on HTTPRoutes.
-  Use gateway-httproute source exclusively. This ensures CNAME-only records via inheritance and
-  prevents A record fallbacks to LoadBalancer IPs.
-- App-Template Route Priority: Always use app-template `route` field over standalone HTTPRoute
-  when application uses app-template. Only use standalone HTTPRoute for external charts or
+- External-DNS Architecture: Configure target annotations on Gateways only, never on HTTPRoutes. Use
+  gateway-httproute source exclusively. This ensures CNAME-only records via inheritance and prevents
+  A record fallbacks to LoadBalancer IPs.
+- App-Template Route Priority: Always use app-template `route` field over standalone HTTPRoute when
+  application uses app-template. Only use standalone HTTPRoute for external charts or
   operator-managed resources. Co-locate routing configuration with application configuration.
+- Use the shortest resolvable hostname for Kubernetes services based on namespace scope. Do not use
+  fully qualified domain names (FQDNs) when shorter forms will resolve correctly.
 
 ## Repository Overview
 
@@ -86,7 +93,8 @@ configuration.
 - **Sync**: `task reconcile`
 - **Node config**: `task talos:apply-node IP=192.168.1.50 MODE=auto`
 - **Upgrades**: `task talos:upgrade-node IP=192.168.1.50`
-- **Image changes**: `talosctl upgrade --image` (apply-config only updates config, not running image)
+- **Image changes**: `talosctl upgrade --image` (apply-config only updates config, not running
+  image)
 
 ## Key Files
 
@@ -187,4 +195,3 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 - Values must be JSON-encoded strings
 - Always use single quotes around index path
 - Use `--idempotent` flag to avoid errors if key exists/doesn't exist
-q

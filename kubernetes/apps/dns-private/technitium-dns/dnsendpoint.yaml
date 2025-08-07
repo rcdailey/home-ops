@@ -1,0 +1,17 @@
+# Phase 3 migration: DNSEndpoint for gateway A records
+# This DNSEndpoint contains private IPs that Cloudflare external-dns cannot proxy
+# It is processed by Technitium external-dns in dns-private namespace
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/externaldns.k8s.io/dnsendpoint_v1alpha1.json
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: gateway-a-records
+spec:
+  endpoints:
+  - dnsName: "internal.${SECRET_DOMAIN}"
+    recordType: A
+    targets: ["192.168.1.72"]
+  - dnsName: "external.${SECRET_DOMAIN}"
+    recordType: A
+    targets: ["192.168.1.73"]

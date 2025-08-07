@@ -1,0 +1,31 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app external-dns-httproute
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.17.0
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+        namespace: flux-system
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  valuesFrom:
+  - kind: ConfigMap
+    name: external-dns-shared-values
+    valuesKey: values.yaml
+  values:
+    fullnameOverride: *app
+    sources: ["gateway-httproute"]

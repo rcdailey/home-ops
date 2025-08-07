@@ -2,7 +2,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app qbittorrent-secrets
+  name: &app qbittorrent
   namespace: &namespace default
 spec:
   commonMetadata:
@@ -13,7 +13,11 @@ spec:
     secretRef:
       name: sops-age
   interval: 1h
-  path: ./kubernetes/apps/default/qbittorrent/secrets
+  path: ./kubernetes/apps/default/qbittorrent
+  postBuild:
+    substituteFrom:
+    - name: cluster-secrets
+      kind: Secret
   prune: true
   retryInterval: 2m
   sourceRef:
@@ -21,35 +25,4 @@ spec:
     name: flux-system
     namespace: flux-system
   targetNamespace: *namespace
-  timeout: 5m
   wait: true
-
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: &app qbittorrent-app
-  namespace: &namespace default
-spec:
-  commonMetadata:
-    labels:
-      app.kubernetes.io/name: *app
-  dependsOn:
-  - name: qbittorrent-secrets
-  interval: 30m
-  path: ./kubernetes/apps/default/qbittorrent/app
-  postBuild:
-    substituteFrom:
-    - name: cluster-secrets
-      kind: Secret
-    - name: qbittorrent-secret
-      kind: Secret
-  prune: true
-  retryInterval: 1m
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  targetNamespace: *namespace
-  timeout: 5m
-  wait: false

@@ -57,10 +57,7 @@ repos:
     args: [-c=.yamllint.yaml]
     files: '\.ya?ml$'
 
-# Security scanning
-- repo: https://github.com/Yelp/detect-secrets
-  rev: v1.5.0
+- repo: https://github.com/gitleaks/gitleaks
+  rev: v8.28.0
   hooks:
-  - id: detect-secrets
-    args: [--baseline, .secrets.baseline]
-    exclude: ^(home/dot_ssh/|docs/external/)
+  - id: gitleaks

@@ -1,0 +1,182 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bastienwirtz/homer/main/.schema/config-schema.json
+# Homepage configuration
+# See https://fontawesome.com/v5/search for icons options
+
+title: Nami
+subtitle: Homepage
+logo: https://raw.githubusercontent.com/rcdailey/home-ops/main/kubernetes/apps/default/homer/icons/nami.png
+# icon: "fas fa-skull-crossbones" # Optional icon
+
+header: false
+footer: false
+columns: "4"
+
+# Optional theme customization
+theme: dark
+colors:
+  dark:
+    highlight-primary: "#3367d6"
+    highlight-secondary: "#4285f4"
+    highlight-hover: "#5a95f5"
+    background: "#131313"
+    card-background: "#2b2b2b"
+    text: "#eaeaea"
+    text-header: "#ffffff"
+    text-title: "#fafafa"
+    text-subtitle: "#f5f5f5"
+    card-shadow: rgba(0, 0, 0, 0.4)
+    link: "#3273dc"
+    link-hover: "#ffdd57"
+
+# Optional navbar
+# links: [] # Allows for navbar (dark mode, layout, and search) without any links
+links:
+- name: Status
+  icon: fas fa-heart
+  url: https://uptime.${SECRET_DOMAIN}/status/default
+
+# Services
+# First level array represent a group.
+# Leave only a "items" key if not using group (group name, icon & tagstyle are optional, section separation will not be displayed).
+services:
+- name: Media
+  icon: fas fa-film
+  items:
+  - name: Overseerr
+    url: https://request.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/overseerr.svg
+    tag: media
+  - name: Tautulli
+    url: https://tautulli.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/tautulli.svg
+    tag: media
+  - name: Sonarr (Anime)
+    url: https://sonarr-anime.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/sonarr.svg
+    tag: media
+  - name: Sonarr
+    url: https://sonarr.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/sonarr.svg
+    tag: media
+  - name: Radarr (4K)
+    url: https://radarr4k.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/radarr.svg
+    tag: media
+  - name: Radarr
+    url: https://radarr.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/radarr.svg
+    tag: media
+  - name: Radarr (Anime)
+    url: https://radarr-anime.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/radarr.svg
+    tag: media
+  - name: Prowlarr
+    url: https://prowlarr.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/prowlarr.svg
+    tag: media
+  - name: Sabnzbd
+    url: https://nzb.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/sabnzbd.svg
+    tag: media
+  - name: qBitTorrent
+    url: https://torrent.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/qbittorrent.svg
+    tag: media
+  - name: Plex
+    url: https://plex.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/plex.svg
+    tag: media
+  - name: Bazarr
+    url: https://bazarr.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/NX211/homer-icons/master/svg/bazarr.svg
+    tag: media
+- name: Services
+  icon: fas fa-server
+  items:
+  - name: Home Assistant
+    url: https://ha.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/home-assistant.svg
+    tag: service
+  - name: Filerun
+    url: https://cloud.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/filerun.svg
+    tag: service
+  - name: Immich
+    url: https://photos.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/immich.svg
+    tag: service
+  - name: Open WebUI
+    url: https://ai.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/librechat.svg
+    tag: service
+  - name: Technitium DNS
+    url: https://dns.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/technitium.svg
+    tag: service
+  - name: BookStack (Wiki)
+    url: https://wiki.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/bookstack.svg
+    tag: service
+  - name: Open Sprinkler
+    url: https://sprinkler.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/rcdailey/home-ops/main/kubernetes/apps/default/homer/icons/sprinkler.png
+    tag: service
+  - name: Uptime Kuma
+    url: https://uptime.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/uptime-kuma.svg
+    tag: service
+  - name: Authentik
+    url: https://auth.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/authentik.svg
+    tag: service
+- name: Local
+  icon: fas fa-network-wired
+  items:
+  - name: Unraid
+    url: http://nezuko/Dashboard
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/unraid.svg
+    tag: local
+  - name: Unifi (local)
+    url: https://192.168.1.1/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/ubiquiti-unifi.svg
+    tag: local
+  - name: Proxmox
+    url: https://192.168.1.54:8006/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/proxmox.svg
+    tag: local
+  - name: AT&T Gateway
+    url: http://192.168.99.254/cgi-bin/home.ha
+    logo: https://raw.githubusercontent.com/rcdailey/home-ops/main/kubernetes/apps/default/homer/icons/att.png
+    tag: local
+  - name: HDHomeRun
+    url: http://192.168.1.53/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/hdhomerun.svg
+    tag: local
+  - name: CUPS Print Server
+    url: http://192.168.1.52:631/
+    logo: https://raw.githubusercontent.com/lllllllillllllillll/Dashboard-Icons/main/svg/printer.svg
+    tag: local
+- name: External
+  icon: fas fa-globe
+  items:
+  - name: Bitwarden
+    url: https://vault.bitwarden.com/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/bitwarden.svg
+    tag: external
+  - name: Unifi Portal
+    url: https://unifi.ui.com/dashboard
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/ubiquiti-unifi.svg
+    tag: external
+  - name: Cloudflare
+    url: https://dash.cloudflare.com
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/cloudflare.svg
+    tag: external
+  - name: BorgBase
+    url: https://www.borgbase.com/repositories
+    logo: https://raw.githubusercontent.com/rcdailey/home-ops/main/kubernetes/apps/default/homer/icons/borgbase.png
+    tag: external
+  - name: APC SmartConnect
+    url: https://smartconnect.apc.com/
+    logo: https://raw.githubusercontent.com/rcdailey/home-ops/main/kubernetes/apps/default/homer/icons/apc.png
+    tag: external
