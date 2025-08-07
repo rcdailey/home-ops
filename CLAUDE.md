@@ -33,8 +33,12 @@ Claude MUST:
 - App-Template: Use centralized bjw-s OCIRepository, reference with `chartRef: {kind: OCIRepository,
   name: app-template}`, use HTTPRoute not ingress, add `postBuild.substituteFrom` with
   `cluster-secrets`
-- Directory Structure: Each `kubernetes/apps/` directory IS a namespace, directory names MUST match
-  namespace names exactly
+- Directory Structure: Flatter structure with namespace directories containing app directories directly.
+  `kubernetes/apps/<namespace>/<app>/` pattern where namespace directories MUST match namespace names
+  exactly. Each app directory contains all manifests in a single flat structure.
+- Application File Organization: All app manifests (helmrelease.yaml, ks.yaml, kustomization.yaml,
+  secrets, pvcs, etc.) co-located in single app directory. Use subdirectories (config/, resources/,
+  icons/) only for additional assets like ConfigMaps, static files, or images.
 - Application Structure Decision: Single ks.yaml when same namespace + similar timing + coupled
   lifecycle. Multiple ks.yaml when different namespaces OR different timing OR independent lifecycle
   OR operator+instance pattern
@@ -138,6 +142,51 @@ configuration.
 - NFS: Static PVs from Nezuko (`192.168.1.58`) - Media (100Ti), Photos (10Ti), FileRun (5Ti)
 - Access: Apps create PVCs with subPath mounting, NFSv4.1 private security
 
+### Directory Structure Conventions
+
+**Standard App Layout**: `kubernetes/apps/<namespace>/<app>/`
+```txt
+default/
+├── authentik/
+│   ├── helmrelease.yaml      # Helm application definition
+│   ├── httproute.yaml        # Network routing configuration
+│   ├── ks.yaml               # Flux Kustomization pointing to this directory
+│   ├── kustomization.yaml    # Kustomize resource list
+│   └── secret.sops.yaml      # SOPS-encrypted secrets
+└── qbittorrent/
+    ├── helmrelease.yaml
+    ├── httproute.yaml
+    ├── ks.yaml
+    ├── kustomization.yaml
+    ├── pvc.yaml              # Persistent volume claims
+    ├── securitypolicy.yaml   # Network/security policies
+    └── secret.sops.yaml
+```
+
+**Apps with Additional Resources**: Use subdirectories for assets
+```txt
+default/homer/
+├── config/
+│   └── config.yml           # Configuration files
+├── icons/                   # Static assets
+│   ├── apc.png
+│   └── nami.png
+├── helmrelease.yaml
+├── ks.yaml
+└── kustomization.yaml
+
+network/cloudflare-tunnel/
+├── resources/
+│   └── config.yaml          # Referenced by configMapGenerator
+├── dnsendpoint.yaml
+├── helmrelease.yaml
+├── ks.yaml
+├── kustomization.yaml
+└── secret.sops.yaml
+```
+
+**Namespace-level Kustomization**: Each namespace directory contains kustomization.yaml listing all app ks.yaml files
+
 ### Core Infrastructure Namespaces
 
 - `kube-system` - Kubernetes system components, Gateways (internal/external)
@@ -146,6 +195,8 @@ configuration.
 - `rook-ceph` - Ceph storage system components
 - `nfs` - NFS storage components
 - `cert-manager` - Certificate management infrastructure
+- `default` - General applications (authentik, qbittorrent, homer, etc.)
+- `dns-private` - Private DNS infrastructure (technitium-dns, dns-gateway)
 
 ## Historical Deployment (2025-06-29)
 
