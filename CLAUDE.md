@@ -1,220 +1,111 @@
 # Claude Directives
 
-## Core Operational Protocols
+## Critical Operational Rules
 
-Claude MUST:
+**IMPORTANT:** Claude MUST:
 
-- Teaching: Always explain concepts, define terms, provide context, and give examples when
-  explaining technical concepts
-- Documentation: Update memory bank at milestones, reference files with line numbers
-  (`file.yaml:123`), explain "why" not just "what", verify assumptions
-- Operations: Ask confirmation before disruptive commands, provide step-by-step explanations,
-  explain expected outcomes
-- Git: NEVER run `git commit`/`git push` without explicit user request, GitOps requires user to
-  commit/push (not Claude). Stop and wait for the user to do this before running commands like
-  reconcile.
-- Task Commands: Prioritize task commands over direct CLI, check Taskfile.yaml first, explain task
-  purpose
-- MCP Servers: Prioritize MCP over CLI for Kubernetes operations
-- Favor defaults over being unnecessarily explicit in configuration: this yields cleaner, less
-  verbose, easier to maintain YAML
+- **Git Protocol**: NEVER run `git commit`/`git push` without explicit user request. GitOps requires
+  user commits, not Claude. STOP after changes and wait for user to commit/push.
+- **Task Priority**: Use `task` commands over CLI. Check `Taskfile.yaml` first.
+- **MCP First**: Use MCP tools for Kubernetes operations over kubectl CLI.
+- **Validation**: Run `pre-commit run` after changes, before user commits.
+- **Reference Format**: Use `file.yaml:123` format when referencing code.
+- **Configuration**: Favor YAML defaults over explicit values for cleaner manifests.
 
-## Development & Deployment Protocols
+## Deployment Standards
 
-Claude MUST:
+**CRITICAL FLUX PATTERNS:**
 
-- Validation Sequence: kustomize build → kubectl dry-run (server) → flux check, use server-side
-  dry-run, validate dependencies
-- Flux Configuration: Always use `flux-system` as GitRepository name, verify sourceRef matches
-  existing Kustomizations
-- Helm Management: Check latest versions with `helm search repo <chart> --versions`, use `helm
-  template` for validation, co-locate HelmRepository with single-use charts, use two-Kustomization
-  approach for secrets with postBuild substitution
-- App-Template: Use centralized bjw-s OCIRepository, reference with `chartRef: {kind: OCIRepository,
-  name: app-template}`, use HTTPRoute not ingress, add `postBuild.substituteFrom` with
-  `cluster-secrets`
-- Directory Structure: Flatter structure with namespace directories containing app directories directly.
-  `kubernetes/apps/<namespace>/<app>/` pattern where namespace directories MUST match namespace names
-  exactly. Each app directory contains all manifests in a single flat structure.
-- Application File Organization: All app manifests (helmrelease.yaml, ks.yaml, kustomization.yaml,
-  secrets, pvcs, etc.) co-located in single app directory. Use subdirectories (config/, resources/,
-  icons/) only for additional assets like ConfigMaps, static files, or images.
-- Application Structure Decision: Single ks.yaml when same namespace + similar timing + coupled
-  lifecycle. Multiple ks.yaml when different namespaces OR different timing OR independent lifecycle
-  OR operator+instance pattern
-- Deployment Timing: Fast (<5min) = 5m timeout, Slow (>5min) = 15m+ timeout based on complexity
-- Stop and wait for the user to commit & push changes after modifications are made and before
-  checking cluster status.
-- Don't perform reconcilation manually unless necessary.
-- Always use `pre-commit run` to verify changes.
-- Never specify explicit timeouts, intervals, or other timing related settings unless there's an
-  explicit reason for them to solve an issue.
+- **GitRepository**: ALWAYS use `flux-system` name, verify sourceRef matches existing Kustomizations
+- **App-Template**: Use bjw-s OCIRepository with `chartRef: {kind: OCIRepository, name:
+  app-template}`, HTTPRoute over Ingress, add `postBuild.substituteFrom: cluster-secrets`
+- **Directory Structure**: `kubernetes/apps/<namespace>/<app>/` - namespace dirs MUST match names
+  exactly
+- **File Organization**: All manifests co-located (helmrelease.yaml, ks.yaml, kustomization.yaml,
+  secrets, pvcs). Subdirectories only for assets (config/, resources/, icons/)
+- **Kustomization Logic**: Single ks.yaml for same namespace+timing+lifecycle. Multiple for
+  different namespaces/timing/lifecycle or operator+instance patterns
+- **Validation Sequence**: kustomize build → kubectl dry-run (server) → flux check
+- **Helm**: Check versions with `helm search repo <chart> --versions`, validate with `helm template`
+- **Timing**: Never specify explicit timeouts/intervals without specific issue justification
 
-## Infrastructure & Storage Protocols
+## Storage & Secrets
 
-Claude MUST:
+**IMPORTANT PATTERNS:**
 
-- NFS Storage: Use static PVs for existing data, create PVCs in app directories, use subPath
-  mounting, configure appropriate access modes
-- Database Isolation: Never share databases between applications, deploy dedicated instances,
-  maintain independent isolation
-- Secret Management: Keep secrets isolated per application, use centralized only for truly shared
-  config, use `sops unset` for removal, use `sops --set` for modification
-- Secret Integration Methods (priority order): 1) `envFrom` at app layer, 2) `env.valueFrom` for
-  specific values, 3) HelmRelease `valuesFrom` for Helm chart values, 4) Flux variable substitution
-  with `postBuild.substituteFrom` as last resort
-- Helm Chart Analysis: Always run `helm show values <chart-name>/<chart> --version <version>` to
-  check for `envFrom`, `env`, or other secret integration capabilities before choosing method
+- **NFS**: Static PVs for existing data, PVCs in app dirs, subPath mounting
+- **Database Isolation**: NEVER share databases between apps, deploy dedicated instances
+- **Secret Integration Priority**: 1) `envFrom` at app, 2) `env.valueFrom`, 3) HelmRelease
+  `valuesFrom`, 4) `postBuild.substituteFrom` (last resort)
+- **Secret Management**: App-isolated secrets, `sops --set` for changes, `sops unset` for removal
+- **Chart Analysis**: Run `helm show values <chart>/<name> --version <version>` to check secret
+  integration capabilities before choosing method
 
-## Network & Access Protocols
+## Network Rules
 
-Claude MUST:
+**CRITICAL NETWORK PATTERNS:**
 
-- HTTPRoute Preference: Always favor HTTPRoute over Ingress and route through existing gateways.
-- LoadBalancer Restrictions: NEVER create LoadBalancer services without explicit user discussion,
-  reserve for core infrastructure requiring direct network access
-- Gateway IP Assignment: Use externalIPs approach for Envoy Gateway services (192.168.1.72 internal,
-  192.168.1.73 external) rather than LoadBalancer + IPAM for predictable, simple IP management
-- NEVER use executable commands for health probes.
-- External-DNS Architecture: Configure target annotations on Gateways only, never on HTTPRoutes. Use
-  gateway-httproute source exclusively. This ensures CNAME-only records via inheritance and prevents
-  A record fallbacks to LoadBalancer IPs.
-- App-Template Route Priority: Always use app-template `route` field over standalone HTTPRoute when
-  application uses app-template. Only use standalone HTTPRoute for external charts or
-  operator-managed resources. Co-locate routing configuration with application configuration.
-- Use the shortest resolvable hostname for Kubernetes services based on namespace scope. Do not use
-  fully qualified domain names (FQDNs) when shorter forms will resolve correctly.
+- **HTTPRoute ONLY**: HTTPRoute over Ingress, route through existing gateways
+- **LoadBalancer Ban**: NEVER create LoadBalancer without explicit user discussion
+- **Gateway IPs**: Use externalIPs (192.168.1.72 internal, 192.168.1.73 external) not LoadBalancer
+- **External-DNS**: Configure target annotations on Gateways ONLY, never HTTPRoutes. Use
+  gateway-httproute source for CNAME inheritance
+- **App-Template Priority**: Use app-template `route` field over standalone HTTPRoute when possible
+- **Health Probes**: NEVER use executable commands
+- **Hostnames**: Use shortest resolvable form, avoid FQDNs when unnecessary
 
-## Repository Overview
+## Stack Overview
 
-Operational Talos Kubernetes cluster with Flux GitOps. Core stack: Talos Linux, Flux v2, SOPS/Age
-encryption, Rook Ceph + NFS storage, Taskfile automation, mise package management, talhelper
-configuration.
+Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfile, mise, talhelper.
 
-## Operations
+## Essential Commands
 
-- **Setup**: `mise trust && mise install`
+- **Setup**: `mise trust .mise.toml && mise install`
 - **Sync**: `task reconcile`
-- **Node config**: `task talos:apply-node IP=192.168.1.50 MODE=auto`
-- **Upgrades**: `task talos:upgrade-node IP=192.168.1.50`
-- **Image changes**: `talosctl upgrade --image` (apply-config only updates config, not running
-  image)
+- **Validate**: `pre-commit run`
+- **Node Config**: `task talos:apply-node IP=192.168.1.50 MODE=auto`
+- **Upgrade**: `task talos:upgrade-node IP=192.168.1.50`
+- **Image Update**: `talosctl upgrade --image`
+- **List Tasks**: `task --list`
 
-## Key Files
+## GitOps Flow
 
-- `talos/talconfig.yaml` - Talos cluster configuration
-- `Taskfile.yaml` - Task definitions
-- `age.key` - SOPS encryption key (local only)
-- `kubeconfig` - Kubernetes access credentials
+1. Modify `kubernetes/` manifests
+2. `pre-commit run`
+3. **USER COMMITS/PUSHES** (not Claude)
+4. Flux auto-applies
+5. Optional: `task reconcile` for immediate sync
 
-## GitOps Workflow
+**Flux Structure**: `flux-system` GitRepository → `cluster-meta` → `cluster-apps` → app ks.yaml
+files
 
-1. Modify manifests in `kubernetes/` directory
-2. USER COMMITS/PUSHES (not Claude)
-3. Flux auto-applies changes
-4. Use `task reconcile` for immediate sync
+## Cluster Info
 
-## Cluster Configuration
+**Network**: `192.168.1.0/24`, Gateway: `192.168.1.1`, API: `192.168.1.70` **Gateways**: DNS
+`192.168.1.71`, Internal `192.168.1.72`, External `192.168.1.73` **Tunnel**:
+`6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.1.73`
 
-### Network
+**Nodes**:
+- rias: `192.168.1.61` (VM), nami: `192.168.1.50` (NUC), marin: `192.168.1.59` (NUC)
 
-- Network: `192.168.1.0/24`, Gateway: `192.168.1.1`, Cluster API: `192.168.1.70`
-- DNS Gateway: `192.168.1.71` (Technitium DNS)
-- Internal Gateway: `192.168.1.72` (Envoy Gateway - LAN services)
-- External Gateway: `192.168.1.73` (Envoy Gateway - WAN services)
-- Cloudflare Tunnel: `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.1.73`
+**Storage**: Rook Ceph (distributed), NFS from Nezuko `192.168.1.58` (Media 100Ti, Photos 10Ti,
+FileRun 5Ti)
 
-### Node Details
+## Directory Structure
 
-- rias: `192.168.1.61` - VM/Proxmox, MAC: `bc:24:11:a7:98:2d`
-  - OS: `/dev/sda` - `scsi-0QEMU_QEMU_HARDDISK_drive-scsi0`
-  - Ceph: `/dev/sdb` - `scsi-0QEMU_QEMU_HARDDISK_drive-scsi2`
-- nami: `192.168.1.50` - Intel NUC, MAC: `94:c6:91:a1:e5:e8`
-  - OS: `/dev/sda` - `ata-CT500MX500SSD4_1824E1436952`
-  - Ceph: `/dev/sdb` - `ata-CT2000BX500SSD1_2513E9B2B5A5`
-- marin: `192.168.1.59` - Intel NUC, MAC: `1c:69:7a:0d:8d:99`
-  - OS: `/dev/sdb` - `ata-Samsung_SSD_870_EVO_250GB_S6PDNZ0R819892L`
-  - Ceph: `/dev/nvme0n1` - `nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NJ0TB03807K`
+**Pattern**: `kubernetes/apps/<namespace>/<app>/`
 
-### Storage
+**Standard Files**: helmrelease.yaml, ks.yaml, kustomization.yaml, secret.sops.yaml, httproute.yaml,
+pvc.yaml **Asset Subdirs**: config/, resources/, icons/ (only when needed) **Namespace
+Kustomization**: Lists all app ks.yaml files
 
-- Rook Ceph: Distributed storage across all 3 nodes
-- NFS: Static PVs from Nezuko (`192.168.1.58`) - Media (100Ti), Photos (10Ti), FileRun (5Ti)
-- Access: Apps create PVCs with subPath mounting, NFSv4.1 private security
+**Key Namespaces**: kube-system, flux-system, network, rook-ceph, nfs, cert-manager, default,
+dns-private
 
-### Directory Structure Conventions
+## Critical Security
 
-**Standard App Layout**: `kubernetes/apps/<namespace>/<app>/`
-```txt
-default/
-├── authentik/
-│   ├── helmrelease.yaml      # Helm application definition
-│   ├── httproute.yaml        # Network routing configuration
-│   ├── ks.yaml               # Flux Kustomization pointing to this directory
-│   ├── kustomization.yaml    # Kustomize resource list
-│   └── secret.sops.yaml      # SOPS-encrypted secrets
-└── qbittorrent/
-    ├── helmrelease.yaml
-    ├── httproute.yaml
-    ├── ks.yaml
-    ├── kustomization.yaml
-    ├── pvc.yaml              # Persistent volume claims
-    ├── securitypolicy.yaml   # Network/security policies
-    └── secret.sops.yaml
-```
-
-**Apps with Additional Resources**: Use subdirectories for assets
-```txt
-default/homer/
-├── config/
-│   └── config.yml           # Configuration files
-├── icons/                   # Static assets
-│   ├── apc.png
-│   └── nami.png
-├── helmrelease.yaml
-├── ks.yaml
-└── kustomization.yaml
-
-network/cloudflare-tunnel/
-├── resources/
-│   └── config.yaml          # Referenced by configMapGenerator
-├── dnsendpoint.yaml
-├── helmrelease.yaml
-├── ks.yaml
-├── kustomization.yaml
-└── secret.sops.yaml
-```
-
-**Namespace-level Kustomization**: Each namespace directory contains kustomization.yaml listing all app ks.yaml files
-
-### Core Infrastructure Namespaces
-
-- `kube-system` - Kubernetes system components, Gateways (internal/external)
-- `flux-system` - Flux GitOps controllers and configurations
-- `network` - Network infrastructure (external-dns, cloudflare-dns)
-- `rook-ceph` - Ceph storage system components
-- `nfs` - NFS storage components
-- `cert-manager` - Certificate management infrastructure
-- `default` - General applications (authentik, qbittorrent, homer, etc.)
-- `dns-private` - Private DNS infrastructure (technitium-dns, dns-gateway)
-
-## Historical Deployment (2025-06-29)
-
-Original template-based deployment using Jinja2 templates in `templates/` directory with
-`cluster.yaml`/`nodes.yaml` configuration. Bootstrap sequence: `task init` → `task configure` →
-`task bootstrap:talos` → `task bootstrap:apps` → `task template:tidy`. Templates archived to
-`.private/[timestamp]/` directory post-deployment.
-
-## Important Notes
-
-- SOPS-encrypted files must never be committed unencrypted
-- External-DNS auto-manages DNS records for new services
-- Migration allows parallel SWAG/Kubernetes operation
-- Node management via `talos/talconfig.yaml` post-cleanup
-
-## How to use tools
-
-- For app-scout: @scripts/app-scout/README.md
+**SOPS**: Encrypted files MUST NEVER be committed unencrypted **External-DNS**: Auto-manages DNS for
+new services **App-Scout**: See @scripts/app-scout/README.md
 
 ### SOPS Commands
 
