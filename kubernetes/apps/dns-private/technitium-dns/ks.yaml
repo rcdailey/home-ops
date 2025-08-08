@@ -19,6 +19,8 @@ spec:
     substituteFrom:
     - name: cluster-secrets
       kind: Secret
+    - name: technitium-secrets
+      kind: Secret
   prune: true
   retryInterval: 2m
   sourceRef:

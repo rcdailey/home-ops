@@ -37,7 +37,7 @@ repos:
     name: SOPS Config Validation
     entry: scripts/pre-commit/validate-sops-config.sh
     language: script
-    files: '^kubernetes/apps/.*/(ks\.yaml|secrets/.*\.sops\.yaml|secrets/kustomization\.yaml)$'
+    files: '^kubernetes/apps/.*/(ks\.yaml|.*\.sops\.yaml|secrets/.*\.sops\.yaml|secrets/kustomization\.yaml)$'
     description: Ensures SOPS secrets have proper decryption configuration in Kustomizations
 
 - repo: https://github.com/google/yamlfmt
