@@ -19,6 +19,8 @@ spec:
   values:
     controllers:
       technitium-dns:
+        annotations:
+          reloader.stakater.com/auto: "true"
         strategy: Recreate
 
         pod:
@@ -105,6 +107,12 @@ spec:
         existingClaim: technitium-dns-data
         globalMounts:
         - path: /etc/dns
+      advanced-forwarding-config:
+        type: configMap
+        name: technitium-advanced-forwarding
+        globalMounts:
+        - path: /etc/dns/apps/Advanced Forwarding/dnsApp.config
+          subPath: dnsApp.config
 
     route:
       app:

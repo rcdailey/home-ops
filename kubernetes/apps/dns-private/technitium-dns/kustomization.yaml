@@ -7,3 +7,12 @@ resources:
 - ./dnsendpoint.yaml
 - ./helmrelease.yaml
 - ./pvc.yaml
+- ./secret.sops.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+- name: technitium-advanced-forwarding
+  files:
+  - dnsApp.config=advancedForwarding.json
+configurations:
+- kustomizeconfig.yaml
