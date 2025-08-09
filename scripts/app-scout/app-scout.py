@@ -690,6 +690,102 @@ class AppMigrationDiscovery:
 
         return results
 
+    async def correlate_applications(self, app_names: List[str], sample_count: int = 10) -> Dict:
+        """
+        Find repositories that contain multiple specific applications deployed together.
+
+        This is useful for understanding architectural patterns where apps are deployed
+        in combination (e.g., blocky + external-dns, authentik + postgres).
+
+        Args:
+            app_names: List of application names to find together
+            sample_count: Number of repositories to return
+
+        Returns:
+            Dict with structure:
+            {
+                "apps": ["app1", "app2"],
+                "repositories": [
+                    {
+                        "repo_name": "user/repo",
+                        "stars": 123,
+                        "description": "repo description",
+                        "apps_found": {
+                            "app1": {"chart_name": "...", "type": "dedicated|app-template"},
+                            "app2": {"chart_name": "...", "type": "dedicated|app-template"}
+                        }
+                    }
+                ]
+            }
+        """
+        print(f"Finding repositories with all apps: {', '.join(app_names)}", file=sys.stderr)
+
+        # Build SQL query to find repos containing ALL specified apps
+        placeholders = ','.join(['?' for _ in app_names])
+        query = f"""
+        SELECT repo_name, COUNT(DISTINCT release_name) as app_count
+        FROM flux_helm_release
+        WHERE release_name IN ({placeholders})
+        GROUP BY repo_name
+        HAVING app_count = ?
+        ORDER BY (SELECT stars FROM repo WHERE repo.repo_name = flux_helm_release.repo_name) DESC
+        LIMIT ?
+        """
+
+        cursor = self.conn.cursor()
+        cursor.execute(query, app_names + [len(app_names), sample_count])
+        matching_repos = [row[0] for row in cursor.fetchall()]
+
+        if not matching_repos:
+            return {
+                "apps": app_names,
+                "repositories": []
+            }
+
+        # Get detailed information for each matching repository
+        repos_info = await self._gh_get_repo_metadata_batch(matching_repos)
+
+        results = []
+        for repo_name in matching_repos:
+            # Get app details for this repo
+            apps_found = {}
+            for app_name in app_names:
+                cursor.execute("""
+                    SELECT release_name, chart_name, helm_repo_name, namespace
+                    FROM flux_helm_release
+                    WHERE repo_name = ? AND release_name = ?
+                """, (repo_name, app_name))
+
+                row = cursor.fetchone()
+                if row:
+                    release_name, chart_name, helm_repo_name, namespace = row
+                    # Determine if it's app-template or dedicated chart
+                    chart_type = "app-template" if chart_name == "app-template" else "dedicated"
+
+                    apps_found[app_name] = {
+                        "release_name": release_name,
+                        "chart_name": chart_name,
+                        "helm_repo_name": helm_repo_name,
+                        "namespace": namespace,
+                        "type": chart_type
+                    }
+
+            repo_info = repos_info.get(repo_name, {})
+
+            results.append({
+                "repo_name": repo_name,
+                "stars": repo_info.get("stars", 0),
+                "description": repo_info.get("description"),
+                "last_commit": repo_info.get("last_commit"),
+                "apps_found": apps_found
+            })
+
+        return {
+            "apps": app_names,
+            "total_repositories": len(results),
+            "repositories": results
+        }
+
     async def close(self):
         """Close database and HTTP client connections"""
         self.conn.close()
@@ -711,6 +807,9 @@ async def main():
 Examples:
   # Discover all deployment patterns for authentik
   python3 app-scout.py discover authentik
+
+  # Find repositories that have both blocky and external-dns
+  python3 app-scout.py correlate blocky external-dns
 
   # Inspect specific files from a repository
   python3 app-scout.py inspect authentik --repo angelnu/k8s-gitops --files helmrelease,values
@@ -739,6 +838,20 @@ Examples:
         help="Number of repositories to analyze per category (default: 3)",
     )
 
+    # Correlate command (NEW)
+    correlate_parser = subparsers.add_parser(
+        "correlate", help="Find repositories containing multiple applications"
+    )
+    correlate_parser.add_argument(
+        "app_names", nargs="+", help="Application names to find together (e.g., blocky external-dns)"
+    )
+    correlate_parser.add_argument(
+        "--sample-count",
+        type=int,
+        default=10,
+        help="Number of repositories to return (default: 10)",
+    )
+
     # Inspect command
     inspect_parser = subparsers.add_parser(
         "inspect", help="Inspect specific configuration files"
@@ -764,6 +877,10 @@ Examples:
     try:
         if args.command == "discover":
             result = await discovery.discover_app_landscape(args.app_name, args.sample_count)
+            print(json.dumps(result, indent=2))
+
+        elif args.command == "correlate":
+            result = await discovery.correlate_applications(args.app_names, args.sample_count)
             print(json.dumps(result, indent=2))
 
         elif args.command == "inspect":

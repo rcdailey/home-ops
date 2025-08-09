@@ -1,0 +1,18 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: adguard-home
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: dns-test.${SECRET_DOMAIN}
+spec:
+  parentRefs:
+  - name: internal
+    namespace: network
+    sectionName: https
+  hostnames:
+  - dns-test.${SECRET_DOMAIN}
+  rules:
+  - backendRefs:
+    - name: adguard-home
+      port: 3000
