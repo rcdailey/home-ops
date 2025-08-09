@@ -8,7 +8,7 @@
   user commits, not Claude. STOP after changes and wait for user to commit/push.
 - **Task Priority**: Use `task` commands over CLI. Check `Taskfile.yaml` first.
 - **MCP First**: Use MCP tools for Kubernetes operations over kubectl CLI.
-- **Validation**: Run `pre-commit run` after changes, before user commits.
+- **Validation**: Run `pre-commit run --files` after changes, before user commits.
 - **Reference Format**: Use `file.yaml:123` format when referencing code.
 - **Configuration**: Favor YAML defaults over explicit values for cleaner manifests.
 
@@ -62,7 +62,7 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 
 - **Setup**: `mise trust .mise.toml && mise install`
 - **Sync**: `task reconcile`
-- **Validate**: `pre-commit run`
+- **Validate**: `pre-commit run --files`
 - **Node Config**: `task talos:apply-node IP=192.168.1.50 MODE=auto`
 - **Upgrade**: `task talos:upgrade-node IP=192.168.1.50`
 - **Image Update**: `talosctl upgrade --image`
@@ -71,7 +71,7 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 ## GitOps Flow
 
 1. Modify `kubernetes/` manifests
-2. `pre-commit run`
+2. `pre-commit run --files`
 3. **USER COMMITS/PUSHES** (not Claude)
 4. Flux auto-applies
 5. Optional: `task reconcile` for immediate sync
