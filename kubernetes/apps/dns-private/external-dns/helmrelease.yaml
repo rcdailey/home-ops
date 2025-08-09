@@ -1,0 +1,77 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrepository-source-v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: kubernetes-sigs-external-dns
+spec:
+  interval: 1h
+  url: https://kubernetes-sigs.github.io/external-dns
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app external-dns
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.18.0
+      sourceRef:
+        kind: HelmRepository
+        name: kubernetes-sigs-external-dns
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  timeout: 5m
+  dependsOn:
+  - name: adguard-home
+    namespace: dns-private
+  valuesFrom:
+  - kind: ConfigMap
+    name: external-dns-shared-values
+    valuesKey: values.yaml
+  values:
+    # Sidecar webhook container
+    sidecars:
+    - name: adguard-webhook
+      image: ghcr.io/muhlba91/external-dns-provider-adguard:v9.0.1
+      ports:
+      - containerPort: 8888
+        name: http
+      - containerPort: 8080
+        name: healthz
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: healthz
+        initialDelaySeconds: 10
+        timeoutSeconds: 5
+      readinessProbe:
+        httpGet:
+          path: /healthz
+          port: healthz
+        initialDelaySeconds: 10
+        timeoutSeconds: 5
+      env:
+      - name: LOG_LEVEL
+        value: info
+      - name: ADGUARD_URL
+        value: "http://adguard-home-0.adguard-home.dns-private.svc.cluster.local:3000"
+      - name: ADGUARD_USER
+        valueFrom:
+          secretKeyRef:
+            name: adguard-home-credentials
+            key: username
+      - name: ADGUARD_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: adguard-home-credentials
+            key: password

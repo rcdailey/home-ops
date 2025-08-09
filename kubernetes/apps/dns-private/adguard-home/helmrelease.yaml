@@ -1,0 +1,174 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app adguard-home
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  timeout: 5m
+  values:
+    controllers:
+      adguard-home:
+        type: statefulset
+        replicas: 2
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        statefulset:
+          volumeClaimTemplates:
+          - name: data
+            storageClass: ceph-block
+            accessMode: ReadWriteOnce
+            size: 2Gi
+            globalMounts:
+            - path: /opt/adguardhome/conf
+              subPath: conf
+            - path: /opt/adguardhome/work
+              subPath: work
+
+        pod:
+          priorityClassName: system-cluster-critical
+          terminationGracePeriodSeconds: 30
+          labels:
+            app.kubernetes.io/component: dns-server
+            app.kubernetes.io/controller: adguard-home
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+            seccompProfile:
+              type: RuntimeDefault
+          topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
+
+        initContainers:
+          init-config:
+            image:
+              repository: alpine
+              tag: 3.20.3
+            command:
+            - /bin/sh
+            - -c
+            - |
+              if [ ! -f /opt/adguardhome/conf/AdGuardHome.yaml ]; then
+                echo "Config file not found, copying from ConfigMap..."
+                cp -v /tmp/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
+                chmod 644 /opt/adguardhome/conf/AdGuardHome.yaml
+              else
+                echo "Config file exists, skipping copy to preserve user changes"
+              fi
+
+        containers:
+          app:
+            image:
+              repository: adguard/adguardhome
+              tag: v0.107.64
+            args:
+            - --config
+            - /opt/adguardhome/conf/AdGuardHome.yaml
+            - --work-dir
+            - /opt/adguardhome/work
+            - --port
+            - "3000"
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /login.html
+                    port: 3000
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness: *probes
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /login.html
+                    port: 3000
+                  initialDelaySeconds: 10
+                  periodSeconds: 5
+                  timeoutSeconds: 3
+                  failureThreshold: 30
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                add: [NET_BIND_SERVICE]
+                drop: [ALL]
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: 3000
+          dns-tcp:
+            port: 53
+            targetPort: 5353
+            protocol: TCP
+          dns-udp:
+            port: 53
+            targetPort: 5353
+            protocol: UDP
+
+    serviceMonitor:
+      app:
+        serviceName: *app
+        endpoints:
+        - port: http
+          scheme: http
+          path: /control/stats
+          interval: 30s
+
+    persistence:
+      configmap:
+        type: configMap
+        name: adguard-home-config
+        advancedMounts:
+          adguard-home:
+            init-config:
+            - path: /tmp
+              readOnly: true
+
+    route:
+      app:
+        hostnames: ["dns-test.${SECRET_DOMAIN}"]
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: adguard-home
+            port: 3000

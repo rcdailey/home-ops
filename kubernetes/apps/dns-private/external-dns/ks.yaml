@@ -4,7 +4,7 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app external-dns
-  namespace: &namespace dns-private
+  namespace: flux-system
 spec:
   commonMetadata:
     labels:
@@ -14,8 +14,7 @@ spec:
     secretRef:
       name: sops-age
   dependsOn:
-  - name: technitium-dns
-    namespace: dns-private
+  - name: adguard-home
   interval: 1h
   path: ./kubernetes/apps/dns-private/external-dns
   postBuild:
@@ -28,6 +27,6 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: *namespace
+  targetNamespace: dns-private
   timeout: 5m
   wait: true

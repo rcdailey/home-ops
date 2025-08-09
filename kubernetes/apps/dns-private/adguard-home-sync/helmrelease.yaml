@@ -1,0 +1,116 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app adguard-home-sync
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  timeout: 5m
+  dependsOn:
+  - name: adguard-home
+    namespace: dns-private
+  values:
+    controllers:
+      adguard-home-sync:
+        replicas: 1
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/bakito/adguardhome-sync
+              tag: v0.7.5
+            env:
+              # Origin (primary instance)
+              ORIGIN_URL: "http://adguard-home-0.adguard-home.dns-private.svc.cluster.local:3000"
+              REPLICA1_URL: "http://adguard-home-1.adguard-home.dns-private.svc.cluster.local:3000"
+              CRON: "*/2 * * * *"
+              RUN_ON_START: "true"
+              CONTINUE_ON_ERROR: "false"
+              # API server configuration
+              API_PORT: "8080"
+              API_USERNAME: "admin"
+              # Credentials from secret
+              ORIGIN_USERNAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: adguard-home-credentials
+                    key: username
+              ORIGIN_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: adguard-home-credentials
+                    key: password
+              REPLICA1_USERNAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: adguard-home-credentials
+                    key: username
+              REPLICA1_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: adguard-home-credentials
+                    key: password
+              API_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: adguard-home-sync-secret
+                    key: api-password
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 60
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 8080
+                  initialDelaySeconds: 10
+                  periodSeconds: 30
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
+
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: 8080
+
+    route:
+      app:
+        hostnames: ["dns-sync.${SECRET_DOMAIN}"]
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: adguard-home-sync
+            port: 8080

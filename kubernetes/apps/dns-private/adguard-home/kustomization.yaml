@@ -4,15 +4,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: dns-private
 resources:
-- ./dnsendpoint.yaml
 - ./helmrelease.yaml
-- ./pvc.yaml
+- ./httproute.yaml
 - ./secret.sops.yaml
+configMapGenerator:
+- name: adguard-home-config
+  files:
+  - AdGuardHome.yaml
 generatorOptions:
   disableNameSuffixHash: true
-configMapGenerator:
-- name: technitium-advanced-forwarding
-  files:
-  - dnsApp.config=advancedForwarding.json
-configurations:
-- kustomizeconfig.yaml

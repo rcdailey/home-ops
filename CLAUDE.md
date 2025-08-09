@@ -46,11 +46,13 @@
 **CRITICAL CONFIGMAP NAMING RULES:**
 
 Use `disableNameSuffixHash: true` (stable names) ONLY when:
+
 - **Helm `valuesFrom`** references ConfigMap by name (external-dns, cloudflare-dns patterns)
 - **App-template `persistence.name`** references ConfigMap by name (homer, cloudflare-tunnel patterns)
 - **Cross-resource references** require predictable ConfigMap names
 
 Use **hashed names** (Kustomize default) when:
+
 - ConfigMaps referenced by `identifier` or other dynamic resolution methods
 - Single-use ConfigMaps with no external name dependencies
 
@@ -110,6 +112,7 @@ files
 `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.1.73`
 
 **Nodes**:
+
 - rias: `192.168.1.61` (VM), nami: `192.168.1.50` (NUC), marin: `192.168.1.59` (NUC)
 
 **Storage**: Rook Ceph (distributed), NFS from Nezuko `192.168.1.58` (Media 100Ti, Photos 10Ti,
@@ -129,7 +132,7 @@ dns-private
 ## Critical Security
 
 **SOPS**: Encrypted files MUST NEVER be committed unencrypted **External-DNS**: Auto-manages DNS for
-new services **App-Scout**: See @scripts/app-scout/README.md
+new services **App-Scout**: See @scripts/app-scout/README.md for deployment discovery patterns
 
 ### SOPS Commands
 

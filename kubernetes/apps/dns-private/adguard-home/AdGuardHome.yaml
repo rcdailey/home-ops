@@ -1,0 +1,59 @@
+---
+http:
+  address: 0.0.0.0:3000
+  session_ttl: 720h
+users: []
+auth_attempts: 5
+block_auth_min: 15
+dns:
+  bind_hosts:
+  - 0.0.0.0
+  port: 5353
+  ratelimit: 20
+  refuse_any: true
+  upstream_dns:
+  - https://1.1.1.1/dns-query
+  - https://9.9.9.9/dns-query
+  - 1.1.1.1
+  - 9.9.9.9
+  bootstrap_dns:
+  - 1.1.1.1:53
+  - 9.9.9.9:53
+  blocked_hosts:
+  - version.bind
+  - id.server
+  - hostname.bind
+  cache_size: 4194304
+  enable_dnssec: true
+  use_private_ptr_resolvers: true
+  local_ptr_upstreams:
+  - 192.168.1.1
+querylog:
+  enabled: true
+  file_enabled: false
+  size_memory: 1000
+statistics:
+  enabled: true
+filters: []
+user_rules: []
+tls:
+  enabled: false
+  allow_unencrypted_doh: true
+dhcp:
+  enabled: false
+clients:
+  runtime_sources:
+    whois: true
+    arp: true
+    rdns: false
+    dhcp: false
+    hosts: true
+  persistent: []
+log:
+  verbose: false
+os:
+  group: ""
+  user: ""
+  rlimit_nofile: 0
+theme: dark
+schema_version: 27
