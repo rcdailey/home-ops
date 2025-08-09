@@ -76,7 +76,7 @@ spec:
     persistence:
       config-file:
         type: configMap
-        name: cloudflare-tunnel-configmap
+        name: cloudflare-config
         globalMounts:
         - path: /etc/cloudflared/config.yaml
           subPath: config.yaml
