@@ -3,30 +3,27 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app technitium-dns
+  name: &app blocky
   namespace: &namespace dns-private
 spec:
+  targetNamespace: *namespace
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  interval: 1h
-  path: ./kubernetes/apps/dns-private/technitium-dns
+  dependsOn:
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  path: ./kubernetes/apps/dns-private/blocky
   postBuild:
     substituteFrom:
     - name: cluster-secrets
       kind: Secret
-    - name: technitium-secrets
-      kind: Secret
   prune: true
-  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: *namespace
+  wait: false
+  interval: 30m
+  retryInterval: 1m
   timeout: 5m
-  wait: true
