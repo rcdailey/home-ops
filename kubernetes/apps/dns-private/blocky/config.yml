@@ -1,0 +1,104 @@
+---
+ports:
+  dns: 5353
+  http: 4000
+
+upstreams:
+  groups:
+    default:
+    - tcp-tls:1.1.1.1:853
+    - tcp-tls:8.8.8.8:853
+    - tcp-tls:1.0.0.1:853
+    - tcp-tls:8.8.4.4:853
+
+customDNS:
+  mapping:
+    internal.${SECRET_DOMAIN}: 192.168.1.72
+    external.${SECRET_DOMAIN}: 192.168.1.73
+    "*.${SECRET_DOMAIN}": 192.168.1.58
+
+conditional:
+  mapping:
+    lan.${SECRET_DOMAIN}: 192.168.1.1
+
+blocking:
+  denylists:
+    baseline:
+    - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/multi.txt
+    privacy:
+    - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt
+    - https://someonewhocares.org/hosts/zero/hosts
+    adult-content:
+    - https://blocklistproject.github.io/Lists/porn.txt
+    - https://raw.githubusercontent.com/chadmayfield/my-pihole-blocklists/master/lists/pi_blocklist_porn_top1m.list
+    social-media:
+    - https://raw.githubusercontent.com/cyb3rko/social-media-hosts-blocklists/main/combinedhosts-trimmed.txt
+    - https://raw.githubusercontent.com/anudeepND/blacklist/master/facebook.txt
+    parental-controls:
+    - https://blocklistproject.github.io/Lists/gambling.txt
+    - https://blocklistproject.github.io/Lists/piracy.txt
+
+  allowlists:
+    social-media:
+    - discord.com
+    - discord.gg
+    - discordapp.com
+    - discordapp.net
+    - discord.media
+    - cdn.discordapp.com
+    - gateway.discord.gg
+    - status.discord.com
+
+  clientGroupsBlock:
+    default:
+    - baseline
+    192.168.7.0/24:
+    - baseline
+    - privacy
+    192.168.2.0/24:
+    - baseline
+    - privacy
+    192.168.4.0/24:
+    - baseline
+    - adult-content
+    192.168.3.0/24:
+    - baseline
+    - social-media
+    - parental-controls
+
+  loading:
+    refreshPeriod: 4h
+    downloads:
+      timeout: 60s
+      attempts: 5
+      cooldown: 10s
+
+caching:
+  minTime: 5m
+  maxTime: 30m
+  maxItemsCount: 100000
+  prefetching: true
+  prefetchExpires: 2h
+  prefetchThreshold: 5
+
+queryLog:
+  type: csv
+  target: /logs
+  logRetentionDays: 7
+  fields:
+  - clientIP
+  - clientName
+  - question
+  - responseReason
+  - responseAnswer
+  - duration
+
+clientLookup:
+  upstream: 192.168.1.1
+  singleNameOrder:
+  - 2
+  - 1
+
+prometheus:
+  enable: true
+  path: /metrics
