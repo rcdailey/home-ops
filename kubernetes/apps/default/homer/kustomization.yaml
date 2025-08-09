@@ -8,8 +8,6 @@ configMapGenerator:
 - name: homer-config
   files:
   - config/config.yml
-generatorOptions:
-  disableNameSuffixHash: true
 labels:
 - pairs:
     app.kubernetes.io/name: homer
