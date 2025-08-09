@@ -7,7 +7,7 @@ resources:
 - ./secret.sops.yaml
 - ./helmrelease.yaml
 configMapGenerator:
-- name: cloudflare-tunnel-configmap
+- name: cloudflare-config
   files:
   - config.yaml=./resources/config.yaml
 generatorOptions:

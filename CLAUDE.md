@@ -41,6 +41,30 @@
 - **Chart Analysis**: Run `helm show values <chart>/<name> --version <version>` to check secret
   integration capabilities before choosing method
 
+## ConfigMap & Reloader Strategy
+
+**CRITICAL CONFIGMAP NAMING RULES:**
+
+Use `disableNameSuffixHash: true` (stable names) ONLY when:
+- **Helm `valuesFrom`** references ConfigMap by name (external-dns, cloudflare-dns patterns)
+- **App-template `persistence.name`** references ConfigMap by name (homer, cloudflare-tunnel patterns)
+- **Cross-resource references** require predictable ConfigMap names
+
+Use **hashed names** (Kustomize default) when:
+- ConfigMaps referenced by `identifier` or other dynamic resolution methods
+- Single-use ConfigMaps with no external name dependencies
+
+**RELOADER CONSISTENCY:**
+
+- **ALWAYS use** `reloader.stakater.com/auto: "true"` for ALL apps
+- **NEVER use** `secret.reloader.stakater.com/reload: specific-secret`
+- Auto-reload detects changes to ALL ConfigMaps and Secrets referenced by the pod
+- Simpler configuration, consistent behavior across all apps
+
+**KEY INSIGHT:** App-template `persistence.name` field performs **literal string matching** - no
+dynamic hash resolution. Helm templating support allows variable substitution but cannot resolve
+Kustomize-generated hashes that are created after Helm rendering.
+
 ## Network Rules
 
 **CRITICAL NETWORK PATTERNS:**
