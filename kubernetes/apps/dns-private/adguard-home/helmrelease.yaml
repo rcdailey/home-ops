@@ -3,48 +3,60 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app technitium-dns
+  name: &app adguard-home
 spec:
-  interval: 1h
+  interval: 30m
   chartRef:
     kind: OCIRepository
     name: app-template
   install:
     remediation:
-      retries: -1
+      retries: 3
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
+  timeout: 5m
   values:
     controllers:
-      technitium-dns:
+      adguard-home:
+        replicas: 2
+        strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
-        strategy: Recreate
 
         pod:
           priorityClassName: system-cluster-critical
-          terminationGracePeriodSeconds: 5
+          terminationGracePeriodSeconds: 30
           labels:
             app.kubernetes.io/component: dns-server
-            app.kubernetes.io/controller: technitium-dns
+            app.kubernetes.io/controller: adguard-home
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
             fsGroup: 1000
-            fsGroupChangePolicy: "OnRootMismatch"
+            fsGroupChangePolicy: OnRootMismatch
             seccompProfile:
               type: RuntimeDefault
+          topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
 
         containers:
           app:
             image:
-              repository: technitium/dns-server
-              tag: "13.6.0"
-            env:
-              DNS_SERVER_DOMAIN: "${SECRET_DOMAIN}"
+              repository: adguard/adguardhome
+              tag: v0.108.0
+            args:
+            - --config
+            - /opt/adguardhome/conf/AdGuardHome.yaml
+            - --work-dir
+            - /opt/adguardhome/work
+            - --port
+            - "3000"
             probes:
               liveness: &probes
                 enabled: true
@@ -52,7 +64,7 @@ spec:
                 spec:
                   httpGet:
                     path: /
-                    port: 5380
+                    port: 3000
                   initialDelaySeconds: 30
                   periodSeconds: 10
                   timeoutSeconds: 5
@@ -64,7 +76,7 @@ spec:
                 spec:
                   httpGet:
                     path: /
-                    port: 5380
+                    port: 3000
                   initialDelaySeconds: 10
                   periodSeconds: 5
                   timeoutSeconds: 3
@@ -73,13 +85,13 @@ spec:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
               capabilities:
-                drop: ["ALL"]
+                add: [NET_BIND_SERVICE]
+                drop: [ALL]
             resources:
               requests:
-                cpu: 100m
-                memory: 256Mi
+                cpu: 10m
+                memory: 128Mi
               limits:
-                cpu: 500m
                 memory: 512Mi
 
     defaultPodOptions:
@@ -91,7 +103,7 @@ spec:
         controller: *app
         ports:
           http:
-            port: 5380
+            port: 3000
           dns-tcp:
             port: 53
             targetPort: 5353
@@ -101,18 +113,26 @@ spec:
             targetPort: 5353
             protocol: UDP
 
+    serviceMonitor:
+      app:
+        serviceName: *app
+        endpoints:
+        - port: http
+          scheme: http
+          path: /control/stats
+          interval: 30s
+
     persistence:
       config:
-        type: persistentVolumeClaim
-        existingClaim: technitium-dns-data
+        type: emptyDir
         globalMounts:
-        - path: /etc/dns
-      advanced-forwarding-config:
-        type: configMap
-        name: technitium-advanced-forwarding
+        - path: /opt/adguardhome/conf
+          readOnly: false
+      work:
+        type: emptyDir
         globalMounts:
-        - path: /etc/dns/apps/Advanced Forwarding/dnsApp.config
-          subPath: dnsApp.config
+        - path: /opt/adguardhome/work
+          readOnly: false
 
     route:
       app:
@@ -123,5 +143,5 @@ spec:
           sectionName: https
         rules:
         - backendRefs:
-          - name: technitium-dns
-            port: 5380
+          - name: adguard-home
+            port: 3000

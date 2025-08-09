@@ -14,7 +14,7 @@ spec:
     secretRef:
       name: sops-age
   dependsOn:
-  - name: technitium-dns
+  - name: adguard-home
     namespace: dns-private
   interval: 1h
   path: ./kubernetes/apps/dns-private/external-dns
