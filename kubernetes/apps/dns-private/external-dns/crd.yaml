@@ -9,11 +9,11 @@ spec:
   chart:
     spec:
       chart: external-dns
-      version: 1.17.0
+      version: 9.0.1
       sourceRef:
         kind: HelmRepository
-        name: external-dns
-        namespace: flux-system
+        name: bitnami
+        namespace: dns-private
   install:
     remediation:
       retries: -1

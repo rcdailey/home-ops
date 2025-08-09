@@ -1,27 +1,51 @@
 ---
-provider: rfc2136
-env:
-- name: EXTERNAL_DNS_RFC2136_HOST
-  value: dns-gateway
-- name: EXTERNAL_DNS_RFC2136_PORT
-  value: "53"
-- name: EXTERNAL_DNS_RFC2136_ZONE
-  value: "${SECRET_DOMAIN}"
-- name: EXTERNAL_DNS_RFC2136_TSIG_KEYNAME
-  value: external-dns-key
-- name: EXTERNAL_DNS_RFC2136_TSIG_SECRET_ALG
-  value: hmac-sha256
-- name: EXTERNAL_DNS_RFC2136_TSIG_SECRET
-  valueFrom:
-    secretKeyRef:
-      name: external-dns-secret
-      key: tsig-secret
+provider: webhook
+image:
+  repository: registry.k8s.io/external-dns/external-dns
+  tag: v0.18.0
+extraArgs:
+- --webhook-provider-url=http://localhost:8888
+- --domain-filter=${SECRET_DOMAIN}
+- --txt-owner-id=dns-private
 triggerLoopOnEvent: true
 policy: sync
 txtPrefix: k8s.
-txtOwnerId: technitium
-domainFilters: ["${SECRET_DOMAIN}"]
+sidecars:
+- name: adguard-webhook
+  image: ghcr.io/muhlba91/external-dns-provider-adguard:v9.0.1
+  ports:
+  - containerPort: 8888
+    name: http
+  - containerPort: 8080
+    name: healthz
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: healthz
+    initialDelaySeconds: 10
+    timeoutSeconds: 5
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: healthz
+    initialDelaySeconds: 10
+    timeoutSeconds: 5
+  env:
+  - name: LOG_LEVEL
+    value: info
+  - name: ADGUARD_URL
+    value: "http://adguard-home-0.adguard-home.dns-private.svc.cluster.local:3000"
+  - name: ADGUARD_USER
+    valueFrom:
+      secretKeyRef:
+        name: adguard-home-credentials
+        key: username
+  - name: ADGUARD_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: adguard-home-credentials
+        key: password
 serviceMonitor:
   enabled: true
 podAnnotations:
-  secret.reloader.stakater.com/reload: external-dns-secret
+  reloader.stakater.com/auto: "true"
