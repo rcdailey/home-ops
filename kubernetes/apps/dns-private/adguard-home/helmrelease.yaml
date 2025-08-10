@@ -61,7 +61,7 @@ spec:
           init-config:
             image:
               repository: alpine
-              tag: 3.20.3
+              tag: 3.22.1
             command:
             - /bin/sh
             - -c
