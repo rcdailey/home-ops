@@ -25,6 +25,9 @@
   secrets, pvcs). Subdirectories only for assets (config/, resources/, icons/)
 - **Kustomization Logic**: Single ks.yaml for same namespace+timing+lifecycle. Multiple for
   different namespaces/timing/lifecycle or operator+instance patterns
+- **Namespace Inheritance**: NEVER add `namespace` field to child ks.yaml files - parent
+  Kustomizations with `namespace: <target>` automatically override ALL child resource namespaces.
+  Adding redundant namespace fields creates confusion and maintenance overhead.
 - **Validation Sequence**: kustomize build → kubectl dry-run (server) → flux check
 - **Helm**: Check versions with `helm search repo <chart> --versions`, validate with `helm template`
 - **Timing**: Never specify explicit timeouts/intervals without specific issue justification
