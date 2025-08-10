@@ -9,4 +9,4 @@ spec:
   interval: 1h
   url: oci://registry-1.docker.io/bitnamicharts/external-dns
   ref:
-    tag: 9.0.1
+    tag: 9.0.2
