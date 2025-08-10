@@ -1,4 +1,4 @@
-kubernetes-rias.yaml
-kubernetes-nami.yaml
-kubernetes-marin.yaml
 talosconfig
+home-ops-rias.yaml
+home-ops-nami.yaml
+home-ops-marin.yaml
