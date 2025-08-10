@@ -26,10 +26,10 @@ spec:
   - kind: ConfigMap
     name: external-dns-shared-values
     valuesKey: values.yaml
+  - kind: Secret
+    name: cluster-secrets
+    valuesKey: SECRET_DOMAIN
+    targetPath: domainFilters[0]
   values:
     fullnameOverride: *app
-    extraArgs:
-    - --crd-source-apiversion=externaldns.k8s.io/v1alpha1
-    - --crd-source-kind=DNSEndpoint
-    - --namespace=dns-private
     sources: ["crd"]

@@ -6,6 +6,7 @@ namespace: dns-private
 resources:
 - ./crd.yaml
 - ./httproute.yaml
+- ./dnsendpoint.yaml
 configMapGenerator:
 - name: external-dns-shared-values
   files:
