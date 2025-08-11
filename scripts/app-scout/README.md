@@ -12,6 +12,9 @@ production environments.
 # Discover deployment patterns
 ./scripts/app-scout.sh discover plex
 
+# Find repositories with multiple apps deployed together
+./scripts/app-scout.sh correlate blocky external-dns
+
 # Inspect configuration files
 ./scripts/app-scout.sh inspect plex --repo onedr0p/home-ops --files helmrelease,values
 ```
@@ -31,6 +34,21 @@ production environments.
 
 ```bash
 ./scripts/app-scout.sh discover authentik --sample-count 5
+```
+
+### Correlate Command
+
+```bash
+./scripts/app-scout.sh correlate <app_name1> <app_name2> [...] [--sample-count N]
+```
+
+**Purpose**: Find repositories that contain multiple applications deployed together
+**Output**: JSON showing repositories with all specified apps and their deployment details
+
+**Example**:
+
+```bash
+./scripts/app-scout.sh correlate blocky external-dns --sample-count 10
 ```
 
 ### Inspect Command
@@ -61,7 +79,8 @@ production environments.
 ## Workflow
 
 1. **Discover** → Find deployment patterns and available files
-2. **Inspect** → Get actual configuration files
+2. **Correlate** → Find architectural patterns where apps are deployed together
+3. **Inspect** → Get actual configuration files
 
 ## Discovery Output Structure
 
@@ -111,6 +130,7 @@ Searches these locations around each HelmRelease:
 ## Use Cases
 
 - **Migration Planning**: See how others deploy the same app
+- **Architectural Research**: Discover how applications are combined in production
 - **Configuration Examples**: Get proven configurations from active deployments
 - **Best Practices**: Learn from most-starred repositories
 - **Troubleshooting**: Compare your setup against working examples
