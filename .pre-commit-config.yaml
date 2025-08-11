@@ -39,6 +39,13 @@ repos:
     language: script
     files: '^kubernetes/apps/.*/(ks\.yaml|.*\.sops\.yaml|secrets/.*\.sops\.yaml|secrets/kustomization\.yaml)$'
     description: Ensures SOPS secrets have proper decryption configuration in Kustomizations
+  - id: yaml-validator
+    name: YAML Validator
+    entry: scripts/pre-commit/yaml-validator/yaml-validator.py
+    language: python
+    additional_dependencies: ["PyYAML>=6.0", "jsonpath-ng>=1.6.0"]
+    files: '^kubernetes/.*\.ya?ml$'
+    description: Validates Kubernetes manifests against custom rules defined in .yaml-validator.yaml
 
 - repo: https://github.com/google/yamlfmt
   rev: v0.17.2
