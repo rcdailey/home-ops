@@ -32,11 +32,31 @@ spec:
     remediation:
       retries: 3
   values:
-    autoDirectNodeRoutes: true
+    # TODO: WORKAROUND for Cilium L2 announcements + externalTrafficPolicy: Local incompatibility
+    # Issue: https://github.com/cilium/cilium/issues/27800
+    #
+    # Context: L2 announcements use leader election (not pod locality) to choose announcing nodes.
+    # This breaks externalTrafficPolicy: Local when pods run on different nodes than the announcer.
+    #
+    # Current workaround: Use DSR + Geneve tunneling with externalTrafficPolicy: Cluster
+    # to preserve source IP while avoiding the incompatibility.
+    #
+    # Action required: When issue #27800 is resolved, consider reverting to:
+    # - routingMode: native
+    # - autoDirectNodeRoutes: true
+    # - tunnelProtocol: vxlan (or remove tunnelProtocol)
+    # - externalTrafficPolicy: Local in envoyproxy-config.yaml
+    # - Remove dsrDispatch: geneve
+    # - hostLegacyRouting: true
+    #
+    # This will provide cleaner L2-only networking with proper Local traffic policy support.
+    # Disabled for tunnel mode compatibility (issue #27800 workaround)
+    autoDirectNodeRoutes: false
     bpf:
       masquerade: true
       # Ref: https://github.com/siderolabs/talos/issues/10002
-      hostLegacyRouting: true
+      # Changed from true to false for Geneve tunneling compatibility (issue #27800 workaround)
+      hostLegacyRouting: false
     cni:
       # Required for pairing with Multus CNI
       exclusive: false
@@ -71,6 +91,8 @@ spec:
     loadBalancer:
       algorithm: maglev
       mode: "dsr"
+      # Added for issue #27800 workaround: DSR dispatch via Geneve tunneling
+      dsrDispatch: geneve
     localRedirectPolicy: true
     operator:
       dashboards:
@@ -88,7 +110,10 @@ spec:
         enabled: true
         trustCRDsExist: true
     rollOutCiliumPods: true
-    routingMode: native
+    # Changed from native to tunnel for issue #27800 workaround
+    routingMode: tunnel
+    # Added for issue #27800 workaround: Geneve tunneling for DSR
+    tunnelProtocol: geneve
     securityContext:
       capabilities:
         ciliumAgent:
