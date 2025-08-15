@@ -62,7 +62,10 @@ spec:
       - name: autopath
         parameters: "@kubernetes"
       - name: forward
-        parameters: . /etc/resolv.conf
+        parameters: . tls://9.9.9.9 tls://149.112.112.112
+        configBlock: |
+          tls_servername dns.quad9.net
+          health_check 5s
       - name: cache
         configBlock: |
           prefetch 20
