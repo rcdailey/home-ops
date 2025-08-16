@@ -23,6 +23,8 @@ spec:
     controllers:
       echo:
         strategy: RollingUpdate
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
