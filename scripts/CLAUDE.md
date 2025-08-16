@@ -14,7 +14,7 @@
 ## Hook Locations
 
 - **Pre-commit scripts**: @pre-commit/ directory
-- **Available validators**: check-dependencies.sh, kustomize-build-check.sh, validate-sops-*.sh
+- **Available validators**: check-dependencies.sh, validate-sops-*.sh
 
 ## Organization
 
