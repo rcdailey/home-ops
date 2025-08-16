@@ -1,0 +1,22 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: adguard-home-replica
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: dns-replica.${SECRET_DOMAIN}
+spec:
+  parentRefs:
+  - name: internal
+    namespace: network
+    sectionName: https
+  hostnames:
+  - dns-replica.${SECRET_DOMAIN}
+  rules:
+  - backendRefs:
+    - name: adguard-home-primary
+      port: 3000
+      weight: 0
+    - name: adguard-home-replica
+      port: 3000
+      weight: 100

@@ -1,0 +1,10 @@
+---
+users:
+- name: ${ADGUARD_HOME_USERNAME}
+  password: ${ADGUARD_HOME_PASSWORD_HASH}
+
+dns:
+  trusted_proxies:
+  - 127.0.0.0/8
+  - ::1/128
+  - 192.168.1.1

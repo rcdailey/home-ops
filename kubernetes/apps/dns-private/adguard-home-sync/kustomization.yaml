@@ -3,11 +3,11 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: dns-private
-components:
-- ../../components/common
 resources:
-- ./secret/ks.yaml
-- ./external-dns/ks.yaml
-- ./dns-gateway/ks.yaml
-- ./adguard-home/ks.yaml
-- ./adguard-home-sync/ks.yaml
+- ./helmrelease.yaml
+configMapGenerator:
+- name: adguard-home-sync-config
+  files:
+  - data/adguardhome-sync.yaml
+generatorOptions:
+  disableNameSuffixHash: true

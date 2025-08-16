@@ -3,7 +3,7 @@
 ## Status
 
 - **Phase**: Implementation
-- **Progress**: 17/275 items complete (Phase 1 Infrastructure Foundation complete, qBittorrent fully configured and operational)
+- **Progress**: 19/275 items complete (Phase 1 Infrastructure Foundation complete, qBittorrent operational, DNS architecture complete with AdGuard Home production deployment)
 
 ## Objective
 
@@ -11,7 +11,7 @@ Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes 
 
 ## Current Focus
 
-qBittorrent deployment complete with optimized configuration applied via WebUI. Production-ready setup includes VueTorrent UI, 20MB/s speed limits, 4:1 share ratios, 12-hour seeding limits, proper download paths, and subnet authentication whitelist. Forward authentication operational with Authentik, VPN connectivity stable with ProtonVPN port forwarding.
+DNS architecture completed with AdGuard Home production deployment featuring VLAN-based filtering, client IP preservation, and conditional forwarding. qBittorrent deployment complete with optimized configuration applied via WebUI. Production-ready setup includes VueTorrent UI, 20MB/s speed limits, 4:1 share ratios, 12-hour seeding limits, proper download paths, and subnet authentication whitelist. Forward authentication operational with Authentik, VPN connectivity stable with ProtonVPN port forwarding.
 
 ## Task Checklist
 
@@ -44,9 +44,10 @@ qBittorrent deployment complete with optimized configuration applied via WebUI. 
 - [ ] Export existing user data and configuration
 - [ ] Configure OIDC integration for other services
 - [ ] Test authentication flow before dependent services
-- [ ] Deploy AdGuard Home with single replica
-- [ ] Configure for cluster DNS and external clients
-- [ ] Test DNS resolution and filtering rules
+- [x] Deploy AdGuard Home with high availability (primary-replica setup)
+- [x] Configure VLAN-based filtering with client IP preservation
+- [x] Implement conditional forwarding for local domain resolution
+- [x] Complete DNS architecture with external-dns automation
 - [ ] Deploy FileRun with MariaDB StatefulSet
 - [ ] Deploy Elasticsearch for search functionality
 - [ ] Deploy Tika for document processing
@@ -229,7 +230,7 @@ values:
 ### Network Configuration
 
 - Network: 192.168.1.0/24, Gateway: 192.168.1.1, Cluster API: 192.168.1.70
-- DNS Gateway: 192.168.1.71 (k8s_gateway)
+- DNS Gateway: 192.168.1.71 (AdGuard Home with VLAN-based filtering)
 - Internal Gateway: 192.168.1.72 (Envoy Gateway - internal services)
 - External Gateway: 192.168.1.73 (Envoy Gateway - external/public services)
 - Domain: ${SECRET_DOMAIN}, Test Domain: *.test.${SECRET_DOMAIN}
@@ -267,6 +268,20 @@ values:
 **Timeline Estimates**: Total 8-12 weeks across 6 phases with learning and testing time
 
 ## Progress & Context Log
+
+### 2025-08-16 - DNS Architecture Production Deployment Complete
+
+Successfully completed DNS architecture migration with AdGuard Home production deployment, achieving all design goals for local traffic optimization, VLAN-based filtering, and service migration support.
+
+**Production Cutover**: Renamed `dns-test` subdomain to `dns` marking official production promotion. Created separate `dns-replica` subdomain for direct replica instance access, enabling independent configuration verification and management.
+
+**Client IP Preservation Solution**: Implemented direct client connection architecture where devices connect directly to AdGuard Home (192.168.1.71) instead of through UDMP DNS forwarding. This preserves real source IPs enabling VLAN-based filtering with 590,523+ rules across 5 network segments: Main LAN (global rules), Kids VLAN (parental controls), IoT/Work VLANs (social media blocking), Guest VLAN (basic protection), Cameras VLAN (minimal filtering).
+
+**Local Traffic Optimization**: Configured conditional forwarding ensuring `*.domain.com` queries resolve locally through UDMP records, enabling direct connections to cluster gateways without inefficient WAN routing through Cloudflare infrastructure.
+
+**Service Migration Architecture**: Established wildcard fallback records (`*.domain.com` → Unraid) with automatic specific record overrides as services migrate to Kubernetes. External-DNS dual-provider setup automatically manages both UDMP (local) and Cloudflare (public) DNS records based on HTTPRoute configurations.
+
+**Operational Benefits**: DNS architecture now supports seamless Docker-to-Kubernetes migration with zero-downtime DNS updates, maintains family-friendly filtering across different VLANs, and provides efficient local traffic routing while preserving external internet access through Cloudflare tunnel integration.
 
 ### 2025-07-14 - qBittorrent Configuration Complete
 

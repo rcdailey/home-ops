@@ -1,0 +1,33 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &appname adguard-home-sync
+spec:
+  targetNamespace: dns-private
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *appname
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  interval: 10m
+  path: "./kubernetes/apps/dns-private/adguard-home-sync"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+  dependsOn:
+  - name: secret
+    namespace: dns-private
+  - name: adguard-home
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-secrets
+    - kind: Secret
+      name: dns-private-secret

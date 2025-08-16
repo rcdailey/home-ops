@@ -1,4 +1,10 @@
 ---
+# TODO: WORKAROUND for Cilium L2 announcements + externalTrafficPolicy: Local incompatibility
+# Issue: https://github.com/cilium/cilium/issues/27800
+#
+# Current: Using externalTrafficPolicy: Cluster + DSR/Geneve to preserve source IP
+# Future: When Cilium properly supports L2 + Local, revert to externalTrafficPolicy: Local
+#
 apiVersion: v1
 kind: Service
 metadata:
@@ -11,10 +17,13 @@ metadata:
     lbipam.cilium.io/ips: "192.168.1.71"
 spec:
   type: LoadBalancer
-  externalTrafficPolicy: Local
+  # Changed from Local to Cluster for issue #27800 workaround
+  # DSR + Geneve tunneling preserves source IP with Cluster policy
+  externalTrafficPolicy: Cluster
   selector:
     # For finding backend DNS pods to route traffic to
     app.kubernetes.io/component: dns-server
+    app.kubernetes.io/controller: adguard-home
   ports:
   - name: dns-tcp
     port: 53
