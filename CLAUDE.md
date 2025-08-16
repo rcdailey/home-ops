@@ -213,3 +213,11 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 - Values must be JSON-encoded strings
 - Always use single quotes around index path
 - Use `--idempotent` flag to avoid errors if key exists/doesn't exist
+
+## GitHub Integration
+
+**PULL REQUEST WORKFLOW:**
+
+- **Repository**: `https://github.com/rcdailey/home-ops`
+- **Review Priority**: Use GitHub MCP tools for all PR operations (list, review, merge)
+- **Merge Strategy**: Squash and merge for clean commit history
