@@ -2,66 +2,305 @@
 
 ## Overview
 
-This document describes the DNS architecture and resolution flow for services running in the
-cluster. For general cluster information and operational procedures, see the root CLAUDE.md file.
+This document describes the DNS architecture and resolution flow for services running in the cluster. The architecture uses AdGuard Home for DNS filtering with VLAN-based client rules and conditional forwarding for local domain resolution.
+
+## Design Challenges
+
+The DNS architecture solves three fundamental problems:
+
+- **Local traffic efficiency**: Internal requests to `domain.com` services must short-circuit to local cluster gateways instead of routing through external Cloudflare infrastructure
+- **Subnet-specific filtering**: Different VLANs require distinct content filtering policies, demanding DNS server solutions that preserve client source IPs
+- **Service migration support**: Gradual Docker-to-Kubernetes migration requires seamless fallback to legacy Unraid services while maintaining automatic DNS updates
 
 ## DNS Resolution Flow
 
 ```mermaid
-flowchart TD
-    Client[Home Device<br/>192.168.X.Y] --> DNS[DNS Gateway<br/>192.168.1.71]
-    DNS --> Tech[Technitium DNS<br/>component: dns-server]
+flowchart LR
+    subgraph Internal["🏠 Internal Access Path"]
+        direction TB
+        Client[Home Device<br/>192.168.X.Y]
+        AGH[AdGuard Home<br/>192.168.1.71<br/>🛡️ Filtering + Real IPs]
+        UDMP[UDMP Gateway<br/>192.168.1.1<br/>📋 Local DNS Records]
 
-    Tech --> Decision{Query Type?}
+        Client --> AGH
+        AGH -->|"*.domain.com"| UDMP
+        AGH -->|"google.com etc."| Upstream[☁️ Upstream DNS<br/>Cloudflare/Quad9]
+    end
 
-    Decision -->|"device.lan.domain"| UDMP[UDMP Forwarder<br/>192.168.1.1]
-    Decision -->|"foo.domain<br/>(exists in K8s)"| K8s[Gateway IP<br/>via External-DNS]
-    Decision -->|"unknown.domain<br/>(not in K8s)"| Fallback[Wildcard A Record<br/>192.168.1.58<br/>MIGRATION ONLY]
-    Decision -->|"google.com"| Upstream[Upstream DNS<br/>1.1.1.1, 8.8.8.8]
+    subgraph External["🌐 External Access Path"]
+        direction TB
+        ExternalClient[External Device<br/>📱 Phone/Laptop]
+        CloudflareDNS[Cloudflare DNS<br/>🌍 Public Records]
+        CFTunnel[🔒 Cloudflare Tunnel<br/>123abcd...cfargotunnel.com]
 
-    K8s --> Internal[Internal Gateway<br/>192.168.1.72]
-    K8s --> External[External Gateway<br/>192.168.1.73]
+        ExternalClient --> CloudflareDNS
+        CloudflareDNS --> CFTunnel
+    end
+
+    subgraph ClusterServices["🎯 Cluster Services"]
+        direction TB
+        ExtGW[External Gateway<br/>192.168.1.73<br/>🌐 Public Services]
+        IntGW[Internal Gateway<br/>192.168.1.72<br/>🏠 Private Services]
+    end
+
+    subgraph LegacyServices["📦 Legacy Services"]
+        direction TB
+        Legacy[Unraid Server<br/>192.168.1.58<br/>🔄 Migration Fallback]
+    end
+
+    %% Internal resolution paths
+    UDMP -->|"service.domain.com<br/>CNAME: external.domain.com"| ExtGW
+    UDMP -->|"internal-app.domain.com<br/>CNAME: internal.domain.com"| IntGW
+    UDMP -->|"unmigrated.domain.com<br/>Wildcard: *.domain.com"| Legacy
+
+    %% External resolution path
+    CFTunnel --> ExtGW
+
+    %% Styling
+    classDef internal fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#ffffff
+    classDef external fill:#ea580c,stroke:#f97316,stroke-width:2px,color:#ffffff
+    classDef services fill:#7c3aed,stroke:#8b5cf6,stroke-width:2px,color:#ffffff
+
+    class Client,AGH,UDMP,Upstream internal
+    class ExternalClient,CloudflareDNS,CFTunnel external
+    class ExtGW,IntGW,Legacy services
 ```
 
-### Decision Logic
+## External-DNS Integration Architecture
 
-- **A) `device.lan.${SECRET_DOMAIN}`**: Conditional forwarder → `192.168.1.1` (UDMP)
-- **B) `foo.${SECRET_DOMAIN}`** (exists in K8s): Zone lookup → Gateway IP via External-DNS
-- **C) `unknown.${SECRET_DOMAIN}`** (not in K8s): Wildcard A record → `192.168.1.58` (migration fallback - temporary)
-- **D) `google.com`**: Upstream forwarder → `1.1.1.1, 8.8.8.8`
+```mermaid
+flowchart TD
+    subgraph DNS["🌍 DNS Providers"]
+        direction TB
+        UDMP[UDMP Local DNS<br/>192.168.1.1]
+        Cloudflare[Cloudflare Public DNS<br/>Internet Records]
+
+        UDMP ~~~ Cloudflare
+    end
+
+    subgraph K8s["🎯 Kubernetes Cluster"]
+        direction TB
+        UniFiExtDNS[UniFi External-DNS<br/>Webhook Provider]
+        CFExtDNS[Cloudflare External-DNS<br/>HTTPRoute Provider]
+        HTTPRoutes[HTTPRoutes<br/>service.domain.com<br/>internal-app.domain.com]
+        Gateways[Gateways<br/>External: 192.168.1.73<br/>Internal: 192.168.1.72]
+
+        UniFiExtDNS ~~~ CFExtDNS
+        CFExtDNS ~~~ HTTPRoutes
+        HTTPRoutes ~~~ Gateways
+    end
+
+    UniFiExtDNS --> UDMP
+    CFExtDNS --> Cloudflare
+
+    UniFiExtDNS -->|Watches| HTTPRoutes
+    CFExtDNS -->|Watches| HTTPRoutes
+
+    HTTPRoutes --> Gateways
+
+    %% Styling
+    classDef k8s fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#ffffff
+    classDef dns fill:#ea580c,stroke:#f97316,stroke-width:2px,color:#ffffff
+
+    class HTTPRoutes,Gateways,UniFiExtDNS,CFExtDNS k8s
+    class UDMP,Cloudflare dns
+```
+
+## VLAN-Based Filtering
+
+```mermaid
+flowchart TD
+    subgraph VLANs["🌐 Network VLANs"]
+        direction LR
+        Main[Main LAN<br/>192.168.1.0/24<br/>All devices]
+        Kids[Kids VLAN<br/>192.168.3.0/24<br/>Children devices]
+        IoT[IoT VLAN<br/>192.168.2.0/24<br/>Smart home]
+        Work[Work VLAN<br/>192.168.7.0/24<br/>Office devices]
+        Guest[Guest VLAN<br/>192.168.4.0/24<br/>Visitors]
+        Cameras[Cameras VLAN<br/>192.168.5.0/24<br/>Security cameras]
+    end
+
+    subgraph AGH["🛡️ AdGuard Home Filtering Engine"]
+        direction LR
+        Global[Global Rules<br/>590,523 total<br/>HaGeZi Multi Light + TIF]
+        Social[Social Media Blocking<br/>Facebook, Twitter, Instagram<br/>Snapchat, TikTok, LinkedIn]
+        Parental[Parental Controls<br/>Safe Search + Adult Content<br/>YouTube, Discord, Reddit]
+        Minimal[Minimal Filtering<br/>Malware protection only]
+    end
+
+    subgraph Output["🌍 Internet Access"]
+        direction LR
+        Internet[Internet Requests<br/>Filtered & Allowed]
+    end
+
+    Main -->|192.168.1.0/24| Global
+    Kids -->|192.168.3.0/24| Parental
+    IoT -->|192.168.2.0/24| Social
+    Work -->|192.168.7.0/24| Social
+    Guest -->|192.168.4.0/24| Parental
+    Cameras -->|192.168.5.0/24| Minimal
+
+    Global --> Internet
+    Social --> Internet
+    Parental --> Internet
+    Minimal --> Internet
+
+    %% Styling
+    classDef vlans fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#ffffff
+    classDef filtering fill:#7c3aed,stroke:#8b5cf6,stroke-width:2px,color:#ffffff
+    classDef output fill:#ea580c,stroke:#f97316,stroke-width:2px,color:#ffffff
+
+    class Main,Kids,IoT,Work,Guest,Cameras vlans
+    class ClientID,Global,Social,Parental,Minimal filtering
+    class Internet output
+```
+
+## Architecture Concepts
+
+### DNS Resolution Strategy
+
+The architecture implements a dual-path DNS resolution system:
+
+- **Internal Path**: Home devices connect directly to AdGuard Home for filtering and conditional forwarding to local DNS records
+- **External Path**: Internet clients resolve through Cloudflare DNS to tunnel endpoints
+- **Client IP Preservation**: Direct connections to AdGuard Home enable real source IP visibility for VLAN-based filtering
+
+### External-DNS Integration
+
+A dual-provider external-dns setup automatically manages DNS records:
+
+- **UniFi Provider**: Watches all HTTPRoutes and creates local DNS records in UDMP
+- **Cloudflare Provider**: Watches external HTTPRoutes and creates public DNS records
+- **Target Inheritance**: HTTPRoutes inherit gateway targets automatically without explicit configuration
+
+### VLAN-Based Filtering
+
+Network segmentation enables subnet-specific content filtering:
+
+- **Global Rules**: Baseline protection for main LAN with 590,523+ filtering rules
+- **Enhanced Privacy**: Social media blocking for IoT and work networks
+- **Parental Controls**: Comprehensive content restrictions for kids and guest networks
+- **Minimal Filtering**: Camera-compatible protection with malware blocking only
+
+### Service Migration
+
+Gradual migration from Docker to Kubernetes with automatic DNS updates:
+
+- **Wildcard Fallback**: Legacy services accessible via `*.domain.com` → Unraid server
+- **Specific Overrides**: New Kubernetes services create specific DNS records that override wildcards
+- **Zero Downtime**: External-DNS automatically creates records when HTTPRoutes are deployed
 
 ## Core Components
 
-### 1. Technitium DNS Server
+### AdGuard Home DNS Server
 
-Primary DNS server providing intelligent routing and conditional forwarding.
+Primary DNS server providing ad/tracker blocking, VLAN-based filtering, and conditional forwarding.
 
-**Deployment**: `kubernetes/apps/dns-private/technitium-dns/`
+**Key Features**:
+- Real source IP preservation for VLAN-based filtering
+- Conditional forwarding to UDMP for local domain resolution
+- 590,523+ filtering rules with automatic updates
+- Subnet-specific client configurations
 
-- **Image**: `technitium/dns-server:13.6.0`
+### DNS Gateway Service
+
+Provider-agnostic LoadBalancer service that separates infrastructure from application concerns, enabling zero-downtime DNS provider switching.
+
+### Envoy Gateway Infrastructure
+
+Dual gateway architecture for service exposure:
+- **External Gateway**: WAN/tunnel accessible services
+- **Internal Gateway**: LAN-only services
+
+### External-DNS Providers
+
+Automated DNS record management across multiple providers:
+- **UniFi External-DNS**: Local DNS records in UDMP
+- **Cloudflare External-DNS**: Public DNS records for internet access
+
+## Resolution Decision Logic
+
+### Internal Client Resolution
+
+When home devices query DNS through AdGuard Home:
+
+1. **Local domains** (`*.domain.com`): Conditional forwarder → UDMP local records
+2. **Service domains** (`service.domain.com`): UDMP CNAME → gateway IP
+3. **Internet domains** (`google.com`): Upstream → Cloudflare/Quad9
+
+### External Client Resolution
+
+When internet clients query DNS through Cloudflare:
+
+1. **Service domains** (`service.domain.com`): Cloudflare DNS → tunnel endpoint
+2. **Legacy domains** (`*.domain.com`): Cloudflare DNS → dynamic proxy
+
+### Client IP Preservation
+
+Direct client connections to AdGuard Home eliminate proxy masking:
+- Clients connect directly to AdGuard Home (192.168.1.71)
+- Real source IPs enable VLAN-based filtering rules
+- No UDMP DNS forwarding to mask client identities
+
+## Network Segmentation
+
+### VLAN Filtering Rules
+
+AdGuard Home applies subnet-specific filtering based on client source IP:
+
+- **Main LAN (192.168.1.0/24)**: Global filtering (590,523 rules)
+- **Kids VLAN (192.168.3.0/24)**: Enhanced blocking + parental controls
+- **IoT/Work VLANs (192.168.2.0/24, 192.168.7.0/24)**: Privacy-enhanced filtering
+- **Guest VLAN (192.168.4.0/24)**: Basic protection + adult content blocking
+- **Cameras VLAN (192.168.5.0/24)**: Minimal filtering for compatibility
+
+## Architecture Benefits
+
+- **Client IP Preservation**: Direct client connections enable real source IP visibility
+- **VLAN-Based Filtering**: Subnet-specific ad/tracker blocking and content restrictions
+- **Migration-Friendly**: Gradual service migration with automatic DNS updates
+- **Zero-Downtime Capable**: Infrastructure changes without service interruption
+- **Advanced Filtering**: 590,523+ filtering rules with automatic updates
+- **Tunnel Compatible**: Proper CNAME chains for Cloudflare tunnel architecture
+- **Intelligent Fallback**: Conditional forwarding with wildcard fallback support
+- **High Performance**: Direct DNS resolution without proxy overhead
+- **Secure**: Encrypted secrets management and namespace isolation
+- **Family-Friendly**: Comprehensive parental controls and safe search enforcement
+
+---
+
+## Implementation Details
+
+### AdGuard Home Configuration
+
+**Deployment**: `kubernetes/apps/dns-private/adguard-home/`
+
+- **Image**: `adguard/adguardhome`
 - **Port**: `5353` (target), exposed as `53`
-- **Web UI**: `dns-test.${SECRET_DOMAIN}:5380`
+- **Web UI**: `dns.domain.com:3000`
 - **Component Label**: `app.kubernetes.io/component: dns-server`
-- **Storage**: PVC `technitium-dns-data` mounted at `/etc/dns`
+- **Storage**: PVC `adguard-home-data` mounted at `/opt/adguardhome`
 
-**Zone Configuration**:
+**Upstream DNS Configuration**:
 
-```txt
-Zone: ${SECRET_DOMAIN}
-├── *.${SECRET_DOMAIN} → 192.168.1.58 (wildcard fallback)
-├── foo.${SECRET_DOMAIN} → 192.168.1.72 (specific record - overrides wildcard)
-└── bar.${SECRET_DOMAIN} → 192.168.1.73 (specific record - overrides wildcard)
-
-Conditional Forwarders:
-lan.${SECRET_DOMAIN} → 192.168.1.1 (UDMP for local devices)
-
-Upstream DNS:
-Default: 1.1.1.1, 8.8.8.8
+```yaml
+upstream_dns:
+  - "[/domain.com/]192.168.1.1:53"  # Conditional forwarding to UDMP
+  - "https://1.1.1.1/dns-query"           # Cloudflare DoH
+  - "https://9.9.9.9/dns-query"           # Quad9 DoH
+  - "1.1.1.1"                             # Cloudflare DNS
+  - "9.9.9.9"                             # Quad9 DNS
 ```
 
-### 2. DNS Gateway Service
+**Filtering Configuration**:
 
-Provider-agnostic LoadBalancer service that separates infrastructure from application concerns.
+```yaml
+filters:
+  - HaGeZi Multi Light (57,584 rules) - Baseline protection
+  - HaGeZi Threat Intelligence Feeds (532,939 rules) - Malware protection
+```
+
+### DNS Gateway Service
 
 **Configuration**: `kubernetes/apps/dns-private/dns-gateway/service.yaml`
 
@@ -72,72 +311,74 @@ Provider-agnostic LoadBalancer service that separates infrastructure from applic
 - **Ports**: TCP/UDP 53 → 5353
 
 **Benefits**:
-
 - Zero-downtime DNS provider switching
 - Infrastructure/application separation
 - Future Blocky/other DNS provider support
 
-### 3. Envoy Gateway Infrastructure
+### Envoy Gateway Infrastructure
 
 **External Gateway** (`kubernetes/apps/network/envoy-gateway/external.yaml`):
-
 - **VIP**: `192.168.1.73`
-- **Target**: `external.${SECRET_DOMAIN}`
+- **Target**: `external.domain.com`
 - **Purpose**: WAN/tunnel accessible services
 
 **Internal Gateway** (`kubernetes/apps/network/envoy-gateway/internal.yaml`):
-
 - **VIP**: `192.168.1.72`
-- **Target**: `internal.${SECRET_DOMAIN}`
+- **Target**: `internal.domain.com`
 - **Purpose**: LAN-only services
 
 **EnvoyProxy Configuration**:
-
 - **Traffic Policy**: Cluster (via parametersRef)
-- **TLS**: Wildcard certificate for `*.${SECRET_DOMAIN}`
+- **TLS**: Wildcard certificate for `*.domain.com`
 
-### 4. External-DNS Architecture
-
-Four-instance architecture for proper source separation and filtering:
+### External-DNS Architecture
 
 #### Cloudflare External-DNS
 
 **HTTPRoute Instance** (`kubernetes/apps/network/cloudflare-dns/httproute.yaml`):
-
 - **Sources**: `gateway-httproute`
 - **Filter**: `--gateway-name=external`
-- **Purpose**: External HTTPRoutes → Cloudflare DNS
-- **TxtOwnerId**: `cloudflare`
+- **Purpose**: External HTTPRoutes → Cloudflare DNS (internet access)
+- **TxtOwnerId**: `default`
+- **Record Pattern**: `service.domain.com` → CNAME → `external.domain.com`
 
 **CRD Instance** (`kubernetes/apps/network/cloudflare-dns/crd.yaml`):
-
 - **Sources**: `crd`
 - **Namespace**: `network`
-- **Purpose**: Cloudflare DNSEndpoints → Cloudflare DNS
+- **Purpose**: Gateway A records → Cloudflare DNS
 - **TxtOwnerId**: `cloudflare`
+- **Record Pattern**: `external.domain.com` → CNAME → `tunnel.cfargotunnel.com`
 
-#### Technitium External-DNS
+**Manual Records** (Cloudflare dashboard):
+- **Wildcard fallback**: `*.domain.com` → CNAME → `dynamic.domain.com` (legacy services)
+- **Dynamic IP**: `dynamic.domain.com` → A → Cloudflare proxy IP
 
-**HTTPRoute Instance** (`kubernetes/apps/dns-private/external-dns/httproute.yaml`):
+#### UniFi External-DNS
 
+**Single Instance** (`kubernetes/apps/dns-private/external-dns/helmrelease.yaml`):
+- **Provider**: `webhook` (UniFi webhook)
 - **Sources**: `gateway-httproute`
-- **Purpose**: All HTTPRoutes → Technitium DNS
-- **TxtOwnerId**: `technitium`
+- **Purpose**: All HTTPRoutes → UDMP local DNS records
+- **TxtOwnerId**: `dns-private`
+- **API**: UDMP REST API for DNS record management
 
-**CRD Instance** (`kubernetes/apps/dns-private/external-dns/crd.yaml`):
+### UDMP Local DNS Records
 
-- **Sources**: `crd`
-- **Namespace**: `dns-private`
-- **Purpose**: Technitium DNSEndpoints → Technitium DNS
-- **TxtOwnerId**: `technitium`
+```txt
+# Manual entries (infrastructure)
+external.domain.com     A      192.168.1.73
+internal.domain.com     A      192.168.1.72
+*.domain.com            A      192.168.1.58  # Fallback for unmigrated services
 
-## Network Configuration
+# External-DNS managed (Kubernetes services)
+service.domain.com      CNAME  external.domain.com
+internal-app.domain.com CNAME  internal.domain.com
+k8s.cname-service.*           TXT    "heritage=external-dns..."
+```
 
-For Cilium and IP pool configuration, see `kubernetes/apps/kube-system/cilium/networks.yaml`.
+### Target Inheritance Pattern
 
-## Target Inheritance Pattern
-
-### Gateway Configuration
+#### Gateway Configuration
 
 Gateways define target annotations that HTTPRoutes automatically inherit:
 
@@ -147,17 +388,17 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
+    external-dns.alpha.kubernetes.io/target: external.domain.com
 
 # Internal Gateway
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
+    external-dns.alpha.kubernetes.io/target: internal.domain.com
 ```
 
-### HTTPRoute Inheritance
+#### HTTPRoute Inheritance
 
 HTTPRoutes inherit targets from their parent Gateway without explicit configuration:
 
@@ -169,9 +410,10 @@ metadata:
   # NO target annotation - inherits from Gateway
 spec:
   parentRefs:
-  - name: external  # Inherits external.${SECRET_DOMAIN}
-  hostnames: ["service.${SECRET_DOMAIN}"]
+  - name: external  # Inherits external.domain.com
+  hostnames: ["service.domain.com"]
 ```
+
 
 ## Service Migration Workflow
 
@@ -186,11 +428,11 @@ spec:
 ### Post-Migration Cleanup
 
 **Migration Support Infrastructure** (Temporary):
-- Wildcard A record `*.${SECRET_DOMAIN} → 192.168.1.58` provides fallback for unmigrated Docker services
+- Wildcard A record `*.domain.com → 192.168.1.58` provides fallback for unmigrated Docker services
 - Will be removed once all services complete Docker-to-Kubernetes migration
 
 **Final Cleanup Steps**:
-1. Remove wildcard A record: `*.${SECRET_DOMAIN} → .58`
+1. Remove wildcard A record: `*.domain.com → .58`
 2. Keep specific records created by external-dns
 3. Clean unused Docker Compose configurations
 
@@ -198,10 +440,10 @@ spec:
 
 ### External Service Access
 
-**Internal Client to External Service** (e.g., `home.${SECRET_DOMAIN}`):
+**Internal Client to External Service** (e.g., `home.domain.com`):
 
 ```txt
-MacBook → Technitium (.71) → Returns .73 → Direct connection to .73 → K8s external gateway
+MacBook → AdGuard Home (.71) → Returns .73 → Direct connection to .73 → K8s external gateway
 ```
 
 **External Client to External Service**:
@@ -212,54 +454,39 @@ Android → Cloudflare DNS → Returns Cloudflare IPs → Tunnel → .73 → K8s
 
 ### Internal Service Access
 
-**Internal Client to Internal Service** (e.g., `dns-test.${SECRET_DOMAIN}`):
+**Internal Client to Internal Service** (e.g., `dns.domain.com`):
 
 ```txt
-MacBook → Technitium (.71) → Returns .72 → Direct connection to .72 → K8s internal gateway
+MacBook → AdGuard Home (.71) → Returns .72 → Direct connection to .72 → K8s internal gateway
 ```
 
 ## DNS Record Distribution
 
 ### External HTTPRoutes
 
-- `parentRefs: external` → Both Cloudflare DNS and Technitium DNS
-- **Cloudflare**: CNAME to tunnel endpoint (internet access)
-- **Technitium**: A record to `.73` (LAN access)
+HTTPRoutes with `parentRefs: external` create records in both DNS providers:
+
+- **Cloudflare DNS**: `service.domain.com` → CNAME → `external.domain.com` (internet access)
+- **UDMP Local DNS**: `service.domain.com` → CNAME → `external.domain.com` (LAN access)
 
 ### Internal HTTPRoutes
 
-- `parentRefs: internal` → Technitium DNS only
-- **Technitium**: A record to `.72` (LAN access only)
+HTTPRoutes with `parentRefs: internal` create records only locally:
 
-### DNSEndpoints
+- **UDMP Local DNS**: `internal-app.domain.com` → CNAME → `internal.domain.com` (LAN only)
 
-- `dns-provider=cloudflare` → Cloudflare DNS (tunnel CNAME)
-- `dns-provider=technitium` → Technitium DNS (Gateway A records)
+### Gateway Infrastructure Records
 
-## Operational Procedures
+- **Cloudflare**: `external.domain.com` → CNAME → `123abcd...cfargotunnel.com`
+- **UDMP**: `external.domain.com` → A → `192.168.1.73`
+- **UDMP**: `internal.domain.com` → A → `192.168.1.72`
 
-### Technitium Manual Setup
+### Wildcard Fallback Records
 
-1. **Web UI Access**: `https://dns-test.${SECRET_DOMAIN}`
-2. **Admin password change**
-3. **TSIG key creation** (Settings → TSIG, HMAC-SHA256)
-4. **Dynamic Updates enable** for `${SECRET_DOMAIN}` zone
-5. **Security Policy configuration** (allow external-dns key)
+- **Cloudflare**: `*.domain.com` → CNAME → `dynamic.domain.com` (legacy external access)
+- **UDMP**: `*.domain.com` → A → `192.168.1.58` (legacy internal access)
 
-### Zone Management via API
-
-```bash
-# Create primary zone
-POST /api/zones/create?zone=${SECRET_DOMAIN}&type=Primary
-
-# Add wildcard fallback
-POST /api/zones/records/add?zone=${SECRET_DOMAIN}&type=A&name=*&rdata=192.168.1.58
-
-# Conditional forwarder for local devices
-POST /api/zones/create?zone=lan.${SECRET_DOMAIN}&type=Forwarder&forwarder=192.168.1.1
-```
-
-## Key DNS Principles
+## Key Design Principles
 
 ### External-DNS Configuration
 
@@ -273,55 +500,3 @@ POST /api/zones/create?zone=lan.${SECRET_DOMAIN}&type=Forwarder&forwarder=192.16
 - **Provider abstraction**: Use `app.kubernetes.io/component: dns-server` for service selection
 - **Zero-downtime migrations**: Enable seamless DNS provider switching
 - **Infrastructure separation**: Decouple dns-gateway service from dns-server applications
-
-## High Availability and Clustering
-
-### Current Limitations
-
-- **Single Technitium replica**: No native clustering support
-- **File-based zone data**: No database backend for core DNS data
-- **Database support**: Query logging only (not zone data)
-
-### Future Enhancements
-
-- **Multiple DNS providers**: Deploy Blocky alongside Technitium
-- **Provider failover**: Use multiple `dns-server` component labels
-- **Load balancing**: DNS gateway routes to available providers
-
-## Security and Access Control
-
-### DNS Server Security
-
-- **TSIG authentication**: Required for dynamic updates
-- **Security policies**: External-DNS key permissions
-- **Network isolation**: DNS-private namespace separation
-
-### Gateway Security
-
-- **TLS termination**: Wildcard certificates
-- **Traffic policies**: Cluster-wide load balancing
-- **Namespace isolation**: Controlled cross-namespace access
-
-## Monitoring and Observability
-
-### Service Monitoring
-
-- **ServiceMonitor**: Enabled for all external-dns instances
-- **Metrics**: DNS query performance and success rates
-- **Health checks**: Liveness/readiness probes for Technitium
-
-### Troubleshooting
-
-- **DNS resolution testing**: `dig @192.168.1.71 service.${SECRET_DOMAIN}`
-- **External-DNS logs**: Check record creation/deletion
-- **Gateway connectivity**: Verify LoadBalancer service status
-
-## Architecture Benefits
-
-- **Migration-Friendly**: Gradual service migration with automatic DNS updates
-- **Zero-Downtime Capable**: Infrastructure changes without service interruption
-- **Provider Agnostic**: Easy switching between DNS server implementations
-- **Tunnel Compatible**: Proper CNAME chains for Cloudflare tunnel architecture
-- **Intelligent Fallback**: Native wildcard → specific record override behavior
-- **High Performance**: Multi-instance external-dns with source-specific optimization
-- **Secure**: TSIG authentication and namespace isolation

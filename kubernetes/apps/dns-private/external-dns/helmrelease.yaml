@@ -1,0 +1,69 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app external-dns
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.18.0
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+        namespace: flux-system
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  valuesFrom:
+  - kind: Secret
+    name: cluster-secrets
+    valuesKey: SECRET_DOMAIN
+    targetPath: domainFilters[0]
+  values:
+    fullnameOverride: *app
+    sources: ["gateway-httproute"]
+
+    provider:
+      name: webhook
+      webhook:
+        image:
+          repository: ghcr.io/kashalls/external-dns-unifi-webhook
+          tag: v0.6.2
+        env:
+        - name: LOG_LEVEL
+          value: debug
+        - name: UNIFI_HOST
+          value: "https://192.168.1.1"
+        - name: UNIFI_EXTERNAL_CONTROLLER
+          value: "false"
+        - name: UNIFI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dns-private-secret
+              key: UNIFI_API_KEY
+
+    image:
+      repository: registry.k8s.io/external-dns/external-dns
+      tag: v0.18.0
+
+    logLevel: debug
+
+    extraArgs:
+    - --txt-owner-id=dns-private
+
+    triggerLoopOnEvent: true
+    policy: sync
+    txtPrefix: k8s.
+
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true

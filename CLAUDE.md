@@ -11,6 +11,8 @@
 - **Validation**: Run `pre-commit run --files` after changes, before user commits.
 - **Reference Format**: Use `file.yaml:123` format when referencing code.
 - **Configuration**: Favor YAML defaults over explicit values for cleaner manifests.
+- **Domain References**: NEVER reference real homelab domain names in documentation or config files.
+  Use `domain.com` for examples or `${SECRET_DOMAIN}` in YAML manifests.
 
 ## Deployment Standards
 
@@ -51,7 +53,8 @@
 Use `disableNameSuffixHash: true` (stable names) ONLY when:
 
 - **Helm `valuesFrom`** references ConfigMap by name (external-dns, cloudflare-dns patterns)
-- **App-template `persistence.name`** references ConfigMap by name (homer, cloudflare-tunnel patterns)
+- **App-template `persistence.name`** references ConfigMap by name (homer, cloudflare-tunnel
+  patterns)
 - **Cross-resource references** require predictable ConfigMap names
 
 Use **hashed names** (Kustomize default) when:
@@ -136,6 +139,49 @@ dns-private
 
 **SOPS**: Encrypted files MUST NEVER be committed unencrypted **External-DNS**: Auto-manages DNS for
 new services **App-Scout**: See @scripts/app-scout/README.md for deployment discovery patterns
+
+## DNS Filtering Configuration
+
+**AdGuard Home Subnet-Based Filtering**: Configured with global baseline protection for Main LAN and
+VLAN-specific client overrides for enhanced security per network segment.
+
+### Network Segmentation
+
+**Main LAN (192.168.1.0/24)**:
+
+- Uses global AdGuard Home settings (baseline protection)
+- HaGeZi Multi Light (57,584 rules) + Threat Intelligence Feeds (532,939 rules)
+- Total: 590,523 filtering rules for ad/tracker blocking and malware protection
+
+**VLAN Client Configurations**:
+
+- **Privacy Enhanced VLANs** (IoT: 192.168.2.0/24, Work: 192.168.7.0/24):
+  - Enhanced privacy protection with social media blocking
+  - Blocks: Facebook, Twitter, Instagram, Snapchat, TikTok, LinkedIn
+  - Safebrowsing enabled, no parental controls
+
+- **Kids VLAN** (192.168.3.0/24):
+  - Comprehensive content restrictions
+  - Blocks: All social media + Discord, Reddit, 9gag, Twitch, YouTube
+  - Parental controls and safe search enforced
+
+- **Guest VLAN** (192.168.4.0/24):
+  - Basic protection with adult content blocking
+  - Parental controls and safe search enabled
+  - Uses global filtering rules
+
+- **Cameras VLAN** (192.168.5.0/24):
+  - Minimal filtering for maximum device compatibility
+  - Uses global settings with malware protection only
+  - No service blocking to maintain security camera functionality
+
+### DNS API Management
+
+**AdGuard Home API Access**:
+
+- **Endpoint**: `https://dns.${SECRET_DOMAIN}/control`
+- **Credentials**: Stored in `dns-private-secret` (ADGUARD_HOME_USERNAME/PASSWORD)
+- **Key APIs**: `/clients`, `/filtering/status`, `/filtering/add_url`
 
 ### SOPS Commands
 
