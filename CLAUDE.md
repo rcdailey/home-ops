@@ -48,30 +48,14 @@
 
 ## ConfigMap & Reloader Strategy
 
-**CRITICAL CONFIGMAP NAMING RULES:**
+**IMPORTANT:** Use stable names (`disableNameSuffixHash: true`) ONLY for:
+- Helm `valuesFrom` references (external-dns, cloudflare-dns)
+- App-template `persistence.name` references (homer, cloudflare-tunnel)
+- Cross-resource name dependencies
 
-Use `disableNameSuffixHash: true` (stable names) ONLY when:
+**ALWAYS use** `reloader.stakater.com/auto: "true"` for ALL apps. NEVER use specific secret reload.
 
-- **Helm `valuesFrom`** references ConfigMap by name (external-dns, cloudflare-dns patterns)
-- **App-template `persistence.name`** references ConfigMap by name (homer, cloudflare-tunnel
-  patterns)
-- **Cross-resource references** require predictable ConfigMap names
-
-Use **hashed names** (Kustomize default) when:
-
-- ConfigMaps referenced by `identifier` or other dynamic resolution methods
-- Single-use ConfigMaps with no external name dependencies
-
-**RELOADER CONSISTENCY:**
-
-- **ALWAYS use** `reloader.stakater.com/auto: "true"` for ALL apps
-- **NEVER use** `secret.reloader.stakater.com/reload: specific-secret`
-- Auto-reload detects changes to ALL ConfigMaps and Secrets referenced by the pod
-- Simpler configuration, consistent behavior across all apps
-
-**KEY INSIGHT:** App-template `persistence.name` field performs **literal string matching** - no
-dynamic hash resolution. Helm templating support allows variable substitution but cannot resolve
-Kustomize-generated hashes that are created after Helm rendering.
+**Critical**: App-template `persistence.name` requires literal string matching - cannot resolve Kustomize hashes.
 
 ## Network Rules
 
@@ -140,48 +124,18 @@ dns-private
 **SOPS**: Encrypted files MUST NEVER be committed unencrypted **External-DNS**: Auto-manages DNS for
 new services **App-Scout**: See @scripts/app-scout/README.md for deployment discovery patterns
 
-## DNS Filtering Configuration
+## DNS Architecture
 
-**AdGuard Home Subnet-Based Filtering**: Configured with global baseline protection for Main LAN and
-VLAN-specific client overrides for enhanced security per network segment.
+**AdGuard Home**: Subnet-based filtering with VLAN client overrides for network segmentation.
 
-### Network Segmentation
+**Network Rules**:
+- **Main LAN** (192.168.1.0/24): Global baseline (590k+ rules)
+- **Privacy VLANs** (IoT/Work): Social media blocking
+- **Kids VLAN**: Comprehensive content restrictions
+- **Guest VLAN**: Adult content blocking
+- **Cameras VLAN**: Minimal filtering for compatibility
 
-**Main LAN (192.168.1.0/24)**:
-
-- Uses global AdGuard Home settings (baseline protection)
-- HaGeZi Multi Light (57,584 rules) + Threat Intelligence Feeds (532,939 rules)
-- Total: 590,523 filtering rules for ad/tracker blocking and malware protection
-
-**VLAN Client Configurations**:
-
-- **Privacy Enhanced VLANs** (IoT: 192.168.2.0/24, Work: 192.168.7.0/24):
-  - Enhanced privacy protection with social media blocking
-  - Blocks: Facebook, Twitter, Instagram, Snapchat, TikTok, LinkedIn
-  - Safebrowsing enabled, no parental controls
-
-- **Kids VLAN** (192.168.3.0/24):
-  - Comprehensive content restrictions
-  - Blocks: All social media + Discord, Reddit, 9gag, Twitch, YouTube
-  - Parental controls and safe search enforced
-
-- **Guest VLAN** (192.168.4.0/24):
-  - Basic protection with adult content blocking
-  - Parental controls and safe search enabled
-  - Uses global filtering rules
-
-- **Cameras VLAN** (192.168.5.0/24):
-  - Minimal filtering for maximum device compatibility
-  - Uses global settings with malware protection only
-  - No service blocking to maintain security camera functionality
-
-### DNS API Management
-
-**AdGuard Home API Access**:
-
-- **Endpoint**: `https://dns.${SECRET_DOMAIN}/control`
-- **Credentials**: Stored in `dns-private-secret` (ADGUARD_HOME_USERNAME/PASSWORD)
-- **Key APIs**: `/clients`, `/filtering/status`, `/filtering/add_url`
+**API Access**: `https://dns.${SECRET_DOMAIN}/control` (credentials in `dns-private-secret`)
 
 ### SOPS Commands
 
@@ -216,8 +170,7 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 
 ## GitHub Integration
 
-**PULL REQUEST WORKFLOW:**
+**IMPORTANT:** Use GitHub MCP tools for all PR operations.
 
 - **Repository**: `https://github.com/rcdailey/home-ops`
-- **Review Priority**: Use GitHub MCP tools for all PR operations (list, review, merge)
-- **Merge Strategy**: Squash and merge for clean commit history
+- **Merge Strategy**: Squash and merge
