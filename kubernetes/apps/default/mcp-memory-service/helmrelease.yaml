@@ -23,6 +23,8 @@ spec:
     controllers:
       mcp-memory-service:
         strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
