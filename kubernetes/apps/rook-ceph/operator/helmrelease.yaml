@@ -49,4 +49,6 @@ spec:
         memory: 512Mi
 
     nodeSelector: {}
-    tolerations: []
+    # NOTE: tolerations removed to fix Helm template bug in v1.17.5 (same issue as Cilium #40937)
+    # Previously: tolerations: []
+    # The empty array causes "YAML parse error: line 32: could not find expected ':'"

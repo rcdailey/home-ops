@@ -77,6 +77,10 @@ spec:
           enabled: true
     gatewayAPI: # Disabled in favor of Envoy Gateway for Authentik forward auth support
       enabled: false
+    # bgpControlPlane:
+    #   enabled: false
+    # NOTE: If enabling BGP Control Plane in the future, may need operator.tolerations: []
+    # to prevent bootstrap race condition. See: https://github.com/cilium/cilium/issues/29371
     hubble:
       enabled: false
     ipam:
@@ -103,7 +107,19 @@ spec:
           enabled: true
       replicas: 1
       rollOutPods: true
-      tolerations: []
+      # NOTE: operator.tolerations removed to fix Cilium 1.18.x Helm template bug (issue #40937)
+      # Previously: tolerations: []
+      #
+      # FUTURE CONSIDERATIONS:
+      # 1. Node Draining: If operator pods stick to drained nodes during maintenance, add specific tolerations:
+      #    tolerations:
+      #      - key: "node-role.kubernetes.io/control-plane"
+      #        operator: "Exists"
+      #        effect: "NoSchedule"
+      #
+      # 2. BGP Control Plane: If enabling BGP in the future and experiencing bootstrap issues,
+      #    may need to revert to empty array: tolerations: []
+      #    See: https://github.com/cilium/cilium/issues/29371
     prometheus:
       enabled: true
       serviceMonitor:
