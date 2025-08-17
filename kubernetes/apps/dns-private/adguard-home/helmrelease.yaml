@@ -76,7 +76,7 @@ spec:
           app:
             image:
               repository: adguard/adguardhome
-              tag: v0.107.63
+              tag: v0.107.64
             args:
             - --config
             - /opt/adguardhome/conf/AdGuardHome.yaml
