@@ -8,7 +8,7 @@
   user commits, not Claude. STOP after changes and wait for user to commit/push.
 - **Task Priority**: Use `task` commands over CLI. Check `Taskfile.yaml` first.
 - **MCP First**: Use MCP tools for Kubernetes operations over kubectl CLI.
-- **Validation**: Run `pre-commit run --files` after changes, before user commits.
+- **Validation**: Run `pre-commit run --all-files` after changes, before user commits.
 - **Reference Format**: Use `file.yaml:123` format when referencing code.
 - **Configuration**: Favor YAML defaults over explicit values for cleaner manifests.
 - **Domain References**: NEVER reference real homelab domain names in documentation or config files.
@@ -49,13 +49,15 @@
 ## ConfigMap & Reloader Strategy
 
 **IMPORTANT:** Use stable names (`disableNameSuffixHash: true`) ONLY for:
+
 - Helm `valuesFrom` references (external-dns, cloudflare-dns)
 - App-template `persistence.name` references (homer, cloudflare-tunnel)
 - Cross-resource name dependencies
 
 **ALWAYS use** `reloader.stakater.com/auto: "true"` for ALL apps. NEVER use specific secret reload.
 
-**Critical**: App-template `persistence.name` requires literal string matching - cannot resolve Kustomize hashes.
+**Critical**: App-template `persistence.name` requires literal string matching - cannot resolve
+Kustomize hashes.
 
 ## Network Rules
 
@@ -78,16 +80,16 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 
 - **Setup**: `mise trust .mise.toml && mise install`
 - **Sync**: `task reconcile`
-- **Validate**: `pre-commit run --files`
-- **Node Config**: `task talos:apply-node IP=192.168.1.50 MODE=auto`
-- **Upgrade**: `task talos:upgrade-node IP=192.168.1.50`
-- **Image Update**: `talosctl upgrade --image`
+- **Validate**: `pre-commit run --all-files` (or `pre-commit run --files <file1> <file2>`)
 - **List Tasks**: `task --list`
+
+**Note**: Taskfile includes for `bootstrap` and `talos` are referenced but taskfiles don't exist
+yet.
 
 ## GitOps Flow
 
 1. Modify `kubernetes/` manifests
-2. `pre-commit run --files`
+2. `pre-commit run --all-files` (or `pre-commit run --files <changed_files>`)
 3. **USER COMMITS/PUSHES** (not Claude)
 4. Flux auto-applies
 5. Optional: `task reconcile` for immediate sync
@@ -129,6 +131,7 @@ new services **App-Scout**: See @scripts/app-scout/README.md for deployment disc
 **AdGuard Home**: Subnet-based filtering with VLAN client overrides for network segmentation.
 
 **Network Rules**:
+
 - **Main LAN** (192.168.1.0/24): Global baseline (590k+ rules)
 - **Privacy VLANs** (IoT/Work): Social media blocking
 - **Kids VLAN**: Comprehensive content restrictions
