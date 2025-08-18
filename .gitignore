@@ -21,12 +21,14 @@
 /github-deploy.key.pub
 /github-push-token.txt
 
+
 # From: custom/02-kubernetes.gitignore
 # Kubernetes and cluster files
 kubeconfig
 talosconfig
 /cluster.yaml
 /nodes.yaml
+
 
 # From: custom/03-project.gitignore
 # Project-specific files
@@ -36,6 +38,10 @@ talosconfig
 # Script temp files
 *.db
 *.backup
+
+# Ignore sql dump files
+*.sql
+
 
 # From: gitignore.io templates (python,go,node,terraform,helm,visualstudiocode,vim,linux,macos,windows)
 # Created by https://www.toptal.com/developers/gitignore/api/python,go,node,terraform,helm,visualstudiocode,vim,linux,macos,windows
