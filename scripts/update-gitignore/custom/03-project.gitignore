@@ -5,3 +5,6 @@
 # Script temp files
 *.db
 *.backup
+
+# Ignore sql dump files
+*.sql
