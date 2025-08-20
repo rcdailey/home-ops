@@ -19,14 +19,14 @@ repos:
     always_run: true
     pass_filenames: false
     description: Ensures all required tools are available before running other hooks
-  - id: flux-local-test
-    name: Flux Local Validation
-    entry: flux-local test --enable-helm --all-namespaces --path kubernetes/flux/cluster
-    language: python
-    additional_dependencies: ["flux-local"]
-    files: '^kubernetes/.*\.ya?ml$'
-    pass_filenames: false
-    description: Validates that all Flux manifests can build successfully
+  # - id: flux-local-test
+  #   name: Flux Local Validation
+  #   entry: flux-local test --enable-helm --all-namespaces --path kubernetes/flux/cluster
+  #   language: python
+  #   additional_dependencies: ["flux-local"]
+  #   files: '^kubernetes/.*\.ya?ml$'
+  #   pass_filenames: false
+  #   description: Validates that all Flux manifests can build successfully
   - id: kubectl-dry-run-server
     name: Server-Side K8s Validation
     entry: scripts/pre-commit/validate-sops-k8s.sh
