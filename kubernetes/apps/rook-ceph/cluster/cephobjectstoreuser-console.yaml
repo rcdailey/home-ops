@@ -1,0 +1,8 @@
+---
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStoreUser
+metadata:
+  name: console-user
+spec:
+  store: ceph-objectstore
+  displayName: "MinIO Console User"

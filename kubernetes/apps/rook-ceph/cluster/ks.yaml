@@ -15,7 +15,7 @@ spec:
       name: sops-age
   dependsOn:
   - name: rook-ceph-operator
-    namespace: rook-ceph
+    namespace: *namespace
   interval: 1h
   path: ./kubernetes/apps/rook-ceph/cluster
   postBuild:
