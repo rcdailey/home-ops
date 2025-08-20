@@ -7,7 +7,6 @@
 - **Git Protocol**: NEVER run `git commit`/`git push` without explicit user request. GitOps requires
   user commits, not Claude. STOP after changes and wait for user to commit/push.
 - **Task Priority**: Use `task` commands over CLI. Check `Taskfile.yaml` first.
-- **MCP First**: Use MCP tools for Kubernetes operations over kubectl CLI.
 - **Validation**: Run `pre-commit run --all-files` after changes, before user commits.
 - **Reference Format**: Use `file.yaml:123` format when referencing code.
 - **Configuration**: Favor YAML defaults over explicit values for cleaner manifests.
@@ -170,10 +169,3 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 - Values must be JSON-encoded strings
 - Always use single quotes around index path
 - Use `--idempotent` flag to avoid errors if key exists/doesn't exist
-
-## GitHub Integration
-
-**IMPORTANT:** Use GitHub MCP tools for all PR operations.
-
-- **Repository**: `https://github.com/rcdailey/home-ops`
-- **Merge Strategy**: Squash and merge

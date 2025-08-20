@@ -12,6 +12,7 @@
       "Bash(flux reconcile:*)",
       "Bash(flux resume:*)",
       "Bash(flux suspend:*)",
+      "Bash(helm get manifest:*)",
       "Bash(helm get values:*)",
       "Bash(helm list:*)",
       "Bash(helm repo add:*)",
@@ -29,7 +30,10 @@
       "Bash(kubectl exec:*)",
       "Bash(kubectl get:*)",
       "Bash(kubectl logs:*)",
+      "Bash(kubectl patch:*)",
       "Bash(kubectl run:*)",
+      "Bash(kubectl top:*)",
+      "Bash(kubectl wait:*)",
       "Bash(kustomize build:*)",
       "Bash(mise env:*)",
       "Bash(mise ls:*)",
@@ -62,17 +66,8 @@
       "Bash(talosctl:*)",
       "Bash(task reconcile)",
       "Bash(task talos:generate-config:*)",
-      "Bash(task:*)",
-      "mcp__k8s__exec_in_pod",
-      "mcp__k8s__kubectl_describe",
-      "mcp__k8s__kubectl_get",
-      "mcp__k8s__kubectl_logs",
-      "mcp__k8s__kubectl_patch",
-      "mcp__k8s__list_api_resources",
+      "Bash(task:*)"
     ],
     "deny": []
-  },
-  "enabledMcpjsonServers": [
-    "k8s"
-  ]
+  }
 }

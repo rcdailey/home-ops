@@ -4,6 +4,7 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app external-dns
+  namespace: &namespace dns-private
 spec:
   commonMetadata:
     labels:
@@ -24,6 +25,6 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: dns-private
+  targetNamespace: *namespace
   timeout: 5m
   wait: true

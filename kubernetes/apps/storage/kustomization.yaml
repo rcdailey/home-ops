@@ -2,8 +2,9 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: nfs
+namespace: storage
 components:
 - ../../components/common
 resources:
-- ./persistentvolumes.yaml
+- ./nfs/ks.yaml
+# - ./minio-console/ks.yaml
