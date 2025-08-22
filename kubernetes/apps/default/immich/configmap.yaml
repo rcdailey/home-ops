@@ -1,0 +1,31 @@
+---
+# yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immich-configmap
+data:
+  # Application URLs
+  IMMICH_SERVER_URL: http://immich-server.default.svc.cluster.local:2283
+  IMMICH_MACHINE_LEARNING_URL: http://immich-machine-learning.default.svc.cluster.local:3003
+  PUBLIC_IMMICH_SERVER_URL: https://photos-test.${SECRET_DOMAIN}
+
+  # Redis Configuration
+  REDIS_HOSTNAME: immich-redis.default.svc.cluster.local
+  REDIS_PORT: "6379"
+
+  # General Configuration
+  NODE_ENV: production
+  LOG_LEVEL: warn
+  TZ: America/Chicago
+  NO_COLOR: "1"
+
+  # Feature Flags
+  DISABLE_REVERSE_GEOCODING: "false"
+  ENABLE_MAPBOX: "false"
+
+  # Machine Learning
+  MPLCONFIGDIR: /cache/matplotlib
+
+  # Media Location
+  IMMICH_MEDIA_LOCATION: /data

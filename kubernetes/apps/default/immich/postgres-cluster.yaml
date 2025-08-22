@@ -1,0 +1,58 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: immich-postgres
+spec:
+  instances: 1
+
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+
+  postgresql:
+    parameters:
+      max_connections: "400"
+      max_slot_wal_keep_size: "10GB"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+      maintenance_work_mem: "64MB"
+      checkpoint_completion_target: "0.9"
+      wal_buffers: "16MB"
+      default_statistics_target: "100"
+      random_page_cost: "1.1"
+      effective_io_concurrency: "200"
+      work_mem: "4MB"
+      min_wal_size: "1GB"
+      max_wal_size: "4GB"
+
+    shared_preload_libraries:
+    - "pg_stat_statements"
+    - "auto_explain"
+
+  bootstrap:
+    initdb:
+      database: immich
+      owner: immich
+      secret:
+        name: immich-postgres-secret
+      postInitApplicationSQL:
+      - CREATE EXTENSION IF NOT EXISTS cube WITH SCHEMA public;
+      - CREATE EXTENSION IF NOT EXISTS earthdistance WITH SCHEMA public;
+      - CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+      - CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
+      - CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+      - CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+      - CREATE SCHEMA IF NOT EXISTS vectors;
+      - ALTER SCHEMA vectors OWNER TO immich;
+
+  storage:
+    size: 20Gi
+    storageClass: ceph-block
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
