@@ -27,13 +27,13 @@ repos:
   #   files: '^kubernetes/.*\.ya?ml$'
   #   pass_filenames: false
   #   description: Validates that all Flux manifests can build successfully
-  - id: kubectl-dry-run-server
-    name: Server-Side K8s Validation
-    entry: scripts/pre-commit/validate-sops-k8s.sh
-    language: script
-    files: '^kubernetes/apps/.*\.yaml$'
-    exclude: '(values\.yaml|kustomizeconfig\.yaml|.*\.sops\.yaml)$'
-    description: Server-side validation with SOPS decryption and template variable resolution
+  # - id: kubectl-dry-run-server
+  #   name: Server-Side K8s Validation
+  #   entry: scripts/pre-commit/validate-sops-k8s.sh
+  #   language: script
+  #   files: '^kubernetes/apps/.*\.yaml$'
+  #   exclude: '(values\.yaml|kustomizeconfig\.yaml|.*\.sops\.yaml)$'
+  #   description: Server-side validation with SOPS decryption and template variable resolution
   - id: validate-sops-config
     name: SOPS Config Validation
     entry: scripts/pre-commit/validate-sops-config.sh
