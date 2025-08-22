@@ -74,19 +74,19 @@ validate_sops_file() {
     fi
 
     # Check for sops metadata section
-    if ! grep -q "^sops:" "$sops_file"; then
+    if ! rg -q "^sops:" "$sops_file"; then
         log_error "$sops_file: Missing SOPS metadata section"
         failed=1
     fi
 
     # Check for age encryption
-    if ! yq eval '.sops.age' "$sops_file" 2>/dev/null | grep -q "recipient"; then
+    if ! yq eval '.sops.age' "$sops_file" 2>/dev/null | rg -q "recipient"; then
         log_error "$sops_file: Missing age encryption configuration"
         failed=1
     fi
 
     # Check for encrypted_regex
-    if ! yq eval '.sops.encrypted_regex' "$sops_file" 2>/dev/null | grep -q "stringData\|data"; then
+    if ! yq eval '.sops.encrypted_regex' "$sops_file" 2>/dev/null | rg -q "stringData|data"; then
         log_error "$sops_file: Missing or invalid encrypted_regex pattern"
         failed=1
     fi
@@ -110,7 +110,7 @@ validate_kustomization_decryption() {
     local has_sops_decryption=false
 
     # Look for decryption.provider: sops in any Kustomization
-    if yq eval '.spec.decryption.provider' "$ks_file" 2>/dev/null | grep -q "sops"; then
+    if yq eval '.spec.decryption.provider' "$ks_file" 2>/dev/null | rg -q "sops"; then
         has_sops_decryption=true
     fi
 

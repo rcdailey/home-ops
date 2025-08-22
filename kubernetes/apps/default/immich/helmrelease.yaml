@@ -1,0 +1,175 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: immich
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  maxHistory: 3
+  install:
+    disableWait: true
+    createNamespace: true
+    remediation:
+      retries: 1
+  upgrade:
+    disableWait: true
+    remediation:
+      retries: 1
+      strategy: rollback
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      server:
+        strategy: RollingUpdate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        pod:
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+        containers:
+          main:
+            image:
+              repository: ghcr.io/immich-app/immich-server
+              tag: v1.138.0
+            envFrom:
+            - secretRef:
+                name: immich-secret
+            - configMapRef:
+                name: immich-configmap
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 4Gi
+
+      machine-learning:
+        strategy: RollingUpdate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        pod:
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+        containers:
+          main:
+            image:
+              repository: ghcr.io/immich-app/immich-machine-learning
+              tag: v1.138.0
+            envFrom:
+            - secretRef:
+                name: immich-secret
+            - configMapRef:
+                name: immich-configmap
+            env:
+              IMMICH_MEDIA_LOCATION: /photos
+            resources:
+              requests:
+                cpu: 100m
+                memory: 1Gi
+              limits:
+                memory: 3Gi
+
+      redis:
+        containers:
+          main:
+            image:
+              repository: public.ecr.aws/docker/library/redis
+              tag: 8.2.0
+            command: ["redis-server"]
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                memory: 256Mi
+
+    service:
+      server:
+        controller: server
+        ports:
+          http:
+            port: &serverPort 2283
+      machine-learning:
+        controller: machine-learning
+        ports:
+          http:
+            port: 3003
+      redis:
+        controller: redis
+        ports:
+          http:
+            port: 6379
+
+    persistence:
+      photos:
+        type: persistentVolumeClaim
+        existingClaim: immich-photos
+        advancedMounts:
+          server:
+            main:
+            - path: /usr/src/app/upload
+              subPath: immich
+          machine-learning:
+            main:
+            - path: /photos
+              subPath: immich
+
+      thumbnails:
+        type: persistentVolumeClaim
+        existingClaim: immich-thumbnails
+        advancedMounts:
+          server:
+            main:
+            - path: /usr/src/app/upload/thumbs
+
+      profiles:
+        type: persistentVolumeClaim
+        existingClaim: immich-thumbnails
+        advancedMounts:
+          server:
+            main:
+            - path: /usr/src/app/upload/profile
+              subPath: profile
+
+      ml-cache:
+        type: persistentVolumeClaim
+        existingClaim: immich-ml-cache
+        advancedMounts:
+          machine-learning:
+            main:
+            - path: /cache
+              subPath: cache
+            - path: /.cache
+              subPath: dotcache
+
+      matplotlib:
+        type: emptyDir
+        advancedMounts:
+          machine-learning:
+            main:
+            - path: /cache/matplotlib
+
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          server:
+            main:
+            - path: /usr/src/app/.reverse-geocoding-dump
+              subPath: geocoding
+            - path: /usr/src/app/.transformers_cache
+              subPath: transformers
