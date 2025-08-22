@@ -7,4 +7,3 @@ components:
 - ../../components/common
 resources:
 - ./nfs/ks.yaml
-# - ./minio-console/ks.yaml
