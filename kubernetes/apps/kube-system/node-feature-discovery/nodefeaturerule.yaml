@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/vchirikov/dotfiles/master/jsonschemas/nodefeaturerules.nfd.k8s-sigs.io.schema.json
 apiVersion: nfd.k8s-sigs.io/v1alpha1
 kind: NodeFeatureRule
 metadata:
