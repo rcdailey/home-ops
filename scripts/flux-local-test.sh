@@ -2,12 +2,22 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Check if we're in a TTY environment
+if [[ -t 1 ]]; then
+    # Colors for TTY output
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m' # No Color
+else
+    # No colors for non-TTY (pipes, CI, etc)
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+fi
 
 # Default values
 SCAN_ALL=false
@@ -53,20 +63,19 @@ log_error() {
 }
 
 get_changed_files() {
-    # Get modified and untracked YAML files in kubernetes directory
-    local files=()
+    # Get all working changes: staged, unstaged (except deletions), and untracked YAML files
+    {
+        # Staged changes (excluding deletions)
+        git diff --cached --name-status -- 'kubernetes/**/*.yaml' 'kubernetes/**/*.yml' 2>/dev/null | \
+            awk '$1 != "D" {print $2}' || true
 
-    # Modified files
-    while IFS= read -r file; do
-        [[ -n "$file" ]] && files+=("$file")
-    done < <(git diff --name-only -- 'kubernetes/**/*.yaml' 'kubernetes/**/*.yml')
+        # Unstaged changes (excluding deletions)
+        git diff --name-status -- 'kubernetes/**/*.yaml' 'kubernetes/**/*.yml' 2>/dev/null | \
+            awk '$1 != "D" {print $2}' || true
 
-    # Untracked files
-    while IFS= read -r file; do
-        [[ -n "$file" ]] && files+=("$file")
-    done < <(git ls-files --others --exclude-standard -- 'kubernetes/**/*.yaml' 'kubernetes/**/*.yml')
-
-    printf '%s\n' "${files[@]}"
+        # Untracked files
+        git ls-files --others --exclude-standard -- 'kubernetes/**/*.yaml' 'kubernetes/**/*.yml' 2>/dev/null || true
+    } | sort -u | grep -v '^$' || true
 }
 
 main() {
@@ -103,7 +112,11 @@ main() {
 
     if [[ "$SCAN_ALL" == "true" ]]; then
         log_info "Running flux-local test on entire repository..."
-        uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH"
+        if [[ -t 1 ]]; then
+            uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH"
+        else
+            uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH" 2>&1 | grep -E "(PASSED|FAILED|ERROR|===)"
+        fi
     else
         log_info "Checking for modified and untracked Kubernetes YAML files..."
 
@@ -121,7 +134,11 @@ main() {
 
         # Run flux-local test
         log_info "Running flux-local test..."
-        uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH"
+        if [[ -t 1 ]]; then
+            uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH"
+        else
+            uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH" 2>&1 | grep -E "(PASSED|FAILED|ERROR|===)"
+        fi
     fi
 
     log_success "flux-local test completed successfully"
