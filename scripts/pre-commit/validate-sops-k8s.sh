@@ -49,6 +49,7 @@ validate_manifest() {
     if grep -q "sops:" "$file"; then
         echo "  Decrypting SOPS file..."
         sops --decrypt "$file" | kubectl apply --dry-run=server --validate=true -f -
+        local kubectl_exit_code=${PIPESTATUS[1]}
     else
         # Handle template variables in regular files
         if grep -q '\${' "$file"; then
@@ -77,13 +78,15 @@ validate_manifest() {
 
             # Validate processed content
             echo "$processed_content" | kubectl apply --dry-run=server --validate=true -f -
+            local kubectl_exit_code=${PIPESTATUS[1]}
         else
             # Regular file without templates or encryption
             kubectl apply --dry-run=server --validate=true -f "$file"
+            local kubectl_exit_code=$?
         fi
     fi
 
-    if [[ ${PIPESTATUS[0]} -eq 0 ]]; then
+    if [[ $kubectl_exit_code -eq 0 ]]; then
         echo "  ✅ Valid"
     else
         echo "  ❌ Invalid"
