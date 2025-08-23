@@ -1,0 +1,42 @@
+---
+# yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: intel-gpu-monitoring
+  namespace: kube-system
+data:
+  check-gpu-resources.sh: |
+    #!/bin/bash
+    echo "=== Intel GPU Resource Availability ==="
+    kubectl get nodes -o=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{'i915: '}{.status.allocatable.gpu\.intel\.com/i915}{'\n'}{end}"
+
+    echo -e "\n=== GPU Device Plugin Pods ==="
+    kubectl get pods -n kube-system -l app.kubernetes.io/name=intel-device-plugins-operator
+    kubectl get pods -n kube-system -l app=intel-gpu-plugin
+
+    echo -e "\n=== GPU Resource Usage ==="
+    kubectl describe nodes | grep -A5 -B5 "gpu.intel.com/i915"
+
+    echo -e "\n=== Immich ML Pod Status ==="
+    kubectl get pods -n default -l app.kubernetes.io/name=immich,app.kubernetes.io/component=machine-learning
+
+  verify-gpu-access.sh: |
+    #!/bin/bash
+    # Run this script inside a pod to verify GPU access
+    echo "=== Checking GPU Device Access ==="
+    ls -la /dev/dri/
+
+    echo -e "\n=== Group Membership ==="
+    id
+
+    echo -e "\n=== GPU Capabilities ==="
+    if command -v intel_gpu_top &> /dev/null; then
+        echo "intel_gpu_top available"
+        intel_gpu_top -s 100ms -n 1
+    fi
+
+    if [ -f /proc/version ]; then
+        echo -e "\n=== Kernel Version ==="
+        cat /proc/version
+    fi
