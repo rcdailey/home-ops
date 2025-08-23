@@ -12,6 +12,9 @@
 - **Configuration**: Favor YAML defaults over explicit values for cleaner manifests.
 - **Domain References**: NEVER reference real homelab domain names in documentation or config files.
   Use `domain.com` for examples or `${SECRET_DOMAIN}` in YAML manifests.
+- **YAML Language Server**: ALWAYS include appropriate `# yaml-language-server:` directive at top of
+  YAML files using URLs consistent with existing repo patterns. Use Flux schemas for Flux resources,
+  Kubernetes JSON schemas for core K8s resources, and schemastore.org for standard files.
 
 ## Deployment Standards
 
