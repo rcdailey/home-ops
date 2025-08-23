@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/service-v1.json
 # TODO: WORKAROUND for Cilium L2 announcements + externalTrafficPolicy: Local incompatibility
 # Issue: https://github.com/cilium/cilium/issues/27800
 #
