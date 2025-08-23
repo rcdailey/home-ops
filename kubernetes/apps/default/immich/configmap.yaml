@@ -24,8 +24,17 @@ data:
   DISABLE_REVERSE_GEOCODING: "false"
   ENABLE_MAPBOX: "false"
 
-  # Machine Learning
+  # Machine Learning with Intel GPU OpenVINO
   MPLCONFIGDIR: /cache/matplotlib
+  MACHINE_LEARNING_DEVICE: openvino
+
+  # OpenVINO GPU optimizations
+  OPENVINO_LOG_LEVEL: "INFO"
+  OPENVINO_CACHE_DIR: /cache/openvino
+
+  # Performance tuning
+  MACHINE_LEARNING_MODEL_TTL: "300"
+  MACHINE_LEARNING_MODEL_TTL_POLL_S: "10"
 
   # Media Location
   IMMICH_MEDIA_LOCATION: /data

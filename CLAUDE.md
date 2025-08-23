@@ -123,6 +123,15 @@ Kustomization**: Lists all app ks.yaml files
 **Key Namespaces**: kube-system, flux-system, network, rook-ceph, nfs, cert-manager, default,
 dns-private
 
+## Intel GPU for Applications
+
+**IMPORTANT GPU PATTERNS:**
+
+- **Resource Request**: `gpu.intel.com/i915: 1` for Intel GPU allocation
+- **supplementalGroups**: Use minimal `[44, 104]` (video, render) for Intel GPU device access
+- **OpenVINO**: Set `OPENVINO_DEVICE: GPU` for hardware ML acceleration
+- **Media**: Use render device script for multi-GPU VA-API/QSV workloads
+
 ## Critical Security
 
 **SOPS**: Encrypted files MUST NEVER be committed unencrypted **External-DNS**: Auto-manages DNS for

@@ -55,33 +55,69 @@ spec:
                 memory: 4Gi
 
       machine-learning:
-        strategy: RollingUpdate
+        strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
         pod:
           enableServiceLinks: false
+          nodeSelector:
+            feature.node.kubernetes.io/custom-intel-gpu: "true"
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
+            # Minimal required groups for Intel GPU access
+            supplementalGroups: [44, 104] # video, render
         containers:
           main:
             image:
               repository: ghcr.io/immich-app/immich-machine-learning
-              tag: v1.138.0
+              tag: v1.138.0-openvino
+            env:
+            # OpenVINO optimizations for Intel GPU ML
+            - name: OPENVINO_DEVICE
+              value: "GPU"
+            # Preload models for better performance
+            - name: MACHINE_LEARNING_PRELOAD__CLIP
+              value: "ViT-B-32__openai"
+            - name: MACHINE_LEARNING_PRELOAD__FACIAL_RECOGNITION
+              value: "buffalo_l"
+            # Cache configuration matching official chart
+            - name: HF_HOME
+              value: "/cache"
+            - name: TRANSFORMERS_CACHE
+              value: "/cache"
             envFrom:
             - secretRef:
                 name: immich-secret
             - configMapRef:
                 name: immich-configmap
+            # Optimized resource allocation for ML workloads
             resources:
               requests:
-                cpu: 100m
-                memory: 1Gi
+                cpu: 750m
+                memory: 2Gi
+                gpu.intel.com/i915: "1"
               limits:
-                memory: 3Gi
+                cpu: 2
+                memory: 6Gi
+                gpu.intel.com/i915: "1"
+            # Extended probes for model loading
+            probes:
+              liveness:
+                enabled: true
+                spec:
+                  initialDelaySeconds: 120
+                  timeoutSeconds: 30
+                  periodSeconds: 60
+              readiness:
+                enabled: true
+                spec:
+                  initialDelaySeconds: 120
+                  timeoutSeconds: 30
+                  periodSeconds: 30
 
       redis:
         containers:
@@ -136,20 +172,12 @@ spec:
               subPath: profile
 
       ml-cache:
-        type: persistentVolumeClaim
-        existingClaim: immich-ml-cache
+        type: emptyDir
+        sizeLimit: 10Gi
         advancedMounts:
           machine-learning:
             main:
             - path: /cache
-              subPath: cache
-
-      matplotlib:
-        type: emptyDir
-        advancedMounts:
-          machine-learning:
-            main:
-            - path: /cache/matplotlib
 
       tmpfs:
         type: emptyDir
