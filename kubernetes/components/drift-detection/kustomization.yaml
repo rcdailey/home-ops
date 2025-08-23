@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://www.schemastore.org/kustomization.json
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 # Prometheus Operator ignore rules: mutating webhooks don't trigger during dry-run SSA,
