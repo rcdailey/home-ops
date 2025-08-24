@@ -9,6 +9,7 @@ import subprocess
 import json
 from pathlib import Path
 from typing import Dict, List
+import glob
 
 # ANSI color codes
 class Colors:
@@ -18,6 +19,79 @@ class Colors:
     CYAN = '\033[96m'
     MAGENTA = '\033[95m'
     RESET = '\033[0m'
+
+def get_repo_relative_path(file_path: str) -> str:
+    """Convert absolute path to relative path from repo root"""
+    try:
+        file_path_obj = Path(file_path).resolve()
+
+        # Find repo root by looking for .git directory
+        current_dir = file_path_obj.parent if file_path_obj.is_file() else file_path_obj
+
+        while current_dir != current_dir.parent:
+            if (current_dir / '.git').exists():
+                # Found repo root, return relative path
+                return str(file_path_obj.relative_to(current_dir))
+            current_dir = current_dir.parent
+
+        # If no .git found, try relative to current working directory
+        cwd = Path.cwd()
+        try:
+            return str(file_path_obj.relative_to(cwd))
+        except ValueError:
+            # If path is not relative to cwd, return the original path
+            return file_path
+
+    except Exception:
+        # Fallback to original path if anything fails
+        return file_path
+
+def get_relative_path_from_file(from_file: str, to_file: str) -> str:
+    """Calculate relative path from one file to another"""
+    try:
+        from_path = Path(from_file).resolve().parent
+        to_path = Path(to_file).resolve()
+        relative_path = os.path.relpath(to_path, from_path)
+        return relative_path
+    except Exception:
+        # Fallback to repo-relative path
+        return get_repo_relative_path(to_file)
+
+def extract_resource_from_schema(filename: str, schema_data: dict) -> tuple[str, str, str] | None:
+    """Extract group, kind, version from JSON schema filename and content"""
+    try:
+        # Remove .json extension
+        base_name = filename.replace('.json', '')
+
+        # Extract group from filename (everything before first underscore)
+        if '_' not in base_name:
+            return None
+
+        group_part, resource_part = base_name.split('_', 1)
+
+        # Extract Kind from schema description
+        # Pattern: "GpuDevicePlugin is the Schema..." or "AcceleratorFunction is a specification..."
+        description = schema_data.get('description', '')
+        if description:
+            # Extract the first word from description, which should be the Kind
+            first_word = description.split()[0] if description.split() else None
+            if first_word and first_word[0].isupper():
+                kind = first_word
+
+                # Determine version dynamically
+                # Check if there are version-specific patterns in the filename or group
+                # Default to v1, but check for known v2 patterns
+                if group_part == 'fpga.intel.com':
+                    version = 'v2'
+                else:
+                    version = 'v1'
+
+                return group_part, kind, version
+
+        return None
+
+    except Exception:
+        return None
 
 # Schema source configuration
 CACHE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "yaml_schemas")
@@ -53,6 +127,10 @@ def build_unified_schema_mapping() -> Dict[str, str]:
     """Build unified schema mapping from all sources with priority order"""
     mapping = {}
 
+    # Priority 0: Local schemas (highest priority)
+    print("Loading local schemas...")
+    add_local_schemas(mapping)
+
     # Priority 1: FluxCD Community schemas
     print("Loading FluxCD Community schemas...")
     add_fluxcd_schemas(mapping)
@@ -75,6 +153,83 @@ def build_unified_schema_mapping() -> Dict[str, str]:
 
     print(f"Built unified mapping with {len(mapping)} schema entries")
     return mapping
+
+def add_local_schemas(mapping: Dict[str, str]):
+    """Add local schemas (Priority 0) - highest priority from local schemas/ directory"""
+    try:
+        # Find the project root (where this script is located)
+        script_dir = Path(__file__).parent
+        project_root = script_dir.parent  # Go up one level from scripts/
+        schemas_dir = project_root / "schemas"
+
+        if not schemas_dir.exists():
+            print(f"Local schemas directory not found: {schemas_dir}")
+            return
+
+        # Recursively find all JSON schema files
+        json_files = list(schemas_dir.rglob("*.json"))
+        local_count = 0
+
+        for json_file in json_files:
+            try:
+                with open(json_file, 'r') as f:
+                    schema_data = json.load(f)
+
+                # Check if it's a Kubernetes CRD schema
+                if (schema_data.get("kind") == "CustomResourceDefinition" and
+                    "spec" in schema_data):
+
+                    spec = schema_data["spec"]
+                    group = spec.get("group", "")
+                    kind = spec.get("names", {}).get("kind", "")
+
+                    # Get all supported versions
+                    versions = spec.get("versions", [])
+                    if not versions:
+                        # Fallback to legacy version field
+                        version = spec.get("version")
+                        if version:
+                            versions = [{"name": version}]
+
+                    for version_obj in versions:
+                        version = version_obj.get("name", "")
+                        if group and kind and version:
+                            api_version = f"{group}/{version}" if group else version
+                            resource_key = f"{api_version}/{kind}"
+
+                            # Store absolute path for local schemas (will convert to relative per file)
+                            schema_url = f"LOCAL_SCHEMA:{json_file.resolve()}"
+
+                            if resource_key not in mapping:  # First match wins
+                                mapping[resource_key] = schema_url
+                                local_count += 1
+
+                # Check if it's a pure JSON Schema file
+                elif schema_data.get("$schema") and "properties" in schema_data:
+                    # Extract resource info from filename and schema content dynamically
+                    filename = json_file.name
+                    resource_info = extract_resource_from_schema(filename, schema_data)
+
+                    if resource_info:
+                        group, kind, version = resource_info
+                        api_version = f"{group}/{version}" if group else version
+                        resource_key = f"{api_version}/{kind}"
+
+                        # Store absolute path for local schemas (will convert to relative per file)
+                        schema_url = f"LOCAL_SCHEMA:{json_file.resolve()}"
+
+                        if resource_key not in mapping:  # First match wins
+                            mapping[resource_key] = schema_url
+                            local_count += 1
+
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"Warning: Failed to parse schema {json_file}: {e}")
+                continue
+
+        print(f"Added {local_count} local schemas")
+
+    except Exception as e:
+        print(f"Warning: Failed to load local schemas: {e}")
 
 def add_fluxcd_schemas(mapping: Dict[str, str]):
     """Add FluxCD Community schemas (Priority 1) - dynamically discovered"""
@@ -286,19 +441,44 @@ def find_schema_url(api_version: str, kind: str, schema_mapping: Dict[str, str],
 
     return schema_url
 
-def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool = False, missing_schemas: List[str] = None):
+def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool = False, missing_schemas: Dict[str, List[str]] = None):
     docs = []
     schema_info = []
     has_changes = False
 
     with open(file_path, 'r') as f:
         content = f.read()
-    if content.startswith("---"):
-        content = content[3:]
-    if content.endswith("---"):
-        content = content[:-3]
-    for doc in content.split("\n---\n"):
-        doc = doc.strip()
+
+    # Use yaml.safe_load_all to properly parse documents, but preserve original structure
+    try:
+        # First, let's manually parse to preserve comments and structure
+        raw_docs = []
+        if content.strip():
+            # Split on document separators
+            if '\n---\n' in content:
+                parts = content.split('\n---\n')
+                for i, part in enumerate(parts):
+                    if i == 0:
+                        # First document might start with ---
+                        if part.startswith('---\n'):
+                            part = part[4:]
+                        elif part.startswith('---'):
+                            part = part[3:]
+                    raw_docs.append(part.strip())
+            elif content.startswith('---\n'):
+                # Single document starting with ---
+                raw_docs.append(content[4:].strip())
+            elif content.startswith('---'):
+                # Single document starting with --- (no newline)
+                raw_docs.append(content[3:].strip())
+            else:
+                # No document separator
+                raw_docs.append(content.strip())
+    except:
+        # Fallback to simple approach
+        raw_docs = [content.strip()]
+
+    for doc in raw_docs:
         if not doc:
             continue
         try:
@@ -326,19 +506,29 @@ def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool 
         if api_version and kind:
             schema_url = find_schema_url(api_version, kind, schema_mapping, verbose=False)
             if schema_url:
-                # Only add if schema URL is different from existing
-                if existing_schema_url != schema_url:
-                    lines.insert(0, f"# yaml-language-server: $schema={schema_url}")
-                    schema_info.append((kind, api_version, schema_url))
-                    has_changes = True
+                # Handle local schemas - convert to relative path from current file
+                if schema_url.startswith("LOCAL_SCHEMA:"):
+                    absolute_schema_path = schema_url[13:]  # Remove LOCAL_SCHEMA: prefix
+                    final_schema_url = get_relative_path_from_file(file_path, absolute_schema_path)
                 else:
-                    # Re-add the existing schema line since it's already correct
-                    lines.insert(0, f"# yaml-language-server: $schema={schema_url}")
+                    final_schema_url = schema_url
+
+                # Always use the current schema URL from mapping (handles format changes)
+                lines.insert(0, f"# yaml-language-server: $schema={final_schema_url}")
+
+                # Track changes only if URL actually changed
+                if existing_schema_url != final_schema_url:
+                    schema_info.append((kind, api_version, final_schema_url))
+                    has_changes = True
             else:
                 # Track missing schemas for report
                 resource_key = f"{api_version}/{kind}"
-                if missing_schemas is not None and resource_key not in missing_schemas:
-                    missing_schemas.append(resource_key)
+                if missing_schemas is not None:
+                    if resource_key not in missing_schemas:
+                        missing_schemas[resource_key] = []
+                    relative_path = get_repo_relative_path(file_path)
+                    if relative_path not in missing_schemas[resource_key]:
+                        missing_schemas[resource_key].append(relative_path)
         docs.append("\n".join(lines))
 
     if dry_run:
@@ -349,8 +539,12 @@ def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool 
     else:
         if has_changes:
             with open(file_path, 'w') as f:
-                f.write("---\n")
-                f.write("\n---\n".join(docs) + "\n")
+                # Write each document with proper separator placement
+                for i, doc in enumerate(docs):
+                    f.write("---\n")
+                    f.write(doc)
+                    if not doc.endswith('\n'):
+                        f.write('\n')
         if schema_info:
             print(f"{Colors.BLUE}{file_path}:{Colors.RESET}")
             for kind, api_version, schema_url in schema_info:
@@ -378,7 +572,7 @@ def find_yaml_files(paths: List[str]) -> List[str]:
 
 def main():
     parser = argparse.ArgumentParser(description="Add YAML Language Server schema annotations to Kubernetes YAML files")
-    parser.add_argument("paths", nargs="+", help="YAML files or directories to process (directories are searched recursively)")
+    parser.add_argument("paths", nargs="*", default=["kubernetes"], help="YAML files or directories to process (directories are searched recursively). Defaults to 'kubernetes'")
     parser.add_argument("-n", "--dry-run", action="store_true", help="Show what would be changed without modifying files")
     args = parser.parse_args()
 
@@ -389,7 +583,7 @@ def main():
         return
 
     schema_mapping = build_unified_schema_mapping()
-    missing_schemas = []
+    missing_schemas = {}  # Dict: {resource_key: [file_paths]}
 
     for yf in yaml_files:
         annotate_file(yf, schema_mapping, dry_run=args.dry_run, missing_schemas=missing_schemas)
@@ -398,8 +592,13 @@ def main():
     if missing_schemas:
         print(f"\n{Colors.YELLOW}Missing Schemas Report:{Colors.RESET}")
         print(f"The following {len(missing_schemas)} resource types could not be mapped to schemas:")
-        for resource_key in sorted(set(missing_schemas)):
-            print(f"  - {Colors.CYAN}{resource_key}{Colors.RESET}")
+        print()
+
+        for resource_key in sorted(missing_schemas.keys()):
+            print(f"{Colors.CYAN}{resource_key}{Colors.RESET}:")
+            for file_path in sorted(missing_schemas[resource_key]):
+                print(f"  - {file_path}")
+
         print(f"\nConsider contributing schema definitions for these resources or")
         print(f"check if newer versions are available in the schema catalogs.")
 

@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=../../../../schemas/intel-device-plugins/deviceplugin.intel.com_gpudeviceplugins.json
 apiVersion: deviceplugin.intel.com/v1
 kind: GpuDevicePlugin
 metadata:
