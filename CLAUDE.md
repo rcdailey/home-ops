@@ -110,7 +110,7 @@ files
 - rias: `192.168.1.61` (VM), nami: `192.168.1.50` (NUC), marin: `192.168.1.59` (NUC)
 
 **Storage**: Rook Ceph (distributed), NFS from Nezuko `192.168.1.58` (Media 100Ti, Photos 10Ti,
-FileRun 5Ti)
+FileRun 5Ti), Garage S3 `192.168.1.58:3900`
 
 ## Directory Structure
 
@@ -150,6 +150,53 @@ new services **Scripts**: See @scripts/CLAUDE.md for available automation script
 - **Cameras VLAN**: Minimal filtering for compatibility
 
 **API Access**: `https://dns.${SECRET_DOMAIN}/control` (credentials in `dns-private-secret`)
+
+## S3 Object Storage (Garage)
+
+**Endpoint**: `http://192.168.1.58:3900` (Nezuko server)
+**Region**: `garage` (custom Garage region name)
+**Access**: Cluster-level credentials stored in `cluster-secrets.sops.yaml`
+
+### S3 Credentials Access
+
+Credentials are stored in `/home/robert/code/home-ops/kubernetes/components/common/sops/cluster-secrets.sops.yaml`:
+
+- `S3_ENDPOINT`: `http://192.168.1.58:3900`
+- `S3_REGION`: `garage`
+- `S3_ACCESS_KEY_ID`: Encrypted in cluster secrets
+- `S3_SECRET_ACCESS_KEY`: Encrypted in cluster secrets
+
+### AWS CLI Usage
+
+```bash
+# Extract credentials
+eval $(sops -d kubernetes/components/common/sops/cluster-secrets.sops.yaml | yq eval '.stringData | to_entries | .[] | select(.key | startswith("S3_")) | "export " + .key + "=" + .value' -)
+
+# Use AWS CLI with Garage
+aws --endpoint-url=$S3_ENDPOINT --region=$S3_REGION s3 ls
+
+# Alternative direct usage
+AWS_ACCESS_KEY_ID=<key> AWS_SECRET_ACCESS_KEY=<secret> AWS_DEFAULT_REGION=garage aws --endpoint-url=http://192.168.1.58:3900 s3 ls
+```
+
+### Current Usage
+
+- **immich-backups** bucket: Database backups from immich
+- Used for application backups and object storage needs
+- S3-compatible API for application integration
+
+### Application Integration
+
+Apps can reference S3 credentials via `postBuild.substituteFrom: cluster-secrets` pattern:
+
+```yaml
+postBuild:
+  substituteFrom:
+  - kind: Secret
+    name: cluster-secrets
+```
+
+Then use `${S3_ENDPOINT}`, `${S3_ACCESS_KEY_ID}`, etc. in manifests.
 
 ### SOPS Commands
 
