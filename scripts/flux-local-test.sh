@@ -47,7 +47,13 @@ main() {
     fi
 
     log_info "Running flux-local test..."
-    uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH"
+
+    # Suppress progress animations in non-TTY environments
+    if [[ -t 1 ]]; then
+        uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH"
+    else
+        uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH" 2>&1 | cat
+    fi
 
     log_success "flux-local test completed successfully"
 }
