@@ -5,6 +5,8 @@ name: Renovate Dashboard Handler
 on:
   issues:
     types: [edited]
+  pull_request:
+    types: [closed]
 
 permissions:
   contents: read
@@ -16,7 +18,15 @@ concurrency:
 jobs:
   call-renovate:
     if: >
-      github.event.issue.title == 'Dependency Dashboard' &&
-      contains(github.event.issue.body, '- [x]')
+      (
+        github.event_name == 'issues' &&
+        github.event.issue.title == 'Dependency Dashboard' &&
+        contains(github.event.issue.body, '- [x]')
+      ) ||
+      (
+        github.event_name == 'pull_request' &&
+        github.event.action == 'closed' &&
+        github.event.pull_request.user.login == 'renohate[bot]'
+      )
     uses: ./.github/workflows/renovate.yaml
     secrets: inherit
