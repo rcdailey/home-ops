@@ -1,0 +1,228 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: filerun
+  namespace: default
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  uninstall:
+    keepHistory: false
+  valuesFrom:
+  - kind: Secret
+    name: cluster-secrets
+    optional: true
+  values:
+    defaultPodOptions:
+      enableServiceLinks: false
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+    controllers:
+      filerun:
+        replicas: 1
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: filerun/filerun
+              tag: "8.1"
+            env:
+              FR_DB_HOST: filerun-mariadb
+              FR_DB_PORT: "3306"
+              FR_DB_NAME: filerun
+              FR_DB_USER: filerun
+              APACHE_RUN_USER: "1000"
+              APACHE_RUN_USER_ID: "1000"
+              APACHE_RUN_GROUP: "1000"
+              APACHE_RUN_GROUP_ID: "1000"
+              ELASTICSEARCH_URL: "http://filerun-elasticsearch:9200"
+              TIKA_SERVER_URL: "http://filerun-tika:9998"
+            envFrom:
+            - secretRef:
+                name: filerun-secret
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - SETUID
+                - SETGID
+                drop:
+                - ALL
+
+      elasticsearch:
+        replicas: 1
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: elasticsearch
+              tag: "8.18.2"
+            env:
+              cluster.name: docker-cluster
+              bootstrap.memory_lock: "true"
+              ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+              discovery.type: single-node
+              xpack.security.enabled: "false"
+            probes:
+              liveness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /_cluster/health
+                    port: 9200
+                  initialDelaySeconds: 60
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /_cluster/health
+                    port: 9200
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 200m
+                memory: 1Gi
+              limits:
+                memory: 2Gi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop:
+                - ALL
+
+      tika:
+        replicas: 1
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: logicalspark/docker-tikaserver
+              tag: latest
+            probes:
+              liveness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /tika
+                    port: 9998
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /tika
+                    port: 9998
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 512Mi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop:
+                - ALL
+
+    service:
+      app:
+        controller: filerun
+        type: ClusterIP
+        ports:
+          http:
+            port: 80
+            targetPort: 80
+            protocol: HTTP
+
+      elasticsearch:
+        controller: elasticsearch
+        type: ClusterIP
+        ports:
+          http:
+            port: 9200
+            targetPort: 9200
+            protocol: HTTP
+
+      tika:
+        controller: tika
+        type: ClusterIP
+        ports:
+          http:
+            port: 9998
+            targetPort: 9998
+            protocol: HTTP
+
+    persistence:
+      filerun-html:
+        type: persistentVolumeClaim
+        existingClaim: filerun-html-pvc
+        globalMounts:
+        - path: /var/www/html
+
+      user-files:
+        type: persistentVolumeClaim
+        existingClaim: filerun-nfs-pvc
+        globalMounts:
+        - path: /user-files
+
+      elasticsearch-data:
+        type: persistentVolumeClaim
+        existingClaim: filerun-elasticsearch-pvc
+        advancedMounts:
+          elasticsearch:
+            app:
+            - path: /usr/share/elasticsearch/data

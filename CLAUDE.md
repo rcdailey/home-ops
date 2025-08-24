@@ -38,6 +38,7 @@ validation.**
 **CRITICAL FLUX PATTERNS:**
 
 - **GitRepository**: ALWAYS use `flux-system` name, verify sourceRef matches existing Kustomizations
+- **CRITICAL**: GitRepository sourceRef MUST include `namespace: flux-system`
 - **CRITICAL**: SOPS decryption MUST include `secretRef: {name: sops-age}` - this is required for
   encrypted secrets
 - **App-Template**: Use bjw-s OCIRepository with `chartRef: {kind: OCIRepository, name:
