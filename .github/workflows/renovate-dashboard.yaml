@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Renovate Dashboard Handler
+
+on:
+  issues:
+    types: [edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-renovate:
+    if: >
+      github.event.issue.title == 'Dependency Dashboard' &&
+      contains(github.event.issue.body, '- [x]')
+    uses: ./.github/workflows/renovate.yaml
+    secrets: inherit
