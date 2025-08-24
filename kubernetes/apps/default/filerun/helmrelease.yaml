@@ -66,15 +66,11 @@ spec:
               echo "Extracting FileRun ZIP to /var/www/html..."
               cd /var/www/html
               unzip -o /docker/filerun/html/FileRun-2024.1.2-PHP-8.1.zip
-              echo "Setting ownership to 1000:1000..."
-              chown -R 1000:1000 /var/www/html/
+              echo "Extracting with proper ownership..."
               echo "Verifying extraction..."
               ls -la /var/www/html/
               [ -f /var/www/html/index.php ] || { echo "ERROR: index.php not found!"; exit 1; }
               echo "FileRun extraction completed successfully!"
-            securityContext:
-              runAsUser: 0
-              runAsGroup: 0
 
           migrate-database:
             image:
