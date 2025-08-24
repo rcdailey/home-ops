@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-renovate:
+  trigger-renovate:
     if: >
       (
         github.event_name == 'issues' &&
@@ -28,5 +28,10 @@ jobs:
         github.event.action == 'closed' &&
         github.event.pull_request.user.login == 'renohate[bot]'
       )
-    uses: ./.github/workflows/renovate.yaml
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Renovate
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: renovate-trigger
