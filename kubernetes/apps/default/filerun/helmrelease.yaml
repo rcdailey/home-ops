@@ -88,36 +88,29 @@ spec:
               echo "Installing required packages..."
               apt-get update && apt-get install -y mariadb-client netcat-openbsd
 
-              echo "Waiting for cluster MariaDB to be ready..."
-              until nc -z -w5 localhost 3306; do
-                echo "Waiting for MariaDB on localhost:3306..."
+              echo "Waiting for operator-managed MariaDB to be ready..."
+              until nc -z -w5 filerun-mariadb 3306; do
+                echo "Waiting for MariaDB on filerun-mariadb:3306..."
                 sleep 2
               done
               echo "Port 3306 is open, checking MariaDB readiness..."
 
-              until mariadb-admin ping -h localhost -P 3306 -u root --password="$MARIADB_ROOT_PASSWORD" --silent; do
+              until mariadb-admin ping -h filerun-mariadb -P 3306 -u root --password="$MARIADB_ROOT_PASSWORD" --silent; do
                 echo "Waiting for MariaDB to accept connections..."
                 sleep 2
               done
-              echo "Cluster MariaDB is ready!"
+              echo "Operator-managed MariaDB is ready!"
 
-              echo "Creating filerun database and user..."
-              mariadb -h localhost -P 3306 -u root --password="$MARIADB_ROOT_PASSWORD" -e "
-                CREATE DATABASE IF NOT EXISTS filerun;
-                CREATE USER IF NOT EXISTS 'filerun'@'%' IDENTIFIED BY '$MARIADB_PASSWORD';
-                GRANT ALL PRIVILEGES ON filerun.* TO 'filerun'@'%';
-                FLUSH PRIVILEGES;
-              "
-
+              echo "Creating filerun database and user (operator should handle this)..."
               echo "Testing source database connectivity..."
               mariadb -h 192.168.1.58 -P 3306 -u db -pdb -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='filerun';"
 
               echo "Starting database migration from Docker to Kubernetes..."
               mariadb-dump -h 192.168.1.58 -P 3306 -u db -pdb --single-transaction --routines --triggers filerun | \
-                mariadb -h localhost -P 3306 -u filerun --password="$MARIADB_PASSWORD" filerun
+                mariadb -h filerun-mariadb -P 3306 -u filerun --password="$MARIADB_PASSWORD" filerun
 
               echo "Verifying migration..."
-              MIGRATED_TABLES=$(mariadb -h localhost -P 3306 -u filerun --password="$MARIADB_PASSWORD" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='filerun';" -s -N)
+              MIGRATED_TABLES=$(mariadb -h filerun-mariadb -P 3306 -u filerun --password="$MARIADB_PASSWORD" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='filerun';" -s -N)
               echo "Migrated tables count: $MIGRATED_TABLES"
               [ "$MIGRATED_TABLES" -gt 30 ] || { echo "ERROR: Migration failed - insufficient tables!"; exit 1; }
               echo "Database migration completed successfully!"
@@ -135,7 +128,7 @@ spec:
               repository: filerun/filerun
               tag: "8.1"
             env:
-              FR_DB_HOST: localhost
+              FR_DB_HOST: filerun-mariadb
               FR_DB_PORT: "3306"
               FR_DB_NAME: filerun
               FR_DB_USER: filerun
@@ -178,53 +171,6 @@ spec:
             securityContext:
               runAsUser: 1000
               runAsGroup: 1000
-              runAsNonRoot: true
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: false
-              capabilities:
-                drop:
-                - ALL
-
-          mariadb:
-            image:
-              repository: mariadb
-              tag: lts
-            env:
-              MARIADB_DATABASE: filerun
-              MARIADB_USER: filerun
-            envFrom:
-            - secretRef:
-                name: filerun-secret
-            probes:
-              liveness:
-                enabled: true
-                spec:
-                  exec:
-                    command:
-                    - healthcheck.sh
-                    - --connect
-                    - --innodb_initialized
-                  initialDelaySeconds: 30
-                  periodSeconds: 30
-              readiness:
-                enabled: true
-                spec:
-                  exec:
-                    command:
-                    - healthcheck.sh
-                    - --connect
-                    - --innodb_initialized
-                  initialDelaySeconds: 10
-                  periodSeconds: 10
-            resources:
-              requests:
-                cpu: 100m
-                memory: 256Mi
-              limits:
-                memory: 512Mi
-            securityContext:
-              runAsUser: 999
-              runAsGroup: 999
               runAsNonRoot: true
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
@@ -343,14 +289,6 @@ spec:
         existingClaim: filerun-nfs-pvc
         globalMounts:
         - path: /user-files
-
-      mariadb-data:
-        type: persistentVolumeClaim
-        existingClaim: filerun-mariadb-pvc
-        advancedMounts:
-          filerun:
-            mariadb:
-            - path: /var/lib/mysql
 
       elasticsearch-data:
         type: persistentVolumeClaim

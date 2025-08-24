@@ -1,0 +1,133 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/k8s.mariadb.com/mariadb_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: filerun-mariadb
+spec:
+  # Authentication
+  rootPasswordSecretKeyRef:
+    name: filerun-secret
+    key: MARIADB_ROOT_PASSWORD
+
+  username: filerun
+  passwordSecretKeyRef:
+    name: filerun-secret
+    key: MARIADB_PASSWORD
+
+  database: filerun
+
+  # Image configuration
+  image: docker-registry1.mariadb.com/library/mariadb:11.8.2
+  imagePullPolicy: IfNotPresent
+
+  # Network
+  port: 3306
+
+  # Storage - use existing PVC
+  storage:
+    size: 10Gi
+    storageClassName: ceph-block
+    existingClaim: filerun-mariadb-pvc
+
+  # MariaDB configuration
+  myCnf: |
+    [mariadb]
+    bind-address=*
+    default_storage_engine=InnoDB
+    binlog_format=row
+    innodb_buffer_pool_size=512M
+    max_allowed_packet=256M
+    innodb_autoinc_lock_mode=2
+
+    # Performance tuning for small instance
+    innodb_flush_log_at_trx_commit=2
+    innodb_flush_method=O_DIRECT
+    query_cache_size=0
+    query_cache_type=0
+
+    # Connection settings
+    max_connections=100
+    wait_timeout=28800
+
+  # Resource limits
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Security context
+  podSecurityContext:
+    runAsUser: 999
+    runAsGroup: 999
+    runAsNonRoot: true
+    fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    capabilities:
+      drop:
+      - ALL
+
+  # Health probes
+  livenessProbe:
+    exec:
+      command:
+      - bash
+      - -c
+      - mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SELECT 1;"
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    exec:
+      command:
+      - bash
+      - -c
+      - mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SELECT 1;"
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  startupProbe:
+    exec:
+      command:
+      - bash
+      - -c
+      - mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SELECT 1;"
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 30
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    sessionAffinity: None
+
+  # Enable metrics for monitoring
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        release: kube-prometheus-stack
+
+  # Update strategy
+  updateStrategy:
+    type: ReplicasFirstPrimaryLast
+
+  # Pod disruption budget
+  podDisruptionBudget:
+    maxUnavailable: 0
