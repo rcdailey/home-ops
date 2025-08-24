@@ -10,6 +10,7 @@ resources:
 - ./cloudnative-pg/ks.yaml
 - ./coredns/ks.yaml
 - ./intel-gpu-plugin/ks.yaml
+- ./mariadb-operator/ks.yaml
 - ./metrics-server/ks.yaml
 - ./node-feature-discovery/ks.yaml
 - ./reloader/ks.yaml
