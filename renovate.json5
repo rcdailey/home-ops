@@ -9,6 +9,7 @@
     ":semanticCommits",
   ],
   dependencyDashboard: true,
+  dependencyDashboardApproval: true,
   schedule: ["every weekend"],
   ignorePaths: ["**/*.sops.*"],
   flux: {
