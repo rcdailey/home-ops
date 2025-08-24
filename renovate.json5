@@ -8,8 +8,10 @@
     ":disableRateLimiting",
     ":semanticCommits",
   ],
+  group: {
+    commitMessageTopic: "{{{groupName}}} group",
+  },
   dependencyDashboard: true,
-  dependencyDashboardApproval: true,
   schedule: ["every weekend"],
   ignorePaths: ["**/*.sops.*"],
   flux: {
@@ -33,54 +35,36 @@
       groupName: "Cert-Manager",
       matchDatasources: ["docker"],
       matchPackageNames: ["/cert-manager/"],
-      group: {
-        commitMessageTopic: "{{{groupName}}} group",
-      },
     },
     {
       description: "CoreDNS Group",
       groupName: "CoreDNS",
       matchDatasources: ["docker"],
       matchPackageNames: ["/coredns/"],
-      group: {
-        commitMessageTopic: "{{{groupName}}} group",
-      },
     },
     {
       description: "Flux Operator Group",
       groupName: "Flux Operator",
       matchPackageNames: ["/flux-operator/", "/flux-instance/"],
       matchDatasources: ["docker"],
-      group: {
-        commitMessageTopic: "{{{groupName}}} group",
-      },
     },
     {
       description: "Spegel Group",
       groupName: "Spegel",
       matchDatasources: ["docker"],
       matchPackageNames: ["/spegel/"],
-      group: {
-        commitMessageTopic: "{{{groupName}}} group",
-      },
     },
     {
       description: "Immich Group",
       groupName: "Immich",
       matchDatasources: ["docker"],
       matchPackageNames: ["/immich-app/"],
-      group: {
-        commitMessageTopic: "{{{groupName}}} group",
-      },
     },
     {
       description: "Rook Ceph Group",
       groupName: "Rook Ceph",
       matchDatasources: ["helm"],
       matchPackageNames: ["/rook-ceph/", "/rook-ceph-cluster/"],
-      group: {
-        commitMessageTopic: "{{{groupName}}} group",
-      },
     },
     {
       description: "Auto-merge GitHub Actions",
