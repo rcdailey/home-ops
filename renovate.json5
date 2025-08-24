@@ -70,7 +70,16 @@
       matchDatasources: ["docker"],
       matchPackageNames: ["/immich-app/"],
       group: {
-        commitMessageTopic: "{{{groupName}}}",
+        commitMessageTopic: "{{{groupName}}} group",
+      },
+    },
+    {
+      description: "Rook Ceph Group",
+      groupName: "Rook Ceph",
+      matchDatasources: ["helm"],
+      matchPackageNames: ["/rook-ceph/", "/rook-ceph-cluster/"],
+      group: {
+        commitMessageTopic: "{{{groupName}}} group",
       },
     },
     {
