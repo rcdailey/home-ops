@@ -7,7 +7,6 @@
 - **Git Protocol**: NEVER run `git commit`/`git push` without explicit user request. GitOps requires
   user commits, not Claude. STOP after changes and wait for user to commit/push.
 - **Task Priority**: Use `task` commands over CLI. Check `Taskfile.yaml` first.
-- **Validation**: Run `pre-commit run --all-files` after changes, before user commits.
 - **Reference Format**: Use `file.yaml:123` format when referencing code.
 - **Configuration**: Favor YAML defaults over explicit values for cleaner manifests.
 - **Domain References**: NEVER reference real homelab domain names in documentation or config files.
@@ -15,6 +14,24 @@
 - **YAML Language Server**: ALWAYS include appropriate `# yaml-language-server:` directive at top of
   YAML files using URLs consistent with existing repo patterns. Use Flux schemas for Flux resources,
   Kubernetes JSON schemas for core K8s resources, and schemastore.org for standard files.
+
+## Quality Assurance & Validation
+
+**ESSENTIAL VALIDATION SEQUENCE - Claude MUST run ALL steps after changes:**
+
+1. **Flux Testing**: `./scripts/flux-local-test.sh` (changed files) or `./scripts/flux-local-test.sh
+   --all`
+2. **Pre-commit Checks**: `pre-commit run --all-files` (or `pre-commit run --files <files>`)
+3. **Additional Validation**: kustomize build → kubectl dry-run (server) → flux check
+
+**REQUIRED TOOLS FOR VERIFICATION:**
+
+- **Helm Validation**: `helm template <release> <chart>` and `helm search repo <chart> --versions`
+- **Chart Analysis**: `helm show values <chart>/<name> --version <version>` for secret integration
+- **Configuration Testing**: `./scripts/test-renovate.sh` for renovate config validation
+
+**Claude MUST NOT proceed to user commit without completing flux-local-test.sh and pre-commit
+validation.**
 
 ## Deployment Standards
 
@@ -32,8 +49,8 @@
 - **Namespace Inheritance**: NEVER add `namespace` field to child ks.yaml files - parent
   Kustomizations with `namespace: <target>` automatically override ALL child resource namespaces.
   Adding redundant namespace fields creates confusion and maintenance overhead.
-- **Validation Sequence**: kustomize build → kubectl dry-run (server) → flux check
-- **Helm**: Check versions with `helm search repo <chart> --versions`, validate with `helm template`
+- **Validation**: See "Quality Assurance & Validation" section above
+- **Helm**: See "Quality Assurance & Validation" section above
 - **Timing**: Never specify explicit timeouts/intervals without specific issue justification
 
 ## Storage & Secrets
@@ -45,8 +62,7 @@
 - **Secret Integration Priority**: 1) `envFrom` at app, 2) `env.valueFrom`, 3) HelmRelease
   `valuesFrom`, 4) `postBuild.substituteFrom` (last resort)
 - **Secret Management**: App-isolated secrets, `sops --set` for changes, `sops unset` for removal
-- **Chart Analysis**: Run `helm show values <chart>/<name> --version <version>` to check secret
-  integration capabilities before choosing method
+- **Chart Analysis**: See "Quality Assurance & Validation" section above for verification methods
 
 ## ConfigMap & Reloader Strategy
 
@@ -82,7 +98,7 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 
 - **Setup**: `mise trust .mise.toml && mise install`
 - **Sync**: `task reconcile`
-- **Validate**: `pre-commit run --all-files` (or `pre-commit run --files <file1> <file2>`)
+- **Validate**: See "Quality Assurance & Validation" section above
 - **List Tasks**: `task --list`
 
 **Note**: Taskfile includes for `bootstrap` and `talos` are referenced but taskfiles don't exist
@@ -91,7 +107,7 @@ yet.
 ## GitOps Flow
 
 1. Modify `kubernetes/` manifests
-2. `pre-commit run --all-files` (or `pre-commit run --files <changed_files>`)
+2. **VALIDATION** (See "Quality Assurance & Validation" section above)
 3. **USER COMMITS/PUSHES** (not Claude)
 4. Flux auto-applies
 5. Optional: `task reconcile` for immediate sync
@@ -153,13 +169,13 @@ new services **Scripts**: See @scripts/CLAUDE.md for available automation script
 
 ## S3 Object Storage (Garage)
 
-**Endpoint**: `http://192.168.1.58:3900` (Nezuko server)
-**Region**: `garage` (custom Garage region name)
-**Access**: Cluster-level credentials stored in `cluster-secrets.sops.yaml`
+**Endpoint**: `http://192.168.1.58:3900` (Nezuko server) **Region**: `garage` (custom Garage region
+name) **Access**: Cluster-level credentials stored in `cluster-secrets.sops.yaml`
 
 ### S3 Credentials Access
 
-Credentials are stored in `/home/robert/code/home-ops/kubernetes/components/common/sops/cluster-secrets.sops.yaml`:
+Credentials are stored in
+`/home/robert/code/home-ops/kubernetes/components/common/sops/cluster-secrets.sops.yaml`:
 
 - `S3_ENDPOINT`: `http://192.168.1.58:3900`
 - `S3_REGION`: `garage`
@@ -233,18 +249,14 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 
 - **app-scout.sh**: Kubernetes migration discovery tool
 - **bootstrap-apps.sh**: Application bootstrap for cluster initialization
-- **flux-local-test.sh**: Run flux-local test on modified files or entire repository
+- **flux-local-test.sh**: **ESSENTIAL VALIDATION** - Run flux-local test on modified files or entire
+  repository
   - Usage: `./scripts/flux-local-test.sh [--all]`
   - Default: tests only changed files; `--all` tests entire repository
+  - **REQUIRED** in validation sequence (see "Quality Assurance & Validation" section)
 - **test-renovate.sh**: Test renovate configuration with debug output
   - Usage: `./scripts/test-renovate.sh`
   - Shows actual PR titles and validates renovate config locally
-- **annotate-yaml.py**: Add YAML Language Server schema annotations to Kubernetes files
-  - Usage: `./scripts/annotate-yaml.py [--dry-run] <paths>`
-  - Automatically discovers and adds schema URLs for FluxCD, CRDs, and K8s resources
-- **validate-yaml.py**: Validate YAML files against their attached schemas
-  - Usage: `./scripts/validate-yaml.py [-v] <paths>`
-  - Validates files with yaml-language-server schema annotations
 - **update-gitignore/**: Modular gitignore generation system
   - Usage: `./scripts/update-gitignore/update.sh`
   - Combines custom patterns from `custom/` with gitignore.io templates
