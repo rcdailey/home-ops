@@ -24,6 +24,10 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: filerun
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-secrets
   dependsOn:
   - name: rook-ceph-cluster
     namespace: rook-ceph
