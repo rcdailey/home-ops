@@ -7,3 +7,11 @@ components:
 - ../../components/common
 resources:
 - ./cert-manager/ks.yaml
+patches:
+- target:
+    kind: Kustomization
+    group: kustomize.toolkit.fluxcd.io
+  patch: |
+    - op: add
+      path: /spec/targetNamespace
+      value: cert-manager
