@@ -1,0 +1,352 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: filerun
+  namespace: default
+spec:
+  # TEMPORARY: Fast development intervals - change to 1h for production
+  interval: 30s
+  timeout: 5m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  maxHistory: 2 # TEMPORARY: Reduced for faster cleanup
+  install:
+    disableWait: false # TEMPORARY: Enable wait for init container feedback
+    createNamespace: true
+    timeout: 10m # TEMPORARY: Longer timeout for init containers
+    remediation:
+      retries: 0 # TEMPORARY: No retries to avoid conflicts during development
+  upgrade:
+    disableWait: false # TEMPORARY: Enable wait for upgrade feedback
+    force: true # TEMPORARY: Force replacement of stuck resources
+    timeout: 10m
+    remediation:
+      retries: 0 # TEMPORARY: No retries for faster iteration
+      strategy: uninstall # TEMPORARY: Aggressive - uninstall on failure
+  uninstall:
+    keepHistory: false
+  valuesFrom:
+  - kind: Secret
+    name: cluster-secrets
+    optional: true
+  values:
+    controllers:
+      filerun:
+        replicas: 1
+        strategy: Recreate # TEMPORARY: Keep recreate for init containers
+        annotations:
+          reloader.stakater.com/auto: "true"
+        pod:
+          enableServiceLinks: false
+          # TEMPORARY: Fast pod replacement settings
+          terminationGracePeriodSeconds: 5 # Quick shutdown
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+
+        initContainers:
+          extract-filerun:
+            image:
+              repository: alpine
+              tag: latest
+            command:
+            - sh
+            - -c
+            - |
+              echo "=== FileRun Extraction Init Container ==="
+              apk add --no-cache unzip
+              echo "Checking source ZIP file..."
+              ls -la /docker/filerun/html/FileRun*.zip
+              echo "Extracting FileRun ZIP to /var/www/html..."
+              cd /var/www/html
+              unzip -o /docker/filerun/html/FileRun-2024.1.2-PHP-8.1.zip
+              echo "Setting ownership to 1000:1000..."
+              chown -R 1000:1000 /var/www/html/
+              echo "Verifying extraction..."
+              ls -la /var/www/html/
+              [ -f /var/www/html/index.php ] || { echo "ERROR: index.php not found!"; exit 1; }
+              echo "FileRun extraction completed successfully!"
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+
+          migrate-database:
+            image:
+              repository: mariadb
+              tag: lts
+            command:
+            - sh
+            - -c
+            - |
+              echo "=== Database Migration Init Container ==="
+              echo "Waiting for cluster MariaDB to be ready..."
+              until mysqladmin ping -h localhost -P 3306 -u root --password="$MARIADB_ROOT_PASSWORD" --silent; do
+                echo "Waiting for MariaDB..."
+                sleep 2
+              done
+              echo "Cluster MariaDB is ready!"
+
+              echo "Creating filerun database and user..."
+              mysql -h localhost -P 3306 -u root --password="$MARIADB_ROOT_PASSWORD" -e "
+                CREATE DATABASE IF NOT EXISTS filerun;
+                CREATE USER IF NOT EXISTS 'filerun'@'%' IDENTIFIED BY '$MARIADB_PASSWORD';
+                GRANT ALL PRIVILEGES ON filerun.* TO 'filerun'@'%';
+                FLUSH PRIVILEGES;
+              "
+
+              echo "Testing source database connectivity..."
+              mysql -h 192.168.1.58 -P 3306 -u db -pdb -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='filerun';"
+
+              echo "Starting database migration from Docker to Kubernetes..."
+              mysqldump -h 192.168.1.58 -P 3306 -u db -pdb --single-transaction --routines --triggers filerun | \
+                mysql -h localhost -P 3306 -u filerun --password="$MARIADB_PASSWORD" filerun
+
+              echo "Verifying migration..."
+              MIGRATED_TABLES=$(mysql -h localhost -P 3306 -u filerun --password="$MARIADB_PASSWORD" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='filerun';" -s -N)
+              echo "Migrated tables count: $MIGRATED_TABLES"
+              [ "$MIGRATED_TABLES" -gt 30 ] || { echo "ERROR: Migration failed - insufficient tables!"; exit 1; }
+              echo "Database migration completed successfully!"
+            envFrom:
+            - secretRef:
+                name: filerun-secret
+            securityContext:
+              runAsUser: 999
+              runAsGroup: 999
+              runAsNonRoot: true
+
+        containers:
+          app:
+            image:
+              repository: filerun/filerun
+              tag: "8.1"
+            env:
+              FR_DB_HOST: localhost
+              FR_DB_PORT: "3306"
+              FR_DB_NAME: filerun
+              FR_DB_USER: filerun
+              APACHE_RUN_USER: "1000"
+              APACHE_RUN_USER_ID: "1000"
+              APACHE_RUN_GROUP: "1000"
+              APACHE_RUN_GROUP_ID: "1000"
+            envFrom:
+            - secretRef:
+                name: filerun-secret
+            probes:
+              liveness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 80
+                  # TEMPORARY: Fast probes for development
+                  initialDelaySeconds: 10 # Faster startup detection
+                  periodSeconds: 10 # More frequent checks
+                  timeoutSeconds: 3 # Quick timeout
+                  failureThreshold: 2 # Fail faster
+              readiness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 80
+                  # TEMPORARY: Aggressive readiness for development
+                  initialDelaySeconds: 5 # Very fast readiness
+                  periodSeconds: 5 # Frequent checks
+                  timeoutSeconds: 3 # Quick timeout
+                  failureThreshold: 2 # Fail faster
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop:
+                - ALL
+
+          mariadb:
+            image:
+              repository: mariadb
+              tag: lts
+            env:
+              MARIADB_DATABASE: filerun
+              MARIADB_USER: filerun
+            envFrom:
+            - secretRef:
+                name: filerun-secret
+            probes:
+              liveness:
+                enabled: true
+                spec:
+                  exec:
+                    command:
+                    - healthcheck.sh
+                    - --connect
+                    - --innodb_initialized
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                spec:
+                  exec:
+                    command:
+                    - healthcheck.sh
+                    - --connect
+                    - --innodb_initialized
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 512Mi
+            securityContext:
+              runAsUser: 999
+              runAsGroup: 999
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop:
+                - ALL
+
+          elasticsearch:
+            image:
+              repository: elasticsearch
+              tag: "8.18.2"
+            env:
+              cluster.name: docker-cluster
+              bootstrap.memory_lock: "true"
+              ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+              discovery.type: single-node
+              xpack.security.enabled: "false"
+            probes:
+              liveness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /_cluster/health
+                    port: 9200
+                  initialDelaySeconds: 60
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /_cluster/health
+                    port: 9200
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 200m
+                memory: 1Gi
+              limits:
+                memory: 2Gi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop:
+                - ALL
+
+          tika:
+            image:
+              repository: logicalspark/docker-tikaserver
+              tag: latest
+            probes:
+              liveness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /tika
+                    port: 9998
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                spec:
+                  httpGet:
+                    path: /tika
+                    port: 9998
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 512Mi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop:
+                - ALL
+
+    service:
+      app:
+        controller: filerun
+        type: ClusterIP
+        ports:
+          http:
+            port: 80
+            targetPort: 80
+            protocol: HTTP
+
+    persistence:
+      filerun-html:
+        type: persistentVolumeClaim
+        existingClaim: filerun-html-pvc
+        globalMounts:
+        - path: /var/www/html
+
+      docker-nfs:
+        type: persistentVolumeClaim
+        existingClaim: docker-temp-pvc
+        advancedMounts:
+          filerun:
+            extract-filerun:
+            - path: /docker
+              readOnly: true
+
+      user-files:
+        type: persistentVolumeClaim
+        existingClaim: filerun-nfs-pvc
+        globalMounts:
+        - path: /user-files
+
+      mariadb-data:
+        type: persistentVolumeClaim
+        existingClaim: filerun-mariadb-pvc
+        advancedMounts:
+          filerun:
+            mariadb:
+            - path: /var/lib/mysql
+
+      elasticsearch-data:
+        type: persistentVolumeClaim
+        existingClaim: filerun-elasticsearch-pvc
+        advancedMounts:
+          filerun:
+            elasticsearch:
+            - path: /usr/share/elasticsearch/data
