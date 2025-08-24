@@ -33,6 +33,7 @@
       "Bash(kubectl patch:*)",
       "Bash(kubectl run:*)",
       "Bash(kubectl top:*)",
+      "Bash(kubectl version:*)",
       "Bash(kubectl wait:*)",
       "Bash(kustomize build:*)",
       "Bash(mise env:*)",
@@ -41,8 +42,10 @@
       "Bash(nc:*)",
       "Bash(pkill:*)",
       "Bash(renovate --version)",
-      "Bash(scripts/app-scout.sh discover:*)",
-      "Bash(scripts/app-scout.sh inspect:*)",
+      "Bash(./scripts/app-scout.sh discover:*)",
+      "Bash(./scripts/app-scout.sh inspect:*)",
+      "Bash(sops encrypt:*)",
+      "Bash(sops set:*)",
       "Bash(sops:*)",
       "Bash(ssh:*)",
       "Bash(sudo apt install:*)",
@@ -66,7 +69,8 @@
       "Bash(talosctl:*)",
       "Bash(task reconcile)",
       "Bash(task talos:generate-config:*)",
-      "Bash(task:*)"
+      "Bash(task:*)",
+      "Bash(uvx flux-local:*)"
     ],
     "deny": []
   }
