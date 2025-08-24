@@ -38,6 +38,8 @@ validation.**
 **CRITICAL FLUX PATTERNS:**
 
 - **GitRepository**: ALWAYS use `flux-system` name, verify sourceRef matches existing Kustomizations
+- **CRITICAL**: SOPS decryption MUST include `secretRef: {name: sops-age}` - this is required for
+  encrypted secrets
 - **App-Template**: Use bjw-s OCIRepository with `chartRef: {kind: OCIRepository, name:
   app-template}`, HTTPRoute over Ingress, add `postBuild.substituteFrom: cluster-secrets`
 - **Directory Structure**: `kubernetes/apps/<namespace>/<app>/` - namespace dirs MUST match names
@@ -46,9 +48,22 @@ validation.**
   secrets, pvcs). Subdirectories only for assets (config/, resources/, icons/)
 - **Kustomization Logic**: Single ks.yaml for same namespace+timing+lifecycle. Multiple for
   different namespaces/timing/lifecycle or operator+instance patterns
-- **Namespace Inheritance**: NEVER add `namespace` field to child ks.yaml files - parent
-  Kustomizations with `namespace: <target>` automatically override ALL child resource namespaces.
-  Adding redundant namespace fields creates confusion and maintenance overhead.
+- **Namespace Inheritance**: Use parent kustomization's `namespace` field and patches for automatic inheritance
+  - Parent: `kubernetes/apps/<namespace>/kustomization.yaml` sets `namespace: <namespace>`
+  - Parent: MUST include patch to add `spec.targetNamespace` to all child Kustomization resources:
+    ```yaml
+    patches:
+    - target:
+        kind: Kustomization
+        group: kustomize.toolkit.fluxcd.io
+      patch: |
+        - op: add
+          path: /spec/targetNamespace
+          value: <namespace>
+    ```
+  - Children: Individual app ks.yaml files NEVER specify `metadata.namespace` or `spec.targetNamespace`
+  - Semantics: Parent's `namespace` field sets `metadata.namespace`, patch adds `spec.targetNamespace`
+  - Result: App kustomizations live in correct namespace and deploy resources to same namespace automatically
 - **Validation**: See "Quality Assurance & Validation" section above
 - **Helm**: See "Quality Assurance & Validation" section above
 - **Timing**: Never specify explicit timeouts/intervals without specific issue justification
