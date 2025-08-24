@@ -8,3 +8,11 @@ components:
 resources:
 - ./flux-instance/ks.yaml
 - ./flux-operator/ks.yaml
+patches:
+- target:
+    kind: Kustomization
+    group: kustomize.toolkit.fluxcd.io
+  patch: |
+    - op: add
+      path: /spec/targetNamespace
+      value: flux-system

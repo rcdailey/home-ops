@@ -62,6 +62,11 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+run_flux_local_test() {
+    log_info "Running flux-local test..."
+    uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH"
+}
+
 get_changed_files() {
     # Get all working changes: staged, unstaged (except deletions), and untracked YAML files
     {
@@ -112,11 +117,7 @@ main() {
 
     if [[ "$SCAN_ALL" == "true" ]]; then
         log_info "Running flux-local test on entire repository..."
-        if [[ -t 1 ]]; then
-            uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH"
-        else
-            uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH" 2>&1 | grep -E "(PASSED|FAILED|ERROR|===)"
-        fi
+        run_flux_local_test
     else
         log_info "Checking for modified and untracked Kubernetes YAML files..."
 
@@ -133,12 +134,7 @@ main() {
         printf '  %s\n' "${changed_files[@]}"
 
         # Run flux-local test
-        log_info "Running flux-local test..."
-        if [[ -t 1 ]]; then
-            uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH"
-        else
-            uvx flux-local test --enable-helm --all-namespaces --path "$FLUX_PATH" 2>&1 | grep -E "(PASSED|FAILED|ERROR|===)"
-        fi
+        run_flux_local_test
     fi
 
     log_success "flux-local test completed successfully"

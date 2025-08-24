@@ -5,7 +5,6 @@ kind: Kustomization
 metadata:
   name: &appname adguard-home
 spec:
-  targetNamespace: dns-private
   commonMetadata:
     labels:
       app.kubernetes.io/name: *appname
