@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
 name: Renovate
 
 on:
@@ -5,8 +7,8 @@ on:
   - cron: "0 2 * * *" # Daily at 2 AM
   push:
     branches: ["main", "master"]
-  issue_comment:
-    types: [created]
+  issues:
+    types: [edited]
   workflow_dispatch:
     inputs:
       logLevel:
@@ -31,7 +33,16 @@ concurrency:
 jobs:
   renovate:
     runs-on: ubuntu-latest
-    if: github.event_name != 'issue_comment' || contains(github.event.comment.body, '- [x]')
+    if: >
+      github.event_name == 'schedule' ||
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issues' &&
+        github.event.action == 'edited' &&
+        github.event.issue.title == 'Dependency Dashboard' &&
+        contains(github.event.issue.body, '- [x]')
+      )
     steps:
     - name: Checkout
       uses: actions/checkout@v5
