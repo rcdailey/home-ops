@@ -135,7 +135,7 @@ dns-private
 ## Critical Security
 
 **SOPS**: Encrypted files MUST NEVER be committed unencrypted **External-DNS**: Auto-manages DNS for
-new services **App-Scout**: See @scripts/app-scout/README.md for deployment discovery patterns
+new services **Scripts**: See @scripts/CLAUDE.md for available automation scripts and usage
 
 ## DNS Architecture
 
@@ -181,3 +181,23 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 - Values must be JSON-encoded strings
 - Always use single quotes around index path
 - Use `--idempotent` flag to avoid errors if key exists/doesn't exist
+
+## Available Scripts
+
+- **app-scout.sh**: Kubernetes migration discovery tool
+- **bootstrap-apps.sh**: Application bootstrap for cluster initialization
+- **flux-local-test.sh**: Run flux-local test on modified files or entire repository
+  - Usage: `./scripts/flux-local-test.sh [--all]`
+  - Default: tests only changed files; `--all` tests entire repository
+- **test-renovate.sh**: Test renovate configuration with debug output
+  - Usage: `./scripts/test-renovate.sh`
+  - Shows actual PR titles and validates renovate config locally
+- **annotate-yaml.py**: Add YAML Language Server schema annotations to Kubernetes files
+  - Usage: `./scripts/annotate-yaml.py [--dry-run] <paths>`
+  - Automatically discovers and adds schema URLs for FluxCD, CRDs, and K8s resources
+- **validate-yaml.py**: Validate YAML files against their attached schemas
+  - Usage: `./scripts/validate-yaml.py [-v] <paths>`
+  - Validates files with yaml-language-server schema annotations
+- **update-gitignore/**: Modular gitignore generation system
+  - Usage: `./scripts/update-gitignore/update.sh`
+  - Combines custom patterns from `custom/` with gitignore.io templates
