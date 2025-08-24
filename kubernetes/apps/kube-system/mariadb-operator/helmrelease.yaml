@@ -1,0 +1,133 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrepository-source-v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: mariadb-operator
+spec:
+  interval: 1h
+  url: https://helm.mariadb.com/mariadb-operator
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mariadb-operator-crds
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: mariadb-operator-crds
+      version: 25.8.3
+      sourceRef:
+        kind: HelmRepository
+        name: mariadb-operator
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+    force: true
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mariadb-operator
+spec:
+  interval: 1h
+  dependsOn:
+  - name: mariadb-operator-crds
+  chart:
+    spec:
+      chart: mariadb-operator
+      version: 25.8.3
+      sourceRef:
+        kind: HelmRepository
+        name: mariadb-operator
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+    force: true
+  values:
+    # Enable metrics integration with prometheus-operator
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        additionalLabels:
+          release: kube-prometheus-stack
+
+    # Enable cert-manager integration
+    webhook:
+      cert:
+        certManager:
+          enabled: true
+
+    # High availability configuration
+    ha:
+      enabled: true
+      replicas: 3
+
+    # Anti-affinity for HA
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - mariadb-operator
+            - key: app.kubernetes.io/instance
+              operator: In
+              values:
+              - mariadb-operator
+          topologyKey: kubernetes.io/hostname
+
+    # Pod disruption budget
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+
+    # Resource limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+
+    # Security context
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      capabilities:
+        drop:
+        - ALL
+
+    # Cert controller HA
+    certController:
+      ha:
+        enabled: true
+        replicas: 3
+
+      pdb:
+        enabled: true
+        maxUnavailable: 1
+
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 128Mi
