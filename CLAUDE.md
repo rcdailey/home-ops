@@ -4,8 +4,13 @@
 
 **IMPORTANT:** Claude MUST:
 
+- **GitOps Protocol**: This is a Flux GitOps repository. NEVER run `kubectl apply -f` commands.
+  Flux manages all deployments. NEVER attempt to reconcile, apply, or sync changes after making
+  modifications. STOP immediately after file changes and ASK user to commit/push changes.
 - **Git Protocol**: NEVER run `git commit`/`git push` without explicit user request. GitOps requires
   user commits, not Claude. STOP after changes and wait for user to commit/push.
+- **No Direct Kubernetes Operations**: NEVER use `kubectl apply`, `kubectl create`, `kubectl patch`,
+  or any direct Kubernetes modification commands. All changes must go through GitOps workflow.
 - **Task Priority**: Use `task` commands over CLI. Check `Taskfile.yaml` first.
 - **Reference Format**: Use `file.yaml:123` format when referencing code.
 - **Configuration**: Favor YAML defaults over explicit values for cleaner manifests.
