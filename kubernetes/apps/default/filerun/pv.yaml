@@ -3,16 +3,16 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: unraid-media-pv
+  name: unraid-filerun-pv
 spec:
   capacity:
-    storage: 100Ti
+    storage: 5Ti
   accessModes:
   - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
     server: 192.168.1.58 # Nezuko IP
-    path: /mnt/user/media
+    path: /mnt/user/filerun
   mountOptions:
   - nfsvers=4.1
   - hard

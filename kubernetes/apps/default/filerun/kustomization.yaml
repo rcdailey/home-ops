@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
 - ./helmrelease.yaml
 - ./mariadb.yaml
-- ./secret.sops.yaml
+- ./pv.yaml
 - ./pvc.yaml
+- ./secret.sops.yaml
 - ./httproute.yaml

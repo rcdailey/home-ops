@@ -7,5 +7,6 @@ resources:
 - helmrelease.yaml
 - httproute.yaml
 - postgres-cluster.yaml
+- pv.yaml
 - pvc.yaml
 - secret.sops.yaml
