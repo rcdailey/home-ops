@@ -127,8 +127,8 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 - **Validate**: See "Quality Assurance & Validation" section above
 - **List Tasks**: `task --list`
 
-**Note**: Taskfile includes for `bootstrap` and `talos` are referenced but taskfiles don't exist
-yet.
+**Note**: Taskfile includes for `bootstrap` and `talos` exist at `.taskfiles/bootstrap/` and
+`.taskfiles/talos/`.
 
 ## GitOps Flow
 
@@ -159,7 +159,7 @@ FileRun 5Ti), Garage S3 `192.168.1.58:3900`
 pvc.yaml **Asset Subdirs**: config/, resources/, icons/ (only when needed) **Namespace
 Kustomization**: Lists all app ks.yaml files
 
-**Key Namespaces**: kube-system, flux-system, network, rook-ceph, nfs, cert-manager, default,
+**Key Namespaces**: kube-system, flux-system, network, rook-ceph, storage, cert-manager, default,
 dns-private
 
 ## Intel GPU for Applications
@@ -173,8 +173,8 @@ dns-private
 
 ## Critical Security
 
-**SOPS**: Encrypted files MUST NEVER be committed unencrypted **External-DNS**: Auto-manages DNS for
-new services **Scripts**: See @scripts/CLAUDE.md for available automation scripts and usage
+- **SOPS**: Encrypted files MUST NEVER be committed unencrypted
+- **External-DNS**: Auto-manages DNS for new services
 
 ## DNS Architecture
 
@@ -269,6 +269,9 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 - Use `--idempotent` flag to avoid errors if key exists/doesn't exist
 
 ## Available Scripts
+
+Only scripts relevant for AI usage is below; do not use the `annotate-yaml.py` or `validate-yaml.py`
+scripts.
 
 - **app-scout.sh**: Kubernetes migration discovery tool
 - **bootstrap-apps.sh**: Application bootstrap for cluster initialization
