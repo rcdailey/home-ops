@@ -22,3 +22,6 @@ patches:
     - op: add
       path: /spec/targetNamespace
       value: default
+    - op: add
+      path: /spec/components/-
+      value: "../../../../components/drift-detection"
