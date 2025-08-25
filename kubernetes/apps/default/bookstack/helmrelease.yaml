@@ -1,0 +1,101 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app bookstack
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  dependsOn:
+  - name: bookstack-mariadb
+  values:
+    controllers:
+      bookstack:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/linuxserver/bookstack
+              tag: version-v25.07.1
+            env:
+              TZ: America/Chicago
+              PUID: 568
+              PGID: 568
+              APP_URL: https://wiki.${SECRET_DOMAIN}
+
+              # Database connection
+              DB_HOST: bookstack-mariadb
+              DB_PORT: 3306
+              DB_DATABASE: bookstackapp
+              DB_USERNAME: bookstack
+
+            envFrom:
+            - secretRef:
+                name: bookstack-secret
+
+            probes:
+              liveness: &probe
+                enabled: true
+                type: HTTP
+                path: /status
+              readiness: *probe
+              startup:
+                enabled: true
+                type: HTTP
+                path: /status
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 5
+
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              runAsNonRoot: true
+              runAsUser: 568
+              runAsGroup: 568
+              capabilities:
+                drop:
+                - ALL
+
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            runAsNonRoot: true
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
+
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: 80
+
+    persistence:
+      config:
+        existingClaim: *app
+        globalMounts:
+        - path: /config
+          subPath: bookstack
