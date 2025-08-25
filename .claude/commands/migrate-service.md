@@ -59,20 +59,46 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
 
 **HOMELAB PATTERN DISCOVERY:**
 
-1. **App-Scout Analysis**
+1. **Local Repository Analysis (PRIORITY)**
+   - Search existing app-template implementations: `rg -l "app-template"
+     kubernetes/apps/*/*/helmrelease.yaml`
+   - Analyze controller patterns in similar applications
+   - Extract service architecture decisions from existing deployments
+   - Document storage, networking, and security patterns used
+   - **Anti-pattern Detection**: Identify multi-service containers that should be separate
+     HelmReleases
+
+2. **Service Architecture Decision Rules**
+
+   ```yaml
+   Separate HelmReleases (Different Pods) IF:
+     - Independent database (MariaDB, PostgreSQL, Redis as primary store)
+     - Different lifecycle management needs
+     - Different resource/security requirements
+     - Can function independently
+
+   Same HelmRelease, Separate Controllers (Different Pods) IF:
+     - Tightly coupled services (web + worker + cache)
+     - Shared configuration and secrets
+     - Similar resource requirements
+     - Part of same application stack
+
+   Same Controller, Multiple Containers (Same Pod) IF:
+     - Sidecar pattern (VPN + app, backup + app)
+     - Shared network namespace required
+     - Init container dependencies
+     - Shared storage access patterns
+   ```
+
+3. **App-Scout Analysis (Secondary)**
    - Run app-scout discovery for the target service
-   - Analyze both dedicated charts and app-template patterns
-   - Identify most popular deployment strategies
+   - Analyze dedicated charts vs app-template patterns
+   - Compare with local repository patterns
 
-2. **Repository Pattern Search**
-   - Search GitHub for homelab implementations using octocode
-   - Focus on: kubernetes/, flux/, gitops/, homelab repositories
-   - Query patterns: ["$ARGUMENTS kubernetes", "$ARGUMENTS helm", "$ARGUMENTS app-template"]
-
-3. **Official Documentation Search**
-   - Search for official Helm charts
-   - Find container images and recommended configurations
-   - Identify security and performance best practices
+4. **External Reference Search (Tertiary)**
+   - Search GitHub homelab implementations only if no local patterns found
+   - Focus on app-template usage, not generic Kubernetes manifests
+   - Query patterns: ["$ARGUMENTS app-template", "bjw-s $ARGUMENTS"]
 
 ## Phase 4: Migration Strategy Decision Tree
 
@@ -134,16 +160,23 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
 
 **RESOURCE MAPPING:**
 
-1. **Namespace Selection**
-   - Analyze existing namespaces: !`ls -d kubernetes/apps/*/`
+1. **Service Architecture Decision**
+   - Apply Phase 3 decision rules to each docker-compose service
+   - Create dependency graph showing which services need separation
+   - Document rationale for each architectural decision
+
+2. **Namespace Selection**
+   - Analyze existing namespaces: `ls -d kubernetes/apps/*/`
    - Follow semantic grouping (dns-private, network, default, etc.)
    - Use existing namespace or justify new one
 
-2. **Directory Structure Planning**
+3. **Directory Structure Planning**
+
+   **Single Service Pattern:**
 
    ```txt
    kubernetes/apps/<namespace>/$ARGUMENTS/
-   ├── helmrelease.yaml     # Main deployment
+   ├── helmrelease.yaml     # App-template deployment
    ├── ks.yaml             # Kustomization (if needed)
    ├── kustomization.yaml   # Resource list
    ├── secret.sops.yaml    # Encrypted secrets
@@ -152,10 +185,25 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
    └── config/             # ConfigMaps and assets (if needed)
    ```
 
-3. **Secret Planning**
+   **Multi-Service Pattern (databases separated):**
+
+   ```txt
+   kubernetes/apps/<namespace>/$ARGUMENTS/
+   ├── helmrelease.yaml        # Main app (app-template)
+   ├── database.yaml           # Database HelmRelease (dedicated chart)
+   ├── ks.yaml                # Kustomization
+   ├── kustomization.yaml      # Resource list
+   ├── secret.sops.yaml       # Shared secrets
+   ├── database-secret.sops.yaml # Database-specific secrets
+   ├── httproute.yaml         # External access
+   └── pvc.yaml               # Persistent volumes
+   ```
+
+4. **Secret Planning**
    - Extract environment variables from docker-compose
-   - Identify sensitive values for SOPS encryption
-   - Plan secret integration method (envFrom, valueFrom, etc.)
+   - Group secrets by service boundaries (app vs database)
+   - Plan secret integration method (envFrom priority, then valueFrom)
+   - Use dedicated database operators (MariaDB, CNPG) for database credentials
 
 ## Phase 6: Migration Implementation Plan
 
@@ -166,31 +214,41 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
    - Generate kustomization.yaml with resource list
    - Add to parent namespace kustomization
 
-2. **Core Deployment**
+2. **Core Deployment (Follow Local Patterns)**
+   - **Reference Analysis**: Study similar services from Phase 3 local analysis
+   - **App-Template Structure**: Use controllers pattern from immich/qbittorrent examples
    - Create helmrelease.yaml with:
-     - Appropriate YAML language server schema
-     - Chart reference (dedicated or app-template)
-     - Resource requests/limits based on current usage
-     - Security context (runAsNonRoot, capabilities drop)
-     - Health probes (readiness, liveness)
-     - Reloader annotation for config updates
+     - YAML language server schema (Flux schemas)
+     - OCIRepository chartRef referencing app-template
+     - Controllers for each logical service component
+     - Service definitions matching controller names
+     - Proper resource requests/limits from docker-compose analysis
+     - Security context following repository patterns (runAsNonRoot, capabilities drop)
+     - Health probes (HTTP preferred over command execution)
+     - Reloader annotation: `reloader.stakater.com/auto: "true"`
 
-3. **Storage Configuration**
+3. **Database Integration (Critical Decision Point)**
+   - **If database required**: Create separate HelmRelease using dedicated operator
+   - **MariaDB**: Use mariadb-operator following kubernetes/apps/kube-system/mariadb-operator/
+   - **PostgreSQL**: Use cloudnative-pg following kubernetes/apps/kube-system/cloudnative-pg/
+   - **Redis**: Include as controller only if used as cache, not primary store
+
+4. **Storage Configuration**
    - Create PVC manifests for persistent data
    - Configure subPath mounting for existing data
    - Plan data migration from docker volumes
 
-4. **Secret Management**
+5. **Secret Management**
    - Create secret.sops.yaml structure
    - Use `sops --set` commands for value insertion
    - Configure secret integration in helmrelease
 
-5. **Network Configuration**
+6. **Network Configuration**
    - Create HTTPRoute for external access (if needed)
    - Configure service endpoints
    - Set up external-dns annotations
 
-6. **Validation Strategy**
+7. **Validation Strategy**
    - Pre-commit validation: `pre-commit run --files <changed-files>`
    - Flux validation: `./scripts/flux-local-test.sh`
    - Kustomize build test: `kustomize build kubernetes/apps/<namespace>/$ARGUMENTS`
@@ -226,13 +284,17 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
 
 **MANDATORY COMPLIANCE:**
 
+- **Service Separation**: NEVER put databases as containers in app-template controllers
+- **Local Patterns First**: Always analyze existing repository app-template usage before external
+  research
+- **Architecture Validation**: Apply Phase 3 decision rules to prevent multi-container anti-patterns
 - **GitOps Only**: Never modify cluster directly, only repository YAML
 - **SOPS Security**: All secrets encrypted before commit
 - **Schema Validation**: Include yaml-language-server directives
 - **Reference Format**: Use `file.yaml:123` when citing code
-- **Validation**: Always run pre-commit before handoff
-- **No Assumptions**: Research and verify all decisions
-- **Collaborative**: Present findings and ask for user confirmation
+- **Validation**: Always run flux-local-test.sh and pre-commit before handoff
+- **No Assumptions**: Research and verify all decisions with local repository patterns
+- **Collaborative**: Present complete architectural analysis and ask for user confirmation
 
 ## Final Deliverables
 
