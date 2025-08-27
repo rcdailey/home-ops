@@ -7,7 +7,7 @@
 
 ## Objective
 
-Migrate 42+ Docker services from Nezuko (Unraid) to the 3-node Talos Kubernetes cluster. The migration prioritizes infrastructure readiness, dependency management, and incremental learning while maintaining service availability throughout the transition.
+Migrate 42+ Docker services from Nezuko (Unraid) to the 5-node Talos Kubernetes cluster (3 control-plane + 2 workers). The migration prioritizes infrastructure readiness, dependency management, and incremental learning while maintaining service availability throughout the transition.
 
 ## Current Focus
 
