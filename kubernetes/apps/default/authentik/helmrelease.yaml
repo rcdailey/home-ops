@@ -35,6 +35,9 @@ spec:
   values:
     # Global configuration
     global:
+      env:
+      - name: AUTHENTIK_LOG_LEVEL
+        value: "warning"
       envFrom:
       - secretRef:
           name: authentik-secret
