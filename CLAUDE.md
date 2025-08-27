@@ -4,8 +4,8 @@
 
 **IMPORTANT:** Claude MUST:
 
-- **GitOps Protocol**: This is a Flux GitOps repository. NEVER run `kubectl apply -f` commands.
-  Flux manages all deployments. NEVER attempt to reconcile, apply, or sync changes after making
+- **GitOps Protocol**: This is a Flux GitOps repository. NEVER run `kubectl apply -f` commands. Flux
+  manages all deployments. NEVER attempt to reconcile, apply, or sync changes after making
   modifications. STOP immediately after file changes and ASK user to commit/push changes.
 - **Git Protocol**: NEVER run `git commit`/`git push` without explicit user request. GitOps requires
   user commits, not Claude. STOP after changes and wait for user to commit/push.
@@ -33,6 +33,8 @@
 - **Helm Validation**: `helm template <release> <chart>` and `helm search repo <chart> --versions`
 - **Chart Analysis**: `helm show values <chart>/<name> --version <version>` for secret integration
 - **Configuration Testing**: `./scripts/test-renovate.sh` for renovate config validation
+- **Debug Analysis**: You MUST start with `kubectl get events -n namespace` when performing cluster
+  debugging or analysis.
 
 **Claude MUST NOT proceed to user commit without completing flux-local-test.sh and pre-commit
 validation.**
@@ -93,6 +95,61 @@ validation.**
   `valuesFrom`, 4) `postBuild.substituteFrom` (last resort)
 - **Secret Management**: App-isolated secrets, `sops --set` for changes, `sops unset` for removal
 - **Chart Analysis**: See "Quality Assurance & Validation" section above for verification methods
+
+## Volume Mounting Strategy
+
+**CRITICAL VOLUME MOUNTING RULES - Claude MUST enforce these patterns:**
+
+**NEVER use globalMounts for multi-controller applications:**
+
+- **globalMounts mounts to ALL controllers and ALL containers** - causes ReadWriteOnce violations
+- **Multi-controller apps**: Use `advancedMounts` to specify exactly which controller gets which
+  volume
+- **Single-controller apps**: `globalMounts` acceptable but `advancedMounts` preferred for clarity
+
+**Storage Class Access Mode Guidelines:**
+
+- **ReadWriteOnce (RWO)**: `ceph-block` - Single node exclusive, cannot share across nodes
+- **ReadWriteMany (RWX)**: `ceph-filesystem`, NFS - Multi-node sharing supported
+- **Node scheduling**: RWO volumes fail when multiple pods scheduled on different nodes
+
+**App-Template Volume Mount Patterns:**
+
+```yaml
+# CORRECT: advancedMounts for precise control
+persistence:
+  app-data:
+    type: persistentVolumeClaim
+    existingClaim: app-data-pvc
+    advancedMounts:
+      main-controller:    # Specific controller
+        app:              # Specific container
+        - path: /data
+
+# ACCEPTABLE: globalMounts only for single-controller apps
+persistence:
+  shared-config:
+    type: configMap
+    name: app-config
+    globalMounts:         # OK for ConfigMaps and single-controller
+    - path: /config
+
+# WRONG: globalMounts with RWO volumes in multi-controller apps
+# This causes "Multi-Attach error" when pods land on different nodes
+```
+
+**Multi-Controller Application Requirements:**
+
+- **Each RWO volume** must use `advancedMounts` to specify single controller
+- **Shared volumes** must use ReadWriteMany storage classes (`ceph-filesystem`)
+- **Service communication** preferred over shared filesystem for multi-component apps
+
+**Storage Class Selection Strategy:**
+
+- **App-specific data**: Use `ceph-block` (RWO) with `advancedMounts`
+- **Shared configuration**: Use ConfigMaps with `globalMounts`
+- **Multi-pod shared data**: Use `ceph-filesystem` (RWX) with `globalMounts`
+- **Large media/file storage**: Use NFS PVs (always RWX)
 
 ## ConfigMap & Reloader Strategy
 
