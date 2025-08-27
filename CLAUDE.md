@@ -24,8 +24,7 @@
 
 **ESSENTIAL VALIDATION SEQUENCE - Claude MUST run ALL steps after changes:**
 
-1. **Flux Testing**: `./scripts/flux-local-test.sh` (changed files) or `./scripts/flux-local-test.sh
-   --all`
+1. **Flux Testing**: `./scripts/flux-local-test.sh`
 2. **Pre-commit Checks**: `pre-commit run --all-files` (or `pre-commit run --files <files>`)
 3. **Additional Validation**: kustomize build → kubectl dry-run (server) → flux check
 
@@ -286,10 +285,8 @@ scripts.
 
 - **app-scout.sh**: Kubernetes migration discovery tool
 - **bootstrap-apps.sh**: Application bootstrap for cluster initialization
-- **flux-local-test.sh**: **ESSENTIAL VALIDATION** - Run flux-local test on modified files or entire
-  repository
-  - Usage: `./scripts/flux-local-test.sh [--all]`
-  - Default: tests only changed files; `--all` tests entire repository
+- **flux-local-test.sh**: **ESSENTIAL VALIDATION**
+  - Usage: `./scripts/flux-local-test.sh`
   - **REQUIRED** in validation sequence (see "Quality Assurance & Validation" section)
 - **test-renovate.sh**: Test renovate configuration with debug output
   - Usage: `./scripts/test-renovate.sh`
