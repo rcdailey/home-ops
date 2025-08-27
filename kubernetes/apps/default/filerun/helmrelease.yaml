@@ -210,8 +210,10 @@ spec:
       filerun-html:
         type: persistentVolumeClaim
         existingClaim: filerun-html-pvc
-        globalMounts:
-        - path: /var/www/html
+        advancedMounts:
+          filerun:
+            app:
+            - path: /var/www/html
 
       user-files:
         type: persistentVolumeClaim
