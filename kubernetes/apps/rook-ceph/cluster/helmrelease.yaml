@@ -71,6 +71,18 @@ spec:
             deviceClass: "ssd"
             metadataDevice: ""
             osdsPerDevice: "1"
+        - name: "sakura"
+          devicePathFilter: "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NS0W223961P"
+          config:
+            deviceClass: "ssd"
+            metadataDevice: ""
+            osdsPerDevice: "1"
+        - name: "hanekawa"
+          devicePathFilter: "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S6S1NS0W224436E"
+          config:
+            deviceClass: "ssd"
+            metadataDevice: ""
+            osdsPerDevice: "1"
 
     # Storage classes configuration - using defaults
     cephBlockPools:

@@ -151,7 +151,13 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 
 **Nodes**:
 
-- rias: `192.168.1.61` (VM), nami: `192.168.1.50` (NUC), marin: `192.168.1.59` (NUC)
+- **Control Plane**:
+  - rias: `192.168.1.61` (VM)
+  - nami: `192.168.1.50` (NUC)
+  - marin: `192.168.1.59` (NUC)
+- **Workers**:
+  - sakura: `192.168.1.62` (NUC)
+  - hanekawa: `192.168.1.63` (NUC)
 
 **Storage**: Rook Ceph (distributed), NFS from Nezuko `192.168.1.58` (Media 100Ti, Photos 10Ti,
 FileRun 5Ti), Garage S3 `192.168.1.58:3900`

@@ -80,6 +80,44 @@ nodes:
         mtu: 1500
         vip:
           ip: "192.168.1.70"
+  - hostname: "sakura"
+    ipAddress: "192.168.1.62"
+    installDiskSelector:
+      model: "Samsung SSD 870"
+      size: "<= 300GB"
+    machineSpec:
+      secureboot: false
+    talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
+    controlPlane: false
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: "1c:69:7a:0e:f7:ed"
+        dhcp: false
+        addresses:
+          - "192.168.1.62/24"
+        routes:
+          - network: "0.0.0.0/0"
+            gateway: "192.168.1.1"
+        mtu: 1500
+  - hostname: "hanekawa"
+    ipAddress: "192.168.1.63"
+    installDiskSelector:
+      model: "Samsung SSD 870"
+      size: "<= 300GB"
+    machineSpec:
+      secureboot: false
+    talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
+    controlPlane: false
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: "1c:69:7a:0d:62:d4"
+        dhcp: false
+        addresses:
+          - "192.168.1.63/24"
+        routes:
+          - network: "0.0.0.0/0"
+            gateway: "192.168.1.1"
+        mtu: 1500
 
 # Global patches
 patches:
