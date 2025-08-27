@@ -8,6 +8,7 @@ components:
 - ../../components/drift-detection
 resources:
 - ./authentik/ks.yaml
+- ./bookstack/ks.yaml
 - ./echo/ks.yaml
 - ./filerun/ks.yaml
 - ./homer/ks.yaml
@@ -22,6 +23,3 @@ patches:
     - op: add
       path: /spec/targetNamespace
       value: default
-    - op: add
-      path: /spec/components/-
-      value: "../../../../components/drift-detection"
