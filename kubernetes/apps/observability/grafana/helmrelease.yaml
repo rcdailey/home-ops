@@ -138,9 +138,7 @@ spec:
           revision: 19
           datasource: VictoriaMetrics
         k8s-views-global:
-          # renovate: dashboardName="Kubernetes / Views / Global"
-          gnetId: 15757
-          revision: 43
+          # Custom dashboard with corrected cluster-wide resource queries
           datasource: VictoriaMetrics
         k8s-views-nodes:
           # renovate: dashboardName="Kubernetes / Views / Nodes"
@@ -176,7 +174,7 @@ spec:
             prometheusType: Prometheus
         - access: proxy
           name: VictoriaLogs
-          type: loki
+          type: victoriametrics-logs-datasource
           url: http://victoria-logs-single.observability.svc.cluster.local:9428
           jsonData:
             maxLines: 1000
@@ -193,6 +191,7 @@ spec:
       GF_ANALYTICS_REPORTING_ENABLED: false
       GF_AUTH_ANONYMOUS_ENABLED: false
       GF_AUTH_BASIC_ENABLED: false
+      GF_INSTALL_PLUGINS: victoriametrics-logs-datasource
       GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
       GF_EXPLORE_ENABLED: true
       GF_FEATURE_TOGGLES_ENABLE: publicDashboards

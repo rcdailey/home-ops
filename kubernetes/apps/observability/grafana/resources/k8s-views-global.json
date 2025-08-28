@@ -1,0 +1,123 @@
+{
+  "id": null,
+  "title": "Kubernetes / Views / Global",
+  "tags": ["kubernetes"],
+  "style": "dark",
+  "timezone": "browser",
+  "editable": true,
+  "hideControls": false,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Global CPU Usage",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "avg(sum by (node) (rate(node_cpu_seconds_total{mode!=\"idle\"}[1m])))",
+          "legendFormat": "Real",
+          "refId": "Real"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\"}) / sum(kube_node_status_allocatable{resource=\"cpu\"})",
+          "legendFormat": "Requests",
+          "refId": "Requests"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(kube_pod_container_resource_limits{resource=\"cpu\"}) / sum(kube_node_status_allocatable{resource=\"cpu\"})",
+          "legendFormat": "Limits",
+          "refId": "Limits"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "max": 1,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.6 },
+              { "color": "red", "value": 0.8 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "title": "Global RAM Usage",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))",
+          "legendFormat": "Real",
+          "refId": "Real"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(kube_pod_container_resource_requests{resource=\"memory\"}) / sum(kube_node_status_allocatable{resource=\"memory\"})",
+          "legendFormat": "Requests",
+          "refId": "Requests"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum(kube_pod_container_resource_limits{resource=\"memory\"}) / sum(kube_node_status_allocatable{resource=\"memory\"})",
+          "legendFormat": "Limits",
+          "refId": "Limits"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "max": 1,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.6 },
+              { "color": "red", "value": 0.8 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "query": "prometheus",
+        "current": {
+          "value": "VictoriaMetrics",
+          "text": "VictoriaMetrics"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
