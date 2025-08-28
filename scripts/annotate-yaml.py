@@ -7,6 +7,7 @@ import requests
 import yaml
 import subprocess
 import json
+import difflib
 from pathlib import Path
 from typing import Dict, List
 import glob
@@ -441,10 +442,17 @@ def find_schema_url(api_version: str, kind: str, schema_mapping: Dict[str, str],
 
     return schema_url
 
-def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool = False, missing_schemas: Dict[str, List[str]] = None):
+def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool = False, missing_schemas: Dict[str, List[str]] = None, single_file_mode: bool = False):
     docs = []
     schema_info = []
     has_changes = False
+
+    # Store original content for diff comparison
+    try:
+        with open(file_path, 'r') as f:
+            original_content = f.read()
+    except FileNotFoundError:
+        original_content = ""
 
     with open(file_path, 'r') as f:
         content = f.read()
@@ -454,7 +462,7 @@ def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool 
         # First, let's manually parse to preserve comments and structure
         raw_docs = []
         if content.strip():
-            # Split on document separators
+            # Split on document separators - but be careful about comments before ---
             if '\n---\n' in content:
                 parts = content.split('\n---\n')
                 for i, part in enumerate(parts):
@@ -464,6 +472,15 @@ def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool 
                             part = part[4:]
                         elif part.startswith('---'):
                             part = part[3:]
+                        # If first part ends with just comments and no YAML content,
+                        # merge it with the next part
+                        if i < len(parts) - 1:
+                            lines = part.strip().split('\n')
+                            yaml_content_lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
+                            if not yaml_content_lines:
+                                # This part has no YAML content, merge with next part
+                                parts[i + 1] = part.strip() + '\n---\n' + parts[i + 1]
+                                continue
                     raw_docs.append(part.strip())
             elif content.startswith('---\n'):
                 # Single document starting with ---
@@ -503,6 +520,10 @@ def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool 
         # Remove any existing schema comment
         lines = [ln for ln in lines if not ln.strip().startswith("# yaml-language-server: $schema")]
 
+        # Remove leading empty lines
+        while lines and not lines[0].strip():
+            lines.pop(0)
+
         if api_version and kind:
             schema_url = find_schema_url(api_version, kind, schema_mapping, verbose=False)
             if schema_url:
@@ -513,8 +534,13 @@ def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool 
                 else:
                     final_schema_url = schema_url
 
-                # Always use the current schema URL from mapping (handles format changes)
-                lines.insert(0, f"# yaml-language-server: $schema={final_schema_url}")
+                # Insert schema comment after --- separator if it exists
+                if lines and lines[0].strip() == '---':
+                    lines.insert(1, f"# yaml-language-server: $schema={final_schema_url}")
+                else:
+                    # Insert --- first, then schema comment
+                    lines.insert(0, f"# yaml-language-server: $schema={final_schema_url}")
+                    lines.insert(0, "---")
 
                 # Track changes only if URL actually changed
                 if existing_schema_url != final_schema_url:
@@ -532,7 +558,27 @@ def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool 
         docs.append("\n".join(lines))
 
     if dry_run:
-        if schema_info:
+        if single_file_mode and has_changes:
+            # Enhanced single file mode - show unified diff
+            processed_content = ""
+            for i, doc in enumerate(docs):
+                processed_content += doc
+                if not doc.endswith('\n'):
+                    processed_content += '\n'
+
+            # Generate and print unified diff
+            diff = list(difflib.unified_diff(
+                original_content.splitlines(keepends=True),
+                processed_content.splitlines(keepends=True),
+                fromfile=f"a/{file_path}",
+                tofile=f"b/{file_path}",
+                lineterm=''
+            ))
+
+            if diff:
+                print(f"{Colors.BLUE}Unified diff for {file_path}:{Colors.RESET}")
+                print(''.join(diff))
+        elif schema_info:
             print(f"{Colors.BLUE}{file_path}:{Colors.RESET}")
             for kind, api_version, schema_url in schema_info:
                 print(f"  - {Colors.YELLOW}{kind}{Colors.RESET}/{Colors.CYAN}{api_version}{Colors.RESET} :: {Colors.MAGENTA}{schema_url}{Colors.RESET}")
@@ -541,7 +587,6 @@ def annotate_file(file_path: str, schema_mapping: Dict[str, str], dry_run: bool 
             with open(file_path, 'w') as f:
                 # Write each document with proper separator placement
                 for i, doc in enumerate(docs):
-                    f.write("---\n")
                     f.write(doc)
                     if not doc.endswith('\n'):
                         f.write('\n')
@@ -585,8 +630,11 @@ def main():
     schema_mapping = build_unified_schema_mapping()
     missing_schemas = {}  # Dict: {resource_key: [file_paths]}
 
+    # Detect single file mode for enhanced dry-run output
+    single_file_mode = args.dry_run and len(yaml_files) == 1
+
     for yf in yaml_files:
-        annotate_file(yf, schema_mapping, dry_run=args.dry_run, missing_schemas=missing_schemas)
+        annotate_file(yf, schema_mapping, dry_run=args.dry_run, missing_schemas=missing_schemas, single_file_mode=single_file_mode)
 
     # Phase 3: Report missing schemas
     if missing_schemas:
