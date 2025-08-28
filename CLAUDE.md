@@ -201,9 +201,9 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 
 ## Cluster Info
 
-**Network**: `192.168.1.0/24`, Gateway: `192.168.1.1`, API: `192.168.1.70` **Gateways**: DNS
-`192.168.1.71`, Internal `192.168.1.72`, External `192.168.1.73` **Tunnel**:
-`6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.1.73`
+- **Network**: `192.168.1.0/24`, Gateway: `192.168.1.1`, API: `192.168.1.70`
+- **Gateways**: DNS `192.168.1.71`, Internal `192.168.1.72`, External `192.168.1.73`
+- **Tunnel**: `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.1.73`
 
 **Nodes**:
 
@@ -215,19 +215,19 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
   - sakura: `192.168.1.62` (NUC)
   - hanekawa: `192.168.1.63` (NUC)
 
-**Storage**: Rook Ceph (distributed), NFS from Nezuko `192.168.1.58` (Media 100Ti, Photos 10Ti,
-FileRun 5Ti), Garage S3 `192.168.1.58:3900`
+- **Storage**: Rook Ceph (distributed), NFS from Nezuko `192.168.1.58` (Media 100Ti, Photos 10Ti,
+  FileRun 5Ti), Garage S3 `192.168.1.58:3900`
 
 ## Directory Structure
 
 **Pattern**: `kubernetes/apps/<namespace>/<app>/`
 
-**Standard Files**: helmrelease.yaml, ks.yaml, kustomization.yaml, secret.sops.yaml, httproute.yaml,
-pvc.yaml **Asset Subdirs**: config/, resources/, icons/ (only when needed) **Namespace
-Kustomization**: Lists all app ks.yaml files
-
-**Key Namespaces**: kube-system, flux-system, network, rook-ceph, storage, cert-manager, default,
-dns-private
+- **Standard Files**: helmrelease.yaml, ks.yaml, kustomization.yaml, secret.sops.yaml,
+  httproute.yaml, pvc.yaml
+- **Asset Subdirs**: config/, resources/, icons/ (only when needed)
+- **Namespace Kustomization**: Lists all app ks.yaml files
+- **Key Namespaces**: kube-system, flux-system, network, rook-ceph, storage, cert-manager, default,
+  dns-private
 
 ## Intel GPU for Applications
 
