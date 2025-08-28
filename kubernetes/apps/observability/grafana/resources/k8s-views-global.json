@@ -16,7 +16,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$${DS_PROMETHEUS}"
+            "uid": "VictoriaMetrics"
           },
           "expr": "avg(sum by (node) (rate(node_cpu_seconds_total{mode!=\"idle\"}[1m])))",
           "legendFormat": "Real",
@@ -25,7 +25,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$${DS_PROMETHEUS}"
+            "uid": "VictoriaMetrics"
           },
           "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\"}) / sum(kube_node_status_allocatable{resource=\"cpu\"})",
           "legendFormat": "Requests",
@@ -34,7 +34,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$${DS_PROMETHEUS}"
+            "uid": "VictoriaMetrics"
           },
           "expr": "sum(kube_pod_container_resource_limits{resource=\"cpu\"}) / sum(kube_node_status_allocatable{resource=\"cpu\"})",
           "legendFormat": "Limits",
@@ -64,7 +64,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$${DS_PROMETHEUS}"
+            "uid": "VictoriaMetrics"
           },
           "expr": "1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))",
           "legendFormat": "Real",
@@ -73,7 +73,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$${DS_PROMETHEUS}"
+            "uid": "VictoriaMetrics"
           },
           "expr": "sum(kube_pod_container_resource_requests{resource=\"memory\"}) / sum(kube_node_status_allocatable{resource=\"memory\"})",
           "legendFormat": "Requests",
@@ -82,7 +82,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$${DS_PROMETHEUS}"
+            "uid": "VictoriaMetrics"
           },
           "expr": "sum(kube_pod_container_resource_limits{resource=\"memory\"}) / sum(kube_node_status_allocatable{resource=\"memory\"})",
           "legendFormat": "Limits",
@@ -107,17 +107,5 @@
   ],
   "time": { "from": "now-1h", "to": "now" },
   "refresh": "30s",
-  "templating": {
-    "list": [
-      {
-        "name": "DS_PROMETHEUS",
-        "query": "prometheus",
-        "current": {
-          "value": "VictoriaMetrics",
-          "text": "VictoriaMetrics"
-        }
-      }
-    ]
-  },
   "version": 1
 }
