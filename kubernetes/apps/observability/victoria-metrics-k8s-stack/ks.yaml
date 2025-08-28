@@ -21,6 +21,8 @@ spec:
   - apiVersion: helm.toolkit.fluxcd.io/v2
     kind: HelmRelease
     name: victoria-metrics-k8s-stack
+    namespace: observability
   - apiVersion: v1
     kind: Service
     name: vmsingle-victoria-metrics-k8s-stack
+    namespace: observability
