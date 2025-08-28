@@ -130,6 +130,18 @@ services:
     url: https://auth.${SECRET_DOMAIN}/
     logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/authentik.svg
     tag: service
+  - name: Grafana
+    url: https://grafana.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/grafana.svg
+    tag: service
+  - name: Prometheus
+    url: https://prometheus.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/prometheus.svg
+    tag: service
+  - name: AlertManager
+    url: https://alertmanager.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/prometheus.svg
+    tag: service
 - name: Local
   icon: fas fa-network-wired
   items:
