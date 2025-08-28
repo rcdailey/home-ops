@@ -7,9 +7,9 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
-- ./kube-prometheus-stack/ks.yaml
+- ./victoria-metrics-k8s-stack/ks.yaml
+- ./victoria-logs-single/ks.yaml
 - ./grafana/ks.yaml
-- ./loki/ks.yaml
 patches:
 - target:
     kind: Kustomization

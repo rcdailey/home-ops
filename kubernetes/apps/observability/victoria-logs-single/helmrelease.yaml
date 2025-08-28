@@ -1,0 +1,142 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrepository-source-v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: victoria-metrics
+spec:
+  interval: 1h
+  url: https://victoriametrics.github.io/helm-charts
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: victoria-logs-single
+spec:
+  interval: 30m
+  timeout: 20m
+  chart:
+    spec:
+      chart: victoria-logs-single
+      version: 0.11.6
+      sourceRef:
+        kind: HelmRepository
+        name: victoria-metrics
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    server:
+      enabled: true
+      retentionPeriod: 14
+      extraArgs:
+        envflag.enable: true
+        envflag.prefix: VM_
+        loggerFormat: json
+        httpListenAddr: :9428
+        http.shutdownDelay: 15s
+
+      persistentVolume:
+        enabled: true
+        storageClassName: ceph-block
+        accessModes:
+        - ReadWriteOnce
+        size: 25Gi
+        mountPath: /storage
+
+      resources:
+        limits:
+          memory: 1Gi
+        requests:
+          cpu: 50m
+          memory: 256Mi
+
+      service:
+        type: ClusterIP
+        servicePort: 9428
+        targetPort: http
+
+      # Security context
+      securityContext:
+        enabled: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+
+      podSecurityContext:
+        enabled: true
+        fsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+
+    # Enable Vector log collection
+    vector:
+      enabled: true
+      resources:
+        limits:
+          memory: 256Mi
+        requests:
+          cpu: 20m
+          memory: 64Mi
+
+      customConfig:
+        data_dir: /vector-data-dir
+        api:
+          enabled: false
+          address: 0.0.0.0:8686
+          playground: true
+
+        sources:
+          k8s:
+            type: kubernetes_logs
+            # Exclude VictoriaLogs own logs to prevent loops
+            exclude_paths_glob_patterns:
+            - "**/victoria-logs-single*"
+          internal_metrics:
+            type: internal_metrics
+
+        transforms:
+          parser:
+            type: remap
+            inputs: [k8s]
+            source: |
+              .log = parse_json(.message) ?? .message
+              del(.message)
+
+        sinks:
+          exporter:
+            type: prometheus_exporter
+            address: 0.0.0.0:9090
+            inputs: [internal_metrics]
+
+          vlogs:
+            type: elasticsearch
+            inputs: [parser]
+            mode: bulk
+            api_version: v8
+            compression: gzip
+            healthcheck:
+              enabled: false
+            request:
+              headers:
+                VL-Time-Field: timestamp
+                VL-Stream-Fields: stream,kubernetes.pod_name,kubernetes.container_name,kubernetes.pod_namespace
+                VL-Msg-Field: message,msg,_msg,log.msg,log.message,log
+                AccountID: "0"
+                ProjectID: "0"
+            endpoints:
+            - http://victoria-logs-single:9428/insert/elasticsearch/
+
+    # Service monitor for metrics
+    serviceMonitor:
+      enabled: true
+      extraLabels: {}
+      annotations: {}
+      targetPort: http
