@@ -83,10 +83,10 @@ spec:
       enabled: true
       resources:
         limits:
-          memory: 256Mi
+          memory: 512Mi
         requests:
           cpu: 20m
-          memory: 64Mi
+          memory: 128Mi
 
       customConfig:
         data_dir: /vector-data-dir
@@ -95,12 +95,17 @@ spec:
           address: 0.0.0.0:8686
           playground: true
 
+        # Global configuration for memory optimization
+        expire_metrics_secs: 600
+
         sources:
           k8s:
             type: kubernetes_logs
-            # Exclude VictoriaLogs own logs to prevent loops
-            exclude_paths_glob_patterns:
-            - "**/victoria-logs-single*"
+            # Allowlist approach: Only collect from specified namespaces
+            include_paths_glob_patterns:
+            - "**/default/**"
+            # Memory optimization: Use API server cache instead of etcd
+            use_apiserver_cache: true
           internal_metrics:
             type: internal_metrics
 
@@ -126,6 +131,15 @@ spec:
             compression: gzip
             healthcheck:
               enabled: false
+            # Buffer configuration for memory optimization
+            buffer:
+              type: memory
+              max_events: 10000
+              when_full: drop_newest
+            # Batch settings for memory efficiency
+            batch:
+              max_bytes: 1048576 # 1MB
+              timeout_secs: 5
             request:
               headers:
                 VL-Time-Field: timestamp
