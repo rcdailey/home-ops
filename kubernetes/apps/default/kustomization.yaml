@@ -9,7 +9,6 @@ components:
 resources:
 - ./authentik/ks.yaml
 - ./bookstack/ks.yaml
-- ./echo/ks.yaml
 - ./filerun/ks.yaml
 - ./homer/ks.yaml
 - ./immich/ks.yaml
