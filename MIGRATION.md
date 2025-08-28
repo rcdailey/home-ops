@@ -26,7 +26,7 @@ This section documents key learnings about migrating services from SWAG to Kuber
 
 - **external-dns**: Automatically creates Cloudflare DNS records for HTTPRoutes using `external`
   gateway
-- **DNS precedence**: Specific records (echo.<domain>) override wildcard (*.<domain>)
+- **DNS precedence**: Specific records (app.<domain>) override wildcard (*.<domain>)
 - **TXT records**: Track which DNS records external-dns created (k8s.subdomain.domain.app)
 - **Parallel operation**: New K8s services get tunnel routing, existing SWAG services continue via
   wildcard
