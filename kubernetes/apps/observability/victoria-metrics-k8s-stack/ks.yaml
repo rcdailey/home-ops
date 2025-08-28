@@ -13,6 +13,10 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-secrets
   healthChecks:
   - apiVersion: helm.toolkit.fluxcd.io/v2
     kind: HelmRelease
