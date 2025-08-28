@@ -31,6 +31,9 @@ spec:
     remediation:
       retries: 3
   values:
+    # Override the service name to match expected naming convention
+    fullnameOverride: "victoria-logs-single"
+
     server:
       enabled: true
       retentionPeriod: 14
