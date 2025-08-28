@@ -82,13 +82,13 @@ spec:
           # renovate: dashboardName="Cert-manager-Kubernetes"
           gnetId: 20842
           revision: 3
-          datasource: Prometheus
+          datasource: VictoriaMetrics
 
         external-dns:
           # renovate: dashboardName="External-DNS"
           gnetId: 15038
           revision: 3
-          datasource: Prometheus
+          datasource: VictoriaMetrics
 
         node-exporter-full:
           # renovate: dashboardName="Node Exporter Full"
@@ -96,7 +96,7 @@ spec:
           revision: 41
           datasource:
           - name: DS_PROMETHEUS
-            value: Prometheus
+            value: VictoriaMetrics
 
         spegel:
           # renovate: dashboardName="Spegel"
@@ -104,84 +104,86 @@ spec:
           revision: 1
           datasource:
           - name: DS_PROMETHEUS
-            value: Prometheus
+            value: VictoriaMetrics
 
       ceph:
         ceph-cluster:
           # renovate: dashboardName="Ceph Cluster"
           gnetId: 2842
           revision: 18
-          datasource: Prometheus
+          datasource: VictoriaMetrics
         ceph-osd:
           # renovate: dashboardName="Ceph - OSD (Single)"
           gnetId: 5336
           revision: 9
-          datasource: Prometheus
+          datasource: VictoriaMetrics
         ceph-pools:
           # renovate: dashboardName="Ceph - Pools"
           gnetId: 5342
           revision: 9
-          datasource: Prometheus
+          datasource: VictoriaMetrics
 
       flux:
         flux-cluster:
           url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/cluster.json
-          datasource: Prometheus
+          datasource: VictoriaMetrics
         flux-control-plane:
           url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/control-plane.json
-          datasource: Prometheus
+          datasource: VictoriaMetrics
 
       kubernetes:
         k8s-system-api-server:
           # renovate: dashboardName="Kubernetes / System / API Server"
           gnetId: 15761
           revision: 19
-          datasource: Prometheus
+          datasource: VictoriaMetrics
         k8s-views-global:
           # renovate: dashboardName="Kubernetes / Views / Global"
           gnetId: 15757
           revision: 43
-          datasource: Prometheus
+          datasource: VictoriaMetrics
         k8s-views-nodes:
           # renovate: dashboardName="Kubernetes / Views / Nodes"
           gnetId: 15759
           revision: 37
-          datasource: Prometheus
+          datasource: VictoriaMetrics
         k8s-views-namespaces:
           # renovate: dashboardName="Kubernetes / Views / Namespaces"
           gnetId: 15758
           revision: 42
-          datasource: Prometheus
+          datasource: VictoriaMetrics
         k8s-views-pods:
           # renovate: dashboardName="Kubernetes / Views / Pods"
           gnetId: 15760
           revision: 36
-          datasource: Prometheus
+          datasource: VictoriaMetrics
         k8s-volumes:
           # renovate: dashboardName="K8s / Storage / Volumes / Cluster"
           gnetId: 11454
           revision: 14
-          datasource: Prometheus
+          datasource: VictoriaMetrics
 
     datasources:
       datasources.yaml:
         apiVersion: 1
         datasources:
         - access: proxy
-          name: Prometheus
+          name: VictoriaMetrics
           type: prometheus
-          url: http://prometheus-operated.observability.svc.cluster.local:9090
+          url: http://vmsingle-victoria-metrics-k8s-stack.observability.svc.cluster.local:8428
           isDefault: true
           jsonData:
             prometheusType: Prometheus
         - access: proxy
-          name: Loki
+          name: VictoriaLogs
           type: loki
-          url: http://loki-headless.observability.svc.cluster.local:3100
-        - name: Alertmanager
+          url: http://victoria-logs-single.observability.svc.cluster.local:9428
+          jsonData:
+            maxLines: 1000
+        - name: VMAlertmanager
           type: alertmanager
           access: proxy
-          url: http://alertmanager-operated.observability.svc.cluster.local:9093
+          url: http://vmalertmanager-victoria-metrics-k8s-stack.observability.svc.cluster.local:9093
           jsonData:
             implementation: prometheus
 

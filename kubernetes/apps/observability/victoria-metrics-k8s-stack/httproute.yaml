@@ -1,0 +1,51 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.networking.k8s.io/httproute_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: victoria-metrics
+spec:
+  hostnames:
+  - victoria-metrics.${SECRET_DOMAIN}
+  parentRefs:
+  - name: internal
+    namespace: network
+    sectionName: https
+  rules:
+  - backendRefs:
+    - name: vmsingle-victoria-metrics-k8s-stack
+      port: 8428
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.networking.k8s.io/httproute_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmalert
+spec:
+  hostnames:
+  - vmalert.${SECRET_DOMAIN}
+  parentRefs:
+  - name: internal
+    namespace: network
+    sectionName: https
+  rules:
+  - backendRefs:
+    - name: vmalert-victoria-metrics-k8s-stack
+      port: 8080
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.networking.k8s.io/httproute_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmalertmanager
+spec:
+  hostnames:
+  - vmalertmanager.${SECRET_DOMAIN}
+  parentRefs:
+  - name: internal
+    namespace: network
+    sectionName: https
+  rules:
+  - backendRefs:
+    - name: vmalertmanager-victoria-metrics-k8s-stack
+      port: 9093
