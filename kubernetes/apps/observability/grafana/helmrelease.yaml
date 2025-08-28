@@ -75,6 +75,14 @@ spec:
           editable: true
           options:
             path: /var/lib/grafana/dashboards/kubernetes
+        - name: custom
+          orgId: 1
+          folder: Custom
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/custom
 
     dashboards:
       default:
@@ -190,7 +198,7 @@ spec:
       GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: false
       GF_ANALYTICS_REPORTING_ENABLED: false
       GF_AUTH_ANONYMOUS_ENABLED: false
-      GF_AUTH_BASIC_ENABLED: false
+      GF_AUTH_BASIC_ENABLED: true
       GF_INSTALL_PLUGINS: victoriametrics-logs-datasource
       GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
       GF_EXPLORE_ENABLED: true
