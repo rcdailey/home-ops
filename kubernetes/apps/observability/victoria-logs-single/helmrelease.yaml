@@ -31,11 +31,10 @@ spec:
     remediation:
       retries: 3
   values:
-    # Override the service name to match expected naming convention
-    fullnameOverride: "victoria-logs-single"
-
     server:
       enabled: true
+      # Override the service name to match expected naming convention
+      fullnameOverride: "victoria-logs-single"
       retentionPeriod: 14
       extraArgs:
         envflag.enable: true
