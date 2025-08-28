@@ -20,5 +20,3 @@ spec:
   - apiVersion: v1
     kind: Service
     name: vmsingle-victoria-metrics-k8s-stack
-  dependsOn:
-  - name: helm-repos
