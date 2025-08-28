@@ -7,11 +7,11 @@ resources:
 - ./httproute.yaml
 - ./secret.sops.yaml
 configMapGenerator:
-- name: k8s-views-global-dashboard
+- name: cluster-resource-overview-dashboard
   files:
   - k8s-views-global.json=resources/k8s-views-global.json
   options:
     labels:
       grafana_dashboard: "1"
     annotations:
-      grafana_folder: "Kubernetes"
+      grafana_folder: "Custom"
