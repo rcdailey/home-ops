@@ -1,0 +1,90 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrepository-source-v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana-loki
+spec:
+  interval: 1h
+  url: https://grafana.github.io/helm-charts
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki
+spec:
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: loki
+      version: 6.37.0
+      sourceRef:
+        kind: HelmRepository
+        name: grafana-loki
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  dependsOn:
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  values:
+    deploymentMode: SingleBinary
+
+    loki:
+      analytics:
+        reporting_enabled: false
+      auth_enabled: false
+      commonConfig:
+        replication_factor: 1
+      compactor:
+        working_directory: /var/loki/compactor/retention
+        delete_request_store: filesystem
+        retention_enabled: true
+      ingester:
+        chunk_encoding: snappy
+      limits_config:
+        retention_period: 14d
+      schemaConfig:
+        configs:
+        - from: "2024-04-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: loki_index_
+            period: 24h
+      server:
+        log_level: info
+        grpc_server_max_recv_msg_size: 10485760 # 10 MiB
+        grpc_server_max_send_msg_size: 10485760 # 10 MiB
+      storage:
+        type: filesystem
+
+    backend:
+      replicas: 0
+    chunksCache:
+      enabled: false
+    gateway:
+      replicas: 0
+    lokiCanary:
+      enabled: false
+    read:
+      replicas: 0
+    resultsCache:
+      enabled: false
+    singleBinary:
+      replicas: 1
+      persistence:
+        enabled: true
+        storageClass: ceph-block
+        size: 50Gi
+    test:
+      enabled: false
+    write:
+      replicas: 0

@@ -1,0 +1,237 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrepository-source-v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana
+spec:
+  interval: 1h
+  url: https://grafana.github.io/helm-charts
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: grafana
+spec:
+  interval: 30m
+  timeout: 20m
+  chart:
+    spec:
+      chart: grafana
+      version: 8.8.2
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    admin:
+      existingSecret: grafana-secret
+
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    replicas: 1
+
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+        - name: default
+          disableDeletion: false
+          editable: true
+          folder: ""
+          options:
+            path: /var/lib/grafana/dashboards/default
+          orgId: 1
+          type: file
+        - name: ceph
+          orgId: 1
+          folder: Ceph
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/ceph
+        - name: flux
+          orgId: 1
+          folder: Flux
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/flux
+        - name: kubernetes
+          orgId: 1
+          folder: Kubernetes
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/kubernetes
+
+    dashboards:
+      default:
+        cert-manager:
+          # renovate: dashboardName="Cert-manager-Kubernetes"
+          gnetId: 20842
+          revision: 3
+          datasource: Prometheus
+
+        external-dns:
+          # renovate: dashboardName="External-DNS"
+          gnetId: 15038
+          revision: 3
+          datasource: Prometheus
+
+        node-exporter-full:
+          # renovate: dashboardName="Node Exporter Full"
+          gnetId: 1860
+          revision: 41
+          datasource:
+          - name: DS_PROMETHEUS
+            value: Prometheus
+
+        spegel:
+          # renovate: dashboardName="Spegel"
+          gnetId: 18089
+          revision: 1
+          datasource:
+          - name: DS_PROMETHEUS
+            value: Prometheus
+
+      ceph:
+        ceph-cluster:
+          # renovate: dashboardName="Ceph Cluster"
+          gnetId: 2842
+          revision: 18
+          datasource: Prometheus
+        ceph-osd:
+          # renovate: dashboardName="Ceph - OSD (Single)"
+          gnetId: 5336
+          revision: 9
+          datasource: Prometheus
+        ceph-pools:
+          # renovate: dashboardName="Ceph - Pools"
+          gnetId: 5342
+          revision: 9
+          datasource: Prometheus
+
+      flux:
+        flux-cluster:
+          url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/cluster.json
+          datasource: Prometheus
+        flux-control-plane:
+          url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/control-plane.json
+          datasource: Prometheus
+
+      kubernetes:
+        k8s-system-api-server:
+          # renovate: dashboardName="Kubernetes / System / API Server"
+          gnetId: 15761
+          revision: 19
+          datasource: Prometheus
+        k8s-views-global:
+          # renovate: dashboardName="Kubernetes / Views / Global"
+          gnetId: 15757
+          revision: 43
+          datasource: Prometheus
+        k8s-views-nodes:
+          # renovate: dashboardName="Kubernetes / Views / Nodes"
+          gnetId: 15759
+          revision: 37
+          datasource: Prometheus
+        k8s-views-namespaces:
+          # renovate: dashboardName="Kubernetes / Views / Namespaces"
+          gnetId: 15758
+          revision: 42
+          datasource: Prometheus
+        k8s-views-pods:
+          # renovate: dashboardName="Kubernetes / Views / Pods"
+          gnetId: 15760
+          revision: 36
+          datasource: Prometheus
+        k8s-volumes:
+          # renovate: dashboardName="K8s / Storage / Volumes / Cluster"
+          gnetId: 11454
+          revision: 14
+          datasource: Prometheus
+
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+        - access: proxy
+          name: Prometheus
+          type: prometheus
+          url: http://prometheus-operated.observability.svc.cluster.local:9090
+          isDefault: true
+          jsonData:
+            prometheusType: Prometheus
+        - access: proxy
+          name: Loki
+          type: loki
+          url: http://loki-headless.observability.svc.cluster.local:3100
+        - name: Alertmanager
+          type: alertmanager
+          access: proxy
+          url: http://alertmanager-operated.observability.svc.cluster.local:9093
+          jsonData:
+            implementation: prometheus
+
+    env:
+      GF_ANALYTICS_CHECK_FOR_UPDATES: false
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: false
+      GF_ANALYTICS_REPORTING_ENABLED: false
+      GF_AUTH_ANONYMOUS_ENABLED: false
+      GF_AUTH_BASIC_ENABLED: false
+      GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
+      GF_EXPLORE_ENABLED: true
+      GF_FEATURE_TOGGLES_ENABLE: publicDashboards
+      GF_LOG_MODE: console
+      GF_NEWS_NEWS_FEED_ENABLED: false
+      GF_SECURITY_COOKIE_SAMESITE: grafana
+      GF_SERVER_ROOT_URL: https://grafana.${SECRET_DOMAIN}
+
+    persistence:
+      enabled: false
+
+    rbac:
+      pspEnabled: false
+
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+    serviceAccount:
+      create: true
+      autoMount: true
+
+    serviceMonitor:
+      enabled: true
+
+    sidecar:
+      dashboards:
+        enabled: true
+        searchNamespace: ALL
+        label: grafana_dashboard
+        folderAnnotation: grafana_folder
+        provider:
+          disableDelete: true
+          foldersFromFilesStructure: true
+      datasources:
+        enabled: true
+        searchNamespace: ALL
+        labelValue: ""
+
+    testFramework:
+      enabled: false
