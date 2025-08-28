@@ -14,6 +14,7 @@ resources:
 - ./immich/ks.yaml
 - ./mcp-memory-service/ks.yaml
 - ./qbittorrent/ks.yaml
+- ./silverbullet/ks.yaml
 patches:
 - target:
     kind: Kustomization
