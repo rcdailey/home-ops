@@ -33,7 +33,7 @@ spec:
           silverbullet:
             image:
               repository: ghcr.io/silverbulletmd/silverbullet
-              tag: "0.10.4"
+              tag: "2.0.0"
             env:
               TZ: America/Chicago
               SB_PORT: &port 3000
