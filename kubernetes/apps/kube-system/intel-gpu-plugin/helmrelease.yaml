@@ -26,4 +26,4 @@ spec:
     manager:
       image:
         repository: intel/intel-deviceplugin-operator
-        tag: 0.32.1
+        tag: 0.34.0
