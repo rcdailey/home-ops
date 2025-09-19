@@ -233,8 +233,10 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 
 **IMPORTANT GPU PATTERNS:**
 
-- **Resource Request**: `gpu.intel.com/i915: 1` for Intel GPU allocation
-- **supplementalGroups**: Use minimal `[44, 104]` (video, render) for Intel GPU device access
+- **Resource Request**: `gpu.intel.com/i915: 1` for Intel GPU allocation via Device Plugin Operator
+- **Device Plugin**: Intel Device Plugin Operator manages GPU access automatically (no
+  supplementalGroups needed)
+- **Dependencies**: Apps requiring GPU must depend on `intel-gpu-plugin` in `kube-system` namespace
 - **OpenVINO**: Set `OPENVINO_DEVICE: GPU` for hardware ML acceleration
 - **Media**: Use render device script for multi-GPU VA-API/QSV workloads
 

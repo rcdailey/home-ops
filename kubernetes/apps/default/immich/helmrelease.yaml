@@ -68,8 +68,6 @@ spec:
             runAsGroup: 1000
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
-            # Minimal required groups for Intel GPU access
-            supplementalGroups: [44, 104] # video, render
         containers:
           main:
             image:
