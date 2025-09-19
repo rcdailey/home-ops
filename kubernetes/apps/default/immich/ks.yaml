@@ -18,6 +18,8 @@ spec:
   dependsOn:
   - name: cloudnative-pg
     namespace: kube-system
+  - name: intel-gpu-plugin
+    namespace: kube-system
   decryption:
     provider: sops
     secretRef:
