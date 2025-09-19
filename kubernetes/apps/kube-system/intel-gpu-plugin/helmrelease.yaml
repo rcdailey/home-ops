@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: intel-device-plugins-operator
-      version: 0.32.1
+      version: 0.34.0
       sourceRef:
         kind: HelmRepository
         name: intel
@@ -26,4 +26,4 @@ spec:
     manager:
       image:
         repository: intel/intel-deviceplugin-operator
-        tag: 0.32.1
+        tag: 0.34.0
