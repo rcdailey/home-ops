@@ -18,7 +18,7 @@ spec:
   database: filerun
 
   # Image configuration
-  image: docker-registry1.mariadb.com/library/mariadb:11.8.2
+  image: docker-registry1.mariadb.com/library/mariadb:11.8.3
   imagePullPolicy: IfNotPresent
 
   # Network
