@@ -3,6 +3,7 @@
   extends: [
     "config:recommended",
     "docker:enableMajor",
+    "docker:pinDigests",
     ":automergeBranch",
     ":dependencyDashboard",
     ":disableRateLimiting",
@@ -65,6 +66,15 @@
       groupName: "Rook Ceph",
       matchDatasources: ["helm"],
       matchPackageNames: ["/rook-ceph/", "/rook-ceph-cluster/"],
+    },
+    {
+      description: "Group Docker image version and digest updates",
+      groupName: "{{depName}}",
+      matchDatasources: ["docker"],
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      separateMinorPatch: false,
+      separateMajorMinor: false,
+      separateMultipleMajor: false,
     },
     {
       description: "Auto-merge GitHub Actions",
