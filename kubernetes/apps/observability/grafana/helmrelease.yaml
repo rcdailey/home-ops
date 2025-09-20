@@ -146,7 +146,9 @@ spec:
           revision: 19
           datasource: VictoriaMetrics
         k8s-views-global:
-          # Custom dashboard with corrected cluster-wide resource queries
+          # renovate: dashboardName="Kubernetes / Views / Global"
+          gnetId: 15757
+          revision: 43
           datasource: VictoriaMetrics
         k8s-views-nodes:
           # renovate: dashboardName="Kubernetes / Views / Nodes"
