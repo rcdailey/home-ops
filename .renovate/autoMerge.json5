@@ -1,0 +1,31 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      description: "Auto-merge GitHub Actions",
+      matchManagers: ["github-actions"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      minimumReleaseAge: "3 days",
+      ignoreTests: true
+    },
+    {
+      description: "Auto-merge Mise Tools",
+      matchManagers: ["mise"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch"],
+      ignoreTests: true
+    },
+    {
+      description: "Auto-merge security updates",
+      matchDatasources: ["docker"],
+      matchUpdateTypes: ["patch"],
+      labels: ["security"],
+      automerge: true,
+      automergeType: "branch",
+      minimumReleaseAge: "1 day"
+    }
+  ]
+}

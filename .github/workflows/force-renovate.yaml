@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Force Renovate
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Force operation type
+        required: true
+        type: choice
+        default: run-all
+        options:
+          - run-all
+          - open-closed-prs
+          - rebase-all
+          - recreate-all
+      logLevel:
+        description: Log level
+        required: false
+        default: debug
+        type: choice
+        options: [info, debug, trace]
+      dryRun:
+        description: Dry run (no changes made)
+        required: false
+        default: false
+        type: boolean
+      repositories:
+        description: Repositories (comma-separated, default current repo)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  force-renovate:
+    name: Force Renovate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Generate App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Configure operation parameters
+        id: config
+        run: |
+          OPERATION="${{ inputs.operation }}"
+          REPOS="${{ inputs.repositories || github.repository }}"
+
+          # Convert single repo to array format
+          if [[ "$REPOS" != *"["* ]]; then
+            REPOS="[\"$(echo "$REPOS" | sed 's/,/","/g')\"]"
+          fi
+
+          echo "repositories=$REPOS" >> "$GITHUB_OUTPUT"
+
+          # Set operation-specific environment variables
+          case "$OPERATION" in
+            "open-closed-prs")
+              echo "recreate_closed=true" >> "$GITHUB_OUTPUT"
+              echo "rebase_stale=false" >> "$GITHUB_OUTPUT"
+              ;;
+            "rebase-all")
+              echo "recreate_closed=false" >> "$GITHUB_OUTPUT"
+              echo "rebase_stale=true" >> "$GITHUB_OUTPUT"
+              ;;
+            "recreate-all")
+              echo "recreate_closed=true" >> "$GITHUB_OUTPUT"
+              echo "rebase_stale=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "recreate_closed=false" >> "$GITHUB_OUTPUT"
+              echo "rebase_stale=false" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Force Renovate Run
+        uses: renovatebot/github-action@v43.0.12
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+        env:
+          LOG_LEVEL: ${{ inputs.logLevel || 'debug' }}
+          RENOVATE_DRY_RUN: ${{ inputs.dryRun == true }}
+          RENOVATE_REPOSITORIES: ${{ steps.config.outputs.repositories }}
+          RENOVATE_AUTODISCOVER: true
+          RENOVATE_AUTODISCOVER_FILTER: ${{ github.repository }}
+          RENOVATE_INTERNAL_CHECKS_FILTER: strict
+          RENOVATE_PLATFORM: github
+          RENOVATE_PLATFORM_COMMIT: true
+          RENOVATE_USERNAME: renohate[bot]
+          RENOVATE_GIT_AUTHOR: Renohate Bot <${{ secrets.RENOVATE_USER_ID }}+renohate[bot]@users.noreply.github.com>
+          RENOVATE_RECREATE_CLOSED: ${{ steps.config.outputs.recreate_closed }}
+          RENOVATE_REBASE_STALE_PRS: ${{ steps.config.outputs.rebase_stale }}
+          RENOVATE_FORCE: >-
+            {
+              "schedule": null,
+              "prConcurrentLimit": 20,
+              "prHourlyLimit": 10
+            }

@@ -1,0 +1,70 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      description: "Cert-Manager Group",
+      groupName: "Cert-Manager",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["/cert-manager/"]
+    },
+    {
+      description: "CoreDNS Group",
+      groupName: "CoreDNS",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["/coredns/"]
+    },
+    {
+      description: "Flux Operator Group",
+      groupName: "Flux Operator",
+      matchPackageNames: ["/flux-operator/", "/flux-instance/"],
+      matchDatasources: ["docker"]
+    },
+    {
+      description: "Spegel Group",
+      groupName: "Spegel",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["/spegel/"]
+    },
+    {
+      description: "Immich Group",
+      groupName: "Immich",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["/immich-app/"]
+    },
+    {
+      description: "Rook Ceph Group",
+      groupName: "Rook Ceph",
+      matchDatasources: ["helm"],
+      matchPackageNames: ["/rook-ceph/", "/rook-ceph-cluster/"]
+    },
+    {
+      description: "Group Docker image version and digest updates",
+      groupName: "{{depName}}",
+      matchDatasources: ["docker"],
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      separateMinorPatch: false,
+      separateMajorMinor: false,
+      separateMultipleMajor: false
+    },
+    {
+      description: "Kubernetes Tools Group",
+      groupName: "Kubernetes Tools",
+      matchDatasources: ["github-releases"],
+      matchPackageNames: [
+        "kubernetes/kubernetes",
+        "kubernetes-sigs/external-dns",
+        "kubernetes-sigs/gateway-api"
+      ]
+    },
+    {
+      description: "Monitoring Stack Group",
+      groupName: "Monitoring Stack",
+      matchDatasources: ["helm"],
+      matchPackageNames: [
+        "/prometheus/",
+        "/grafana/",
+        "/alertmanager/"
+      ]
+    }
+  ]
+}

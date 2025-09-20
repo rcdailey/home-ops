@@ -4,34 +4,155 @@ name: Renovate Dashboard Handler
 
 on:
   issues:
-    types: [edited]
+    types: [opened, edited, closed]
   pull_request:
-    types: [closed]
+    types: [opened, closed, synchronize]
+  issue_comment:
+    types: [created, edited]
+  pull_request_review_comment:
+    types: [created, edited]
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 concurrency:
-  group: renovate-dashboard-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  trigger-renovate:
+  dependency-dashboard:
+    name: Dependency Dashboard Handler
     if: >
       (
         github.event_name == 'issues' &&
         github.event.issue.title == 'Dependency Dashboard' &&
-        contains(github.event.issue.body, '- [x]')
-      ) ||
-      (
-        github.event_name == 'pull_request' &&
-        github.event.action == 'closed' &&
-        github.event.pull_request.user.login == 'renohate[bot]'
+        (
+          contains(github.event.issue.body, '- [x]') ||
+          contains(github.event.issue.body, 'approve-all-pending-prs') ||
+          contains(github.event.issue.body, 'create-all-rate-limited-prs')
+        )
       )
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Renovate
+      - name: Generate App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Trigger Renovate for Dashboard Actions
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.generate-token.outputs.token }}
           event-type: renovate-trigger
+          client-payload: |
+            {
+              "source": "dependency-dashboard",
+              "action": "${{ github.event.action }}",
+              "issue_number": ${{ github.event.issue.number }}
+            }
+
+  pull-request-handler:
+    name: Pull Request Handler
+    if: >
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.user.login == 'renohate[bot]' &&
+        (
+          github.event.action == 'closed' ||
+          github.event.action == 'synchronize'
+        )
+      ) ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        github.event.issue.user.login == 'renohate[bot]' &&
+        (
+          contains(github.event.comment.body, 'renovate rebase') ||
+          contains(github.event.comment.body, 'renovate recreate') ||
+          contains(github.event.comment.body, 'renovate retry')
+        )
+      ) ||
+      (
+        github.event_name == 'pull_request_review_comment' &&
+        github.event.pull_request.user.login == 'renohate[bot]' &&
+        (
+          contains(github.event.comment.body, 'renovate rebase') ||
+          contains(github.event.comment.body, 'renovate recreate') ||
+          contains(github.event.comment.body, 'renovate retry')
+        )
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Extract command from comment
+        id: extract-command
+        if: contains(github.event_name, 'comment')
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+          if [[ "$COMMENT" == *"renovate rebase"* ]]; then
+            echo "command=rebase" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT" == *"renovate recreate"* ]]; then
+            echo "command=recreate" >> "$GITHUB_OUTPUT"
+          elif [[ "$COMMENT" == *"renovate retry"* ]]; then
+            echo "command=retry" >> "$GITHUB_OUTPUT"
+          else
+            echo "command=unknown" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger Renovate for PR Actions
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          event-type: renovate-trigger
+          client-payload: |
+            {
+              "source": "pull-request",
+              "action": "${{ github.event.action }}",
+              "pr_number": ${{ github.event.pull_request.number || github.event.issue.number }},
+              "command": "${{ steps.extract-command.outputs.command || 'none' }}"
+            }
+
+  emergency-trigger:
+    name: Emergency Trigger Handler
+    if: >
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.title == 'Dependency Dashboard' &&
+        (
+          contains(github.event.comment.body, 'renovate run') ||
+          contains(github.event.comment.body, 'renovate force')
+        )
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Emergency Renovate Trigger
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          event-type: renovate-trigger
+          client-payload: |
+            {
+              "source": "emergency",
+              "action": "force-run",
+              "issue_number": ${{ github.event.issue.number }}
+            }
