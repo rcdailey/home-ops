@@ -1,0 +1,40 @@
+---
+# yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+version: 1
+metadata:
+  name: Embedded Outpost Configuration
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+- model: authentik_outposts.outpost
+  identifiers:
+    name: authentik Embedded Outpost
+  attrs:
+    name: authentik Embedded Outpost
+    type: proxy
+    managed: goauthentik.io/outposts/embedded
+    service_connection: !Find [authentik_outposts.kubernetesserviceconnection, [name, Local Kubernetes Cluster]]
+    providers:
+    - !Find [authentik_providers_proxy.proxyprovider, [name, qbittorrent]]
+    config:
+      authentik_host: https://auth-test.${SECRET_DOMAIN}
+      authentik_host_browser: ""
+      authentik_host_insecure: false
+      container_image: null
+      docker_labels: null
+      docker_map_ports: true
+      docker_network: null
+      kubernetes_disabled_components: []
+      kubernetes_httproute_annotations: {}
+      kubernetes_httproute_parent_refs: []
+      kubernetes_image_pull_secrets: []
+      kubernetes_ingress_annotations: {}
+      kubernetes_ingress_class_name: null
+      kubernetes_ingress_secret_name: authentik-outpost-tls
+      kubernetes_json_patches: null
+      kubernetes_namespace: default
+      kubernetes_replicas: 1
+      kubernetes_service_type: ClusterIP
+      log_level: info
+      object_naming_template: ak-outpost-%(name)s
+      refresh_interval: minutes=5

@@ -17,7 +17,7 @@ spec:
   chart:
     spec:
       chart: authentik
-      version: 2025.8.1
+      version: 2025.8.3
       sourceRef:
         kind: HelmRepository
         name: authentik
@@ -75,6 +75,11 @@ spec:
 
     redis:
       enabled: true
+
+    # Blueprint configuration - mount ConfigMaps for GitOps
+    blueprints:
+      configMaps:
+      - authentik-blueprints
 
     # Server configuration - disable ingress as we'll use HTTPRoute
     server:
