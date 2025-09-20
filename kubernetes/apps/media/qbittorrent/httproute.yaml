@@ -13,5 +13,5 @@ spec:
   rules:
   - backendRefs:
     - name: qbittorrent
-      namespace: default
+      namespace: media
       port: 8080

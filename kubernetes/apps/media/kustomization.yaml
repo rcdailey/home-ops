@@ -2,18 +2,12 @@
 # yaml-language-server: $schema=https://www.schemastore.org/kustomization.json
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: default
+namespace: media
 components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
-- ./authentik/ks.yaml
-- ./bookstack/ks.yaml
-- ./filerun/ks.yaml
-- ./homepage/ks.yaml
-- ./immich/ks.yaml
-- ./mcp-memory-service/ks.yaml
-- ./silverbullet/ks.yaml
+- ./qbittorrent/ks.yaml
 patches:
 - target:
     kind: Kustomization
@@ -21,4 +15,4 @@ patches:
   patch: |
     - op: add
       path: /spec/targetNamespace
-      value: default
+      value: media

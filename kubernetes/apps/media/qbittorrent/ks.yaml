@@ -14,7 +14,7 @@ spec:
     secretRef:
       name: sops-age
   interval: 1h
-  path: ./kubernetes/apps/default/qbittorrent
+  path: ./kubernetes/apps/media/qbittorrent
   postBuild:
     substituteFrom:
     - name: cluster-secrets
