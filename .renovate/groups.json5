@@ -2,31 +2,10 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   packageRules: [
     {
-      description: "Cert-Manager Group",
-      groupName: "Cert-Manager",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["/cert-manager/"],
-      minimumGroupSize: 2
-    },
-    {
-      description: "CoreDNS Group",
-      groupName: "CoreDNS",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["/coredns/"],
-      minimumGroupSize: 2
-    },
-    {
       description: "Flux Operator Group",
       groupName: "Flux Operator",
       matchPackageNames: ["/flux-operator/", "/flux-instance/"],
       matchDatasources: ["docker"],
-      minimumGroupSize: 2
-    },
-    {
-      description: "Spegel Group",
-      groupName: "Spegel",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["/spegel/"],
       minimumGroupSize: 2
     },
     {
