@@ -13,7 +13,7 @@
     ":dependencyDashboard",
     ":disableRateLimiting",
     ":semanticCommits",
-    ":timezone(America/New_York)",
+    ":timezone(America/Chicago)",
     "helpers:pinGitHubActionDigestsToSemver",
     "github>rcdailey/home-ops//.renovate/autoMerge.json5",
     "github>rcdailey/home-ops//.renovate/groups.json5",
