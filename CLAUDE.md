@@ -19,6 +19,16 @@
 - **YAML Language Server**: ALWAYS include appropriate `# yaml-language-server:` directive at top of
   YAML files using URLs consistent with existing repo patterns. Use Flux schemas for Flux resources,
   Kubernetes JSON schemas for core K8s resources, and schemastore.org for standard files.
+- **MANDATORY Documentation for Special Configurations**: When implementing workarounds, patches, or
+  non-standard configurations, ALWAYS add comprehensive comments explaining:
+  - WHY the special approach was needed (chart limitations, upstream issues, etc.)
+  - WHAT alternatives were considered and why they were rejected
+  - HOW the solution works technically (postRenderers, patches, custom resources)
+  - WHEN to reconsider the approach (upstream fixes, better alternatives)
+  - Examples requiring documentation: postRenderers, kustomize patches, deviations from defaults,
+    custom resources instead of Helm values, workarounds for limitations
+  - Place comments directly above or within relevant configuration sections
+  - These comments are ESSENTIAL for future maintenance and decision-making
 
 ## Quality Assurance & Validation
 
