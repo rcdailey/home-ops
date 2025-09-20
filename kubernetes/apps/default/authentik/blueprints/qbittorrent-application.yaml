@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+version: 1
+metadata:
+  name: qBittorrent Application
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+- model: authentik_core.application
+  identifiers:
+    slug: qbittorrent
+  attrs:
+    name: qBittorrent
+    slug: qbittorrent
+    meta_launch_url: https://torrent-test.${SECRET_DOMAIN}
+    policy_engine_mode: any
+    provider: !Find [authentik_providers_proxy.proxyprovider, [name, qbittorrent]]

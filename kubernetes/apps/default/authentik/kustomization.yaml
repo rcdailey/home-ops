@@ -6,3 +6,17 @@ resources:
 - ./secret.sops.yaml
 - ./helmrelease.yaml
 - ./httproute.yaml
+
+# Generate ConfigMap for blueprints from blueprint files
+configMapGenerator:
+- name: authentik-blueprints
+  files:
+  - blueprints/qbittorrent-provider.yaml
+  - blueprints/qbittorrent-application.yaml
+  - blueprints/custom-users.yaml
+  - blueprints/outpost-configuration.yaml
+  options:
+    disableNameSuffixHash: true
+    labels:
+      app.kubernetes.io/name: authentik
+      app.kubernetes.io/component: blueprints

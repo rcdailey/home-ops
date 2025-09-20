@@ -1,0 +1,24 @@
+---
+# yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+version: 1
+metadata:
+  name: qBittorrent Proxy Provider
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+- model: authentik_providers_proxy.proxyprovider
+  identifiers:
+    name: qbittorrent
+  attrs:
+    name: qbittorrent
+    external_host: https://torrent-test.${SECRET_DOMAIN}
+    internal_host: http://qbittorrent:8080
+    mode: forward_single
+    basic_auth_enabled: true
+    basic_auth_user_attribute: ${QBITTORRENT_AUTH_USER}
+    basic_auth_password_attribute: ${QBITTORRENT_AUTH_PASSWORD}
+    intercept_header_auth: true
+    skip_path_regex: ^/api/.*$
+    refresh_token_validity: days=30
+    invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+    authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
