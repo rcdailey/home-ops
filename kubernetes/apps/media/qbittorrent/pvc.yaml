@@ -4,7 +4,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: unraid-media-pv
-  namespace: default
+  namespace: media
 spec:
   accessModes:
   - ReadWriteMany
