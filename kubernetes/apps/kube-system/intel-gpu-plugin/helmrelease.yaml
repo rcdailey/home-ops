@@ -27,3 +27,30 @@ spec:
       image:
         repository: intel/intel-deviceplugin-operator
         tag: 0.34.0
+
+      # Device Plugin Configuration Strategy:
+      # We use separate GpuDevicePlugin custom resource (gpu-device-plugin.yaml) instead of
+      # manager.devices.gpu=true for more granular control over GPU plugin settings like:
+      #   - sharedDevNum, preferredAllocationPolicy, enableMonitoring, logLevel
+      #
+      # Alternative approach (onedr0p style):
+      #   devices:
+      #     gpu: true    # Simpler but less configurable
+      #
+      # All other Intel accelerators (DSA, QAT, SGX, IAA, DLB, FPGA) remain disabled by default
+  postRenderers:
+    # WORKAROUND: Chart doesn't expose probe timeout configuration via values
+    # The operator's readiness probe times out at 1s (Kubernetes default) but needs ~2-3s to respond
+    # See: https://github.com/fluxcd/helm-controller/blob/main/docs/spec/v2/helmreleases.md#post-renderers
+  - kustomize:
+      patches:
+      - target:
+          kind: Deployment
+          name: inteldeviceplugins-controller-manager
+        patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/readinessProbe/timeoutSeconds
+            value: 10
+          - op: add
+            path: /spec/template/spec/containers/0/livenessProbe/timeoutSeconds
+            value: 10
