@@ -49,6 +49,60 @@
 **Claude MUST NOT proceed to user commit without completing flux-local-test.sh and pre-commit
 validation.**
 
+## Container Image Standards
+
+**CRITICAL CONTAINER IMAGE PRIORITY:**
+
+- **Primary Choice**: `ghcr.io/home-operations/*` - ALWAYS prefer home-operations containers when available
+  - Mission: Provide semantically versioned, rootless, multi-architecture containers
+  - Philosophy: KISS principle, one process per container, no s6-overlay, Alpine/Ubuntu base
+  - Run as non-root user (65534:65534 by default), fully Kubernetes security compatible
+  - Examples: `ghcr.io/home-operations/sabnzbd`, `ghcr.io/home-operations/qbittorrent`
+- **Secondary Choice**: `ghcr.io/onedr0p/*` - Use only if home-operations doesn't provide the container
+  - Legacy containers that have moved to home-operations organization
+  - Still maintained but home-operations is preferred for new deployments
+- **Avoid**: `ghcr.io/hotio/*` and containers using s6-overlay, gosu, or unconventional initialization
+  - These often have compatibility issues with Kubernetes security contexts
+  - Prefer home-operations containers which eschew such tools by design
+
+**MANDATORY IMAGE STANDARDS & VERIFICATION:**
+
+1. **Image Selection Process:**
+   - **Always check** `https://github.com/home-operations/containers/tree/main/apps/` first
+   - Only contribute/use if: upstream actively maintained AND (no official image OR no multi-arch OR uses s6-overlay/gosu)
+   - Check for deprecation notices (6-month removal timeline)
+
+2. **Tag Immutability Requirements:**
+   - **NEVER** use `latest` or `rolling` tags without SHA256 digests
+   - **PREFER** semantic versions with SHA256: `app:4.5.3@sha256:8053...`
+   - **ACCEPTABLE** semantic versions without SHA256: `app:4.5.3` (renovatebot will add digest)
+   - **REQUIRED** SHA256 pinning for production workloads ensures true immutability
+
+3. **Security Context Configuration:**
+   ```yaml
+   # REQUIRED Kubernetes security context for home-operations images
+   securityContext:
+     runAsUser: 1000          # Can be customized
+     runAsGroup: 1000         # Can be customized
+     fsGroup: 65534           # Requires CSI support
+     fsGroupChangePolicy: OnRootMismatch
+     allowPrivilegeEscalation: false
+     readOnlyRootFilesystem: true  # May require additional emptyDir mounts
+     capabilities:
+       drop: [ALL]
+   ```
+
+4. **Volume Standards:**
+   - **Configuration volume**: ALWAYS `/config` (hardcoded, non-configurable)
+   - **Temporary storage**: Mount emptyDir volumes to `/tmp` for readOnlyRootFilesystem
+   - **Command arguments**: Use Kubernetes `args:` field for CLI-only configuration options
+
+5. **Image Signature Verification:**
+   ```bash
+   # Verify GitHub CI build provenance
+   gh attestation verify --repo home-operations/containers oci://ghcr.io/home-operations/${APP}:${TAG}
+   ```
+
 ## Deployment Standards
 
 **CRITICAL FLUX PATTERNS:**
