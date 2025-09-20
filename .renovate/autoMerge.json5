@@ -1,0 +1,67 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      description: "Auto-merge GitHub Actions",
+      matchManagers: ["github-actions"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      minimumReleaseAge: "3 days",
+      ignoreTests: true
+    },
+    {
+      description: "Auto-merge Mise Tools",
+      matchManagers: ["mise"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch"],
+      ignoreTests: true
+    },
+    {
+      description: "Auto-merge security updates",
+      matchDatasources: ["docker"],
+      matchUpdateTypes: ["patch"],
+      labels: ["security"],
+      automerge: true,
+      automergeType: "branch",
+      minimumReleaseAge: "1 day"
+    },
+    {
+      description: "Auto-merge trusted home-operations containers",
+      matchDatasources: ["docker"],
+      automerge: true,
+      automergeType: "pr",
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      matchPackageNames: ["/home-operations/"],
+      ignoreTests: false
+    },
+    {
+      description: "Auto-merge trusted GitHub Actions",
+      matchManagers: ["github-actions"],
+      matchPackageNames: [
+        "/^actions\\//",
+        "/^renovatebot\\//",
+        "/^tj-actions\\//",
+        "/^dorny\\//",
+        "/^peter-evans\\//",
+        "/^stefanzweifel\\//",
+        "/^crazy-max\\//",
+        "/^docker\\//",
+        "/^helm\\//",
+        "/^hashicorp\\//",
+        "/^aquasecurity\\//",
+        "/^github\\//",
+        "/^google-github-actions\\//",
+        "/^azure\\//",
+        "/^aws-actions\\//",
+        "/^codecov\\//"
+      ],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      minimumReleaseAge: "1 minute",
+      ignoreTests: true
+    }
+  ]
+}
