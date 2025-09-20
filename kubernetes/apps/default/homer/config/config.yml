@@ -130,18 +130,29 @@ services:
     url: https://auth.${SECRET_DOMAIN}/
     logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/authentik.svg
     tag: service
+- name: Observability
+  icon: fas fa-chart-line
+  items:
   - name: Grafana
     url: https://grafana.${SECRET_DOMAIN}/
     logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/grafana.svg
-    tag: service
-  - name: Prometheus
-    url: https://prometheus.${SECRET_DOMAIN}/
+    tag: observability
+  - name: VictoriaMetrics
+    url: https://victoria-metrics.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/victoriametrics.svg
+    tag: observability
+  - name: VictoriaLogs
+    url: https://victoria-logs.${SECRET_DOMAIN}/
+    logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/victoriametrics.svg
+    tag: observability
+  - name: VM AlertManager
+    url: https://vmalertmanager.${SECRET_DOMAIN}/
     logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/prometheus.svg
-    tag: service
-  - name: AlertManager
-    url: https://alertmanager.${SECRET_DOMAIN}/
+    tag: observability
+  - name: VM Alert
+    url: https://vmalert.${SECRET_DOMAIN}/
     logo: https://raw.githubusercontent.com/selfhst/icons/main/svg/prometheus.svg
-    tag: service
+    tag: observability
 - name: Local
   icon: fas fa-network-wired
   items:
