@@ -36,6 +36,12 @@
     "**/*.sops.*",
     "**/resources/**"
   ],
+  flux: {
+    managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"]
+  },
+  kubernetes: {
+    managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"]
+  },
   "pre-commit": {
     enabled: true
   }
