@@ -48,14 +48,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-conditions:
+    name: Check Run Conditions
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.conditions.outputs.should-run }}
+      skip-reason: ${{ steps.conditions.outputs.skip-reason }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Evaluate run conditions
+        id: conditions
+        run: |
+          SHOULD_RUN="true"
+          SKIP_REASON=""
+
+          # Skip if triggered by issue comment but not dashboard checkbox
+          if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            if [[ "${{ github.event.issue.title }}" != "Dependency Dashboard" ]] || [[ ! "${{ github.event.comment.body }}" =~ "- [x]" ]]; then
+              SHOULD_RUN="false"
+              SKIP_REASON="Issue comment not from dependency dashboard checkbox"
+            fi
+          fi
+
+          echo "should-run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+          echo "skip-reason=$SKIP_REASON" >> "$GITHUB_OUTPUT"
+
+          if [[ "$SHOULD_RUN" == "false" ]]; then
+            echo "⏭️ Skipping Renovate run: $SKIP_REASON"
+          else
+            echo "✅ Conditions met, proceeding with Renovate run"
+          fi
+
   renovate:
     name: Renovate
     runs-on: ubuntu-latest
-    if: >
-      github.event_name != 'issue_comment' || (
-        github.event.issue.title == 'Dependency Dashboard' &&
-        contains(github.event.comment.body, '- [x]')
-      )
+    needs: check-conditions
+    if: needs.check-conditions.outputs.should-run == 'true'
     permissions:
       contents: read
       packages: read

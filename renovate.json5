@@ -1,4 +1,7 @@
 {
+  // !!! IMPORTANT NOTICE !!!
+  // Modular renovate configuration is in the `.renovate/` directory!
+  //
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: [
     "config:best-practices",
@@ -12,11 +15,11 @@
     ":semanticCommits",
     ":timezone(America/New_York)",
     "helpers:pinGitHubActionDigestsToSemver",
-    "github>robert-sandor/home-ops//.renovate/autoMerge.json5",
-    "github>robert-sandor/home-ops//.renovate/groups.json5",
-    "github>robert-sandor/home-ops//.renovate/labels.json5",
-    "github>robert-sandor/home-ops//.renovate/semanticCommits.json5",
-    "github>robert-sandor/home-ops//.renovate/customManagers.json5"
+    "github>rcdailey/home-ops/.renovate/autoMerge.json5",
+    "github>rcdailey/home-ops/.renovate/groups.json5",
+    "github>rcdailey/home-ops/.renovate/labels.json5",
+    "github>rcdailey/home-ops/.renovate/semanticCommits.json5",
+    "github>rcdailey/home-ops/.renovate/customManagers.json5"
   ],
   dependencyDashboardTitle: "Renovate Dashboard 🤖",
   dependencyDashboardAutoclose: true,
@@ -25,8 +28,6 @@
     "prIgnoreNotification"
   ],
   configMigration: true,
-  platformCommit: "enabled",
-  rebaseWhen: "auto",
   schedule: ["every weekend"],
   minimumReleaseAge: "3 days",
   prConcurrentLimit: 5,
@@ -36,21 +37,6 @@
     "**/*.sops.*",
     "**/resources/**"
   ],
-  flux: {
-    managerFilePatterns: ["/(^|/)kubernetes/.+\\.ya?ml(?:\\.j2)?$/"]
-  },
-  "helm-values": {
-    managerFilePatterns: ["/(^|/)kubernetes/.+\\.ya?ml(?:\\.j2)?$/"]
-  },
-  helmfile: {
-    managerFilePatterns: ["/(^|/)helmfile\\.ya?ml(?:\\.j2)?$/"]
-  },
-  kubernetes: {
-    managerFilePatterns: ["/(^|/)kubernetes/.+\\.ya?ml(?:\\.j2)?$/"]
-  },
-  kustomize: {
-    managerFilePatterns: ["/^kustomization\\.ya?ml(?:\\.j2)?$/"]
-  },
   "pre-commit": {
     enabled: true
   }

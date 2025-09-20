@@ -34,13 +34,6 @@
       addLabels: ["renovate/mise"]
     },
     {
-      description: "Label security updates",
-      matchDatasources: ["docker"],
-      matchUpdateTypes: ["patch"],
-      matchCurrentVersion: "!/security|cve/i",
-      addLabels: ["security"]
-    },
-    {
       description: "Label breaking changes",
       matchUpdateTypes: ["major"],
       addLabels: ["breaking-change"]
