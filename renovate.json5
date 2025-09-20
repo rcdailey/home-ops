@@ -15,11 +15,11 @@
     ":semanticCommits",
     ":timezone(America/New_York)",
     "helpers:pinGitHubActionDigestsToSemver",
-    "github>rcdailey/home-ops/.renovate/autoMerge.json5",
-    "github>rcdailey/home-ops/.renovate/groups.json5",
-    "github>rcdailey/home-ops/.renovate/labels.json5",
-    "github>rcdailey/home-ops/.renovate/semanticCommits.json5",
-    "github>rcdailey/home-ops/.renovate/customManagers.json5"
+    "github>rcdailey/home-ops//.renovate/autoMerge.json5",
+    "github>rcdailey/home-ops//.renovate/groups.json5",
+    "github>rcdailey/home-ops//.renovate/labels.json5",
+    "github>rcdailey/home-ops//.renovate/semanticCommits.json5",
+    "github>rcdailey/home-ops//.renovate/customManagers.json5"
   ],
   dependencyDashboardTitle: "Renovate Dashboard 🤖",
   dependencyDashboardAutoclose: true,

@@ -73,14 +73,12 @@ jobs:
               echo "recreate_closed=false" >> "$GITHUB_OUTPUT"
               echo "rebase_stale=true" >> "$GITHUB_OUTPUT"
               echo "recreate_when=auto" >> "$GITHUB_OUTPUT"
-              echo "git_ignored_authors=[\"renovate[bot]\", \"renohate[bot]\"]" >> "$GITHUB_OUTPUT"
               echo "🔄 Rebasing all existing open PRs"
               ;;
             "recreate-all")
               echo "recreate_closed=true" >> "$GITHUB_OUTPUT"
               echo "rebase_stale=true" >> "$GITHUB_OUTPUT"
               echo "recreate_when=always" >> "$GITHUB_OUTPUT"
-              echo "git_ignored_authors=[\"renovate[bot]\", \"renohate[bot]\"]" >> "$GITHUB_OUTPUT"
               echo "🔄 Recreating all PRs (fixes edited/blocked PRs)"
               ;;
             *)
@@ -113,5 +111,4 @@ jobs:
               "prHourlyLimit": 10,
               "rebaseWhen": "behind-base-branch",
               "recreateWhen": "${{ steps.config.outputs.recreate_when }}",
-              "gitIgnoredAuthors": ${{ steps.config.outputs.git_ignored_authors }}
             }

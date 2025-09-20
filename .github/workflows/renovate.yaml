@@ -9,9 +9,8 @@ on:
     branches: ["main", "master"]
     paths:
       - renovate.json5
-      - .renovate/**.json5
+      - .renovate/**
       - .github/workflows/renovate.yaml
-      - .github/workflows/renovate-dashboard.yaml
   merge_group:
   issue_comment:
     types: [created]
