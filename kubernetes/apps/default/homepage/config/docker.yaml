@@ -1,0 +1,11 @@
+---
+# Docker configuration for Homepage
+# This file configures Docker container integrations for the homepage dashboard.
+# When running with Docker Compose, this would contain Docker socket configuration
+# to display container status, resource usage, and management controls.
+#
+# Since this deployment runs in Kubernetes rather than Docker Compose,
+# this file is intentionally empty. The Kubernetes integration (kubernetes.yaml)
+# provides similar functionality for showing cluster resources and pod status.
+#
+# Homepage requires this file to exist even when empty.

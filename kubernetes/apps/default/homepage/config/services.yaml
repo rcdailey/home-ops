@@ -1,0 +1,238 @@
+# Services configuration for Homepage
+# This file defines the main service tiles that appear on the homepage dashboard.
+# Services are organized into groups and can include status monitoring and widgets.
+#
+# Structure:
+# - Group Name:
+#     - Service Name:
+#         icon: Icon identifier (service name or mdi-* for Material Design)
+#         href: Direct link to the service
+#         description: Short description text
+#         siteMonitor: URL for uptime monitoring (optional)
+#         ping: Host/IP for ping monitoring (optional)
+#         widget: Integration configuration (optional)
+#
+# Use ${SECRET_DOMAIN} for domain substitution via Flux.
+# Icons can be service names (e.g., 'plex', 'sonarr') or Material Design icons ('mdi-*').
+---
+- Media:
+  - Overseerr:
+      icon: overseerr
+      href: https://request.${SECRET_DOMAIN}/
+      description: Request Movies & Shows
+      siteMonitor: https://request.${SECRET_DOMAIN}
+
+  - Tautulli:
+      icon: tautulli
+      href: https://tautulli.${SECRET_DOMAIN}/
+      description: Plex Statistics
+      siteMonitor: https://tautulli.${SECRET_DOMAIN}
+
+  - Sonarr:
+      icon: sonarr
+      href: https://sonarr.${SECRET_DOMAIN}/
+      description: TV Series Management
+      siteMonitor: https://sonarr.${SECRET_DOMAIN}
+
+  - Sonarr (Anime):
+      icon: sonarr
+      href: https://sonarr-anime.${SECRET_DOMAIN}/
+      description: Anime Series Management
+      siteMonitor: https://sonarr-anime.${SECRET_DOMAIN}
+
+  - Radarr:
+      icon: radarr
+      href: https://radarr.${SECRET_DOMAIN}/
+      description: Movie Management
+      siteMonitor: https://radarr.${SECRET_DOMAIN}
+
+  - Radarr (4K):
+      icon: radarr
+      href: https://radarr4k.${SECRET_DOMAIN}/
+      description: 4K Movie Management
+      siteMonitor: https://radarr4k.${SECRET_DOMAIN}
+
+  - Radarr (Anime):
+      icon: radarr
+      href: https://radarr-anime.${SECRET_DOMAIN}/
+      description: Anime Movie Management
+      siteMonitor: https://radarr-anime.${SECRET_DOMAIN}
+
+  - Prowlarr:
+      icon: prowlarr
+      href: https://prowlarr.${SECRET_DOMAIN}/
+      description: Indexer Management
+      siteMonitor: https://prowlarr.${SECRET_DOMAIN}
+
+  - Sabnzbd:
+      icon: sabnzbd
+      href: https://nzb.${SECRET_DOMAIN}/
+      description: Usenet Downloader
+      siteMonitor: https://nzb.${SECRET_DOMAIN}
+
+  - qBittorrent:
+      icon: qbittorrent
+      href: https://torrent.${SECRET_DOMAIN}/
+      description: Torrent Client
+      siteMonitor: https://torrent.${SECRET_DOMAIN}
+
+  - Plex:
+      icon: plex
+      href: https://plex.${SECRET_DOMAIN}/
+      description: Media Server
+      siteMonitor: https://plex.${SECRET_DOMAIN}
+
+  - Bazarr:
+      icon: bazarr
+      href: https://bazarr.${SECRET_DOMAIN}/
+      description: Subtitle Management
+      siteMonitor: https://bazarr.${SECRET_DOMAIN}
+
+- Services:
+  - Home Assistant:
+      icon: home-assistant
+      href: https://ha.${SECRET_DOMAIN}/
+      description: Home Automation
+      siteMonitor: https://ha.${SECRET_DOMAIN}
+
+  - Filerun:
+      icon: filerun
+      href: https://cloud.${SECRET_DOMAIN}/
+      description: File Manager
+      siteMonitor: https://cloud.${SECRET_DOMAIN}
+
+  - Immich:
+      icon: immich
+      href: https://photos.${SECRET_DOMAIN}/
+      description: Photo Management
+      siteMonitor: https://photos.${SECRET_DOMAIN}
+
+  - Open WebUI:
+      icon: si-openai
+      href: https://ai.${SECRET_DOMAIN}/
+      description: AI Chat Interface
+      siteMonitor: https://ai.${SECRET_DOMAIN}
+
+  - Technitium DNS:
+      icon: technitium
+      href: https://dns.${SECRET_DOMAIN}/
+      description: DNS Server
+      siteMonitor: https://dns.${SECRET_DOMAIN}
+
+  - BookStack (Wiki):
+      icon: bookstack
+      href: https://wiki.${SECRET_DOMAIN}/
+      description: Documentation Wiki
+      siteMonitor: https://wiki.${SECRET_DOMAIN}
+
+  - Open Sprinkler:
+      icon: mdi-sprinkler-variant
+      href: https://sprinkler.${SECRET_DOMAIN}/
+      description: Irrigation Control
+      siteMonitor: https://sprinkler.${SECRET_DOMAIN}
+
+  - Uptime Kuma:
+      icon: uptime-kuma
+      href: https://uptime.${SECRET_DOMAIN}/
+      description: Uptime Monitoring
+      siteMonitor: https://uptime.${SECRET_DOMAIN}
+
+  - Authentik:
+      icon: authentik
+      href: https://auth.${SECRET_DOMAIN}/
+      description: Identity Provider
+      siteMonitor: https://auth.${SECRET_DOMAIN}
+
+- Observability:
+  - Grafana:
+      icon: grafana
+      href: https://grafana.${SECRET_DOMAIN}/
+      description: Monitoring Dashboards
+      siteMonitor: https://grafana.${SECRET_DOMAIN}
+
+  - VictoriaMetrics:
+      icon: victoriametrics
+      href: https://victoria-metrics.${SECRET_DOMAIN}/
+      description: Metrics Database
+      siteMonitor: https://victoria-metrics.${SECRET_DOMAIN}
+
+  - VictoriaLogs:
+      icon: victoriametrics
+      href: https://victoria-logs.${SECRET_DOMAIN}/
+      description: Logs Database
+      siteMonitor: https://victoria-logs.${SECRET_DOMAIN}
+
+  - VM AlertManager:
+      icon: prometheus
+      href: https://vmalertmanager.${SECRET_DOMAIN}/
+      description: Alert Management
+      siteMonitor: https://vmalertmanager.${SECRET_DOMAIN}
+
+  - VM Alert:
+      icon: prometheus
+      href: https://vmalert.${SECRET_DOMAIN}/
+      description: Alert Rules
+      siteMonitor: https://vmalert.${SECRET_DOMAIN}
+
+- Local:
+  - Unraid:
+      icon: unraid
+      href: http://nezuko/Dashboard
+      description: NAS Server
+      ping: nezuko
+
+  - Unifi (local):
+      icon: ubiquiti-unifi
+      href: https://192.168.1.1/
+      description: Network Controller
+      ping: 192.168.1.1
+
+  - Proxmox:
+      icon: proxmox
+      href: https://192.168.1.54:8006/
+      description: Virtualization
+      ping: 192.168.1.54
+
+  - AT&T Gateway:
+      icon: mdi-router-wireless
+      href: http://192.168.99.254/cgi-bin/home.ha
+      description: Internet Gateway
+      ping: 192.168.99.254
+
+  - HDHomeRun:
+      icon: hdhomerun
+      href: http://192.168.1.53/
+      description: TV Tuner
+      ping: 192.168.1.53
+
+  - CUPS Print Server:
+      icon: mdi-printer
+      href: http://192.168.1.52:631/
+      description: Print Server
+      ping: 192.168.1.52
+
+- External:
+  - Bitwarden:
+      icon: bitwarden
+      href: https://vault.bitwarden.com/
+      description: Password Manager
+
+  - Unifi Portal:
+      icon: ubiquiti-unifi
+      href: https://unifi.ui.com/dashboard
+      description: Cloud Management
+
+  - Cloudflare:
+      icon: cloudflare
+      href: https://dash.cloudflare.com
+      description: DNS & CDN
+
+  - BorgBase:
+      icon: mdi-backup-restore
+      href: https://www.borgbase.com/repositories
+      description: Backup Storage
+
+  - APC SmartConnect:
+      icon: mdi-battery-charging-100
+      href: https://smartconnect.apc.com/
+      description: UPS Management
