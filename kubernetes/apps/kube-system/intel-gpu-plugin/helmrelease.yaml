@@ -27,3 +27,7 @@ spec:
       image:
         repository: intel/intel-deviceplugin-operator
         tag: 0.34.0
+      readinessProbe:
+        timeoutSeconds: 10
+      livenessProbe:
+        timeoutSeconds: 10
