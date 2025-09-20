@@ -39,9 +39,9 @@ spec:
       #
       # All other Intel accelerators (DSA, QAT, SGX, IAA, DLB, FPGA) remain disabled by default
   postRenderers:
-    # WORKAROUND: Chart doesn't expose probe timeout configuration via values
-    # The operator's readiness probe times out at 1s (Kubernetes default) but needs ~2-3s to respond
-    # See: https://github.com/fluxcd/helm-controller/blob/main/docs/spec/v2/helmreleases.md#post-renderers
+  # WORKAROUND: Chart doesn't expose probe timeout configuration via values
+  # The operator's readiness probe times out at 1s (Kubernetes default) but needs ~2-3s to respond
+  # See: https://github.com/fluxcd/helm-controller/blob/main/docs/spec/v2/helmreleases.md#post-renderers
   - kustomize:
       patches:
       - target:

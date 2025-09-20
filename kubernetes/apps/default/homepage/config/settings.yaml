@@ -1,0 +1,55 @@
+---
+# Settings configuration for Homepage
+# This file contains global settings that control the appearance and behavior
+# of the homepage dashboard.
+#
+# Key settings:
+# - title: Browser tab title and main heading
+# - favicon: Icon displayed in browser tab and bookmarks
+# - theme: Color scheme (light, dark, or color name)
+# - layout: Per-group layout configuration (style, columns, heights)
+# - quicklaunch: Search functionality settings
+#
+# Use ${SECRET_DOMAIN} for domain substitution via Flux.
+title: Nami
+favicon: https://raw.githubusercontent.com/rcdailey/home-ops/main/kubernetes/apps/default/homepage/icons/nami.png
+
+# Theme configuration
+theme: dark
+color: slate
+iconStyle: theme
+
+# Layout configuration for vertical design
+layout:
+  Media:
+    style: column
+    useEqualHeights: true
+  Services:
+    style: column
+    useEqualHeights: true
+  Observability:
+    style: column
+    useEqualHeights: true
+  Local:
+    style: column
+    useEqualHeights: true
+  External:
+    iconsOnly: true
+
+# Global settings for compactness
+useEqualHeights: true
+maxGroupColumns: 6
+headerStyle: clean
+statusStyle: dot
+target: _self
+
+# Quick launch settings
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: false
+  showSearchSuggestions: true
+  hideVisitURL: false
+  provider: google
+
+# Hide version info
+hideVersion: true

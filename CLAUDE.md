@@ -166,7 +166,7 @@ persistence:
 **IMPORTANT:** Use stable names (`disableNameSuffixHash: true`) ONLY for:
 
 - Helm `valuesFrom` references (external-dns, cloudflare-dns)
-- App-template `persistence.name` references (homer, cloudflare-tunnel)
+- App-template `persistence.name` references (homepage, cloudflare-tunnel)
 - Cross-resource name dependencies
 
 **ALWAYS use** `reloader.stakater.com/auto: "true"` for ALL apps. NEVER use specific secret reload.
