@@ -8,6 +8,7 @@ components:
 - ../../components/drift-detection
 resources:
 - ./qbittorrent/ks.yaml
+- ./sabnzbd/ks.yaml
 patches:
 - target:
     kind: Kustomization
