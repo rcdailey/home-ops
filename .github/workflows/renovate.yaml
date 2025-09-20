@@ -67,7 +67,7 @@ jobs:
 
           # Skip if triggered by issue comment but not dashboard checkbox
           if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-            if [[ "${{ github.event.issue.title }}" != "Dependency Dashboard" ]] || [[ ! "${{ github.event.comment.body }}" =~ "- [x]" ]]; then
+            if [[ ! "${{ contains(github.event.issue.title, 'Renovate Dashboard') }}" == "true" ]] || [[ ! "${{ github.event.comment.body }}" =~ "- [x]" ]]; then
               SHOULD_RUN="false"
               SKIP_REASON="Issue comment not from dependency dashboard checkbox"
             fi

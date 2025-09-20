@@ -27,7 +27,7 @@ jobs:
     if: >
       (
         github.event_name == 'issues' &&
-        github.event.issue.title == 'Dependency Dashboard' &&
+        contains(github.event.issue.title, 'Renovate Dashboard') &&
         (
           contains(github.event.issue.body, '- [x]') ||
           contains(github.event.issue.body, 'approve-all-pending-prs') ||
@@ -129,7 +129,7 @@ jobs:
     if: >
       (
         github.event_name == 'issue_comment' &&
-        github.event.issue.title == 'Dependency Dashboard' &&
+        contains(github.event.issue.title, 'Renovate Dashboard') &&
         (
           contains(github.event.comment.body, 'renovate run') ||
           contains(github.event.comment.body, 'renovate force')
