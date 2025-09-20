@@ -90,10 +90,11 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
      - Shared storage access patterns
    ```
 
-3. **App-Scout Analysis (Secondary)**
-   - Run app-scout discovery for the target service
+3. **App-Scout Analysis (MANDATORY)**
+   - **REQUIRED**: Run app-scout discovery for the target service
    - Analyze dedicated charts vs app-template patterns
    - Compare with local repository patterns
+   - **CRITICAL**: This step is NOT optional - app-scout provides essential chart discovery and implementation patterns
 
 4. **External Reference Search (Tertiary)**
    - Search GitHub homelab implementations only if no local patterns found
