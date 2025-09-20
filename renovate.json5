@@ -28,10 +28,9 @@
     "prIgnoreNotification"
   ],
   configMigration: true,
-  schedule: ["every weekend"],
-  minimumReleaseAge: "3 days",
-  prConcurrentLimit: 5,
-  prHourlyLimit: 2,
+  schedule: ["every weekday"],
+  prConcurrentLimit: 15,
+  prHourlyLimit: 8,
   ignorePresets: ["mergeConfidence:all-badges"],
   ignorePaths: [
     "**/*.sops.*",

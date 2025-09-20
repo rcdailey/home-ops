@@ -26,6 +26,42 @@
       automerge: true,
       automergeType: "branch",
       minimumReleaseAge: "1 day"
+    },
+    {
+      description: "Auto-merge trusted home-operations containers",
+      matchDatasources: ["docker"],
+      automerge: true,
+      automergeType: "pr",
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      matchPackageNames: ["/home-operations/"],
+      ignoreTests: false
+    },
+    {
+      description: "Auto-merge trusted GitHub Actions",
+      matchManagers: ["github-actions"],
+      matchPackageNames: [
+        "/^actions\\//",
+        "/^renovatebot\\//",
+        "/^tj-actions\\//",
+        "/^dorny\\//",
+        "/^peter-evans\\//",
+        "/^stefanzweifel\\//",
+        "/^crazy-max\\//",
+        "/^docker\\//",
+        "/^helm\\//",
+        "/^hashicorp\\//",
+        "/^aquasecurity\\//",
+        "/^github\\//",
+        "/^google-github-actions\\//",
+        "/^azure\\//",
+        "/^aws-actions\\//",
+        "/^codecov\\//"
+      ],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      minimumReleaseAge: "1 minute",
+      ignoreTests: true
     }
   ]
 }

@@ -5,37 +5,43 @@
       description: "Cert-Manager Group",
       groupName: "Cert-Manager",
       matchDatasources: ["docker"],
-      matchPackageNames: ["/cert-manager/"]
+      matchPackageNames: ["/cert-manager/"],
+      minimumGroupSize: 2
     },
     {
       description: "CoreDNS Group",
       groupName: "CoreDNS",
       matchDatasources: ["docker"],
-      matchPackageNames: ["/coredns/"]
+      matchPackageNames: ["/coredns/"],
+      minimumGroupSize: 2
     },
     {
       description: "Flux Operator Group",
       groupName: "Flux Operator",
       matchPackageNames: ["/flux-operator/", "/flux-instance/"],
-      matchDatasources: ["docker"]
+      matchDatasources: ["docker"],
+      minimumGroupSize: 2
     },
     {
       description: "Spegel Group",
       groupName: "Spegel",
       matchDatasources: ["docker"],
-      matchPackageNames: ["/spegel/"]
+      matchPackageNames: ["/spegel/"],
+      minimumGroupSize: 2
     },
     {
       description: "Immich Group",
       groupName: "Immich",
       matchDatasources: ["docker"],
-      matchPackageNames: ["/immich-app/"]
+      matchPackageNames: ["/immich-app/"],
+      minimumGroupSize: 2
     },
     {
       description: "Rook Ceph Group",
       groupName: "Rook Ceph",
       matchDatasources: ["helm"],
-      matchPackageNames: ["/rook-ceph/", "/rook-ceph-cluster/"]
+      matchPackageNames: ["/rook-ceph/", "/rook-ceph-cluster/"],
+      minimumGroupSize: 2
     },
     {
       description: "Group Docker image version and digest updates",
@@ -54,7 +60,8 @@
         "kubernetes/kubernetes",
         "kubernetes-sigs/external-dns",
         "kubernetes-sigs/gateway-api"
-      ]
+      ],
+      minimumGroupSize: 2
     },
     {
       description: "Monitoring Stack Group",
@@ -64,7 +71,8 @@
         "/prometheus/",
         "/grafana/",
         "/alertmanager/"
-      ]
+      ],
+      minimumGroupSize: 2
     }
   ]
 }
