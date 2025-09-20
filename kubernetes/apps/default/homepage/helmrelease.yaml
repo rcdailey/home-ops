@@ -1,0 +1,109 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: homepage
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      homepage:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          config-setup:
+            image:
+              repository: ghcr.io/gethomepage/homepage
+              tag: v1.4.6
+            command:
+            - sh
+            - -c
+            - |
+              echo "Copying configuration files..."
+              cp -v /app/config-templates/* /app/config/
+              echo "Configuration setup complete"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/gethomepage/homepage
+              tag: v1.4.6
+            env:
+              HOMEPAGE_ALLOWED_HOSTS: home.${SECRET_DOMAIN}
+              TZ: America/Chicago
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            resources:
+              limits:
+                memory: 256Mi
+              requests:
+                cpu: 25m
+                memory: 128Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: false
+
+    defaultPodOptions:
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+    service:
+      app:
+        controller: homepage
+        ports:
+          http:
+            port: 3000
+
+    serviceAccount:
+      homepage: {}
+
+    persistence:
+      config:
+        type: emptyDir
+        globalMounts:
+        - path: /app/config
+      config-templates:
+        type: configMap
+        name: homepage-config
+        globalMounts:
+        - subPath: settings.yaml
+          path: /app/config-templates/settings.yaml
+        - subPath: services.yaml
+          path: /app/config-templates/services.yaml
+        - subPath: widgets.yaml
+          path: /app/config-templates/widgets.yaml
+        - subPath: bookmarks.yaml
+          path: /app/config-templates/bookmarks.yaml
+        - subPath: kubernetes.yaml
+          path: /app/config-templates/kubernetes.yaml
+        - subPath: docker.yaml
+          path: /app/config-templates/docker.yaml
+
+    route:
+      app:
+        hostnames: ["home.${SECRET_DOMAIN}"]
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https

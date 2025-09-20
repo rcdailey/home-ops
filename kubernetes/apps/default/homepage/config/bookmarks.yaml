@@ -1,0 +1,17 @@
+# Bookmarks configuration for Homepage
+# This file defines bookmark groups and links that appear in the homepage dashboard.
+# Bookmarks provide quick access to frequently used external sites and services.
+#
+# Structure:
+# - Group Name:
+#     - Bookmark Name:
+#         - href: URL to link to
+#         - icon: Icon identifier (Material Design Icons with 'mdi-' prefix,
+#                 or service icons like 'github', 'reddit', etc.)
+#         - abbr: 2-letter abbreviation (alternative to icon)
+#         - description: Optional tooltip text
+#
+# Icons will override abbreviations if both are specified.
+# Use ${SECRET_DOMAIN} for domain substitution via Flux.
+---
+# Bookmarks section currently empty - add bookmark groups here as needed
