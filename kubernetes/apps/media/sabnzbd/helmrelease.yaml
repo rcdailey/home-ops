@@ -12,6 +12,7 @@ spec:
   values:
     controllers:
       sabnzbd:
+        strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
 

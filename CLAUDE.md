@@ -53,15 +53,18 @@ validation.**
 
 **CRITICAL CONTAINER IMAGE PRIORITY:**
 
-- **Primary Choice**: `ghcr.io/home-operations/*` - ALWAYS prefer home-operations containers when available
+- **Primary Choice**: `ghcr.io/home-operations/*` - ALWAYS prefer home-operations containers when
+  available
   - Mission: Provide semantically versioned, rootless, multi-architecture containers
   - Philosophy: KISS principle, one process per container, no s6-overlay, Alpine/Ubuntu base
   - Run as non-root user (65534:65534 by default), fully Kubernetes security compatible
   - Examples: `ghcr.io/home-operations/sabnzbd`, `ghcr.io/home-operations/qbittorrent`
-- **Secondary Choice**: `ghcr.io/onedr0p/*` - Use only if home-operations doesn't provide the container
+- **Secondary Choice**: `ghcr.io/onedr0p/*` - Use only if home-operations doesn't provide the
+  container
   - Legacy containers that have moved to home-operations organization
   - Still maintained but home-operations is preferred for new deployments
-- **Avoid**: `ghcr.io/hotio/*` and containers using s6-overlay, gosu, or unconventional initialization
+- **Avoid**: `ghcr.io/hotio/*` and containers using s6-overlay, gosu, or unconventional
+  initialization
   - These often have compatibility issues with Kubernetes security contexts
   - Prefer home-operations containers which eschew such tools by design
 
@@ -69,7 +72,8 @@ validation.**
 
 1. **Image Selection Process:**
    - **Always check** `https://github.com/home-operations/containers/tree/main/apps/` first
-   - Only contribute/use if: upstream actively maintained AND (no official image OR no multi-arch OR uses s6-overlay/gosu)
+   - Only contribute/use if: upstream actively maintained AND (no official image OR no multi-arch OR
+     uses s6-overlay/gosu)
    - Check for deprecation notices (6-month removal timeline)
 
 2. **Tag Immutability Requirements:**
@@ -79,6 +83,7 @@ validation.**
    - **REQUIRED** SHA256 pinning for production workloads ensures true immutability
 
 3. **Security Context Configuration:**
+
    ```yaml
    # REQUIRED Kubernetes security context for home-operations images
    securityContext:
@@ -98,6 +103,7 @@ validation.**
    - **Command arguments**: Use Kubernetes `args:` field for CLI-only configuration options
 
 5. **Image Signature Verification:**
+
    ```bash
    # Verify GitHub CI build provenance
    gh attestation verify --repo home-operations/containers oci://ghcr.io/home-operations/${APP}:${TAG}
@@ -160,60 +166,107 @@ validation.**
 - **Secret Management**: App-isolated secrets, `sops --set` for changes, `sops unset` for removal
 - **Chart Analysis**: See "Quality Assurance & Validation" section above for verification methods
 
-## Volume Mounting Strategy
+## Storage & Deployment Strategy
 
-**CRITICAL VOLUME MOUNTING RULES - Claude MUST enforce these patterns:**
+**CRITICAL STORAGE AND DEPLOYMENT RULES - Claude MUST enforce these patterns:**
 
-**NEVER use globalMounts for multi-controller applications:**
+### Deployment Strategy Requirements
 
-- **globalMounts mounts to ALL controllers and ALL containers** - causes ReadWriteOnce violations
-- **Multi-controller apps**: Use `advancedMounts` to specify exactly which controller gets which
-  volume
-- **Single-controller apps**: `globalMounts` acceptable but `advancedMounts` preferred for clarity
+**MANDATORY: ReadWriteOnce volumes require Recreate strategy:**
 
-**Storage Class Access Mode Guidelines:**
-
-- **ReadWriteOnce (RWO)**: `ceph-block` - Single node exclusive, cannot share across nodes
-- **ReadWriteMany (RWX)**: `ceph-filesystem`, NFS - Multi-node sharing supported
-- **Node scheduling**: RWO volumes fail when multiple pods scheduled on different nodes
-
-**App-Template Volume Mount Patterns:**
+- **ReadWriteOnce (RWO) + RollingUpdate = INCOMPATIBLE** - causes ContainerCreating failures
+- **RWO volumes can only be mounted by ONE pod at a time**
+- **RollingUpdate starts new pod before terminating old pod = volume conflict**
+- **SOLUTION: Always use `strategy: Recreate` with RWO volumes**
 
 ```yaml
-# CORRECT: advancedMounts for precise control
+# CORRECT: Recreate strategy with RWO volumes
+controllers:
+  app:
+    strategy: Recreate    # REQUIRED for RWO volumes
+    containers:
+      main:
+        # app config
 persistence:
-  app-data:
+  config:
     type: persistentVolumeClaim
-    existingClaim: app-data-pvc
+    existingClaim: app-config-pvc  # RWO volume
     advancedMounts:
-      main-controller:    # Specific controller
-        app:              # Specific container
-        - path: /data
+      app:
+        main:
+        - path: /config
 
-# ACCEPTABLE: globalMounts only for single-controller apps
-persistence:
-  shared-config:
-    type: configMap
-    name: app-config
-    globalMounts:         # OK for ConfigMaps and single-controller
-    - path: /config
-
-# WRONG: globalMounts with RWO volumes in multi-controller apps
-# This causes "Multi-Attach error" when pods land on different nodes
+# WRONG: RollingUpdate with RWO volumes causes stuck pods
+controllers:
+  app:
+    strategy: RollingUpdate  # FAILS with RWO volumes
 ```
 
-**Multi-Controller Application Requirements:**
+**Strategy Selection Rules:**
 
-- **Each RWO volume** must use `advancedMounts` to specify single controller
-- **Shared volumes** must use ReadWriteMany storage classes (`ceph-filesystem`)
-- **Service communication** preferred over shared filesystem for multi-component apps
+- **Apps with RWO volumes**: ALWAYS use `strategy: Recreate`
+- **Apps with only RWX/emptyDir/configMap volumes**: Can use `strategy: RollingUpdate`
+- **Stateless apps**: Prefer `RollingUpdate` for zero-downtime updates
+- **Stateful apps with persistent data**: Use `Recreate` to ensure data consistency
 
-**Storage Class Selection Strategy:**
+### Volume Mounting Strategy
 
-- **App-specific data**: Use `ceph-block` (RWO) with `advancedMounts`
-- **Shared configuration**: Use ConfigMaps with `globalMounts`
-- **Multi-pod shared data**: Use `ceph-filesystem` (RWX) with `globalMounts`
-- **Large media/file storage**: Use NFS PVs (always RWX)
+**Volume Mount Rules:**
+
+- **globalMounts**: Mounts to ALL controllers and containers - use only for RWX volumes/ConfigMaps
+- **advancedMounts**: Mounts to specific controller/container - REQUIRED for RWO volumes
+- **Single-controller apps**: `globalMounts` acceptable, `advancedMounts` preferred for clarity
+- **Multi-controller apps**: NEVER use `globalMounts` with RWO volumes
+
+**Storage Class Guidelines:**
+
+- **ReadWriteOnce (RWO)**: `ceph-block` - Single pod exclusive, requires `strategy: Recreate`
+- **ReadWriteMany (RWX)**: `ceph-filesystem`, NFS - Multi-pod sharing, compatible with
+  `RollingUpdate`
+- **emptyDir/configMap**: Always multi-pod compatible
+
+**Volume Mount Patterns:**
+
+```yaml
+# CORRECT: RWO volume with advancedMounts + Recreate strategy
+controllers:
+  app:
+    strategy: Recreate
+persistence:
+  data:
+    type: persistentVolumeClaim
+    existingClaim: app-data-pvc  # RWO
+    advancedMounts:
+      app:
+        main:
+        - path: /data
+
+# CORRECT: RWX volume with globalMounts + RollingUpdate
+controllers:
+  app:
+    strategy: RollingUpdate
+persistence:
+  shared:
+    type: persistentVolumeClaim
+    existingClaim: shared-data-pvc  # RWX
+    globalMounts:
+    - path: /shared
+
+# WRONG: RWO volume with globalMounts causes Multi-Attach errors
+persistence:
+  data:
+    type: persistentVolumeClaim
+    existingClaim: app-data-pvc  # RWO
+    globalMounts:  # WRONG - will fail in multi-controller apps
+    - path: /data
+```
+
+**Storage Selection Strategy:**
+
+- **App-specific persistent data**: `ceph-block` (RWO) + `advancedMounts` + `strategy: Recreate`
+- **Shared configuration**: ConfigMaps + `globalMounts` + any strategy
+- **Multi-pod shared data**: `ceph-filesystem` (RWX) + `globalMounts` + `RollingUpdate`
+- **Large media/file storage**: NFS PVs (RWX) + `globalMounts` + `RollingUpdate`
 
 ## ConfigMap & Reloader Strategy
 
