@@ -11,7 +11,7 @@ entries:
     name: qbittorrent
   attrs:
     name: qbittorrent
-    external_host: https://torrent-test.${SECRET_DOMAIN}
+    external_host: https://torrent.${SECRET_DOMAIN}
     internal_host: http://qbittorrent:8080
     mode: forward_single
     basic_auth_enabled: true

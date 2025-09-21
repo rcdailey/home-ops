@@ -12,6 +12,6 @@ entries:
   attrs:
     name: qBittorrent
     slug: qbittorrent
-    meta_launch_url: https://torrent-test.${SECRET_DOMAIN}
+    meta_launch_url: https://torrent.${SECRET_DOMAIN}
     policy_engine_mode: any
     provider: !Find [authentik_providers_proxy.proxyprovider, [name, qbittorrent]]
