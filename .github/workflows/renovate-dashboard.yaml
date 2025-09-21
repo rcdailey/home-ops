@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   dependency-dashboard:
@@ -54,7 +54,8 @@ jobs:
             {
               "source": "dependency-dashboard",
               "action": "${{ github.event.action }}",
-              "issue_number": ${{ github.event.issue.number }}
+              "issue_number": ${{ github.event.issue.number }},
+              "triggered_by": "${{ github.actor }}"
             }
 
   pull-request-handler:
@@ -63,6 +64,7 @@ jobs:
       (
         github.event_name == 'pull_request' &&
         github.event.pull_request.user.login == 'renohate[bot]' &&
+        github.actor != 'renohate[bot]' &&
         (
           github.event.action == 'closed' ||
           github.event.action == 'synchronize'
@@ -72,6 +74,7 @@ jobs:
         github.event_name == 'issue_comment' &&
         github.event.issue.pull_request &&
         github.event.issue.user.login == 'renohate[bot]' &&
+        github.actor != 'renohate[bot]' &&
         (
           contains(github.event.comment.body, 'renovate rebase') ||
           contains(github.event.comment.body, 'renovate recreate') ||
@@ -81,6 +84,7 @@ jobs:
       (
         github.event_name == 'pull_request_review_comment' &&
         github.event.pull_request.user.login == 'renohate[bot]' &&
+        github.actor != 'renohate[bot]' &&
         (
           contains(github.event.comment.body, 'renovate rebase') ||
           contains(github.event.comment.body, 'renovate recreate') ||
@@ -122,7 +126,8 @@ jobs:
               "source": "pull-request",
               "action": "${{ github.event.action }}",
               "pr_number": ${{ github.event.pull_request.number || github.event.issue.number }},
-              "command": "${{ steps.extract-command.outputs.command || 'none' }}"
+              "command": "${{ steps.extract-command.outputs.command || 'none' }}",
+              "triggered_by": "${{ github.actor }}"
             }
 
   emergency-trigger:
@@ -155,5 +160,6 @@ jobs:
             {
               "source": "emergency",
               "action": "force-run",
-              "issue_number": ${{ github.event.issue.number }}
+              "issue_number": ${{ github.event.issue.number }},
+              "triggered_by": "${{ github.actor }}"
             }

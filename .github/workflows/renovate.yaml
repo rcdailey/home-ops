@@ -44,7 +44,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   check-conditions:
@@ -70,6 +70,23 @@ jobs:
             if [[ ! "${{ contains(github.event.issue.title, 'Renovate Dashboard') }}" == "true" ]] || [[ ! "${{ github.event.comment.body }}" =~ "- [x]" ]]; then
               SHOULD_RUN="false"
               SKIP_REASON="Issue comment not from dependency dashboard checkbox"
+            fi
+          fi
+
+          # Skip repository_dispatch from automated PR synchronization
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            SOURCE="${{ github.event.client_payload.source || 'unknown' }}"
+            ACTION="${{ github.event.client_payload.action || 'unknown' }}"
+            TRIGGERED_BY="${{ github.event.client_payload.triggered_by || 'unknown' }}"
+
+            # Skip if triggered by pull-request synchronize events (automated)
+            if [[ "$SOURCE" == "pull-request" && "$ACTION" == "synchronize" ]]; then
+              SHOULD_RUN="false"
+              SKIP_REASON="Repository dispatch from automated PR synchronization"
+            # Skip if not triggered by human actor
+            elif [[ "$TRIGGERED_BY" == "renohate[bot]" || "$TRIGGERED_BY" == "unknown" ]]; then
+              SHOULD_RUN="false"
+              SKIP_REASON="Repository dispatch not triggered by human actor"
             fi
           fi
 
