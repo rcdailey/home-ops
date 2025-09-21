@@ -29,15 +29,6 @@ on:
         required: false
         default: false
         type: boolean
-      version:
-        description: Renovate version
-        required: false
-        default: latest
-        type: string
-      repositories:
-        description: Repositories (comma-separated, default current repo)
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -125,20 +116,14 @@ jobs:
           private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-      - name: Override default config from dispatch
-        id: config-override
-        run: |
-          echo "repositories=${{ github.event.inputs.repositories || format('["{0}"]', github.repository) }}" >> "$GITHUB_OUTPUT"
 
       - name: Self-hosted Renovate
         uses: renovatebot/github-action@f8af9272cd94a4637c29f60dea8731afd3134473 # v43.0.12
         with:
           token: ${{ steps.generate-token.outputs.token }}
-          renovate-version: ${{ inputs.version || 'latest' }}
         env:
           LOG_LEVEL: ${{ inputs.logLevel || 'debug' }}
           RENOVATE_DRY_RUN: ${{ inputs.dryRun == true }}
-          RENOVATE_REPOSITORIES: ${{ steps.config-override.outputs.repositories }}
           RENOVATE_AUTODISCOVER: true
           RENOVATE_AUTODISCOVER_FILTER: ${{ github.repository }}
           RENOVATE_INTERNAL_CHECKS_FILTER: strict
