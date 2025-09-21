@@ -43,8 +43,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event.client_payload.source || github.event_name }}-${{ github.event.number || github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   check-conditions:
@@ -73,7 +73,7 @@ jobs:
             fi
           fi
 
-          # Skip repository_dispatch from automated PR synchronization
+          # Enhanced filtering for repository_dispatch events
           if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
             SOURCE="${{ github.event.client_payload.source || 'unknown' }}"
             ACTION="${{ github.event.client_payload.action || 'unknown' }}"
@@ -83,6 +83,10 @@ jobs:
             if [[ "$SOURCE" == "pull-request" && "$ACTION" == "synchronize" ]]; then
               SHOULD_RUN="false"
               SKIP_REASON="Repository dispatch from automated PR synchronization"
+            # Skip if triggered by pull-request closed events without human interaction
+            elif [[ "$SOURCE" == "pull-request" && "$ACTION" == "closed" && "$TRIGGERED_BY" == "renohate[bot]" ]]; then
+              SHOULD_RUN="false"
+              SKIP_REASON="Repository dispatch from automated PR closure"
             # Skip if not triggered by human actor
             elif [[ "$TRIGGERED_BY" == "renohate[bot]" || "$TRIGGERED_BY" == "unknown" ]]; then
               SHOULD_RUN="false"
