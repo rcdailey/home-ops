@@ -1,0 +1,43 @@
+---
+groups:
+- name: plex
+  rules:
+  - alert: PlexDatabaseIsBusy
+    expr: |-
+      sum by (app) (count_over_time({app="plex"} |~ "(?i)retry busy DB"[5m])) > 0
+    for: 5m
+    annotations:
+      summary: >-
+        {{ $labels.app }} is experiencing database issues
+    labels:
+      severity: critical
+
+  - alert: PlexTranscodingErrors
+    expr: |-
+      sum by (app) (count_over_time({app="plex"} |~ "(?i)transcode.*error"[10m])) > 5
+    for: 5m
+    annotations:
+      summary: >-
+        {{ $labels.app }} is experiencing frequent transcoding errors
+    labels:
+      severity: warning
+
+  - alert: PlexHighMemoryUsage
+    expr: |-
+      sum by (app) (count_over_time({app="plex"} |~ "(?i)out of memory|memory.*full"[5m])) > 0
+    for: 2m
+    annotations:
+      summary: >-
+        {{ $labels.app }} is running out of memory
+    labels:
+      severity: warning
+
+  - alert: PlexAuthenticationFailures
+    expr: |-
+      sum by (app) (count_over_time({app="plex"} |~ "(?i)authentication.*failed|invalid.*token"[15m])) > 10
+    for: 5m
+    annotations:
+      summary: >-
+        {{ $labels.app }} is experiencing authentication failures
+    labels:
+      severity: warning
