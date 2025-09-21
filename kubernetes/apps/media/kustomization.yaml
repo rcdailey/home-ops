@@ -9,6 +9,7 @@ components:
 resources:
 - ./qbittorrent/ks.yaml
 - ./sabnzbd/ks.yaml
+- ./plex/ks.yaml
 patches:
 - target:
     kind: Kustomization

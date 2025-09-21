@@ -80,7 +80,7 @@
       icon: plex
       href: https://plex.${SECRET_DOMAIN}/
       description: Media Server
-      siteMonitor: http://plex.default:32400
+      siteMonitor: http://plex.media:32400
 
   - Bazarr:
       icon: bazarr
