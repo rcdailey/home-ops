@@ -1,13 +1,4 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrepository-source-v1.json
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: victoria-metrics
-spec:
-  interval: 1h
-  url: https://victoriametrics.github.io/helm-charts
----
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -22,7 +13,8 @@ spec:
       version: 0.60.1
       sourceRef:
         kind: HelmRepository
-        name: victoria-metrics
+        name: victoriametrics
+        namespace: flux-system
   install:
     crds: CreateReplace
     remediation:

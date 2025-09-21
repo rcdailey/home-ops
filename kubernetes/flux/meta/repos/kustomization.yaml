@@ -6,3 +6,4 @@ resources:
 - ./external-dns.yaml
 - ./node-feature-discovery.yaml
 - ./intel.yaml
+- ./victoriametrics.yaml
