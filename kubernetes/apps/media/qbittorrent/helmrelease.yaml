@@ -156,7 +156,7 @@ spec:
 
     route:
       app:
-        hostnames: ["torrent-test.${SECRET_DOMAIN}"]
+        hostnames: ["torrent.${SECRET_DOMAIN}"]
         parentRefs:
         - name: external
           namespace: network
