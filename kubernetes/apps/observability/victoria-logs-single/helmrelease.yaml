@@ -96,6 +96,7 @@ spec:
             # Allowlist approach: Only collect from specified namespaces
             include_paths_glob_patterns:
             - "**/default/**"
+            - "**/media/**"
             # Memory optimization: Use API server cache instead of etcd
             use_apiserver_cache: true
           internal_metrics:
@@ -108,6 +109,11 @@ spec:
             source: |
               .log = parse_json(.message) ?? .message
               del(.message)
+
+              # Add application label based on pod name
+              if contains(string!(.kubernetes.pod_name), "plex") {
+                .app = "plex"
+              }
 
         sinks:
           exporter:
@@ -135,7 +141,7 @@ spec:
             request:
               headers:
                 VL-Time-Field: timestamp
-                VL-Stream-Fields: stream,kubernetes.pod_name,kubernetes.container_name,kubernetes.pod_namespace
+                VL-Stream-Fields: stream,kubernetes.pod_name,kubernetes.container_name,kubernetes.pod_namespace,app
                 VL-Msg-Field: message,msg,_msg,log.msg,log.message,log
                 AccountID: "0"
                 ProjectID: "0"

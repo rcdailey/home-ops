@@ -88,13 +88,18 @@ spec:
         - path: /media
           readOnly: true
 
+      logs:
+        existingClaim: plex-logs
+        advancedMounts:
+          plex:
+            app:
+            - path: /config/Library/Application Support/Plex Media Server/Logs
+
       tmpfs:
         type: emptyDir
         advancedMounts:
           plex:
             app:
-            - path: /config/Library/Application Support/Plex Media Server/Logs
-              subPath: logs
             - path: /transcode
               subPath: transcode
             - path: /tmp

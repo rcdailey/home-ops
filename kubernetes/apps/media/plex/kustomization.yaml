@@ -7,3 +7,14 @@ resources:
 - ./ks.yaml
 - ./pvc.yaml
 - ./loadbalancer-service.yaml
+configMapGenerator:
+- name: plex-victorialogs-rules
+  files:
+  - plex.yaml=./logrule.yaml
+  options:
+    labels:
+      victorialogs_rule: "true"
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
