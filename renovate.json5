@@ -6,7 +6,6 @@
   extends: [
     "config:best-practices",
     "docker:enableMajor",
-    "docker:pinDigests",
     "security:openssf-scorecard",
     ":automergeBranch",
     ":automergeDigest",
@@ -28,7 +27,6 @@
     "prIgnoreNotification"
   ],
   configMigration: true,
-  schedule: ["every weekday"],
   prConcurrentLimit: 15,
   prHourlyLimit: 8,
   ignorePresets: ["mergeConfidence:all-badges"],
