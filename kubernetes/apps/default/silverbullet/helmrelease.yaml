@@ -66,6 +66,15 @@ spec:
           http:
             port: *port
 
+    route:
+      main:
+        hostnames:
+        - notes.${SECRET_DOMAIN}
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https
+
     persistence:
       data:
         existingClaim: silverbullet-data

@@ -95,6 +95,14 @@ spec:
           http:
             port: 8080
 
+    route:
+      app:
+        hostnames:
+        - wiki.${SECRET_DOMAIN}
+        parentRefs:
+        - name: external
+          namespace: network
+
     persistence:
       uploads:
         existingClaim: *app

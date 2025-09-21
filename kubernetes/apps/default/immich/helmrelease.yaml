@@ -148,6 +148,19 @@ spec:
           http:
             port: 6379
 
+    route:
+      server:
+        hostnames:
+        - photos.${SECRET_DOMAIN}
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: immich-server
+            port: 2283
+
     persistence:
       photos:
         type: persistentVolumeClaim
