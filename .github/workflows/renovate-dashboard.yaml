@@ -27,6 +27,7 @@ jobs:
     if: >
       (
         github.event_name == 'issues' &&
+        github.actor != 'renohate[bot]' &&
         contains(github.event.issue.title, 'Renovate Dashboard') &&
         (
           contains(github.event.issue.body, '- [x]') ||
