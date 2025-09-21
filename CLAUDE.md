@@ -290,7 +290,9 @@ Kustomize hashes.
 - **Gateway IPs**: Use externalIPs (192.168.1.72 internal, 192.168.1.73 external) not LoadBalancer
 - **External-DNS**: Configure target annotations on Gateways ONLY, never HTTPRoutes. Use
   gateway-httproute source for CNAME inheritance
-- **App-Template Priority**: Use app-template `route` field over standalone HTTPRoute when possible
+- **Route Priority**: Use app-template `route:` blocks for all app-template applications. Only use
+  standalone HTTPRoute for non-app-template charts or when dedicated Helm charts lack routing
+  capabilities
 - **Health Probes**: NEVER use executable commands
 - **Hostnames**: Use shortest resolvable form, avoid FQDNs when unnecessary
 

@@ -13,6 +13,9 @@ spec:
   values:
     controllers:
       qbittorrent:
+        # CRITICAL: Recreate strategy required for RWO volumes (ceph-block storage)
+        # RollingUpdate would cause Multi-Attach errors as new pod starts before old pod terminates
+        strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
 
@@ -22,6 +25,9 @@ spec:
             fsGroupChangePolicy: "OnRootMismatch"
 
         initContainers:
+          # Gluetun VPN container provides secure torrent downloading through ProtonVPN
+          # Uses privileged mode for network namespace manipulation (required for VPN functionality)
+          # Port forwarding enabled for optimal peer connectivity
           gluetun:
             image:
               repository: ghcr.io/qdm12/gluetun

@@ -5,7 +5,6 @@ kind: Kustomization
 resources:
 - configmap.yaml
 - helmrelease.yaml
-- httproute.yaml
 - postgres-cluster.yaml
 - pv.yaml
 - pvc.yaml
