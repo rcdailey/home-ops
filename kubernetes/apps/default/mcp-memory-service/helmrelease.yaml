@@ -29,7 +29,7 @@ spec:
           app:
             image:
               repository: doobidoo/mcp-memory-service
-              tag: "6.6.0"
+              tag: "6.13.7@sha256:557e1f8c9416790a0016732da27bea58f15edcf2ae676c498776efc46e62bcb5"
               pullPolicy: Always
             command:
             - python
