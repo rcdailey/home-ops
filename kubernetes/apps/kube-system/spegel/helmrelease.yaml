@@ -10,7 +10,7 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: 0.3.0
+    tag: 0.4.0@sha256:289555bf7c54eeba390f4f17c24b8da1b647e5a24b5c1112088b8e74582583f3
   url: oci://ghcr.io/spegel-org/helm-charts/spegel
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
