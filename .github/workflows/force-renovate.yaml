@@ -110,6 +110,5 @@ jobs:
               "prConcurrentLimit": 20,
               "prHourlyLimit": 10,
               "rebaseWhen": "behind-base-branch",
-              "recreateWhen": "${{ steps.config.outputs.recreate_when }}",
-              "gitIgnoredAuthors": ["git@rdailey.me"]
+              "recreateWhen": "${{ steps.config.outputs.recreate_when }}"
             }

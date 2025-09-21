@@ -4,7 +4,7 @@
   //
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: [
-    "config:best-practices",
+    "config:recommended",
     "docker:enableMajor",
     "security:openssf-scorecard",
     ":automergeBranch",
@@ -18,29 +18,27 @@
     "github>rcdailey/home-ops//.renovate/groups.json5",
     "github>rcdailey/home-ops//.renovate/labels.json5",
     "github>rcdailey/home-ops//.renovate/semanticCommits.json5",
-    "github>rcdailey/home-ops//.renovate/customManagers.json5"
+    "github>rcdailey/home-ops//.renovate/customManagers.json5",
   ],
   dependencyDashboardTitle: "Renovate Dashboard 🤖",
   dependencyDashboardAutoclose: true,
-  suppressNotifications: [
-    "prEditedNotification",
-    "prIgnoreNotification"
-  ],
+  suppressNotifications: ["prEditedNotification", "prIgnoreNotification"],
   configMigration: true,
   prConcurrentLimit: 15,
   prHourlyLimit: 8,
   ignorePresets: ["mergeConfidence:all-badges"],
-  ignorePaths: [
-    "**/*.sops.*",
-    "**/resources/**"
-  ],
+  // I frequently rewrite commits on main, and as a result, orphaned commits on main are treated as
+  // custom commits on renovate branches. This ignored authors setting prevents Renovate from
+  // thinking I've made intentional, custom modifications to branches it manages.
+  gitIgnoredAuthors: ["git@rdailey.me"],
+  ignorePaths: ["**/*.sops.*", "**/resources/**"],
   flux: {
-    managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"]
+    managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
   },
   kubernetes: {
-    managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"]
+    managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
   },
   "pre-commit": {
-    enabled: true
-  }
+    enabled: true,
+  },
 }
