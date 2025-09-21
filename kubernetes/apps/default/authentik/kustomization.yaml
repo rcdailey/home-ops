@@ -6,6 +6,7 @@ resources:
 - ./secret.sops.yaml
 - ./helmrelease.yaml
 - ./httproute.yaml
+- ./referencegrant.yaml
 
 # Generate ConfigMap for blueprints from blueprint files
 configMapGenerator:
@@ -13,6 +14,8 @@ configMapGenerator:
   files:
   - blueprints/qbittorrent-provider.yaml
   - blueprints/qbittorrent-application.yaml
+  - blueprints/sabnzbd-provider.yaml
+  - blueprints/sabnzbd-application.yaml
   - blueprints/custom-users.yaml
   - blueprints/outpost-configuration.yaml
   options:
