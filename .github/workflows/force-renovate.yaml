@@ -24,10 +24,6 @@ on:
         required: false
         default: false
         type: boolean
-      repositories:
-        description: Repositories (comma-separated, default current repo)
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -58,14 +54,6 @@ jobs:
         id: config
         run: |
           OPERATION="${{ inputs.operation }}"
-          REPOS="${{ inputs.repositories || github.repository }}"
-
-          # Convert single repo to array format
-          if [[ "$REPOS" != *"["* ]]; then
-            REPOS="[\"$(echo "$REPOS" | sed 's/,/","/g')\"]"
-          fi
-
-          echo "repositories=$REPOS" >> "$GITHUB_OUTPUT"
 
           # Set operation-specific environment variables
           case "$OPERATION" in
@@ -94,7 +82,6 @@ jobs:
         env:
           LOG_LEVEL: ${{ inputs.logLevel || 'debug' }}
           RENOVATE_DRY_RUN: ${{ inputs.dryRun == true }}
-          RENOVATE_REPOSITORIES: ${{ steps.config.outputs.repositories }}
           RENOVATE_AUTODISCOVER: true
           RENOVATE_AUTODISCOVER_FILTER: ${{ github.repository }}
           RENOVATE_INTERNAL_CHECKS_FILTER: strict
