@@ -4,7 +4,7 @@
     {
       description: "Flux Operator Group",
       groupName: "Flux Operator",
-      matchPackageNames: ["/flux-operator/", "/flux-instance/"],
+      matchPackageNames: ["ghcr.io/fluxcd/flux-operator", "ghcr.io/fluxcd/flux-instance"],
       matchDatasources: ["docker"],
       minimumGroupSize: 2
     },
@@ -12,24 +12,15 @@
       description: "Immich Group",
       groupName: "Immich",
       matchDatasources: ["docker"],
-      matchPackageNames: ["/immich-app/"],
+      matchPackageNames: ["ghcr.io/immich-app/**"],
       minimumGroupSize: 2
     },
     {
       description: "Rook Ceph Group",
       groupName: "Rook Ceph",
       matchDatasources: ["helm"],
-      matchPackageNames: ["/rook-ceph/", "/rook-ceph-cluster/"],
+      matchPackageNames: ["rook-ceph", "rook-ceph-cluster"],
       minimumGroupSize: 2
-    },
-    {
-      description: "Group Docker image version and digest updates",
-      groupName: "{{depName}}",
-      matchDatasources: ["docker"],
-      matchUpdateTypes: ["minor", "patch", "digest"],
-      separateMinorPatch: false,
-      separateMajorMinor: false,
-      separateMultipleMajor: false
     },
     {
       description: "Kubernetes Tools Group",
@@ -47,11 +38,11 @@
       groupName: "Monitoring Stack",
       matchDatasources: ["helm"],
       matchPackageNames: [
-        "/prometheus/",
-        "/grafana/",
-        "/alertmanager/"
+        "grafana",
+        "prometheus",
+        "alertmanager"
       ],
-      minimumGroupSize: 2
+      minimumGroupSize: 1
     }
   ]
 }
