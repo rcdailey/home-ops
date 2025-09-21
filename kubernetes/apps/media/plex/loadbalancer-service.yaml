@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/v1/service.json
+apiVersion: v1
+kind: Service
+metadata:
+  name: plex-direct
+  annotations:
+    lbipam.cilium.io/sharing-key: "internal-gateway"
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 32400
+    targetPort: 32400
+  selector:
+    app.kubernetes.io/name: plex
