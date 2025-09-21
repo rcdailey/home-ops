@@ -12,7 +12,6 @@ resources:
 - ./filerun/ks.yaml
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
-- ./mcp-memory-service/ks.yaml
 - ./silverbullet/ks.yaml
 patches:
 - target:
