@@ -2,6 +2,9 @@
 
 ## Critical Operational Rules
 
+**⚠️ BEFORE ANY DEBUGGING OR ANALYSIS - CHECK THE MANDATORY DEBUGGING CHECKLIST IN QUALITY ASSURANCE
+SECTION**
+
 **IMPORTANT:** Claude MUST:
 
 - **GitOps Protocol**: This is a Flux GitOps repository. NEVER run `kubectl apply -f` commands. Flux
@@ -31,6 +34,14 @@
   - These comments are ESSENTIAL for future maintenance and decision-making
 
 ## Quality Assurance & Validation
+
+**MANDATORY DEBUGGING CHECKLIST - Claude MUST check FIRST before analysis:**
+
+□ **Namespace Violations**: Does app ks.yaml have `metadata.namespace`? (CRITICAL VIOLATION - remove
+immediately) □ **PVC Requirements**: Do PVCs have explicit `namespace: <namespace>`? (REQUIRED for
+all PVCs) □ **Parent Setup**: Does parent kustomization have `namespace: <namespace>` +
+targetNamespace patch? (REQUIRED) □ **Inheritance Pattern**: Are child ks.yaml files clean (no
+metadata.namespace or spec.targetNamespace)? (REQUIRED)
 
 **ESSENTIAL VALIDATION SEQUENCE - Claude MUST run ALL steps after changes:**
 
@@ -144,10 +155,19 @@ validation.**
   - **CRITICAL**: Children individual app ks.yaml files NEVER specify `metadata.namespace` or
     `spec.targetNamespace`
   - **CRITICAL**: Kustomize kustomization.yaml files NEVER specify `namespace` field
+  - **CRITICAL**: ALL PVCs MUST have explicit `namespace: <namespace>` in metadata
   - Semantics: Parent's `namespace` field sets `metadata.namespace`, patch adds
     `spec.targetNamespace`
   - Result: App kustomizations live in correct namespace and deploy resources to same namespace
     automatically
+
+  **⚠️ NAMESPACE DEBUGGING PROTOCOL:** When ANY namespace-related error occurs, Claude MUST
+  immediately:
+  1. Check DEBUGGING CHECKLIST above before any other analysis
+  2. Compare broken app against known working app (e.g., silverbullet)
+  3. Look for `metadata.namespace` violations in ks.yaml files
+  4. Verify PVCs have explicit namespace specifications
+  5. NEVER suggest architectural changes until basic violations are ruled out
 - **Naming Convention**: NEVER use `cluster-apps-` prefix in service/app names. Use straightforward
   naming that matches the directory structure (e.g., `mariadb-operator`, not
   `cluster-apps-mariadb-operator`)
