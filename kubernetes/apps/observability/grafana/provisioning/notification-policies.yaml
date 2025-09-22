@@ -1,0 +1,89 @@
+---
+# yaml-language-server: $schema=https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/provisioning-notification-policies.schema.json
+apiVersion: 1
+
+# Define how alerts are routed to contact points
+policies:
+- orgId: 1
+  receiver: default-policy
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  routes:
+  # Critical alerts: Both Discord and Email
+  - receiver: critical-alerts
+    group_wait: 10s
+    group_interval: 2m
+    repeat_interval: 6h
+    matchers:
+    - severity = "critical"
+    continue: false
+
+  # Warning alerts: Discord only for immediate response
+  - receiver: warning-alerts
+    group_wait: 1m
+    group_interval: 5m
+    repeat_interval: 12h
+    matchers:
+    - severity = "warning"
+    continue: false
+
+  # Info alerts: Email only for records
+  - receiver: info-alerts
+    group_wait: 2m
+    group_interval: 10m
+    repeat_interval: 24h
+    matchers:
+    - severity = "info"
+    continue: false
+
+  # Victoria Metrics specific alerts: Both channels
+  - receiver: vm-alerts
+    group_wait: 30s
+    group_interval: 3m
+    repeat_interval: 6h
+    matchers:
+    - service =~ "victoria-metrics.*"
+    continue: false
+
+# Contact point assignments
+contactPoints:
+- name: default-policy
+  grafana_managed_receiver_configs:
+  - uid: discord-homeops-uid
+    name: discord-homeops
+    type: discord
+  - uid: email-homeops-uid
+    name: email-homeops
+    type: email
+
+- name: critical-alerts
+  grafana_managed_receiver_configs:
+  - uid: discord-homeops-uid
+    name: discord-homeops
+    type: discord
+  - uid: email-homeops-uid
+    name: email-homeops
+    type: email
+
+- name: warning-alerts
+  grafana_managed_receiver_configs:
+  - uid: discord-homeops-uid
+    name: discord-homeops
+    type: discord
+
+- name: info-alerts
+  grafana_managed_receiver_configs:
+  - uid: email-homeops-uid
+    name: email-homeops
+    type: email
+
+- name: vm-alerts
+  grafana_managed_receiver_configs:
+  - uid: discord-homeops-uid
+    name: discord-homeops
+    type: discord
+  - uid: email-homeops-uid
+    name: email-homeops
+    type: email

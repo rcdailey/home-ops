@@ -1,0 +1,33 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization.json
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Create ConfigMaps from the provisioning files
+configMapGenerator:
+- name: grafana-alerting-contact-points
+  files:
+  - contact-points.yaml
+  options:
+    disableNameSuffixHash: true
+
+- name: grafana-alerting-notification-policies
+  files:
+  - notification-policies.yaml
+  options:
+    disableNameSuffixHash: true
+
+- name: grafana-alerting-rules
+  files:
+  - alert-rules.yaml
+  options:
+    disableNameSuffixHash: true
+
+# Set the namespace for all resources
+namespace: observability
+
+# Add common labels to all ConfigMaps
+labels:
+- pairs:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: alerting-provisioning

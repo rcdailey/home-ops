@@ -1,0 +1,599 @@
+---
+# yaml-language-server: $schema=https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/provisioning-alert-rules.schema.json
+apiVersion: 1
+
+# Alert rules for HomeOps monitoring
+groups:
+# =============================================================================
+# STORAGE ALERTS - Generalized for all Ceph PVCs
+# =============================================================================
+- name: storage-alerts
+  folder: HomeOps Alerts
+  orgId: 1
+  interval: 1m
+  rules:
+  - uid: pvc-high-usage
+    title: PVC High Usage
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          (
+            kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes
+          ) * 100
+        refId: A
+    - refId: B
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        conditions:
+        - evaluator:
+            params: [85]
+            type: gt
+          operator:
+            type: and
+          query:
+            params:
+            - A
+          reducer:
+            params: []
+            type: last
+          type: query
+        refId: B
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 85
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 5m
+    annotations:
+      summary: "PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+      description: "PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }} is using {{ $value | humanizePercentage }} of its capacity. Consider expanding the volume or cleaning up data."
+    labels:
+      severity: warning
+      service: storage
+
+  - uid: pvc-critical-usage
+    title: PVC Critical Usage
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          (
+            kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes
+          ) * 100
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 95
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 2m
+    annotations:
+      summary: "PVC {{ $labels.persistentvolumeclaim }} is critically full at {{ $value | humanizePercentage }}"
+      description: "PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }} is critically full at {{ $value | humanizePercentage }}. Immediate action required to prevent service disruption."
+    labels:
+      severity: critical
+      service: storage
+
+  - uid: pvc-growth-rate
+    title: PVC High Growth Rate
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 86400
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          (
+            increase(kubelet_volume_stats_used_bytes[24h]) /
+            kubelet_volume_stats_capacity_bytes
+          ) * 100
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 20
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 10m
+    annotations:
+      summary: "PVC {{ $labels.persistentvolumeclaim }} growing rapidly"
+      description: "PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }} has grown by {{ $value | humanizePercentage }} in the last 24 hours. Monitor for potential storage issues."
+    labels:
+      severity: warning
+      service: storage
+
+# =============================================================================
+# POD HEALTH ALERTS - Generalized for all pods
+# =============================================================================
+- name: pod-health-alerts
+  folder: HomeOps Alerts
+  orgId: 1
+  interval: 1m
+  rules:
+  - uid: pod-crashloopbackoff
+    title: Pod CrashLoopBackOff
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} > 0
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 0
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 5m
+    annotations:
+      summary: "Pod {{ $labels.pod }} in CrashLoopBackOff"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been in CrashLoopBackOff state for more than 5 minutes. Check pod logs for issues."
+    labels:
+      severity: critical
+      service: kubernetes
+
+  - uid: pod-high-restart-rate
+    title: Pod High Restart Rate
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          increase(kube_pod_container_status_restarts_total[15m]) > 3
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 3
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 5m
+    annotations:
+      summary: "Pod {{ $labels.pod }} restarting frequently"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted {{ $value }} times in the last 15 minutes. Investigate potential issues."
+    labels:
+      severity: warning
+      service: kubernetes
+
+  - uid: pod-oom-killed
+    title: Pod OOMKilled
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          (
+            kube_pod_container_status_restarts_total -
+            kube_pod_container_status_restarts_total offset 10m >= 1
+          ) and ignoring (reason) min_over_time(
+            kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m]
+          ) == 1
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A >= 1
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 1m
+    annotations:
+      summary: "Pod {{ $labels.pod }} killed due to OOM"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} was killed due to out of memory. Consider increasing memory limits or investigating memory leaks."
+    labels:
+      severity: critical
+      service: kubernetes
+
+  - uid: pod-pending-long
+    title: Pod Stuck in Pending
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          kube_pod_status_phase{phase="Pending"} > 0
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 0
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 10m
+    annotations:
+      summary: "Pod {{ $labels.pod }} stuck in Pending state"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been in Pending state for more than 10 minutes. Check for resource constraints or scheduling issues."
+    labels:
+      severity: warning
+      service: kubernetes
+
+# =============================================================================
+# VICTORIA METRICS SPECIFIC ALERTS
+# =============================================================================
+- name: victoria-metrics-alerts
+  folder: HomeOps Alerts
+  orgId: 1
+  interval: 1m
+  rules:
+  - uid: vm-high-cardinality
+    title: Victoria Metrics High Cardinality
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          vm_cache_entries{type="promql/rollupResult"} > 400000
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 400000
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 5m
+    annotations:
+      summary: "Victoria Metrics high series cardinality detected"
+      description: "Victoria Metrics has {{ $value }} series, approaching high cardinality limits. Current series count is {{ $value }}. Review metric collection and consider implementing cardinality limits."
+    labels:
+      severity: warning
+      service: victoria-metrics
+
+  - uid: vm-dropped-metrics-high
+    title: Victoria Metrics Dropping Many Metrics
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          increase(vm_rows_ignored_total{reason="too_many_labels"}[15m]) > 1000000
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 1000000
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 5m
+    annotations:
+      summary: "Victoria Metrics dropping excessive metrics"
+      description: "Victoria Metrics has dropped {{ $value }} metrics in the last 15 minutes due to too many labels. This may indicate a cardinality explosion or misconfigured metrics collection."
+    labels:
+      severity: critical
+      service: victoria-metrics
+
+  - uid: vm-storage-usage-high
+    title: Victoria Metrics Storage Usage High
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          (
+            kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".*victoria-metrics.*"} /
+            kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~".*victoria-metrics.*"}
+          ) * 100
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 80
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 5m
+    annotations:
+      summary: "Victoria Metrics storage usage high"
+      description: "Victoria Metrics storage is {{ $value | humanizePercentage }} full. Consider expanding storage or reducing retention period."
+    labels:
+      severity: warning
+      service: victoria-metrics
+
+  - uid: vm-component-down
+    title: Victoria Metrics Component Down
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          up{job=~".*victoria-metrics.*|.*vmagent.*|.*vmalert.*"} == 0
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A == 0
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 2m
+    annotations:
+      summary: "Victoria Metrics component {{ $labels.job }} is down"
+      description: "Victoria Metrics component {{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes. Metrics collection may be impacted."
+    labels:
+      severity: critical
+      service: victoria-metrics
+
+# =============================================================================
+# INFRASTRUCTURE ALERTS
+# =============================================================================
+- name: infrastructure-alerts
+  folder: HomeOps Alerts
+  orgId: 1
+  interval: 1m
+  rules:
+  - uid: node-high-cpu
+    title: Node High CPU Usage
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          (
+            100 - (avg by (instance) (
+              rate(node_cpu_seconds_total{mode="idle"}[5m])
+            ) * 100)
+          ) > 85
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 85
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 10m
+    annotations:
+      summary: "Node {{ $labels.instance }} high CPU usage"
+      description: "Node {{ $labels.instance }} has been using {{ $value | humanizePercentage }} CPU for more than 10 minutes."
+    labels:
+      severity: warning
+      service: infrastructure
+
+  - uid: node-high-memory
+    title: Node High Memory Usage
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          (
+            1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+          ) * 100 > 85
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 85
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 10m
+    annotations:
+      summary: "Node {{ $labels.instance }} high memory usage"
+      description: "Node {{ $labels.instance }} has been using {{ $value | humanizePercentage }} memory for more than 10 minutes."
+    labels:
+      severity: warning
+      service: infrastructure
+
+  - uid: flux-reconciliation-failure
+    title: Flux Reconciliation Failure
+    condition: C
+    data:
+    - refId: A
+      queryType: ""
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasource:
+        type: prometheus
+        uid: prometheus
+      model:
+        expr: |
+          gotk_reconcile_condition{type="Ready",status="False"} > 0
+        refId: A
+    - refId: C
+      queryType: ""
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasource:
+        type: __expr__
+        uid: __expr__
+      model:
+        expression: A > 0
+        refId: C
+    noDataState: NoData
+    execErrState: Alerting
+    for: 10m
+    annotations:
+      summary: "Flux reconciliation failing for {{ $labels.name }}"
+      description: "Flux resource {{ $labels.name }} of kind {{ $labels.kind }} in namespace {{ $labels.namespace }} has been failing reconciliation for more than 10 minutes."
+    labels:
+      severity: critical
+      service: flux

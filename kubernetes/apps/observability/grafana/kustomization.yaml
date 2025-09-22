@@ -6,6 +6,7 @@ resources:
 - ./helmrelease.yaml
 - ./httproute.yaml
 - ./secret.sops.yaml
+- ./provisioning
 configMapGenerator:
 - name: cluster-resource-overview-dashboard
   files:

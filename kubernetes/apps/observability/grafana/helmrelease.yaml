@@ -23,6 +23,12 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: grafana
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-secrets
+    - kind: Secret
+      name: email-secrets
   install:
     remediation:
       retries: -1
@@ -209,6 +215,17 @@ spec:
       GF_NEWS_NEWS_FEED_ENABLED: false
       GF_SECURITY_COOKIE_SAMESITE: grafana
       GF_SERVER_ROOT_URL: https://grafana.${SECRET_DOMAIN}
+      # Alerting environment variables
+      GF_ALERTING_ENABLED: true
+      GF_UNIFIED_ALERTING_ENABLED: true
+      # SMTP configuration for email alerts
+      GF_SMTP_ENABLED: true
+      GF_SMTP_HOST: "${SMTP_HOST}"
+      GF_SMTP_PORT: "${SMTP_PORT}"
+      GF_SMTP_USER: "${SMTP_USER}"
+      GF_SMTP_PASSWORD: "${SMTP_PASSWORD}"
+      GF_SMTP_FROM_ADDRESS: "${SMTP_FROM}"
+      GF_SMTP_FROM_NAME: "HomeOps Grafana"
 
     persistence:
       enabled: false
@@ -243,6 +260,24 @@ spec:
         enabled: true
         searchNamespace: ALL
         labelValue: ""
+
+    # Mount alerting provisioning ConfigMaps
+    extraConfigmapMounts:
+    - name: grafana-alerting-contact-points
+      mountPath: /etc/grafana/provisioning/alerting/contact-points.yaml
+      subPath: contact-points.yaml
+      configMap: grafana-alerting-contact-points
+      readOnly: true
+    - name: grafana-alerting-notification-policies
+      mountPath: /etc/grafana/provisioning/alerting/notification-policies.yaml
+      subPath: notification-policies.yaml
+      configMap: grafana-alerting-notification-policies
+      readOnly: true
+    - name: grafana-alerting-rules
+      mountPath: /etc/grafana/provisioning/alerting/alert-rules.yaml
+      subPath: alert-rules.yaml
+      configMap: grafana-alerting-rules
+      readOnly: true
 
     testFramework:
       enabled: false

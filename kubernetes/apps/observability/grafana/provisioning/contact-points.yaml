@@ -1,0 +1,49 @@
+---
+# yaml-language-server: $schema=https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/provisioning-contact-points.schema.json
+apiVersion: 1
+
+# Contact points define how notifications are sent
+contactPoints:
+- name: discord-homeops
+  type: discord
+  uid: discord-homeops-uid
+  settings:
+    url: "${GRAFANA_DISCORD_WEBHOOK_URL}"
+    title: "HomeOps Alert"
+    message: |-
+      **{{ .GroupLabels.alertname }}** - {{ .Status | title }}
+
+      **Summary:** {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+      **Description:** {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+
+      **Labels:**
+      {{ range .GroupLabels.SortedPairs }}• {{ .Name }}: {{ .Value }}
+      {{ end }}
+
+      **Time:** {{ .CommonLabels.timestamp }}
+      **Dashboard:** [View in Grafana](https://${SECRET_DOMAIN}/grafana)
+
+- name: email-homeops
+  type: email
+  uid: email-homeops-uid
+  settings:
+    addresses: ["${SMTP_FROM}"]
+    subject: "HomeOps Alert: {{ .GroupLabels.alertname }}"
+    message: |-
+      HomeOps Alert Notification
+
+      Alert: {{ .GroupLabels.alertname }}
+      Status: {{ .Status | title }}
+
+      {{ range .Alerts }}
+      Summary: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+
+      Labels:
+      {{ range .Labels.SortedPairs }}  {{ .Name }}: {{ .Value }}
+      {{ end }}
+      {{ end }}
+
+      Timestamp: {{ .CommonLabels.timestamp }}
+
+      View details: https://${SECRET_DOMAIN}/grafana
