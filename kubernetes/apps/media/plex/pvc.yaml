@@ -4,6 +4,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: plex-config
+  namespace: media
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
@@ -16,6 +17,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: plex-cache
+  namespace: media
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
@@ -28,6 +30,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: plex-logs
+  namespace: media
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
