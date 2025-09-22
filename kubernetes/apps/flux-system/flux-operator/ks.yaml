@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: &app flux-operator
 spec:
+  targetNamespace: flux-system
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app

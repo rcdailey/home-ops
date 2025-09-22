@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: &app cloudnative-pg
 spec:
+  targetNamespace: kube-system
 
   commonMetadata:
     labels:

@@ -39,9 +39,9 @@ SECTION**
 
 □ **Namespace Violations**: Does app ks.yaml have `metadata.namespace`? (CRITICAL VIOLATION - remove
 immediately) □ **PVC Requirements**: Do PVCs have explicit `namespace: <namespace>`? (REQUIRED for
-all PVCs) □ **Parent Setup**: Does parent kustomization have `namespace: <namespace>` +
-targetNamespace patch? (REQUIRED) □ **Inheritance Pattern**: Are child ks.yaml files clean (no
-metadata.namespace or spec.targetNamespace)? (REQUIRED)
+all PVCs) □ **targetNamespace Requirements**: Does app ks.yaml have explicit `spec.targetNamespace:
+<namespace>`? (REQUIRED for all apps) □ **Parent Setup**: Does parent kustomization have only
+`namespace: <namespace>` field? (No patches needed)
 
 **ESSENTIAL VALIDATION SEQUENCE - Claude MUST run ALL steps after changes:**
 
@@ -136,38 +136,37 @@ validation.**
   secrets, pvcs). Subdirectories only for assets (config/, resources/, icons/)
 - **Kustomization Logic**: Single ks.yaml for same namespace+timing+lifecycle. Multiple for
   different namespaces/timing/lifecycle or operator+instance patterns
-- **Namespace Inheritance**: Use parent kustomization's `namespace` field and patches for automatic
-  inheritance
-  - Parent: `kubernetes/apps/<namespace>/kustomization.yaml` sets `namespace: <namespace>`
-  - Parent: MUST include patch to add `spec.targetNamespace` to all child Kustomization resources:
-
-    ```yaml
-    patches:
-    - target:
-        kind: Kustomization
-        group: kustomize.toolkit.fluxcd.io
-      patch: |
-        - op: add
-          path: /spec/targetNamespace
-          value: <namespace>
-    ```
-
-  - **CRITICAL**: Children individual app ks.yaml files NEVER specify `metadata.namespace` or
-    `spec.targetNamespace`
+- **Explicit Namespace Pattern**: Each app explicitly declares its target namespace for reliability
+  - Parent: `kubernetes/apps/<namespace>/kustomization.yaml` sets `namespace: <namespace>` only
+  - **CRITICAL**: Each app ks.yaml file MUST have explicit `spec.targetNamespace: <namespace>`
+  - **CRITICAL**: App ks.yaml files NEVER specify `metadata.namespace` (VIOLATION - remove
+    immediately)
   - **CRITICAL**: Kustomize kustomization.yaml files NEVER specify `namespace` field
   - **CRITICAL**: ALL PVCs MUST have explicit `namespace: <namespace>` in metadata
-  - Semantics: Parent's `namespace` field sets `metadata.namespace`, patch adds
-    `spec.targetNamespace`
-  - Result: App kustomizations live in correct namespace and deploy resources to same namespace
-    automatically
+  - Pattern example:
+
+    ```yaml
+    # kubernetes/apps/media/plex/ks.yaml
+    apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: plex
+    spec:
+      targetNamespace: media  # REQUIRED: Explicit declaration
+      interval: 1h
+      # ... rest of spec
+    ```
+
+  - Result: Self-contained apps with clear namespace declarations, no inheritance dependencies
 
   **⚠️ NAMESPACE DEBUGGING PROTOCOL:** When ANY namespace-related error occurs, Claude MUST
   immediately:
   1. Check DEBUGGING CHECKLIST above before any other analysis
   2. Compare broken app against known working app (e.g., silverbullet)
   3. Look for `metadata.namespace` violations in ks.yaml files
-  4. Verify PVCs have explicit namespace specifications
-  5. NEVER suggest architectural changes until basic violations are ruled out
+  4. Verify app has explicit `spec.targetNamespace` declaration
+  5. Verify PVCs have explicit namespace specifications
+  6. NEVER suggest architectural changes until basic violations are ruled out
 - **Naming Convention**: NEVER use `cluster-apps-` prefix in service/app names. Use straightforward
   naming that matches the directory structure (e.g., `mariadb-operator`, not
   `cluster-apps-mariadb-operator`)

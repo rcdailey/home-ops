@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: &app intel-gpu-plugin
 spec:
+  targetNamespace: kube-system
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app

@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: victoria-metrics-k8s-stack
 spec:
+  targetNamespace: observability
   interval: 10m
   timeout: 20m
   path: ./kubernetes/apps/observability/victoria-metrics-k8s-stack

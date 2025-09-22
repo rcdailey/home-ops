@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: plex
 spec:
+  targetNamespace: media
   interval: 1h
   retryInterval: 1m
   timeout: 5m
