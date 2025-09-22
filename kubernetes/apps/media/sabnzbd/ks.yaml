@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: sabnzbd
 spec:
+  targetNamespace: media
   path: ./kubernetes/apps/media/sabnzbd
   prune: true
   sourceRef:

@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: &app envoy-gateway
 spec:
+  targetNamespace: network
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app

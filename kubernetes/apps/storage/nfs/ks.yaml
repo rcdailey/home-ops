@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: &app nfs
 spec:
+  targetNamespace: storage
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app

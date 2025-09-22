@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: filerun
 spec:
+  targetNamespace: default
   # TEMPORARY: Fast sync for development - change to 5m for production
   interval: 30s
   timeout: 10m # TEMPORARY: Longer timeout for init containers

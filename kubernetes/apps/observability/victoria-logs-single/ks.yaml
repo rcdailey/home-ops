@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: victoria-logs-single
 spec:
+  targetNamespace: observability
   interval: 10m
   timeout: 20m
   path: ./kubernetes/apps/observability/victoria-logs-single

@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: &app node-feature-discovery
 spec:
+  targetNamespace: kube-system
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app

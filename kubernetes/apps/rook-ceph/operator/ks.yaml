@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: &app rook-ceph-operator
 spec:
+  targetNamespace: rook-ceph
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app

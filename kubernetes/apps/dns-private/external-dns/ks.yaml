@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: &app external-dns
 spec:
+  targetNamespace: dns-private
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app

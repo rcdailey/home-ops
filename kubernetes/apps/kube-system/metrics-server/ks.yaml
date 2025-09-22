@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: &app metrics-server
 spec:
+  targetNamespace: kube-system
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app

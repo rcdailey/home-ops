@@ -5,6 +5,7 @@ kind: Kustomization
 metadata:
   name: mariadb-operator
 spec:
+  targetNamespace: kube-system
   path: ./kubernetes/apps/kube-system/mariadb-operator
   prune: true
   sourceRef:

@@ -6,6 +6,7 @@ kind: Kustomization
 metadata:
   name: &app qbittorrent
 spec:
+  targetNamespace: media
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
