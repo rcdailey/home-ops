@@ -19,6 +19,8 @@ spec:
     substituteFrom:
     - name: cluster-secrets
       kind: Secret
+    - name: email-secrets
+      kind: Secret
   prune: true
   retryInterval: 2m
   sourceRef:
