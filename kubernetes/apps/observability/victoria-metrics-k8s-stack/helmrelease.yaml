@@ -48,6 +48,14 @@ spec:
           requests:
             cpu: 100m
             memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8428
+          timeoutSeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+          initialDelaySeconds: 10
 
     # Disable VMCluster for single-node deployment
     vmcluster:
