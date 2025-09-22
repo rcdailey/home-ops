@@ -34,3 +34,16 @@ spec:
     requests:
       storage: 5Gi
   storageClassName: ceph-block
+---
+# yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/persistentvolumeclaim-v1.json
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plex-vector-data
+  namespace: media
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ceph-block
