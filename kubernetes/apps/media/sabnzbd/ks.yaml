@@ -20,6 +20,9 @@ spec:
     secretRef:
       name: sops-age
   postBuild:
+    substitute:
+      APP: sabnzbd
+      VOLSYNC_PVC: sabnzbd-config
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
