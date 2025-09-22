@@ -67,6 +67,37 @@ spec:
               capabilities:
                 drop: ["ALL"]
 
+          vector-sidecar:
+            image:
+              repository: timberio/vector
+              tag: 0.49.0-alpine
+            env:
+              TZ: America/Chicago
+              VECTOR_CONFIG_PATH: /etc/vector/vector.yaml
+              POD_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
+              NODE_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                cpu: 100m
+                memory: 128Mi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: ["ALL"]
+
     persistence:
       config:
         existingClaim: plex-config
@@ -74,6 +105,9 @@ spec:
           plex:
             app:
             - path: /config
+            vector-sidecar:
+            - path: /config
+              readOnly: true
 
       config-cache:
         existingClaim: plex-cache
@@ -94,6 +128,9 @@ spec:
           plex:
             app:
             - path: /config/Library/Application Support/Plex Media Server/Logs
+            vector-sidecar:
+            - path: /config/Library/Application Support/Plex Media Server/Logs
+              readOnly: true
 
       tmpfs:
         type: emptyDir
@@ -104,6 +141,22 @@ spec:
               subPath: transcode
             - path: /tmp
               subPath: tmp
+
+      vector-config:
+        type: configMap
+        name: plex-vector-config
+        advancedMounts:
+          plex:
+            vector-sidecar:
+            - path: /etc/vector
+              readOnly: true
+
+      vector-data:
+        existingClaim: plex-vector-data
+        advancedMounts:
+          plex:
+            vector-sidecar:
+            - path: /var/lib/vector
 
     route:
       app:

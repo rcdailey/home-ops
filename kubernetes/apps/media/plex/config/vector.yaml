@@ -1,0 +1,66 @@
+---
+sources:
+  plex_logs:
+    type: file
+    include:
+    - "/config/Library/Application Support/Plex Media Server/Logs/*.log"
+    exclude:
+    - "/config/Library/Application Support/Plex Media Server/Logs/*.[2-9].log"
+    - "/config/Library/Application Support/Plex Media Server/Logs/*.[0-9][0-9].log"
+    read_from: beginning
+    # CRITICAL: Persistent data directory for checkpoints
+    data_dir: /var/lib/vector
+    # For single log stream like Plex, read oldest files first to prevent interleaving
+    oldest_first: true
+    # Balance read distribution across files
+    max_read_bytes: 2048 # Back to default for better file fairness
+    # Check for new files every minute (research recommendation)
+    glob_minimum_cooldown_ms: 60000
+    # Keep file handles open for a very long time (effectively indefinite)
+    rotate_wait_secs: 2147483647
+    # Ensure proper file identification in containerized env
+    fingerprint:
+      strategy: checksum
+      lines: 1
+
+transforms:
+  parse_plex:
+    type: remap
+    inputs:
+    - plex_logs
+    source: |
+      # Extract log file name for identification
+      .log_file = split(string!(.file), "/")[-1]
+
+      # Keep original message as fallback
+      .raw_message = .message
+
+      # Parse Plex log format: "Sep 21, 2025 20:53:49.475 [140389608688440] INFO - message"
+      parsed = parse_regex(.message, r'^(?P<timestamp>\w+ \d+, \d+ \d+:\d+:\d+\.\d+) \[(?P<thread>\d+)\] (?P<level>\w+) - (?P<message>.*)$') ?? {}
+
+      if exists(parsed.timestamp) {
+        .timestamp = parse_timestamp!(parsed.timestamp, format: "%b %d, %Y %H:%M:%S%.3f")
+        .thread_id = parsed.thread
+        .level = downcase!(parsed.level)
+        .message = parsed.message
+      }
+
+      # Add useful metadata
+      .app = "plex"
+      .namespace = "media"
+
+sinks:
+  victorialogs:
+    type: elasticsearch
+    inputs:
+    - parse_plex
+    endpoints:
+    - http://victoria-logs-single.observability:9428/insert/elasticsearch/
+    api_version: v8
+    compression: gzip
+    healthcheck:
+      enabled: false
+    query:
+      _msg_field: message
+      _time_field: timestamp
+      _stream_fields: app,namespace,source_type,log_file
