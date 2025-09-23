@@ -201,7 +201,7 @@ spec:
       GF_ANALYTICS_REPORTING_ENABLED: false
       GF_AUTH_ANONYMOUS_ENABLED: false
       GF_AUTH_BASIC_ENABLED: true
-      GF_INSTALL_PLUGINS: victoriametrics-logs-datasource
+      GF_PLUGINS_PREINSTALL: victoriametrics-logs-datasource
       GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
       GF_EXPLORE_ENABLED: true
       GF_FEATURE_TOGGLES_ENABLE: publicDashboards
