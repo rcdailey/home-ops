@@ -129,7 +129,7 @@
       icon: authentik
       href: https://auth.${SECRET_DOMAIN}/
       description: Identity Provider
-      siteMonitor: http://authentik.default:80
+      siteMonitor: http://authentik-server.default:80
 
 - Observability:
   - Grafana:
