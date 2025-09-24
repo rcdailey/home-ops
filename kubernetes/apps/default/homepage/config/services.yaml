@@ -68,13 +68,13 @@
       icon: sabnzbd
       href: https://nzb.${SECRET_DOMAIN}/
       description: Usenet Downloader
-      siteMonitor: http://sabnzbd.default:8080
+      siteMonitor: http://sabnzbd.media:8080
 
   - qBittorrent:
       icon: qbittorrent
       href: https://torrent.${SECRET_DOMAIN}/
       description: Torrent Client
-      siteMonitor: http://qbittorrent.default:8080
+      siteMonitor: http://qbittorrent.media:8080
 
   - Plex:
       icon: plex
