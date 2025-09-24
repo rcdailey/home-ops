@@ -56,3 +56,25 @@ spec:
     limits:
       memory: "2Gi"
       cpu: "1000m"
+
+  backup:
+    retentionPolicy: "30d"
+    target: "prefer-standby"
+    barmanObjectStore:
+      destinationPath: "s3://postgres-backups/immich"
+      endpointURL: "${S3_ENDPOINT}"
+      s3Credentials:
+        accessKeyId:
+          name: cluster-secrets
+          key: S3_ACCESS_KEY_ID
+        secretAccessKey:
+          name: cluster-secrets
+          key: S3_SECRET_ACCESS_KEY
+        region:
+          name: cluster-secrets
+          key: S3_REGION
+      wal:
+        compression: "gzip"
+        maxParallel: 2
+      data:
+        compression: "gzip"

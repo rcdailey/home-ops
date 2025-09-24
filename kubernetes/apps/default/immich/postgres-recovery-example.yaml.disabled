@@ -1,0 +1,61 @@
+# Example recovery configuration for Immich PostgreSQL
+# Rename to .yaml and apply if recovery is needed
+# This creates a new cluster from the latest backup
+
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/postgresql.cnpg.io/cluster_v1.json
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: immich-postgres-recovery
+spec:
+  instances: 1
+
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+
+  postgresql:
+    parameters:
+      max_connections: "400"
+      max_slot_wal_keep_size: "10GB"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+
+  storage:
+    size: 20Gi
+    storageClassName: ceph-block
+
+  # Recovery from backup
+  bootstrap:
+    recovery:
+      source: immich-backup
+      database: immich
+      owner: immich
+      secret:
+        name: immich-postgres-secret
+      # Optional: Point-in-time recovery
+      # recoveryTarget:
+      #   targetTime: "2025-01-01T12:00:00Z"
+
+  externalClusters:
+  - name: immich-backup
+    barmanObjectStore:
+      destinationPath: "s3://postgres-backups/immich"
+      endpointURL: "${S3_ENDPOINT}"
+      s3Credentials:
+        accessKeyId:
+          name: immich-postgres-backup-secret
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: immich-postgres-backup-secret
+          key: SECRET_ACCESS_KEY
+        region:
+          name: immich-postgres-backup-secret
+          key: REGION
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"

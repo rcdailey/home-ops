@@ -26,6 +26,8 @@ spec:
     labels:
       app.kubernetes.io/name: filerun
   postBuild:
+    substitute:
+      APP: filerun
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
