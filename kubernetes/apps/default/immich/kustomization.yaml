@@ -6,6 +6,7 @@ resources:
 - configmap.yaml
 - helmrelease.yaml
 - postgres-cluster.yaml
+- postgres-scheduled-backup.yaml
 - pv.yaml
 - pvc.yaml
 - secret.sops.yaml
