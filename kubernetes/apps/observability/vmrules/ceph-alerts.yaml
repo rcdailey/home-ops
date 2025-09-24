@@ -1,0 +1,76 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/victoriametrics/operator/master/config/crd/bases/operator.victoriametrics.com_vmrules.yaml
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: ceph-alerts
+spec:
+  groups:
+  - name: ceph-health
+    interval: 30s
+    rules:
+    - alert: CephHealthError
+      expr: ceph_health_status == 2
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Ceph cluster health is in ERROR state"
+        description: "Ceph cluster has been in ERROR state for more than 5 minutes"
+
+    - alert: CephHealthWarning
+      expr: ceph_health_status == 1
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Ceph cluster health is in WARNING state"
+        description: "Ceph cluster has been in WARNING state for more than 15 minutes"
+
+    - alert: CephOSDDown
+      expr: ceph_osd_up == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Ceph OSD {{ $labels.ceph_daemon }} is down"
+        description: "OSD {{ $labels.ceph_daemon }} has been down for more than 5 minutes"
+
+    - alert: CephPoolHighUsage
+      expr: (ceph_pool_stored / ceph_pool_max_avail) * 100 > 85
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Ceph pool {{ $labels.name }} usage is high"
+        description: "Ceph pool {{ $labels.name }} is {{ $value }}% full"
+
+    - alert: CephPoolCriticalUsage
+      expr: (ceph_pool_stored / ceph_pool_max_avail) * 100 > 95
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Ceph pool {{ $labels.name }} usage is critical"
+        description: "Ceph pool {{ $labels.name }} is {{ $value }}% full"
+
+  - name: ceph-osds
+    interval: 30s
+    rules:
+    - alert: CephOSDNearFull
+      expr: ceph_osd_utilization > 85
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Ceph OSD {{ $labels.ceph_daemon }} is near full"
+        description: "OSD {{ $labels.ceph_daemon }} is {{ $value }}% full"
+
+    - alert: CephOSDFull
+      expr: ceph_osd_utilization > 95
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Ceph OSD {{ $labels.ceph_daemon }} is full"
+        description: "OSD {{ $labels.ceph_daemon }} is {{ $value }}% full"

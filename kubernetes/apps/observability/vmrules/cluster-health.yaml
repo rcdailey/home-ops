@@ -1,0 +1,55 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/victoriametrics/operator/master/config/crd/bases/operator.victoriametrics.com_vmrules.yaml
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: cluster-health
+spec:
+  groups:
+  - name: cluster-health
+    interval: 30s
+    rules:
+    - alert: NodeDown
+      expr: up{job="node-exporter"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Node {{ $labels.instance }} is down"
+        description: "Node {{ $labels.instance }} has been down for more than 5 minutes"
+
+    - alert: NodeHighCPU
+      expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High CPU usage on {{ $labels.instance }}"
+        description: "CPU usage is above 80% for more than 10 minutes on {{ $labels.instance }}"
+
+    - alert: NodeHighMemory
+      expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: "High memory usage on {{ $labels.instance }}"
+        description: "Memory usage is above 90% for more than 10 minutes on {{ $labels.instance }}"
+
+    - alert: NodeDiskSpaceLow
+      expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Low disk space on {{ $labels.instance }}"
+        description: "Disk usage is above 85% on filesystem {{ $labels.mountpoint }} ({{ $labels.instance }})"
+
+    - alert: NodeDiskSpaceCritical
+      expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 95
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Critical disk space on {{ $labels.instance }}"
+        description: "Disk usage is above 95% on filesystem {{ $labels.mountpoint }} ({{ $labels.instance }})"
