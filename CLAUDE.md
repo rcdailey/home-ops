@@ -425,10 +425,11 @@ aws --endpoint-url=$S3_ENDPOINT --region=$S3_REGION s3 ls
 AWS_ACCESS_KEY_ID=<key> AWS_SECRET_ACCESS_KEY=<secret> AWS_DEFAULT_REGION=garage aws --endpoint-url=http://192.168.1.58:3900 s3 ls
 ```
 
-### Current Usage
+### Current S3 Buckets
 
-- **immich-backups** bucket: Database backups from immich
-- Used for application backups and object storage needs
+- **postgres-backups**: CloudNativePG database backups (immich, etc.)
+- **volsync-backups**: Kopia-based application data backups via volsync
+- **bookstack-backups**: Legacy application backups
 - S3-compatible API for application integration
 
 ### Application Integration
@@ -474,6 +475,64 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 - Values must be JSON-encoded strings
 - Always use single quotes around index path
 - Use `--idempotent` flag to avoid errors if key exists/doesn't exist
+
+## Backup & Data Protection
+
+### VolSync (Application Data Backups)
+
+**Component Location**: `kubernetes/components/volsync/`
+**Data Mover**: Kopia with S3 backend (modern, replaces rsync/rclone)
+**Destination**: `s3://volsync-backups/{APP}/` (per-app isolation)
+
+**Usage Pattern**:
+```yaml
+# In app kustomization.yaml
+components:
+- ../../../components/volsync
+postBuild:
+  substitute:
+    APP: appname  # REQUIRED for component substitution
+    VOLSYNC_PVC: custom-pvc-name  # Override if PVC name != app name
+```
+
+**Key Features**:
+- **Scheduling**: Hourly backups (`0 * * * *`)
+- **Retention**: 24 hourly, 7 daily snapshots
+- **Compression**: zstd-fastest for speed/size balance
+- **Security**: Runs as non-root (1000:1000), snapshot-based for consistency
+- **Cache**: Dedicated 5Gi cache PVC per app for performance
+
+**Validation Commands**:
+```bash
+kubectl get replicationsources -A              # Check backup sources
+kubectl describe replicationsource <app> -n <ns>  # Detailed status
+rclone ls garage:volsync-backups/              # Verify S3 contents
+```
+
+### CloudNativePG (Database Backups)
+
+**Scope**: PostgreSQL clusters only
+**Method**: Barman with continuous WAL archiving
+**Destination**: `s3://postgres-backups/{cluster}/`
+**Features**: Point-in-time recovery, automated retention, compression
+
+**Status Check**:
+```bash
+kubectl get scheduledbackup -A                 # Backup schedules
+kubectl describe cluster <name> | grep -i backup  # Cluster backup status
+```
+
+### Component Integration Requirements
+
+**CRITICAL**: Apps using volsync component must provide:
+1. `APP` variable via `postBuild.substitute`
+2. Correct PVC name (defaults to `${APP}`, override with `VOLSYNC_PVC`)
+3. S3 credentials via `postBuild.substituteFrom: cluster-secrets`
+
+**Common Issues**:
+- Missing `APP` substitution → `variable not set (strict mode): "APP"`
+- Wrong PVC name → `PersistentVolumeClaim "appname" not found`
+- Check PVC names: `kubectl get pvc -n <namespace>`
 
 ## Available Scripts
 
