@@ -26,43 +26,43 @@
       icon: tautulli
       href: https://tautulli.${SECRET_DOMAIN}/
       description: Plex Statistics
-      siteMonitor: http://tautulli.default:8181
+      siteMonitor: http://tautulli.media:8181
 
   - Sonarr:
       icon: sonarr
       href: https://sonarr.${SECRET_DOMAIN}/
       description: TV Series Management
-      siteMonitor: http://sonarr.default:8989
+      siteMonitor: http://sonarr.media:8989
 
   - Sonarr (Anime):
       icon: sonarr
       href: https://sonarr-anime.${SECRET_DOMAIN}/
       description: Anime Series Management
-      siteMonitor: http://sonarr-anime.default:8989
+      siteMonitor: http://sonarr-anime.media:8989
 
   - Radarr:
       icon: radarr
       href: https://radarr.${SECRET_DOMAIN}/
       description: Movie Management
-      siteMonitor: http://radarr.default:7878
+      siteMonitor: http://radarr.media:7878
 
   - Radarr (4K):
       icon: radarr
       href: https://radarr4k.${SECRET_DOMAIN}/
       description: 4K Movie Management
-      siteMonitor: http://radarr4k.default:7878
+      siteMonitor: http://radarr4k.media:7878
 
   - Radarr (Anime):
       icon: radarr
       href: https://radarr-anime.${SECRET_DOMAIN}/
       description: Anime Movie Management
-      siteMonitor: http://radarr-anime.default:7878
+      siteMonitor: http://radarr-anime.media:7878
 
   - Prowlarr:
       icon: prowlarr
       href: https://prowlarr.${SECRET_DOMAIN}/
       description: Indexer Management
-      siteMonitor: http://prowlarr.default:9696
+      siteMonitor: http://prowlarr.media:9696
 
   - Sabnzbd:
       icon: sabnzbd
@@ -86,7 +86,7 @@
       icon: bazarr
       href: https://bazarr.${SECRET_DOMAIN}/
       description: Subtitle Management
-      siteMonitor: http://bazarr.default:6767
+      siteMonitor: http://bazarr.media:6767
 
 - Services:
   - Home Assistant:
