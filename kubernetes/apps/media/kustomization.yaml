@@ -7,7 +7,9 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
+- ./plex/ks.yaml
 - ./qbittorrent/ks.yaml
 - ./sabnzbd/ks.yaml
-- ./plex/ks.yaml
+- ./sonarr/ks.yaml
+- ./sonarr-anime/ks.yaml
 - ./tautulli/ks.yaml

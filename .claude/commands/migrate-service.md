@@ -57,9 +57,16 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
 
 ## Phase 3: Reference Implementation Research
 
-**HOMELAB PATTERN DISCOVERY:**
+**ENHANCED RESEARCH STRATEGY:**
 
-1. **Local Repository Analysis (PRIORITY)**
+1. **Context7 Library Documentation (MANDATORY FIRST STEP)**
+   - **REQUIRED**: `resolve-library-id` for "bjw-s app-template" or "app-template"
+   - **REQUIRED**: `get-library-docs` with Context7-compatible library ID
+   - Document current app-template patterns, values structure, and best practices
+   - **CRITICAL**: This provides authoritative, up-to-date documentation before any implementation decisions
+   - Extract controller patterns, persistence options, and networking configurations from official docs
+
+2. **Local Repository Analysis (PRIORITY)**
    - Search existing app-template implementations: `rg -l "app-template"
      kubernetes/apps/*/*/helmrelease.yaml`
    - Analyze controller patterns in similar applications
@@ -68,7 +75,7 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
    - **Anti-pattern Detection**: Identify multi-service containers that should be separate
      HelmReleases
 
-2. **Service Architecture Decision Rules**
+3. **Service Architecture Decision Rules**
 
    ```yaml
    Separate HelmReleases (Different Pods) IF:
@@ -90,16 +97,27 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
      - Shared storage access patterns
    ```
 
-3. **App-Scout Analysis (MANDATORY)**
+4. **OctoCode External Research (Systematic Analysis)**
+   - **Repository Structure**: `githubViewRepoStructure` for onedr0p/home-ops kubernetes/apps structure
+   - **Pattern Discovery**: Bulk `githubSearchCode` queries:
+     ```
+     Query Set A: ["$ARGUMENTS", "app-template", "bjw-s"]
+     Query Set B: ["controllers", "persistence", "route"]
+     Query Set C: Service-specific terms from docker-compose analysis
+     ```
+   - **Implementation Analysis**: `githubGetFileContent` for specific helmrelease.yaml examples
+   - **Benefit**: Comprehensive pattern analysis with parallel bulk operations
+
+5. **App-Scout Analysis (Chart Discovery)**
    - **REQUIRED**: Run app-scout discovery for the target service
    - Analyze dedicated charts vs app-template patterns
-   - Compare with local repository patterns
-   - **CRITICAL**: This step is NOT optional - app-scout provides essential chart discovery and implementation patterns
+   - Compare with context7 + octocode findings
+   - **Purpose**: Chart availability assessment, not implementation patterns (use octocode for patterns)
 
-4. **External Reference Search (Tertiary)**
-   - Search GitHub homelab implementations only if no local patterns found
-   - Focus on app-template usage, not generic Kubernetes manifests
-   - Query patterns: ["$ARGUMENTS app-template", "bjw-s $ARGUMENTS"]
+6. **Documentation Validation Cross-Check**
+   - Validate octocode findings against context7 documentation
+   - Ensure implementation patterns align with current app-template best practices
+   - Document any discrepancies between external patterns and official documentation
 
 ## Phase 4: Migration Strategy Decision Tree
 
@@ -159,48 +177,67 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
 
 ## Phase 5: Kubernetes Resource Planning
 
-**RESOURCE MAPPING:**
+**ENHANCED RESOURCE MAPPING:**
 
 1. **Service Architecture Decision**
    - Apply Phase 3 decision rules to each docker-compose service
+   - Cross-reference with context7 app-template documentation patterns
+   - Validate against octocode research findings from onedr0p/home-ops
    - Create dependency graph showing which services need separation
-   - Document rationale for each architectural decision
+   - Document rationale for each architectural decision with reference citations
 
-2. **Namespace Selection**
+2. **App-Template Configuration Strategy**
+   - **OCIRepository Pattern**: Use `oci://ghcr.io/bjw-s-labs/helm/app-template` (confirmed from octocode research)
+   - **Version Selection**: Document version found in research (e.g., `tag: 4.3.0` from onedr0p patterns)
+   - **Controller Structure**: Plan based on context7 documentation + octocode examples
+   - **Storage Strategy**: Apply RWO vs RWX patterns from research analysis
+
+3. **Namespace Selection**
    - Analyze existing namespaces: `ls -d kubernetes/apps/*/`
    - Follow semantic grouping (dns-private, network, default, etc.)
    - Use existing namespace or justify new one
 
-3. **Directory Structure Planning**
+4. **Directory Structure Planning**
 
-   **Single Service Pattern:**
-
-   ```txt
-   kubernetes/apps/<namespace>/$ARGUMENTS/
-   ├── helmrelease.yaml     # App-template deployment
-   ├── ks.yaml             # Kustomization (if needed)
-   ├── kustomization.yaml   # Resource list
-   ├── secret.sops.yaml    # Encrypted secrets
-   ├── httproute.yaml      # External access (if needed)
-   ├── pvc.yaml            # Persistent volumes (if needed)
-   └── config/             # ConfigMaps and assets (if needed)
-   ```
-
-   **Multi-Service Pattern (databases separated):**
+   **Single Service Pattern (App-Template):**
 
    ```txt
    kubernetes/apps/<namespace>/$ARGUMENTS/
-   ├── helmrelease.yaml        # Main app (app-template)
-   ├── database.yaml           # Database HelmRelease (dedicated chart)
-   ├── ks.yaml                # Kustomization
-   ├── kustomization.yaml      # Resource list
-   ├── secret.sops.yaml       # Shared secrets
-   ├── database-secret.sops.yaml # Database-specific secrets
-   ├── httproute.yaml         # External access
-   └── pvc.yaml               # Persistent volumes
+   ├── ks.yaml               # Kustomization with targetNamespace
+   ├── kustomization.yaml     # Resource list
+   └── app/
+       ├── helmrelease.yaml   # App-template deployment
+       ├── ocirepository.yaml # App-template chart reference
+       ├── secret.sops.yaml   # Encrypted secrets (if needed)
+       ├── httproute.yaml     # External access (if needed)
+       └── pvc.yaml          # Persistent volumes (if needed)
    ```
 
-4. **Secret Planning**
+   **Multi-Service Pattern (Databases Separated):**
+
+   ```txt
+   kubernetes/apps/<namespace>/$ARGUMENTS/
+   ├── ks.yaml               # Kustomization with targetNamespace
+   ├── kustomization.yaml     # Resource list
+   ├── app/
+   │   ├── helmrelease.yaml   # Main app (app-template)
+   │   ├── ocirepository.yaml # App-template chart reference
+   │   ├── secret.sops.yaml   # App-specific secrets
+   │   ├── httproute.yaml     # External access
+   │   └── pvc.yaml          # App persistent volumes
+   └── database/
+       ├── helmrelease.yaml   # Database (dedicated chart)
+       ├── secret.sops.yaml   # Database secrets
+       └── pvc.yaml          # Database persistent volumes
+   ```
+
+5. **Volume Mounting Strategy (Enhanced)**
+   - **globalMounts**: Use for RWX volumes, ConfigMaps, shared data
+   - **advancedMounts**: REQUIRED for RWO volumes, specific controller targeting
+   - **Strategy Requirement**: `strategy: Recreate` for any RWO persistent volumes
+   - **Reference**: Based on onedr0p patterns and app-template documentation
+
+6. **Secret Planning**
    - Extract environment variables from docker-compose
    - Group secrets by service boundaries (app vs database)
    - Plan secret integration method (envFrom priority, then valueFrom)
@@ -215,18 +252,23 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
    - Generate kustomization.yaml with resource list
    - Add to parent namespace kustomization
 
-2. **Core Deployment (Follow Local Patterns)**
-   - **Reference Analysis**: Study similar services from Phase 3 local analysis
-   - **App-Template Structure**: Use controllers pattern from immich/qbittorrent examples
+2. **Enhanced Core Deployment (Context7 + OctoCode Patterns)**
+   - **Context7 Validation**: Verify implementation against official app-template documentation
+   - **OctoCode Patterns**: Apply patterns discovered from onedr0p/home-ops analysis
+   - **Local Integration**: Adapt patterns to existing repository conventions
+   - Create ocirepository.yaml with:
+     - `url: oci://ghcr.io/bjw-s-labs/helm/app-template`
+     - Version from research findings (e.g., `tag: 4.3.0`)
    - Create helmrelease.yaml with:
      - YAML language server schema (Flux schemas)
      - OCIRepository chartRef referencing app-template
-     - Controllers for each logical service component
+     - Controllers structure from context7 documentation
      - Service definitions matching controller names
-     - Proper resource requests/limits from docker-compose analysis
-     - Security context following repository patterns (runAsNonRoot, capabilities drop)
-     - Health probes (HTTP preferred over command execution)
+     - Resource requests/limits from docker-compose analysis
+     - Security context patterns: runAsNonRoot, capabilities drop, readOnlyRootFilesystem
+     - Health probes (HTTP preferred, custom probes for complex apps)
      - Reloader annotation: `reloader.stakater.com/auto: "true"`
+     - Volume mounting strategy: advancedMounts for RWO, globalMounts for RWX
 
 3. **Database Integration (Critical Decision Point)**
    - **If database required**: Create separate HelmRelease using dedicated operator
@@ -281,21 +323,53 @@ argument-hint: <service-name> - Name of the service to migrate from docker-compo
    - Verify automatic deployment
    - Use `task reconcile` for immediate sync
 
+## Enhanced Tool Integration Patterns
+
+**CONTEXT7 INTEGRATION:**
+```
+1. resolve-library-id: "bjw-s app-template" or "app-template"
+2. get-library-docs: Use resolved Context7-compatible library ID
+3. Extract: Current patterns, controller structure, persistence options
+4. Validate: All implementation decisions against official documentation
+```
+
+**OCTOCODE BULK RESEARCH STRATEGY:**
+```
+Sequential Query Sets for onedr0p/home-ops:
+1. Repository Structure: githubViewRepoStructure kubernetes/apps
+2. Pattern Discovery: githubSearchCode parallel queries:
+   - Service-specific: [$ARGUMENTS, related-terms]
+   - App-template: ["app-template", "bjw-s", "controllers"]
+   - Architecture: ["persistence", "route", "security"]
+3. Implementation Analysis: githubGetFileContent for specific examples
+4. Cross-reference: Validate findings against context7 documentation
+```
+
+**APP-SCOUT FOCUSED USAGE:**
+```
+Purpose: Chart availability assessment only
+Workflow:
+1. ./scripts/app-scout.sh discover $ARGUMENTS
+2. Identify dedicated charts vs app-template decision
+3. Use octocode for implementation patterns (not app-scout inspect)
+```
+
 ## Critical Operational Rules
 
 **MANDATORY COMPLIANCE:**
 
+- **Context7 First**: ALWAYS start with context7 library documentation lookup - no implementation without official docs
 - **Service Separation**: NEVER put databases as containers in app-template controllers
-- **Local Patterns First**: Always analyze existing repository app-template usage before external
-  research
+- **Research Priority**: Context7 → Local Repository → OctoCode → App-Scout workflow
 - **Architecture Validation**: Apply Phase 3 decision rules to prevent multi-container anti-patterns
 - **GitOps Only**: Never modify cluster directly, only repository YAML
 - **SOPS Security**: All secrets encrypted before commit
 - **Schema Validation**: Include yaml-language-server directives
-- **Reference Format**: Use `file.yaml:123` when citing code
+- **Reference Format**: Use `file.yaml:123` when citing code (include onedr0p references for external patterns)
 - **Validation**: Always run flux-local-test.sh and pre-commit before handoff
-- **No Assumptions**: Research and verify all decisions with local repository patterns
-- **Collaborative**: Present complete architectural analysis and ask for user confirmation
+- **No Assumptions**: Validate all patterns against context7 documentation and octocode findings
+- **Tool Integration**: Use octocode bulk operations for external research efficiency
+- **Collaborative**: Present complete architectural analysis with research citations and ask for user confirmation
 
 ## Final Deliverables
 
