@@ -32,11 +32,11 @@ metadata:
   name: plex-logs
   namespace: media
 spec:
-  accessModes: ["ReadWriteOnce"]
+  accessModes: ["ReadWriteMany"]
   resources:
     requests:
       storage: 5Gi
-  storageClassName: ceph-block
+  storageClassName: ceph-filesystem
 ---
 # yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/persistentvolumeclaim-v1.json
 apiVersion: v1
