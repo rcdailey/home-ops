@@ -312,13 +312,33 @@ Kustomize hashes.
 - **Route Priority**: Use app-template `route:` blocks for all app-template applications. Only use
   standalone HTTPRoute for non-app-template charts or when dedicated Helm charts lack routing
   capabilities
-- **Authentik Integration**: Apps using Authentik auth require SecurityPolicy resource targeting the
-  HTTPRoute. App-template `route:` blocks create HTTPRoutes but don't handle forward auth - use
-  SecurityPolicy with `ak-outpost-authentik-embedded-outpost` backend and
-  `/outpost.goauthentik.io/auth/envoy` path. ALSO add provider to outpost configuration in
-  `blueprints/outpost-configuration.yaml` providers list
 - **Health Probes**: NEVER use executable commands
 - **Hostnames**: Use shortest resolvable form, avoid FQDNs when unnecessary
+
+## Authentik App Protection
+
+**REQUIRED COMPONENTS (4 items for protected apps):**
+
+- Proxy provider blueprint (external_host, internal_host, mode: forward_single)
+- Application blueprint (links provider to app catalog)
+- Provider entry in `blueprints/outpost-configuration.yaml` providers list
+- SecurityPolicy targeting HTTPRoute (backend: ak-outpost-authentik-embedded-outpost, path:
+  /outpost.goauthentik.io/auth/envoy)
+
+**SETUP WORKFLOW:**
+
+1. Create provider blueprint: external/internal hosts, intercept_header_auth: true
+2. Create application blueprint: references provider by name
+3. Add provider to outpost-configuration.yaml providers list
+4. Create SecurityPolicy targeting app's HTTPRoute name
+5. Deploy app with standard app-template route blocks
+
+**API PROTECTION:**
+
+- **skip_path_regex: ^/api/.*$** excludes API endpoints from auth (use appropriate API path for the
+  app)
+- **Required for**: Mobile clients, webhooks, API integrations
+- **Alternative**: Separate HTTPRoute for API paths
 
 ## Stack Overview
 
