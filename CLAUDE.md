@@ -312,6 +312,11 @@ Kustomize hashes.
 - **Route Priority**: Use app-template `route:` blocks for all app-template applications. Only use
   standalone HTTPRoute for non-app-template charts or when dedicated Helm charts lack routing
   capabilities
+- **Authentik Integration**: Apps using Authentik auth require SecurityPolicy resource targeting the
+  HTTPRoute. App-template `route:` blocks create HTTPRoutes but don't handle forward auth - use
+  SecurityPolicy with `ak-outpost-authentik-embedded-outpost` backend and
+  `/outpost.goauthentik.io/auth/envoy` path. ALSO add provider to outpost configuration in
+  `blueprints/outpost-configuration.yaml` providers list
 - **Health Probes**: NEVER use executable commands
 - **Hostnames**: Use shortest resolvable form, avoid FQDNs when unnecessary
 
@@ -480,11 +485,12 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 
 ### VolSync (Application Data Backups)
 
-**Component Location**: `kubernetes/components/volsync/`
-**Data Mover**: Kopia with S3 backend (modern, replaces rsync/rclone)
-**Destination**: `s3://volsync-backups/{APP}/` (per-app isolation)
+- **Component Location**: `kubernetes/components/volsync/`
+- **Data Mover**: Kopia with S3 backend (modern, replaces rsync/rclone)
+- **Destination**: `s3://volsync-backups/{APP}/` (per-app isolation)
 
 **Usage Pattern**:
+
 ```yaml
 # In app kustomization.yaml
 components:
@@ -496,6 +502,7 @@ postBuild:
 ```
 
 **Key Features**:
+
 - **Scheduling**: Hourly backups (`0 * * * *`)
 - **Retention**: 24 hourly, 7 daily snapshots
 - **Compression**: zstd-fastest for speed/size balance
@@ -503,6 +510,7 @@ postBuild:
 - **Cache**: Dedicated 5Gi cache PVC per app for performance
 
 **Validation Commands**:
+
 ```bash
 kubectl get replicationsources -A              # Check backup sources
 kubectl describe replicationsource <app> -n <ns>  # Detailed status
@@ -511,12 +519,13 @@ rclone ls garage:volsync-backups/              # Verify S3 contents
 
 ### CloudNativePG (Database Backups)
 
-**Scope**: PostgreSQL clusters only
-**Method**: Barman with continuous WAL archiving
-**Destination**: `s3://postgres-backups/{cluster}/`
-**Features**: Point-in-time recovery, automated retention, compression
+- **Scope**: PostgreSQL clusters only
+- **Method**: Barman with continuous WAL archiving
+- **Destination**: `s3://postgres-backups/{cluster}/`
+- **Features**: Point-in-time recovery, automated retention, compression
 
 **Status Check**:
+
 ```bash
 kubectl get scheduledbackup -A                 # Backup schedules
 kubectl describe cluster <name> | grep -i backup  # Cluster backup status
@@ -525,11 +534,13 @@ kubectl describe cluster <name> | grep -i backup  # Cluster backup status
 ### Component Integration Requirements
 
 **CRITICAL**: Apps using volsync component must provide:
+
 1. `APP` variable via `postBuild.substitute`
 2. Correct PVC name (defaults to `${APP}`, override with `VOLSYNC_PVC`)
 3. S3 credentials via `postBuild.substituteFrom: cluster-secrets`
 
 **Common Issues**:
+
 - Missing `APP` substitution → `variable not set (strict mode): "APP"`
 - Wrong PVC name → `PersistentVolumeClaim "appname" not found`
 - Check PVC names: `kubectl get pvc -n <namespace>`
