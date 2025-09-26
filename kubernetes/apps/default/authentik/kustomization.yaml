@@ -18,6 +18,10 @@ configMapGenerator:
   - blueprints/qbittorrent-application.yaml
   - blueprints/sabnzbd-provider.yaml
   - blueprints/sabnzbd-application.yaml
+  - blueprints/sonarr-provider.yaml
+  - blueprints/sonarr-application.yaml
+  - blueprints/sonarr-anime-provider.yaml
+  - blueprints/sonarr-anime-application.yaml
   - blueprints/custom-users.yaml
   - blueprints/outpost-configuration.yaml
   options:
