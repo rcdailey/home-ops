@@ -62,9 +62,6 @@ spec:
             env:
               UMASK: "022"
               QBT_WEBUI_PORT: &port 8080
-            envFrom:
-            - secretRef:
-                name: qbittorrent-secret
             probes:
               liveness:
                 enabled: true
