@@ -78,6 +78,8 @@ validation.**
   initialization
   - These often have compatibility issues with Kubernetes security contexts
   - Prefer home-operations containers which eschew such tools by design
+- **Redis Alternative**: ALWAYS use Valkey (`ghcr.io/valkey-io/valkey`) instead of Redis for
+  future-proofing against licensing changes
 
 **MANDATORY IMAGE STANDARDS & VERIFICATION:**
 
@@ -305,8 +307,9 @@ Kustomize hashes.
 **CRITICAL NETWORK PATTERNS:**
 
 - **HTTPRoute ONLY**: HTTPRoute over Ingress, route through existing gateways
+- **Gateway Usage**: `internal` (192.168.1.72) for internal services, `external` (192.168.1.73) for
+  external access (both in network namespace)
 - **LoadBalancer Ban**: NEVER create LoadBalancer without explicit user discussion
-- **Gateway IPs**: Use externalIPs (192.168.1.72 internal, 192.168.1.73 external) not LoadBalancer
 - **External-DNS**: Configure target annotations on Gateways ONLY, never HTTPRoutes. Use
   gateway-httproute source for CNAME inheritance
 - **Route Priority**: Use app-template `route:` blocks for all app-template applications. Only use
