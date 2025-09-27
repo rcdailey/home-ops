@@ -30,7 +30,7 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
-          tautulli:
+          app:
             image:
               repository: ghcr.io/home-operations/tautulli
               tag: "2.16.0"
@@ -94,18 +94,18 @@ spec:
         existingClaim: tautulli-config
         advancedMounts:
           main:
-            tautulli:
+            app:
             - path: /config
       plex-logs:
         existingClaim: plex-logs
         advancedMounts:
           main:
-            tautulli:
+            app:
             - path: /plex-logs
               readOnly: true
       tmp:
         type: emptyDir
         advancedMounts:
           main:
-            tautulli:
+            app:
             - path: /tmp
