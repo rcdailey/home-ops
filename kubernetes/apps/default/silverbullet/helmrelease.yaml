@@ -28,7 +28,7 @@ spec:
       main:
         strategy: Recreate
         annotations:
-          secrets.infisical.com/auto-reload: "true"
+          reloader.stakater.com/auto: "true"
         containers:
           silverbullet:
             image:
@@ -38,7 +38,6 @@ spec:
               TZ: America/Chicago
               SB_PORT: &port 3000
               SB_NAME: "${SECRET_DOMAIN} Notes"
-              SB_USER: "$(USERNAME):$(PASSWORD)"
             envFrom:
             - secretRef:
                 name: silverbullet-secret
