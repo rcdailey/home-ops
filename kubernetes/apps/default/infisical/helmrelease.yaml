@@ -38,7 +38,7 @@ spec:
           main:
             image:
               repository: infisical/infisical
-              tag: v0.117.1-postgres@sha256:b9d8b2b1e1639c811b9250d33307ae3fd8efe77f1302b81d25f8a173bd99d26b
+              tag: v0.146.0-postgres@sha256:1cb068126b9c9ae4229825edfa737024bef089e6620c3f5ef4e429bf812f8ff0
             env:
               # Database connection
               DB_CONNECTION_URI:
