@@ -21,3 +21,5 @@ entries:
     attributes:
       settings:
         locale: ""
+      qbittorrent_username: ${QBITTORRENT_AUTH_USER}
+      qbittorrent_password: ${QBITTORRENT_AUTH_PASSWORD}

@@ -15,8 +15,8 @@ entries:
     internal_host: http://qbittorrent:8080
     mode: forward_single
     basic_auth_enabled: true
-    basic_auth_user_attribute: ${QBITTORRENT_AUTH_USER}
-    basic_auth_password_attribute: ${QBITTORRENT_AUTH_PASSWORD}
+    basic_auth_user_attribute: qbittorrent_username
+    basic_auth_password_attribute: qbittorrent_password
     intercept_header_auth: true
     skip_path_regex: ^/api/.*$
     refresh_token_validity: days=30
