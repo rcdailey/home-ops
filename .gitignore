@@ -20,6 +20,7 @@
 /github-deploy.key
 /github-deploy.key.pub
 /github-push-token.txt
+.infisical.json
 
 
 # From: custom/02-kubernetes.gitignore
