@@ -9,7 +9,6 @@ resources:
 - ./cilium/ks.yaml
 - ./cloudnative-pg/ks.yaml
 - ./coredns/ks.yaml
-- ./infisical-operator/ks.yaml
 - ./intel-gpu-plugin/ks.yaml
 - ./mariadb-operator/ks.yaml
 - ./metrics-server/ks.yaml
