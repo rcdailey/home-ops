@@ -12,4 +12,5 @@ resources:
 - ./filerun/ks.yaml
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
+- ./infisical/ks.yaml
 - ./silverbullet/ks.yaml

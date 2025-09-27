@@ -6,3 +6,4 @@ resources:
 - ./cluster-secrets.sops.yaml
 - ./email-secrets.sops.yaml
 - ./sops-age.sops.yaml
+- ./infisical-secrets.sops.yaml

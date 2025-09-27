@@ -131,6 +131,12 @@
       description: Identity Provider
       siteMonitor: http://authentik-server.default:80
 
+  - Infisical:
+      icon: infisical
+      href: https://secrets.${SECRET_DOMAIN}/
+      description: Secret Management
+      siteMonitor: http://infisical-main.default:8080
+
 - Observability:
   - Grafana:
       icon: grafana

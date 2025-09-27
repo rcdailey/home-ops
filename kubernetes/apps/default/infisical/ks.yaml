@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization-flux-v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infisical
+spec:
+  targetNamespace: default
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: infisical
+  interval: 1h
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  path: kubernetes/apps/default/infisical
+  prune: true
+  wait: false
+  dependsOn:
+  - name: cloudnative-pg
+    namespace: kube-system
+  - name: infisical-operator
+    namespace: kube-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-secrets
