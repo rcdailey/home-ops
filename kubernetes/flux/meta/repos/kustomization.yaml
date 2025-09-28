@@ -5,7 +5,6 @@ kind: Kustomization
 resources:
 - ./external-dns.yaml
 - ./external-secrets.yaml
-- ./eznix86-charts.yaml
 - ./node-feature-discovery.yaml
 - ./intel.yaml
 - ./victoriametrics.yaml
