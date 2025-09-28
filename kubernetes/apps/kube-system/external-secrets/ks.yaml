@@ -26,15 +26,15 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: external-secrets-bitwarden
+  name: external-secrets-infisical
 spec:
   targetNamespace: kube-system
   commonMetadata:
     labels:
-      app.kubernetes.io/name: external-secrets-bitwarden
+      app.kubernetes.io/name: external-secrets-infisical
   interval: 10m
   timeout: 5m
-  path: ./kubernetes/apps/kube-system/external-secrets/bitwarden
+  path: ./kubernetes/apps/kube-system/external-secrets/infisical
   prune: true
   sourceRef:
     kind: GitRepository
@@ -47,20 +47,3 @@ spec:
   wait: true
   dependsOn:
   - name: external-secrets
-  # ENHANCEMENT: Health checks to prevent premature "Ready" status
-  # Ensures bitwarden-cli pod is operational before marking kustomization ready
-  # Prevents race conditions where ClusterSecretStores are created before provider is ready
-  # Based on onedr0p/home-ops pattern - only provider kustomizations have health checks
-  healthChecks:
-  - apiVersion: apps/v1
-    kind: Deployment
-    name: bitwarden-cli
-    namespace: kube-system
-  # CEL expressions to validate ClusterSecretStore readiness
-  # Only marks kustomization Ready when all ClusterSecretStores have Ready=True condition
-  # Eliminates timing issues between provider availability and store validation
-  healthCheckExprs:
-  - apiVersion: external-secrets.io/v1
-    kind: ClusterSecretStore
-    failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
-    current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')

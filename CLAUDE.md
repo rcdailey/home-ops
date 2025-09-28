@@ -190,53 +190,72 @@ validation.**
 - **Secret Management**: App-isolated secrets, `sops --set` for changes, `sops unset` for removal
 - **Chart Analysis**: See "Quality Assurance & Validation" section above for verification methods
 
-**BITWARDEN ESO INTEGRATION:**
+**INFISICAL ESO INTEGRATION:**
 
-- **Provider**: Helm chart eznix86/bitwarden-external-secrets with BitwardenSecret CRD + operator
-- **Implementation**: Uses oliverziegert/external-secrets-bitwarden:1.0.6 backend service
-- **Pattern**: ALWAYS use BitwardenSecret CRD - use Helm functions for processing
-- **Vault Organization**: Use Bitwarden item IDs for reliable reference, secure notes with custom
-  fields for structured data
+- **Provider**: Native ESO Infisical provider with Universal Auth (Machine Identity)
+- **Implementation**: Standard External Secrets Operator with Infisical backend
+- **Pattern**: Use ClusterSecretStore + ExternalSecret resources - no custom CRDs
+- **Organization**: Path-based secrets using `/namespace/app/secret-name` structure
 
-To understand how ESO for bitwarden password manager works, look at
-`oliverziegert/external-secrets-bitwarden` with octocode.
-
-**BITWARDENSECRET CRD USAGE:**
+**INFISICAL CLUSTERSECRETSTORE:**
 
 ```yaml
-# Standard approach - individual fields
-apiVersion: bitwarden.external-secrets.io/v1alpha1
-kind: BitwardenSecret
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/external-secrets.io/clustersecretstore_v1.json
+apiVersion: external-secrets.io/v1
+kind: ClusterSecretStore
+metadata:
+  name: infisical
+spec:
+  provider:
+    infisical:
+      hostAPI: https://app.infisical.com
+      auth:
+        universalAuthCredentials:
+          clientId:
+            key: CLIENT_ID
+            name: infisical-credentials
+            namespace: kube-system
+          clientSecret:
+            key: CLIENT_SECRET
+            name: infisical-credentials
+            namespace: kube-system
+      secretsScope:
+        projectSlug: home-ops
+        environmentSlug: prod
+        secretsPath: /
+        recursive: false
+        expandSecretReferences: false
+```
+
+**EXTERNALSECRET USAGE:**
+
+```yaml
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/external-secrets.io/externalsecret_v1.json
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
 metadata:
   name: app-secret
 spec:
-  namespace: target-namespace
-  secrets:
-    DB_USER:
-      itemRef:
-        id: "bitwarden-item-uuid"
-        type: login
-        property: username
-    DB_PASSWORD:
-      itemRef:
-        id: "bitwarden-item-uuid"
-        type: login
-        property: password
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: infisical
+  target:
+    name: app-secret
+    creationPolicy: Owner
+  data:
+  - secretKey: API_KEY
+    remoteRef:
+      key: /default/app/api-key
 ```
 
-**HELM PROCESSING PATTERNS:**
+**INFISICAL CLI USAGE:**
 
-- **String concatenation**: `SB_USER: "$(SB_USERNAME):$(SB_PASSWORD)"` (env var expansion)
-- **Template functions**: `printf "%s://%s:%s@%s/%s" .db.type .user .pass .host .name`
-- **valuesFrom**: Reference BitwardenSecret in HelmRelease for complex templating
-
-Use the `rbw` CLI utility to view secrets (tips below).
-
-- `rbw get <item_name> --raw`: View the JSON output for a single item (name is case sensitive)
-- `rbw list | rg <search_query>`: Search items in vault (MUST use `rg` to filter; there are
-  thousands of items).
-
-To learn how `eznix86/bitwarden-external-secrets` works, use octocode.
+- `infisical login`: Authenticate with Infisical Cloud
+- `infisical secrets list --env=prod --path=/default/app`: List secrets in path
+- `infisical secrets set API_KEY=value --env=prod --path=/default/app`: Set secret
+- `infisical secrets get API_KEY --env=prod --path=/default/app`: Get secret value
 
 ## Storage & Deployment Strategy
 
