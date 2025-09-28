@@ -2,7 +2,7 @@
 
 ## Critical Operational Rules
 
-**⚠️ BEFORE ANY DEBUGGING OR ANALYSIS - CHECK THE MANDATORY DEBUGGING CHECKLIST IN QUALITY ASSURANCE
+**BEFORE ANY DEBUGGING OR ANALYSIS - CHECK THE MANDATORY DEBUGGING CHECKLIST IN QUALITY ASSURANCE
 SECTION**
 
 **IMPORTANT:** Claude MUST:
@@ -159,7 +159,7 @@ validation.**
 
   - Result: Self-contained apps with clear namespace declarations, no inheritance dependencies
 
-  **⚠️ NAMESPACE DEBUGGING PROTOCOL:** When ANY namespace-related error occurs, Claude MUST
+  **NAMESPACE DEBUGGING PROTOCOL:** When ANY namespace-related error occurs, Claude MUST
   immediately:
   1. Check DEBUGGING CHECKLIST above before any other analysis
   2. Compare broken app against known working app (e.g., silverbullet)
@@ -181,7 +181,8 @@ validation.**
 - **NFS**: Static PVs for existing data, PVCs in app dirs, subPath mounting
 - **Database Isolation**: NEVER share databases between apps, deploy dedicated instances
 - **Secret Integration Priority**: 1) `envFrom` at app, 2) `env.valueFrom`, 3) HelmRelease
-  `valuesFrom`, 4) `postBuild.substituteFrom` (last resort)
+  `valuesFrom`. NEVER `postBuild.substituteFrom` for app secrets (timing issues with ExternalSecret)
+- **ONLY use `postBuild.substituteFrom`**: cluster-secrets, email-secrets (pre-existing secrets)
 - **Secret Management**: App-isolated secrets, `sops --set` for changes, `sops unset` for removal
 - **Chart Analysis**: See "Quality Assurance & Validation" section above for verification methods
 
@@ -193,6 +194,12 @@ validation.**
   `bitwarden-attachments` available cluster-wide
 - **Pattern**: ExternalSecret → template for field combinations (e.g., username:password format)
 - **Vault Organization**: Use Bitwarden secure notes with custom fields for structured data
+
+Use the `rbw` CLI utility to view secrets (tips below).
+
+- `rbw get <item_name> --raw`: View the JSON output for a single item (name is case sensitive)
+- `rbw list | rg <search_query>`: Search items in vault (MUST use `rg` to filter; there are
+  thousands of items).
 
 ## Storage & Deployment Strategy
 
