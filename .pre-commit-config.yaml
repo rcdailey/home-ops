@@ -7,8 +7,10 @@ repos:
     name: Merge Conflict Check
   - id: trailing-whitespace
     name: Trim Whitespace
+    exclude: '\.sops\.yaml$'
   - id: end-of-file-fixer
     name: Fix End of Files
+    exclude: '\.sops\.yaml$'
 
 - repo: local
   hooks:
@@ -55,6 +57,7 @@ repos:
     name: Format YAML with yamlfmt
     description: Formats YAML files with Google's yamlfmt tool
     files: '^kubernetes/.*\.ya?ml$'
+    exclude: '\.sops\.yaml$'
 
 - repo: https://github.com/adrienverge/yamllint
   rev: v1.37.1
@@ -64,6 +67,7 @@ repos:
     description: Lints YAML files for formatting and syntax issues
     args: [-c=.yamllint.yaml]
     files: '\.ya?ml$'
+    exclude: '\.sops\.yaml$'
 
 - repo: https://github.com/gitleaks/gitleaks
   rev: v8.28.0
