@@ -185,6 +185,15 @@ validation.**
 - **Secret Management**: App-isolated secrets, `sops --set` for changes, `sops unset` for removal
 - **Chart Analysis**: See "Quality Assurance & Validation" section above for verification methods
 
+**BITWARDEN ESO INTEGRATION:**
+
+- **Provider**: External Secrets Operator + oliverziegert/external-secrets-bitwarden:1.0.6 for
+  name-based lookups
+- **ClusterSecretStores**: `bitwarden-login`, `bitwarden-fields`, `bitwarden-notes`,
+  `bitwarden-attachments` available cluster-wide
+- **Pattern**: ExternalSecret → template for field combinations (e.g., username:password format)
+- **Vault Organization**: Use Bitwarden secure notes with custom fields for structured data
+
 ## Storage & Deployment Strategy
 
 **CRITICAL STORAGE AND DEPLOYMENT RULES - Claude MUST enforce these patterns:**
