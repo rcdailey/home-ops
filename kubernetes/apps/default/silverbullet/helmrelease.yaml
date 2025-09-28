@@ -38,6 +38,7 @@ spec:
               TZ: America/Chicago
               SB_PORT: &port 3000
               SB_NAME: "${SECRET_DOMAIN} Notes"
+              SB_USER: "$(SB_USERNAME):$(SB_PASSWORD)"
             envFrom:
             - secretRef:
                 name: silverbullet-secret

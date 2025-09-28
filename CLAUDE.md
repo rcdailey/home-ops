@@ -188,12 +188,39 @@ validation.**
 
 **BITWARDEN ESO INTEGRATION:**
 
-- **Provider**: External Secrets Operator + oliverziegert/external-secrets-bitwarden:1.0.6 for
-  name-based lookups
-- **ClusterSecretStores**: `bitwarden-login`, `bitwarden-fields`, `bitwarden-notes`,
-  `bitwarden-attachments` available cluster-wide
-- **Pattern**: ExternalSecret → template for field combinations (e.g., username:password format)
-- **Vault Organization**: Use Bitwarden secure notes with custom fields for structured data
+- **Provider**: Helm chart eznix86/bitwarden-external-secrets with BitwardenSecret CRD + operator
+- **Implementation**: Uses oliverziegert/external-secrets-bitwarden:1.0.6 backend service
+- **Pattern**: ALWAYS use BitwardenSecret CRD - use Helm functions for processing
+- **Vault Organization**: Use Bitwarden item IDs for reliable reference, secure notes with custom fields for structured data
+
+**BITWARDENSECRET CRD USAGE:**
+
+```yaml
+# Standard approach - individual fields
+apiVersion: bitwarden.external-secrets.io/v1alpha1
+kind: BitwardenSecret
+metadata:
+  name: app-secret
+spec:
+  namespace: target-namespace
+  secrets:
+    DB_USER:
+      itemRef:
+        id: "bitwarden-item-uuid"
+        type: login
+        property: username
+    DB_PASSWORD:
+      itemRef:
+        id: "bitwarden-item-uuid"
+        type: login
+        property: password
+```
+
+**HELM PROCESSING PATTERNS:**
+
+- **String concatenation**: `SB_USER: "$(SB_USERNAME):$(SB_PASSWORD)"` (env var expansion)
+- **Template functions**: `printf "%s://%s:%s@%s/%s" .db.type .user .pass .host .name`
+- **valuesFrom**: Reference BitwardenSecret in HelmRelease for complex templating
 
 Use the `rbw` CLI utility to view secrets (tips below).
 
