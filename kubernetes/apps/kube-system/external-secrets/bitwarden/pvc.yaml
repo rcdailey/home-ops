@@ -1,0 +1,14 @@
+---
+# yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/persistentvolumeclaim-v1.json
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bitwarden-cli-config
+  namespace: kube-system
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ceph-block

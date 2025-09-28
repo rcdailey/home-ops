@@ -1,0 +1,149 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bitwarden-external-secrets
+spec:
+  chart:
+    spec:
+      chart: bitwarden-external-secrets
+      version: 0.3.0
+      sourceRef:
+        kind: HelmRepository
+        name: eznix86-charts
+        namespace: flux-system
+  interval: 30m
+  maxHistory: 3
+  uninstall:
+    keepHistory: false
+  valuesFrom:
+  - kind: Secret
+    name: bitwarden-cli
+    valuesKey: BW_HOST
+    targetPath: secrets.bw_host
+  - kind: Secret
+    name: bitwarden-cli
+    valuesKey: BW_CLIENTID
+    targetPath: secrets.bw_clientid
+  - kind: Secret
+    name: bitwarden-cli
+    valuesKey: BW_CLIENTSECRET
+    targetPath: secrets.bw_clientsecret
+  - kind: Secret
+    name: bitwarden-cli
+    valuesKey: BW_PASSWORD
+    targetPath: secrets.bw_password
+  # WORKAROUND: Fix NetworkPolicy to allow external-secrets-operator access
+  # The chart's NetworkPolicy only allows pods with app.kubernetes.io/part-of=external-secrets
+  # but external-secrets-operator has app.kubernetes.io/name=external-secrets
+  # Issue: https://github.com/eznix86/bitwarden-external-secrets/issues/3
+  # TODO: Remove this patch when upstream chart is fixed
+  #
+  # WORKAROUND: Fix broken liveness probe causing constant restarts
+  # The chart's liveness probe uses malformed wget command with unquoted URL parameters
+  # Replace with working /status endpoint to eliminate restart loop
+  # This prevents constant login emails from Bitwarden due to session loss
+  postRenderers:
+  - kustomize:
+      patches:
+      - patch: |-
+          - op: replace
+            path: /spec/ingress
+            value:
+            - from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: external-secrets
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/part-of: external-secrets
+        target:
+          kind: NetworkPolicy
+          name: external-secret-2-bw-cli
+      # WORKAROUND: Fix broken liveness probe causing constant restarts and login emails
+      # Original probe uses malformed wget command with unquoted URL parameters (?force=true)
+      # Replace with HTTP probe to /status endpoint to eliminate restart/re-authentication loop
+      #
+      # UPSTREAM FIX NEEDED: Chart deployment template has invalid liveness probe
+      # Current (broken): exec: [wget, -q, http://127.0.0.1:8087/sync?force=true, --post-data='']
+      # Should be: httpGet: {path: /status, port: 8087} or properly quoted exec command
+      # The /status endpoint returns {"success":true,"data":{"status":"unlocked"}} when ready
+      - patch: |-
+          - op: replace
+            path: /spec/template/spec/containers/0/livenessProbe
+            value:
+              httpGet:
+                path: /status
+                port: 8087
+              initialDelaySeconds: 20
+              failureThreshold: 3
+              timeoutSeconds: 10
+              periodSeconds: 120
+        target:
+          kind: Deployment
+          name: bitwarden-cli
+      # ENHANCEMENT: Add persistent storage for Bitwarden CLI session data
+      # Prevents re-authentication on container restart, reducing login notification emails
+      # Session files stored in /home/app/.config/Bitwarden CLI persist across pod restarts
+      #
+      # UPSTREAM FIX NEEDED: Chart should support persistence configuration via values
+      # Suggested values structure:
+      #   persistence:
+      #     enabled: true
+      #     storageClass: ""
+      #     accessMode: ReadWriteOnce
+      #     size: 1Gi
+      #     mountPath: "/home/app/.config/Bitwarden CLI"
+      # Should include initContainer for proper ownership (app user UID 100:101 in Alpine)
+      - patch: |-
+          - op: add
+            path: /spec/template/spec/volumes
+            value:
+            - name: bitwarden-config
+              persistentVolumeClaim:
+                claimName: bitwarden-cli-config
+          - op: add
+            path: /spec/template/spec/containers/0/volumeMounts
+            value:
+            - name: bitwarden-config
+              mountPath: /home/app/.config/Bitwarden CLI
+          - op: add
+            path: /spec/template/spec/initContainers
+            value:
+            - name: fix-permissions
+              image: busybox:1.36
+              command:
+              - sh
+              - -c
+              - |
+                chown -R 100:101 /config
+                chmod -R 755 /config
+              volumeMounts:
+              - name: bitwarden-config
+                mountPath: /config
+              securityContext:
+                runAsUser: 0
+        target:
+          kind: Deployment
+          name: bitwarden-cli
+      # OPTIMIZATION: Reduce ExternalSecret refresh frequency to minimize event spam
+      # BitwardenSecret CRD doesn't expose refresh interval configuration
+      # Default 1m interval causes excessive event logging (following onedr0p pattern of 5m)
+      # Reduces API server load and event log noise while maintaining functionality
+      #
+      # UPSTREAM FIX NEEDED: BitwardenSecret should expose refreshInterval configuration
+      # This patch targets ExternalSecrets created by BitwardenSecret CRD
+      - patch: |-
+          - op: replace
+            path: /spec/refreshInterval
+            value: 5m
+        target:
+          kind: ExternalSecret
+          labelSelector: bitwarden.external-secrets.io/managed-by=bitwarden-operator
+  values:
+    operator:
+      image:
+        repository: ghcr.io/eznix86/bitwarden-external-secrets-operator
+        tag: latest
+        pullPolicy: IfNotPresent

@@ -7,4 +7,4 @@ components:
 resources:
 - ./helmrelease.yaml
 - ./pvc.yaml
-- ./externalsecret.yaml
+- ./bitwardensecret.yaml
