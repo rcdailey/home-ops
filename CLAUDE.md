@@ -32,16 +32,20 @@ SECTION**
     custom resources instead of Helm values, workarounds for limitations
   - Place comments directly above or within relevant configuration sections
   - These comments are ESSENTIAL for future maintenance and decision-making
+- NEVER end cluster hostnames with `svc.cluster.local`; only use `<service>.<namespace>`.
 
 ## Quality Assurance & Validation
 
 **MANDATORY DEBUGGING CHECKLIST - Claude MUST check FIRST before analysis:**
 
-□ **Namespace Violations**: Does app ks.yaml have `metadata.namespace`? (CRITICAL VIOLATION - remove
-immediately) □ **PVC Requirements**: Do PVCs have explicit `namespace: <namespace>`? (REQUIRED for
-all PVCs) □ **targetNamespace Requirements**: Does app ks.yaml have explicit `spec.targetNamespace:
+- **Namespace Violations**: Does app ks.yaml have `metadata.namespace`? (CRITICAL VIOLATION - remove
+immediately)
+- **PVC Requirements**: Do PVCs have explicit `namespace: <namespace>`? (REQUIRED for all PVCs)
+- **targetNamespace Requirements**: Does app ks.yaml have explicit `spec.targetNamespace:
 <namespace>`? (REQUIRED for all apps) □ **Parent Setup**: Does parent kustomization have only
 `namespace: <namespace>` field? (No patches needed)
+- Never do `kubectl port-forward`; run debug pods instead for introspection.
+- Never do adhoc fixes against the cluster; all solutions MUST be gitops/configuration-based.
 
 **ESSENTIAL VALIDATION SEQUENCE - Claude MUST run ALL steps after changes:**
 
@@ -191,7 +195,11 @@ validation.**
 - **Provider**: Helm chart eznix86/bitwarden-external-secrets with BitwardenSecret CRD + operator
 - **Implementation**: Uses oliverziegert/external-secrets-bitwarden:1.0.6 backend service
 - **Pattern**: ALWAYS use BitwardenSecret CRD - use Helm functions for processing
-- **Vault Organization**: Use Bitwarden item IDs for reliable reference, secure notes with custom fields for structured data
+- **Vault Organization**: Use Bitwarden item IDs for reliable reference, secure notes with custom
+  fields for structured data
+
+To understand how ESO for bitwarden password manager works, look at
+`oliverziegert/external-secrets-bitwarden` with octocode.
 
 **BITWARDENSECRET CRD USAGE:**
 
@@ -227,6 +235,8 @@ Use the `rbw` CLI utility to view secrets (tips below).
 - `rbw get <item_name> --raw`: View the JSON output for a single item (name is case sensitive)
 - `rbw list | rg <search_query>`: Search items in vault (MUST use `rg` to filter; there are
   thousands of items).
+
+To learn how `eznix86/bitwarden-external-secrets` works, use octocode.
 
 ## Storage & Deployment Strategy
 

@@ -73,6 +73,6 @@
       "Bash(task:*)",
       "Bash(uvx flux-local:*)"
     ],
-    "deny": []
+    "deny": ["Bash(kubectl port-forward:*)"]
   }
 }
