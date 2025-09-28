@@ -178,20 +178,20 @@ spec:
         - access: proxy
           name: VictoriaMetrics
           type: prometheus
-          url: http://vmsingle-victoria-metrics-k8s-stack.observability.svc.cluster.local:8428
+          url: http://vmsingle-victoria-metrics-k8s-stack.observability:8428
           isDefault: true
           jsonData:
             prometheusType: Prometheus
         - access: proxy
           name: VictoriaLogs
           type: victoriametrics-logs-datasource
-          url: http://victoria-logs-single.observability.svc.cluster.local:9428
+          url: http://victoria-logs-single.observability:9428
           jsonData:
             maxLines: 1000
         - name: VMAlertmanager
           type: alertmanager
           access: proxy
-          url: http://vmalertmanager-victoria-metrics-k8s-stack.observability.svc.cluster.local:9093
+          url: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093
           jsonData:
             implementation: prometheus
 
