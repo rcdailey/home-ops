@@ -8,9 +8,9 @@ metadata:
 entries:
 - model: authentik_core.user
   identifiers:
-    username: ${ADMIN_USERNAME}
+    username: !Env ADMIN_USERNAME
   attrs:
-    username: ${ADMIN_USERNAME}
+    username: !Env ADMIN_USERNAME
     name: Robert
     email: admin@${SECRET_DOMAIN}
     is_active: true
@@ -21,5 +21,5 @@ entries:
     attributes:
       settings:
         locale: ""
-      qbittorrent_username: ${QBITTORRENT_AUTH_USER}
-      qbittorrent_password: ${QBITTORRENT_AUTH_PASSWORD}
+      qbittorrent_username: !Env QBITTORRENT_AUTH_USER
+      qbittorrent_password: !Env QBITTORRENT_AUTH_PASSWORD
