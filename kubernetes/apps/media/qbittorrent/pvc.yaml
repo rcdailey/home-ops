@@ -11,18 +11,3 @@ spec:
     requests:
       storage: 1Gi
   storageClassName: ceph-block
----
-# yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/persistentvolumeclaim-v1.json
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: unraid-media-pv
-  namespace: media
-spec:
-  accessModes:
-  - ReadWriteMany
-  resources:
-    requests:
-      storage: 100Ti
-  storageClassName: ""
-  volumeName: unraid-media-pv

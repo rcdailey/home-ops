@@ -228,8 +228,9 @@ spec:
             - path: /var/www/html
 
       user-files:
-        type: persistentVolumeClaim
-        existingClaim: filerun-nfs-pvc
+        type: nfs
+        server: 192.168.1.58
+        path: /mnt/user/filerun
         globalMounts:
         - path: /user-files
 

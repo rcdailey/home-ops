@@ -7,6 +7,5 @@ components:
 resources:
 - ./helmrelease.yaml
 - ./mariadb.yaml
-- ./pv.yaml
 - ./pvc.yaml
 - ./secret.sops.yaml
