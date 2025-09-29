@@ -34,18 +34,117 @@ SECTION**
   - These comments are ESSENTIAL for future maintenance and decision-making
 - NEVER end cluster hostnames with `svc.cluster.local`; only use `<service>.<namespace>`.
 
+## Namespace Management Strategy
+
+**CRITICAL NAMESPACE PATTERNS - MANDATORY ENFORCEMENT:**
+
+This repository uses an **Explicit Namespace Declaration** pattern that differs from onedr0p's
+inheritance-based approach for enhanced reliability in GitOps operations.
+
+### Core Philosophy Comparison
+
+**onedr0p/home-ops Pattern** (dual namespace declaration):
+
+```yaml
+# App ks.yaml example from onedr0p
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app home-assistant
+  namespace: &namespace default  # Declares metadata.namespace
+spec:
+  targetNamespace: *namespace     # Also declares targetNamespace
+```
+
+- App ks.yaml files HAVE `metadata.namespace` with YAML anchors
+- Also uses `targetNamespace: *namespace` for consistency
+- Parent kustomization sets `namespace: <namespace>`
+- PVCs inherit namespace implicitly (no explicit declarations)
+- Relies on Kustomize namespace propagation for resources
+
+**This Repository Pattern** (explicit-declaration):
+
+- Parent kustomization sets `namespace: <namespace>` for organization
+- App ks.yaml files NEVER have `metadata.namespace` (VIOLATION)
+- Each app Kustomization explicitly declares `spec.targetNamespace: <namespace>`
+- PVCs inherit namespace implicitly (no explicit declarations)
+- Self-contained apps with clear namespace declarations
+
+### Mandatory Namespace Requirements
+
+**CRITICAL VIOLATIONS - Claude MUST check FIRST before analysis:**
+
+- **App ks.yaml Files**: NEVER specify `metadata.namespace` (VIOLATION - remove immediately)
+- **App ks.yaml Files**: MUST have explicit `spec.targetNamespace: <namespace>` (REQUIRED)
+- **PVC Files**: Inherit namespace implicitly (no explicit namespace declarations)
+- **Parent Kustomization**: Sets `namespace: <namespace>` only (no patches needed)
+- **App Kustomization**: NEVER specify `namespace` field (inheritance conflicts)
+
+### Pattern Examples
+
+**CORRECT App Kustomization** (`kubernetes/apps/media/plex/ks.yaml`):
+
+```yaml
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: plex
+spec:
+  targetNamespace: media  # REQUIRED: Explicit declaration
+  interval: 1h
+  # ... rest of spec
+```
+
+**CORRECT PVC Declaration** (`kubernetes/apps/default/bookstack/pvc.yaml`):
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bookstack
+  # No namespace field - inherits from parent kustomization
+spec:
+  accessModes:
+  - ReadWriteOnce
+  # ... rest of spec
+```
+
+**CORRECT Parent Kustomization** (`kubernetes/apps/default/kustomization.yaml`):
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default  # Organization only
+resources:
+- ./bookstack/ks.yaml
+- ./silverbullet/ks.yaml
+```
+
+### Debugging Protocol for Namespace Issues
+
+When ANY namespace-related error occurs, Claude MUST immediately:
+
+1. Check ALL namespace violations above before any other analysis
+2. Compare broken app against known working app (e.g., silverbullet)
+3. Look for `metadata.namespace` violations in ks.yaml files
+4. Verify app has explicit `spec.targetNamespace` declaration
+5. Verify PVCs inherit namespace implicitly (no explicit namespace fields)
+6. NEVER suggest architectural changes until basic violations are ruled out
+
+### Why This Pattern
+
+**Reliability**: Explicit targetNamespace declarations provide deterministic namespace resolution
+**Clarity**: App kustomizations are self-contained with clear namespace targets **Debugging**:
+Easier to trace namespace-related issues with explicit app declarations **Consistency**: Prevents
+timing issues during resource creation and backup operations
+
 ## Quality Assurance & Validation
 
 **MANDATORY DEBUGGING CHECKLIST - Claude MUST check FIRST before analysis:**
 
-- **Namespace Violations**: Does app ks.yaml have `metadata.namespace`? (CRITICAL VIOLATION - remove
-immediately)
-- **PVC Requirements**: Do PVCs have explicit `namespace: <namespace>`? (REQUIRED for all PVCs)
-- **targetNamespace Requirements**: Does app ks.yaml have explicit `spec.targetNamespace:
-<namespace>`? (REQUIRED for all apps) □ **Parent Setup**: Does parent kustomization have only
-`namespace: <namespace>` field? (No patches needed)
-- Never do `kubectl port-forward`; run debug pods instead for introspection.
-- Never do adhoc fixes against the cluster; all solutions MUST be gitops/configuration-based.
+- Apply complete namespace requirements from "Namespace Management Strategy" section above
+- Never do `kubectl port-forward`; run debug pods instead for introspection
+- Never do adhoc fixes against the cluster; all solutions MUST be gitops/configuration-based
 
 **ESSENTIAL VALIDATION SEQUENCE - Claude MUST run ALL steps after changes:**
 
@@ -140,37 +239,8 @@ validation.**
   secrets, pvcs). Subdirectories only for assets (config/, resources/, icons/)
 - **Kustomization Logic**: Single ks.yaml for same namespace+timing+lifecycle. Multiple for
   different namespaces/timing/lifecycle or operator+instance patterns
-- **Explicit Namespace Pattern**: Each app explicitly declares its target namespace for reliability
-  - Parent: `kubernetes/apps/<namespace>/kustomization.yaml` sets `namespace: <namespace>` only
-  - **CRITICAL**: Each app ks.yaml file MUST have explicit `spec.targetNamespace: <namespace>`
-  - **CRITICAL**: App ks.yaml files NEVER specify `metadata.namespace` (VIOLATION - remove
-    immediately)
-  - **CRITICAL**: Kustomize kustomization.yaml files NEVER specify `namespace` field
-  - **CRITICAL**: ALL PVCs MUST have explicit `namespace: <namespace>` in metadata
-  - Pattern example:
-
-    ```yaml
-    # kubernetes/apps/media/plex/ks.yaml
-    apiVersion: kustomize.toolkit.fluxcd.io/v1
-    kind: Kustomization
-    metadata:
-      name: plex
-    spec:
-      targetNamespace: media  # REQUIRED: Explicit declaration
-      interval: 1h
-      # ... rest of spec
-    ```
-
-  - Result: Self-contained apps with clear namespace declarations, no inheritance dependencies
-
-  **NAMESPACE DEBUGGING PROTOCOL:** When ANY namespace-related error occurs, Claude MUST
-  immediately:
-  1. Check DEBUGGING CHECKLIST above before any other analysis
-  2. Compare broken app against known working app (e.g., silverbullet)
-  3. Look for `metadata.namespace` violations in ks.yaml files
-  4. Verify app has explicit `spec.targetNamespace` declaration
-  5. Verify PVCs have explicit namespace specifications
-  6. NEVER suggest architectural changes until basic violations are ruled out
+- **Explicit Namespace Pattern**: See "Namespace Management Strategy" section for complete
+  requirements
 - **Naming Convention**: NEVER use `cluster-apps-` prefix in service/app names. Use straightforward
   naming that matches the directory structure (e.g., `mariadb-operator`, not
   `cluster-apps-mariadb-operator`)
