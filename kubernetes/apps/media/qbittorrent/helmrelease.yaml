@@ -148,8 +148,9 @@ spec:
             - path: /tmp
 
       media:
-        type: persistentVolumeClaim
-        existingClaim: unraid-media-pv
+        type: nfs
+        server: 192.168.1.58
+        path: /mnt/user/media
         advancedMounts:
           qbittorrent:
             app:

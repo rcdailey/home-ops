@@ -163,8 +163,9 @@ spec:
 
     persistence:
       photos:
-        type: persistentVolumeClaim
-        existingClaim: immich-photos
+        type: nfs
+        server: 192.168.1.58
+        path: /mnt/user/photos
         advancedMounts:
           server:
             main:

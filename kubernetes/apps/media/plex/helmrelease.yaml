@@ -118,7 +118,9 @@ spec:
             - path: /config/Library/Application Support/Plex Media Server/Cache
 
       media:
-        existingClaim: unraid-media-pv
+        type: nfs
+        server: 192.168.1.58
+        path: /mnt/user/media
         globalMounts:
         - path: /media
           readOnly: true
