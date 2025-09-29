@@ -116,12 +116,18 @@ spec:
           http:
             port: *port
 
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
     persistence:
       config:
         type: persistentVolumeClaim
-        storageClass: ceph-block
-        accessMode: ReadWriteOnce
-        size: 1Gi
+        existingClaim: qbittorrent
         advancedMounts:
           qbittorrent:
             app:
@@ -133,6 +139,13 @@ spec:
           qbittorrent:
             port-forward:
             - path: /config
+
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          qbittorrent:
+            app:
+            - path: /tmp
 
       media:
         type: persistentVolumeClaim

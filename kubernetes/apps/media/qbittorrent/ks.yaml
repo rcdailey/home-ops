@@ -10,6 +10,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  components:
+  - ../../../components/volsync
   decryption:
     provider: sops
     secretRef:
@@ -17,6 +19,9 @@ spec:
   interval: 1h
   path: ./kubernetes/apps/media/qbittorrent
   postBuild:
+    substitute:
+      APP: *app
+      VOLSYNC_CAPACITY: 1Gi
     substituteFrom:
     - name: cluster-secrets
       kind: Secret

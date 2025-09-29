@@ -327,6 +327,14 @@ spec:
 - `infisical secrets set API_KEY=value --env=prod --path=/default/app`: Set secret
 - `infisical secrets get API_KEY --env=prod --path=/default/app`: Get secret value
 
+**PVC STRATEGY:**
+
+- **volsync component**: Handles backups only - does NOT create PVCs
+- **Manual PVC**: All apps require explicit PVC definitions in pvc.yaml
+- **HelmRelease**: `existingClaim: appname` (direct name reference)
+- **File organization**: Always include `./pvc.yaml` in kustomization.yaml
+- **Naming**: Primary PVC matches app name, additional PVCs use `{app}-{purpose}` pattern
+
 ## Storage & Deployment Strategy
 
 **CRITICAL STORAGE AND DEPLOYMENT RULES - Claude MUST enforce these patterns:**
