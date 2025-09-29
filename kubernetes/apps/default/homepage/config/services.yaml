@@ -48,9 +48,9 @@
 
   - Radarr (4K):
       icon: radarr
-      href: https://radarr4k.${SECRET_DOMAIN}/
+      href: https://radarr-4k.${SECRET_DOMAIN}/
       description: 4K Movie Management
-      siteMonitor: http://radarr4k.media:7878
+      siteMonitor: http://radarr-4k.media:7878
 
   - Radarr (Anime):
       icon: radarr

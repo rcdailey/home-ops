@@ -1,0 +1,21 @@
+---
+# yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+version: 1
+metadata:
+  name: Radarr 4K Proxy Provider
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+- model: authentik_providers_proxy.proxyprovider
+  identifiers:
+    name: radarr-4k
+  attrs:
+    name: radarr-4k
+    external_host: https://radarr-4k.${SECRET_DOMAIN}
+    internal_host: http://radarr-4k.media:7878
+    mode: forward_single
+    intercept_header_auth: true
+    skip_path_regex: ^/api/.*$
+    refresh_token_validity: days=30
+    invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+    authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
