@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+version: 1
+metadata:
+  name: Radarr 4K Application
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+- model: authentik_core.application
+  identifiers:
+    slug: radarr-4k
+  attrs:
+    name: Radarr 4K
+    slug: radarr-4k
+    meta_launch_url: https://radarr-4k.${SECRET_DOMAIN}
+    policy_engine_mode: any
+    provider: !Find [authentik_providers_proxy.proxyprovider, [name, radarr-4k]]
