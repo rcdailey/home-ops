@@ -30,6 +30,8 @@ spec:
       enabled: false
 
     # Use VMSingle for homelab deployment
+    # Note: NOT increasing maxLabelsPerTimeseries beyond default (40) per VictoriaMetrics best practices
+    # High cardinality addressed via aggressive metricRelabelConfigs to drop node feature discovery labels
     vmsingle:
       enabled: true
       spec:
@@ -52,10 +54,10 @@ spec:
           httpGet:
             path: /health
             port: 8428
-          timeoutSeconds: 10
-          periodSeconds: 5
-          failureThreshold: 3
-          initialDelaySeconds: 10
+          timeoutSeconds: 30
+          periodSeconds: 15
+          failureThreshold: 5
+          initialDelaySeconds: 30
 
     # Disable VMCluster for single-node deployment
     vmcluster:
@@ -273,6 +275,12 @@ spec:
             regex: (uid)
           - action: labeldrop
             regex: (id|name)
+          - action: labeldrop
+            regex: (beta_kubernetes_io_.*)
+          - action: labeldrop
+            regex: (feature_node_kubernetes_io_.*)
+          - action: labeldrop
+            regex: (extensions_talos_dev_.*)
           - action: drop
             source_labels: [__name__]
             regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
