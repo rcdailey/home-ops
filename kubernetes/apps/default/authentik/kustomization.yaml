@@ -16,8 +16,12 @@ configMapGenerator:
   - blueprints/prowlarr-application.yaml
   - blueprints/qbittorrent-provider.yaml
   - blueprints/qbittorrent-application.yaml
+  - blueprints/radarr-provider.yaml
+  - blueprints/radarr-application.yaml
   - blueprints/radarr-4k-provider.yaml
   - blueprints/radarr-4k-application.yaml
+  - blueprints/radarr-anime-provider.yaml
+  - blueprints/radarr-anime-application.yaml
   - blueprints/sabnzbd-provider.yaml
   - blueprints/sabnzbd-application.yaml
   - blueprints/sonarr-provider.yaml
