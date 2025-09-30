@@ -140,19 +140,23 @@ timing issues during resource creation and backup operations
 
 ## Quality Assurance & Validation
 
-**MANDATORY DEBUGGING CHECKLIST - Claude MUST check FIRST before analysis:**
+### Mandatory Debugging Checklist
+
+Claude MUST check FIRST before analysis:
 
 - Apply complete namespace requirements from "Namespace Management Strategy" section above
 - Never do `kubectl port-forward`; run debug pods instead for introspection
 - Never do adhoc fixes against the cluster; all solutions MUST be gitops/configuration-based
 
-**ESSENTIAL VALIDATION SEQUENCE - Claude MUST run ALL steps after changes:**
+### Essential Validation Sequence
+
+Claude MUST run ALL steps after changes:
 
 1. **Flux Testing**: `./scripts/flux-local-test.sh`
 2. **Pre-commit Checks**: `pre-commit run --all-files` (or `pre-commit run --files <files>`)
 3. **Additional Validation**: kustomize build → kubectl dry-run (server) → flux check
 
-**REQUIRED TOOLS FOR VERIFICATION:**
+### Required Tools for Verification
 
 - **Helm Validation**: `helm template <release> <chart>` and `helm search repo <chart> --versions`
 - **Chart Analysis**: `helm show values <chart>/<name> --version <version>` for secret integration
@@ -165,7 +169,7 @@ validation.**
 
 ## Container Image Standards
 
-**CRITICAL CONTAINER IMAGE PRIORITY:**
+### Critical Container Image Priority
 
 - **Primary Choice**: `ghcr.io/home-operations/*` - ALWAYS prefer home-operations containers when
   available
@@ -182,7 +186,7 @@ validation.**
   - These often have compatibility issues with Kubernetes security contexts
   - Prefer home-operations containers which eschew such tools by design
 
-**MANDATORY IMAGE STANDARDS & VERIFICATION:**
+### Mandatory Image Standards & Verification
 
 1. **Image Selection Process:**
    - **Always check** `https://github.com/home-operations/containers/tree/main/apps/` first
@@ -225,7 +229,7 @@ validation.**
 
 ## Deployment Standards
 
-**CRITICAL FLUX PATTERNS:**
+### Critical Flux Patterns
 
 - **GitRepository**: ALWAYS use `flux-system` name, verify sourceRef matches existing Kustomizations
 - **CRITICAL**: GitRepository sourceRef MUST include `namespace: flux-system`
@@ -250,7 +254,7 @@ validation.**
 
 ## Storage & Secrets
 
-**IMPORTANT PATTERNS:**
+### Important Patterns
 
 - **NFS**: Static PVs for existing data, PVCs in app dirs, subPath mounting
 - **Database Isolation**: NEVER share databases between apps, deploy dedicated instances
@@ -260,14 +264,14 @@ validation.**
 - **Secret Management**: App-isolated secrets, `sops --set` for changes, `sops unset` for removal
 - **Chart Analysis**: See "Quality Assurance & Validation" section above for verification methods
 
-**INFISICAL ESO INTEGRATION:**
+### Infisical ESO Integration
 
 - **Provider**: Native ESO Infisical provider with Universal Auth (Machine Identity)
 - **Implementation**: Standard External Secrets Operator with Infisical backend
 - **Pattern**: Use ClusterSecretStore + ExternalSecret resources - no custom CRDs
 - **Organization**: Path-based secrets using `/namespace/app/secret-name` structure
 
-**INFISICAL CLUSTERSECRETSTORE:**
+#### Infisical ClusterSecretStore
 
 ```yaml
 ---
@@ -298,7 +302,7 @@ spec:
         expandSecretReferences: false
 ```
 
-**EXTERNALSECRET USAGE:**
+#### ExternalSecret Usage
 
 ```yaml
 ---
@@ -320,7 +324,7 @@ spec:
       key: /default/app/api-key
 ```
 
-**INFISICAL CLI USAGE:**
+#### Infisical CLI Usage
 
 **Common Operations:**
 
@@ -358,7 +362,7 @@ folders fails silently (exit code 0) without creating secrets. Always create fol
 - **Folder names:** kebab-case (e.g., `default`, `media`, `silverbullet`, `radarr-4k`)
 - **Path structure:** `/namespace/app/secret-name` (hierarchical organization by namespace/app)
 
-**PVC STRATEGY:**
+### PVC Strategy
 
 - **volsync component**: Handles backups only - does NOT create PVCs
 - **Manual PVC**: All apps require explicit PVC definitions in pvc.yaml
@@ -368,9 +372,11 @@ folders fails silently (exit code 0) without creating secrets. Always create fol
 
 ## Storage & Deployment Strategy
 
-**CRITICAL STORAGE AND DEPLOYMENT RULES - Claude MUST enforce these patterns:**
+### Critical Storage and Deployment Rules
 
-### Deployment Strategy Requirements
+Claude MUST enforce these patterns:
+
+#### Deployment Strategy Requirements
 
 **MANDATORY: ReadWriteOnce volumes require Recreate strategy:**
 
@@ -409,7 +415,7 @@ controllers:
 - **Stateless apps**: Prefer `RollingUpdate` for zero-downtime updates
 - **Stateful apps with persistent data**: Use `Recreate` to ensure data consistency
 
-### Volume Mounting Strategy
+#### Volume Mounting Strategy
 
 **Volume Mount Rules:**
 
@@ -418,14 +424,14 @@ controllers:
 - **Single-controller apps**: `globalMounts` acceptable, `advancedMounts` preferred for clarity
 - **Multi-controller apps**: NEVER use `globalMounts` with RWO volumes
 
-**Storage Class Guidelines:**
+##### Storage Class Guidelines
 
 - **ReadWriteOnce (RWO)**: `ceph-block` - Single pod exclusive, requires `strategy: Recreate`
 - **ReadWriteMany (RWX)**: `ceph-filesystem`, NFS - Multi-pod sharing, compatible with
   `RollingUpdate`
 - **emptyDir/configMap**: Always multi-pod compatible
 
-**Volume Mount Patterns:**
+##### Volume Mount Patterns
 
 ```yaml
 # CORRECT: RWO volume with advancedMounts + Recreate strategy
@@ -461,7 +467,7 @@ persistence:
     - path: /data
 ```
 
-**Storage Selection Strategy:**
+##### Storage Selection Strategy
 
 - **App-specific persistent data**: `ceph-block` (RWO) + `advancedMounts` + `strategy: Recreate`
 - **Shared configuration**: ConfigMaps + `globalMounts` + any strategy
@@ -470,7 +476,9 @@ persistence:
 
 ## ConfigMap & Reloader Strategy
 
-**IMPORTANT:** Use stable names (`disableNameSuffixHash: true`) ONLY for:
+### Important Notes
+
+Use stable names (`disableNameSuffixHash: true`) ONLY for:
 
 - Helm `valuesFrom` references (external-dns, cloudflare-dns)
 - App-template `persistence.name` references (homepage, cloudflare-tunnel)
@@ -483,7 +491,7 @@ Kustomize hashes.
 
 ## Network Rules
 
-**CRITICAL NETWORK PATTERNS:**
+### Critical Network Patterns
 
 - **HTTPRoute ONLY**: HTTPRoute over Ingress, route through existing gateways
 - **LoadBalancer Ban**: NEVER create LoadBalancer without explicit user discussion
@@ -498,7 +506,9 @@ Kustomize hashes.
 
 ## Authentik App Protection
 
-**REQUIRED COMPONENTS (4 items for protected apps):**
+### Required Components
+
+4 items for protected apps:
 
 - Proxy provider blueprint (external_host, internal_host, mode: forward_single)
 - Application blueprint (links provider to app catalog)
@@ -506,7 +516,7 @@ Kustomize hashes.
 - SecurityPolicy targeting HTTPRoute (backend: ak-outpost-authentik-embedded-outpost, path:
   /outpost.goauthentik.io/auth/envoy)
 
-**SETUP WORKFLOW:**
+### Setup Workflow
 
 1. Create provider blueprint: external/internal hosts, intercept_header_auth: true
 2. Create application blueprint: references provider by name
@@ -514,7 +524,7 @@ Kustomize hashes.
 4. Create SecurityPolicy targeting app's HTTPRoute name
 5. Deploy app with standard app-template route blocks
 
-**API PROTECTION:**
+### API Protection
 
 - **skip_path_regex: ^/api/.*$** excludes API endpoints from auth (use appropriate API path for the
   app)
@@ -549,7 +559,7 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 - **Gateways**: DNS `192.168.1.71`, Internal `192.168.1.72`, External `192.168.1.73`
 - **Tunnel**: `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.1.73`
 
-**Nodes**:
+### Nodes
 
 - **Control Plane**:
   - rias: `192.168.1.61` (VM)
@@ -564,7 +574,9 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 
 ## Directory Structure
 
-**Pattern**: `kubernetes/apps/<namespace>/<app>/`
+### Pattern
+
+`kubernetes/apps/<namespace>/<app>/`
 
 - **Standard Files**: helmrelease.yaml, ks.yaml, kustomization.yaml, secret.sops.yaml,
   httproute.yaml, pvc.yaml
@@ -575,7 +587,7 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 
 ## Intel GPU for Applications
 
-**IMPORTANT GPU PATTERNS:**
+### Important GPU Patterns
 
 - **Resource Request**: `gpu.intel.com/i915: 1` for Intel GPU allocation via Device Plugin Operator
 - **Device Plugin**: Intel Device Plugin Operator manages GPU access automatically (no
@@ -591,9 +603,11 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 
 ## DNS Architecture
 
-**AdGuard Home**: Subnet-based filtering with VLAN client overrides for network segmentation.
+### AdGuard Home
 
-**Network Rules**:
+Subnet-based filtering with VLAN client overrides for network segmentation.
+
+#### Filtering Rules
 
 - **Main LAN** (192.168.1.0/24): Global baseline (590k+ rules)
 - **Privacy VLANs** (IoT/Work): Social media blocking
@@ -601,14 +615,19 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 - **Guest VLAN**: Adult content blocking
 - **Cameras VLAN**: Minimal filtering for compatibility
 
-**API Access**: `https://dns.${SECRET_DOMAIN}/control` (credentials in `dns-private-secret`)
+#### API Access
+
+`https://dns.${SECRET_DOMAIN}/control` (credentials in `dns-private-secret`)
 
 ## S3 Object Storage (Garage)
 
-**Endpoint**: `http://192.168.1.58:3900` (Nezuko server) **Region**: `garage` (custom Garage region
-name) **Access**: Cluster-level credentials stored in `cluster-secrets.sops.yaml`
+### Configuration
 
-### S3 Credentials Access
+- **Endpoint**: `http://192.168.1.58:3900` (Nezuko server)
+- **Region**: `garage` (custom Garage region name)
+- **Access**: Cluster-level credentials stored in `cluster-secrets.sops.yaml`
+
+### Credentials Access
 
 Credentials are stored in
 `/home/robert/code/home-ops/kubernetes/components/common/sops/cluster-secrets.sops.yaml`:
@@ -690,7 +709,7 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 - **Data Mover**: Kopia with S3 backend (modern, replaces rsync/rclone)
 - **Destination**: `s3://volsync-backups/{APP}/` (per-app isolation)
 
-**Usage Pattern**:
+#### Usage Pattern
 
 ```yaml
 # In app kustomization.yaml
@@ -702,7 +721,7 @@ postBuild:
     VOLSYNC_PVC: custom-pvc-name  # Override if PVC name != app name
 ```
 
-**Key Features**:
+#### Key Features
 
 - **Scheduling**: Hourly backups (`0 * * * *`)
 - **Retention**: 24 hourly, 7 daily snapshots
@@ -710,7 +729,7 @@ postBuild:
 - **Security**: Runs as non-root (1000:1000), snapshot-based for consistency
 - **Cache**: Dedicated 5Gi cache PVC per app for performance
 
-**Validation Commands**:
+#### Validation Commands
 
 ```bash
 kubectl get replicationsources -A              # Check backup sources
@@ -725,7 +744,7 @@ rclone ls garage:volsync-backups/              # Verify S3 contents
 - **Destination**: `s3://postgres-backups/{cluster}/`
 - **Features**: Point-in-time recovery, automated retention, compression
 
-**Status Check**:
+#### Status Check
 
 ```bash
 kubectl get scheduledbackup -A                 # Backup schedules
@@ -734,13 +753,15 @@ kubectl describe cluster <name> | grep -i backup  # Cluster backup status
 
 ### Component Integration Requirements
 
-**CRITICAL**: Apps using volsync component must provide:
+#### Critical
+
+Apps using volsync component must provide:
 
 1. `APP` variable via `postBuild.substitute`
 2. Correct PVC name (defaults to `${APP}`, override with `VOLSYNC_PVC`)
 3. S3 credentials via `postBuild.substituteFrom: cluster-secrets`
 
-**Common Issues**:
+#### Common Issues
 
 - Missing `APP` substitution → `variable not set (strict mode): "APP"`
 - Wrong PVC name → `PersistentVolumeClaim "appname" not found`
