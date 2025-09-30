@@ -40,6 +40,9 @@ spec:
               SONARR__SERVER__PORT: &port 8989
               SONARR__UPDATE__BRANCH: main
               TZ: America/Chicago
+            envFrom:
+            - secretRef:
+                name: sonarr-anime-secret
             probes:
               liveness:
                 enabled: true

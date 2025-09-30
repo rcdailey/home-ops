@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+components:
+- ../../../components/volsync
+resources:
+- ./externalsecret.yaml
+- ./helmrelease.yaml
+- ./pvc.yaml
+configMapGenerator:
+- name: recyclarr-configmap
+  files:
+  - sonarr-series.yaml=./configs/sonarr-series.yaml
+  - sonarr-anime.yaml=./configs/sonarr-anime.yaml
+  - radarr-1080p.yaml=./configs/radarr-1080p.yaml
+  - radarr-4k.yaml=./configs/radarr-4k.yaml
+  - radarr-anime.yaml=./configs/radarr-anime.yaml
+generatorOptions:
+  disableNameSuffixHash: true
