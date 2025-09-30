@@ -24,7 +24,7 @@ spec:
           rsync-migration:
             image:
               repository: docker.io/library/alpine
-              tag: 3.21.3
+              tag: 3.22.1
             command:
             - /bin/sh
             - -c
@@ -41,7 +41,7 @@ spec:
           chown-migration:
             image:
               repository: docker.io/library/alpine
-              tag: 3.21.3
+              tag: 3.22.1
             command:
             - /bin/sh
             - -c
