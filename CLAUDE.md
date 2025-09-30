@@ -322,10 +322,41 @@ spec:
 
 **INFISICAL CLI USAGE:**
 
-- `infisical login`: Authenticate with Infisical Cloud
-- `infisical secrets list --env=prod --path=/default/app`: List secrets in path
-- `infisical secrets set API_KEY=value --env=prod --path=/default/app`: Set secret
-- `infisical secrets get API_KEY --env=prod --path=/default/app`: Get secret value
+**Common Operations:**
+
+```bash
+# List secrets in path
+infisical secrets --env=prod --path=/namespace/app
+
+# Get specific secret(s)
+infisical secrets get secret-name --env=prod --path=/namespace/app
+
+# Set secrets (supports multiple)
+infisical secrets set secret-name=value --env=prod --path=/namespace/app
+infisical secrets set api-key=value db-password=secret --env=prod --path=/namespace/app
+
+# Delete secret
+infisical secrets delete secret-name --env=prod --path=/namespace/app
+```
+
+**Folder Management:**
+
+```bash
+# List folders in path
+infisical secrets folders get --env=prod --path=/namespace
+
+# Create folder (REQUIRED before setting secrets)
+infisical secrets folders create --name app-name --path=/namespace --env=prod
+```
+
+**CRITICAL:** Folders MUST be created BEFORE setting secrets. Setting secrets in non-existent
+folders fails silently (exit code 0) without creating secrets. Always create folder structure first.
+
+**Conventions:**
+
+- **Secret names:** kebab-case (e.g., `secret-key`, `postgres-password`, `api-token`)
+- **Folder names:** kebab-case (e.g., `default`, `media`, `silverbullet`, `radarr-4k`)
+- **Path structure:** `/namespace/app/secret-name` (hierarchical organization by namespace/app)
 
 **PVC STRATEGY:**
 
