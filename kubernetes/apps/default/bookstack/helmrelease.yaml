@@ -53,6 +53,9 @@ spec:
                 enabled: true
                 type: HTTP
                 path: /status
+                spec:
+                  initialDelaySeconds: 10
+                  timeoutSeconds: 5
               readiness: *probe
               startup:
                 enabled: true

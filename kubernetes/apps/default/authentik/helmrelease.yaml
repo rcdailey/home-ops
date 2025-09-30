@@ -93,3 +93,6 @@ spec:
     server:
       ingress:
         enabled: false
+      readinessProbe:
+        timeoutSeconds: 10
+        initialDelaySeconds: 10
