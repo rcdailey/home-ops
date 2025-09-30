@@ -1,0 +1,112 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: recyclarr
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  values:
+    controllers:
+      recyclarr:
+        type: cronjob
+        cronjob:
+          schedule: "0 1 * * *"
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+          ttlSecondsAfterFinished: 86400
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+            runAsNonRoot: true
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/recyclarr/recyclarr
+              tag: 7.4.1@sha256:759540877f95453eca8a26c1a93593e783a7a824c324fbd57523deffb67f48e1
+            args:
+            - sync
+            env:
+              TZ: America/Chicago
+              UMASK: "022"
+            envFrom:
+            - secretRef:
+                name: recyclarr-secret
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: recyclarr
+        advancedMounts:
+          recyclarr:
+            app:
+            - path: /config
+
+      configs:
+        type: configMap
+        name: recyclarr-configmap
+        advancedMounts:
+          recyclarr:
+            app:
+            - path: /config/configs/sonarr-series.yaml
+              subPath: sonarr-series.yaml
+              readOnly: true
+            - path: /config/configs/sonarr-anime.yaml
+              subPath: sonarr-anime.yaml
+              readOnly: true
+            - path: /config/configs/radarr-1080p.yaml
+              subPath: radarr-1080p.yaml
+              readOnly: true
+            - path: /config/configs/radarr-4k.yaml
+              subPath: radarr-4k.yaml
+              readOnly: true
+            - path: /config/configs/radarr-anime.yaml
+              subPath: radarr-anime.yaml
+              readOnly: true
+
+      logs:
+        type: emptyDir
+        advancedMounts:
+          recyclarr:
+            app:
+            - path: /config/logs
+
+      repositories:
+        type: emptyDir
+        advancedMounts:
+          recyclarr:
+            app:
+            - path: /config/repositories
+
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          recyclarr:
+            app:
+            - path: /tmp

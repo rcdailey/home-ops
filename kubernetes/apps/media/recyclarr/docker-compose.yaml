@@ -1,0 +1,28 @@
+---
+name: recyclarr-k8s
+services:
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:7.4.1
+    user: "1000:1000"
+    environment:
+    - TZ=America/Chicago
+    - SONARR_BASE_URL
+    - SONARR_API_KEY
+    - SONARR_ANIME_BASE_URL
+    - SONARR_ANIME_API_KEY
+    - RADARR_BASE_URL
+    - RADARR_API_KEY
+    - RADARR_4K_BASE_URL
+    - RADARR_4K_API_KEY
+    - RADARR_ANIME_BASE_URL
+    - RADARR_ANIME_API_KEY
+    volumes:
+    - ./data:/config
+    - ./configs:/config/configs:ro
+    # Map cluster-internal service names to external gateway IP for local resolution
+    extra_hosts:
+    - radarr.media:192.168.1.73
+    - radarr-4k.media:192.168.1.73
+    - radarr-anime.media:192.168.1.73
+    - sonarr.media:192.168.1.73
+    - sonarr-anime.media:192.168.1.73

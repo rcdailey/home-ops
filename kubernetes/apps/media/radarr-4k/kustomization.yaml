@@ -5,6 +5,7 @@ kind: Kustomization
 components:
 - ../../../components/volsync
 resources:
+- ./externalsecret.yaml
 - ./helmrelease.yaml
 - ./pvc.yaml
 - ./securitypolicy.yaml
