@@ -1,407 +1,299 @@
 ---
-description: Systematic Docker Compose to Kubernetes migration with comprehensive discovery and analysis
+allowed-tools: Read, Glob, Grep, TodoWrite, Bash(ls:*), Bash(rg:*), Bash(./scripts/app-scout.sh discover:*), Bash(./scripts/flux-local-test.sh:*), Bash(pre-commit run:*), Bash(kustomize build:*), mcp__context7__resolve-library-id, mcp__context7__get-library-docs, mcp__octocode__githubSearchCode, mcp__octocode__githubGetFileContent, mcp__octocode__githubViewRepoStructure
 argument-hint: <service-name> - Name of the service to migrate from docker-compose
+description: Systematic Docker Compose to Kubernetes migration with comprehensive discovery and analysis
 ---
 
 # Docker Compose to Kubernetes Migration Protocol
-
-**CRITICAL: This command REQUIRES Plan Mode. Exit immediately if not in Plan Mode.**
 
 **TARGET SERVICE**: $ARGUMENTS
 
 *If no service name provided, request user specify the service to migrate.*
 
-## Phase 1: Pre-flight Validation
+## Critical Constraints
 
-**MANDATORY SYSTEM CHECKS:**
+**MANDATORY REQUIREMENTS:**
 
-1. **Plan Mode Verification**
-   - Confirm Plan Mode is active
-   - Exit with error if not in Plan Mode
+- Plan Mode REQUIRED - exit immediately if not in Plan Mode
+- NO file modifications until plan approval from user
+- NO implementation until ALL research phases complete
+- ALL solutions MUST be GitOps-based (repository YAML only)
+- Use `rg` (ripgrep) instead of `grep` for all searches
+- ALWAYS use Context7 for ANY unknown concepts, tools, or patterns
 
-2. **Mount Accessibility Check**
-   - Detect OS and check appropriate mount path
-   - WSL2/Linux: `/mnt/fast/docker`
-   - macOS: `/Volumes/docker`
-   - If mount not accessible, STOP and require user to fix mount
+**DESIGN PHILOSOPHY:**
 
-3. **Service Pre-existence Check**
-   - Search existing cluster deployments for the target service
-   - Search for any references to the service in kubernetes manifests
-   - If service already exists, document current state and ask user for migration intent
+- Docker Compose is REFERENCE ONLY for extracting requirements (containers, dependencies,
+  environment variables, volumes, ports)
+- Docker Compose architecture/structure should NOT influence Kubernetes implementation
+- Design Kubernetes-first: Follow Context7 app-template docs and repository conventions
+- Use modern patterns from research findings, not legacy docker-compose patterns
+- Match existing patterns in kubernetes/apps/ directory structure
 
-## Phase 2: Discovery & Configuration Analysis
+**MOUNT ACCESSIBILITY CHECK:**
 
-**DOCKER COMPOSE DISCOVERY:**
+- WSL2/Linux: `/mnt/fast/docker`
+- macOS: `/Volumes/docker`
+- If mount not accessible, STOP and require user to fix mount
 
-1. **Locate Service Configuration**
-   - Search for service directory in docker mount
-   - Search for docker-compose files in service directory
-   - If not found, request user provide exact path
+## Pre-Flight Validation
 
-2. **Configuration Extraction**
-   - Read primary docker-compose file from discovered service path
-   - Read environment files (.env) if they exist
-   - Read any override files (docker-compose.override.yml) if they exist
-   - Document custom config files (*.conf,*.cfg, *.json,*.yaml)
+1. **Confirm Plan Mode active** - Exit with error if not in Plan Mode
+2. **Check mount accessibility** - Verify docker mount path exists
+3. **Search for existing service** - Check kubernetes/ manifests for target service
+4. **Document current state** - If service exists, ask user for migration intent
 
-3. **Volume Analysis**
-   - List all volumes and bind mounts in the service directory
-   - Identify data persistence requirements
-   - Map to K8s storage strategy (NFS, Rook Ceph, local)
+## Discovery & Requirements Extraction
 
-4. **Network & Port Analysis**
-   - Extract exposed ports and networking requirements
-   - Identify database dependencies
-   - Document external service integrations
+**PURPOSE**: Extract *what* needs deployment, NOT *how* to structure in Kubernetes.
 
-## Phase 3: Reference Implementation Research
+**Locate Service:**
 
-**ENHANCED RESEARCH STRATEGY:**
+- Search docker mount: `rg --files -g "*docker-compose*"`
+- If not found, request exact path from user
 
-1. **Context7 Library Documentation (MANDATORY FIRST STEP)**
-   - **REQUIRED**: `resolve-library-id` for "bjw-s app-template" or "app-template"
-   - **REQUIRED**: `get-library-docs` with Context7-compatible library ID
-   - Document current app-template patterns, values structure, and best practices
-   - **CRITICAL**: This provides authoritative, up-to-date documentation before any implementation decisions
-   - Extract controller patterns, persistence options, and networking configurations from official docs
+**Extract Requirements (NOT Architecture):**
 
-2. **Local Repository Analysis (PRIORITY)**
-   - Search existing app-template implementations: `rg -l "app-template"
-     kubernetes/apps/*/*/helmrelease.yaml`
-   - Analyze controller patterns in similar applications
-   - Extract service architecture decisions from existing deployments
-   - Document storage, networking, and security patterns used
-   - **Anti-pattern Detection**: Identify multi-service containers that should be separate
-     HelmReleases
+- Read docker-compose.yml, .env files, override files, config files
+- Extract ONLY: container images/versions, environment variables, volume paths, port exposures,
+  service dependencies, resource requirements, health check commands
+- Ignore docker-compose service boundaries and structure
 
-3. **Service Architecture Decision Rules**
+**Data Persistence Analysis:**
 
-   ```yaml
-   Separate HelmReleases (Different Pods) IF:
-     - Independent database (MariaDB, PostgreSQL, Redis as primary store)
-     - Different lifecycle management needs
-     - Different resource/security requirements
-     - Can function independently
+- List volume mount paths (ignore docker volume names)
+- Identify persistence needs: config vs data vs cache
+- Document size requirements and access patterns
+- Plan Kubernetes storage strategy: RWO/RWX, Ceph/NFS
 
-   Same HelmRelease, Separate Controllers (Different Pods) IF:
-     - Tightly coupled services (web + worker + cache)
-     - Shared configuration and secrets
-     - Similar resource requirements
-     - Part of same application stack
+## Research Strategy
 
-   Same Controller, Multiple Containers (Same Pod) IF:
-     - Sidecar pattern (VPN + app, backup + app)
-     - Shared network namespace required
-     - Init container dependencies
-     - Shared storage access patterns
-   ```
+**MANDATORY SEQUENCE - Complete ALL steps before implementation:**
 
-4. **OctoCode External Research (Systematic Analysis)**
-   - **Repository Structure**: `githubViewRepoStructure` for onedr0p/home-ops kubernetes/apps structure
-   - **Pattern Discovery**: Bulk `githubSearchCode` queries:
-     ```
-     Query Set A: ["$ARGUMENTS", "app-template", "bjw-s"]
-     Query Set B: ["controllers", "persistence", "route"]
-     Query Set C: Service-specific terms from docker-compose analysis
-     ```
-   - **Implementation Analysis**: `githubGetFileContent` for specific helmrelease.yaml examples
-   - **Benefit**: Comprehensive pattern analysis with parallel bulk operations
+### 1. Context7 Documentation (FIRST STEP)
 
-5. **App-Scout Analysis (Chart Discovery)**
-   - **REQUIRED**: Run app-scout discovery for the target service
-   - Analyze dedicated charts vs app-template patterns
-   - Compare with context7 + octocode findings
-   - **Purpose**: Chart availability assessment, not implementation patterns (use octocode for patterns)
+- `resolve-library-id` for "bjw-s app-template" or "app-template"
+- `get-library-docs` with resolved library ID
+- Extract: app-template patterns, controller structure, persistence patterns, networking configs,
+  security contexts, health probe configs
+- Use Context7 immediately for ANY unclear concepts
 
-6. **Documentation Validation Cross-Check**
-   - Validate octocode findings against context7 documentation
-   - Ensure implementation patterns align with current app-template best practices
-   - Document any discrepancies between external patterns and official documentation
+### 2. Local Repository Analysis
 
-## Phase 4: Migration Strategy Decision Tree
+- Search: `rg -l "app-template" kubernetes/apps/*/*/helmrelease.yaml`
+- Read 3+ similar HelmReleases for pattern analysis
+- Read corresponding kustomization.yaml, ks.yaml, pvc.yaml files
+- Document: controller patterns, storage strategies (RWO/RWX, advancedMounts), networking (HTTPRoute
+  usage), security contexts
 
-**DEPLOYMENT PATTERN SELECTION:**
+### 3. OctoCode External Research
 
-1. **Chart vs App-Template Decision**
+- `githubViewRepoStructure` for onedr0p/home-ops kubernetes/apps
+- Parallel `githubSearchCode` queries: [$ARGUMENTS, "app-template", "controllers", "persistence",
+  "route"]
+- `githubGetFileContent` for specific helmrelease.yaml examples
+- Cross-reference findings against Context7 documentation
 
-   ```yaml
-   Use Dedicated Helm Chart IF:
-     - Official chart exists and is actively maintained
-     - Complex configuration requirements
-     - Multiple interdependent services
-     - Database clustering needs
+### 4. App-Scout Chart Discovery
 
-   Use App-Template IF:
-     - Simple single-container service
-     - Custom configuration requirements
-     - Need fine-grained control
-     - Homelab-specific customizations
-   ```
+- Run `./scripts/app-scout.sh discover $ARGUMENTS`
+- Assess dedicated charts vs app-template patterns
+- Use for chart availability assessment ONLY
 
-2. **Storage Strategy Selection**
+### 5. Validation Cross-Check
 
-   ```yaml
-   Use NFS IF:
-     - Large media files (>10GB)
-     - Shared across multiple pods
-     - Existing data on Nezuko NFS
+- Validate OctoCode findings against Context7 docs
+- Ensure patterns align with current app-template best practices
+- Context7 is source of truth for conflicts
 
-   Use Rook Ceph IF:
-     - Database storage
-     - High-performance requirements
-     - Replicated storage needs
+## Architecture Design
 
-   Use Local Storage IF:
-     - Temporary/cache data
-     - Single-node requirements
-   ```
+**Service Separation Decision Rules:**
 
-3. **Network Exposure Decision**
+- **Separate HelmReleases IF**: Independent database, different lifecycle, different resources, can
+  function independently
+- **Same HelmRelease, Separate Controllers IF**: Tightly coupled services, shared config/secrets,
+  similar resources, part of same stack
+- **Same Controller, Multiple Containers IF**: Sidecar pattern, shared network namespace, init
+  container dependencies, shared storage
 
-   ```yaml
-   Use HTTPRoute IF:
-     - Web interface required
-     - External access needed
-     - HTTPS/TLS termination
+**Deployment Pattern Selection:**
 
-   Use ClusterIP Service IF:
-     - Internal-only access
-     - API endpoints for other services
-     - Database connections
+| Use Dedicated Chart              | Use App-Template                |
+| -------------------------------- | ------------------------------- |
+| Official maintained chart exists | Simple single-container service |
+| Complex configuration            | Custom configuration needs      |
+| Multiple interdependent services | Homelab-specific customizations |
+| Database clustering              | Need fine-grained control       |
 
-   Use LoadBalancer IF:
-     - Non-HTTP protocols (rare in homelab)
-     - User explicitly requests it
-   ```
+**Storage Strategy:**
 
-## Phase 5: Kubernetes Resource Planning
+| Use NFS                  | Use Rook Ceph          | Use Local                |
+| ------------------------ | ---------------------- | ------------------------ |
+| Large media (>10GB)      | Database storage       | Temporary/cache data     |
+| Shared across pods       | High-performance needs | Single-node requirements |
+| Existing Nezuko NFS data | Replicated storage     |                          |
 
-**ENHANCED RESOURCE MAPPING:**
+**Network Exposure:**
 
-1. **Service Architecture Decision**
-   - Apply Phase 3 decision rules to each docker-compose service
-   - Cross-reference with context7 app-template documentation patterns
-   - Validate against octocode research findings from onedr0p/home-ops
-   - Create dependency graph showing which services need separation
-   - Document rationale for each architectural decision with reference citations
+| HTTPRoute             | ClusterIP Service    | LoadBalancer              |
+| --------------------- | -------------------- | ------------------------- |
+| Web interface         | Internal-only access | Non-HTTP protocols (rare) |
+| External access       | API endpoints        | User explicitly requests  |
+| HTTPS/TLS termination | Database connections |                           |
 
-2. **App-Template Configuration Strategy**
-   - **OCIRepository Pattern**: Use `oci://ghcr.io/bjw-s-labs/helm/app-template` (confirmed from octocode research)
-   - **Version Selection**: Document version found in research (e.g., `tag: 4.3.0` from onedr0p patterns)
-   - **Controller Structure**: Plan based on context7 documentation + octocode examples
-   - **Storage Strategy**: Apply RWO vs RWX patterns from research analysis
+**Volume Mounting Strategy:**
 
-3. **Namespace Selection**
-   - Analyze existing namespaces: `ls -d kubernetes/apps/*/`
-   - Follow semantic grouping (dns-private, network, default, etc.)
-   - Use existing namespace or justify new one
+| Pattern        | When to Use                                | Requirements                           |
+| -------------- | ------------------------------------------ | -------------------------------------- |
+| advancedMounts | RWO volumes, specific controller targeting | REQUIRED for RWO, `strategy: Recreate` |
+| globalMounts   | RWX volumes, ConfigMaps, shared data       | Compatible with `RollingUpdate`        |
 
-4. **Directory Structure Planning**
+**App-Template Configuration:**
 
-   **Single Service Pattern (App-Template):**
+- OCIRepository: `oci://ghcr.io/bjw-s-labs/helm/app-template`
+- Version: Match existing apps from repository analysis
+- Controller structure: Based on Context7 + local examples (NOT docker-compose)
+- Storage: Apply RWO/RWX patterns from research
+- Networking: Use HTTPRoute/service patterns from repository
 
-   ```txt
-   kubernetes/apps/<namespace>/$ARGUMENTS/
-   ├── ks.yaml               # Kustomization with targetNamespace
-   ├── kustomization.yaml     # Resource list
-   └── app/
-       ├── helmrelease.yaml   # App-template deployment
-       ├── ocirepository.yaml # App-template chart reference
-       ├── secret.sops.yaml   # Encrypted secrets (if needed)
-       ├── httproute.yaml     # External access (if needed)
-       └── pvc.yaml          # Persistent volumes (if needed)
-   ```
+**Namespace Selection:**
 
-   **Multi-Service Pattern (Databases Separated):**
+- Analyze: `ls -d kubernetes/apps/*/`
+- Follow semantic grouping or justify new namespace
 
-   ```txt
-   kubernetes/apps/<namespace>/$ARGUMENTS/
-   ├── ks.yaml               # Kustomization with targetNamespace
-   ├── kustomization.yaml     # Resource list
-   ├── app/
-   │   ├── helmrelease.yaml   # Main app (app-template)
-   │   ├── ocirepository.yaml # App-template chart reference
-   │   ├── secret.sops.yaml   # App-specific secrets
-   │   ├── httproute.yaml     # External access
-   │   └── pvc.yaml          # App persistent volumes
-   └── database/
-       ├── helmrelease.yaml   # Database (dedicated chart)
-       ├── secret.sops.yaml   # Database secrets
-       └── pvc.yaml          # Database persistent volumes
-   ```
+**Directory Structure:**
 
-5. **Volume Mounting Strategy (Enhanced)**
-   - **globalMounts**: Use for RWX volumes, ConfigMaps, shared data
-   - **advancedMounts**: REQUIRED for RWO volumes, specific controller targeting
-   - **Strategy Requirement**: `strategy: Recreate` for any RWO persistent volumes
-   - **Reference**: Based on onedr0p patterns and app-template documentation
+Single Service Pattern:
 
-6. **Secret Planning**
-   - Extract environment variables from docker-compose
-   - Group secrets by service boundaries (app vs database)
-   - Plan secret integration method (envFrom priority, then valueFrom)
-   - Use dedicated database operators (MariaDB, CNPG) for database credentials
-
-## Phase 6: Migration Implementation Plan
-
-**COMPREHENSIVE IMPLEMENTATION CHECKLIST:**
-
-1. **Repository Structure**
-   - Create directory: `kubernetes/apps/<namespace>/$ARGUMENTS/`
-   - Generate kustomization.yaml with resource list
-   - Add to parent namespace kustomization
-
-2. **Enhanced Core Deployment (Context7 + OctoCode Patterns)**
-   - **Context7 Validation**: Verify implementation against official app-template documentation
-   - **OctoCode Patterns**: Apply patterns discovered from onedr0p/home-ops analysis
-   - **Local Integration**: Adapt patterns to existing repository conventions
-   - Create ocirepository.yaml with:
-     - `url: oci://ghcr.io/bjw-s-labs/helm/app-template`
-     - Version from research findings (e.g., `tag: 4.3.0`)
-   - Create helmrelease.yaml with:
-     - YAML language server schema (Flux schemas)
-     - OCIRepository chartRef referencing app-template
-     - Controllers structure from context7 documentation
-     - Service definitions matching controller names
-     - Resource requests/limits from docker-compose analysis
-     - Security context patterns: runAsNonRoot, capabilities drop, readOnlyRootFilesystem
-     - Health probes (HTTP preferred, custom probes for complex apps)
-     - Reloader annotation: `reloader.stakater.com/auto: "true"`
-     - Volume mounting strategy: advancedMounts for RWO, globalMounts for RWX
-
-3. **Database Integration (Critical Decision Point)**
-   - **If database required**: Create separate HelmRelease using dedicated operator
-   - **MariaDB**: Use mariadb-operator following kubernetes/apps/kube-system/mariadb-operator/
-   - **PostgreSQL**: Use cloudnative-pg following kubernetes/apps/kube-system/cloudnative-pg/
-   - **Redis**: Include as controller only if used as cache, not primary store
-
-4. **Storage Configuration**
-   - Create PVC manifests for persistent data
-   - Configure subPath mounting for existing data
-   - Plan data migration from docker volumes
-
-5. **Secret Management**
-   - Create secret.sops.yaml structure
-   - Use `sops --set` commands for value insertion
-   - Configure secret integration in helmrelease
-
-6. **Network Configuration**
-   - Create HTTPRoute for external access (if needed)
-   - Configure service endpoints
-   - Set up external-dns annotations
-
-7. **Validation Strategy**
-   - Pre-commit validation: `pre-commit run --files <changed-files>`
-   - Flux validation: `./scripts/flux-local-test.sh`
-   - Kustomize build test: `kustomize build kubernetes/apps/<namespace>/$ARGUMENTS`
-
-## Phase 7: Migration Execution Workflow
-
-**STEP-BY-STEP EXECUTION:**
-
-1. **Pre-Migration Backup**
-   - Document current docker-compose state
-   - Backup volume data if critical
-   - Note current service URLs and access methods
-
-2. **Gradual Migration Approach**
-   - Deploy to K8s alongside docker-compose
-   - Validate functionality matches
-   - Migrate DNS/routing when validated
-   - Remove docker-compose deployment
-
-3. **Post-Migration Validation**
-   - Verify all functionality working
-   - Check data persistence across pod restarts
-   - Validate external access and authentication
-   - Monitor logs for errors
-
-4. **GitOps Integration**
-   - Commit changes to repository
-   - Monitor Flux reconciliation
-   - Verify automatic deployment
-   - Use `task reconcile` for immediate sync
-
-## Enhanced Tool Integration Patterns
-
-**CONTEXT7 INTEGRATION:**
-```
-1. resolve-library-id: "bjw-s app-template" or "app-template"
-2. get-library-docs: Use resolved Context7-compatible library ID
-3. Extract: Current patterns, controller structure, persistence options
-4. Validate: All implementation decisions against official documentation
+```txt
+kubernetes/apps/<namespace>/$ARGUMENTS/
+├── ks.yaml               # Kustomization with targetNamespace
+├── kustomization.yaml    # Resource list
+└── app/
+    ├── helmrelease.yaml
+    ├── ocirepository.yaml
+    ├── secret.sops.yaml   (if needed)
+    ├── httproute.yaml     (if needed)
+    └── pvc.yaml           (if needed)
 ```
 
-**OCTOCODE BULK RESEARCH STRATEGY:**
-```
-Sequential Query Sets for onedr0p/home-ops:
-1. Repository Structure: githubViewRepoStructure kubernetes/apps
-2. Pattern Discovery: githubSearchCode parallel queries:
-   - Service-specific: [$ARGUMENTS, related-terms]
-   - App-template: ["app-template", "bjw-s", "controllers"]
-   - Architecture: ["persistence", "route", "security"]
-3. Implementation Analysis: githubGetFileContent for specific examples
-4. Cross-reference: Validate findings against context7 documentation
-```
+Multi-Service Pattern (Separate Databases):
 
-**APP-SCOUT FOCUSED USAGE:**
-```
-Purpose: Chart availability assessment only
-Workflow:
-1. ./scripts/app-scout.sh discover $ARGUMENTS
-2. Identify dedicated charts vs app-template decision
-3. Use octocode for implementation patterns (not app-scout inspect)
+```txt
+kubernetes/apps/<namespace>/$ARGUMENTS/
+├── ks.yaml
+├── kustomization.yaml
+├── app/
+│   ├── helmrelease.yaml
+│   ├── ocirepository.yaml
+│   ├── secret.sops.yaml
+│   ├── httproute.yaml
+│   └── pvc.yaml
+└── database/
+    ├── helmrelease.yaml
+    ├── secret.sops.yaml
+    └── pvc.yaml
 ```
 
-## Critical Operational Rules
+## Implementation Protocol
 
-**MANDATORY COMPLIANCE:**
+**Repository Structure:**
 
-- **Context7 First**: ALWAYS start with context7 library documentation lookup - no implementation without official docs
-- **Service Separation**: NEVER put databases as containers in app-template controllers
-- **Research Priority**: Context7 → Local Repository → OctoCode → App-Scout workflow
-- **Architecture Validation**: Apply Phase 3 decision rules to prevent multi-container anti-patterns
-- **GitOps Only**: Never modify cluster directly, only repository YAML
-- **SOPS Security**: All secrets encrypted before commit
-- **Schema Validation**: Include yaml-language-server directives
-- **Reference Format**: Use `file.yaml:123` when citing code (include onedr0p references for external patterns)
-- **Validation**: Always run flux-local-test.sh and pre-commit before handoff
-- **No Assumptions**: Validate all patterns against context7 documentation and octocode findings
-- **Tool Integration**: Use octocode bulk operations for external research efficiency
-- **Collaborative**: Present complete architectural analysis with research citations and ask for user confirmation
+1. Create directory: `kubernetes/apps/<namespace>/$ARGUMENTS/`
+2. Generate kustomization.yaml with resource list
+3. Add to parent namespace kustomization
 
-## Final Deliverables
+**Core Deployment (Context7 + OctoCode Patterns):**
 
-**MIGRATION PLAN OUTPUT:**
+- Create ocirepository.yaml: `url: oci://ghcr.io/bjw-s-labs/helm/app-template`, version from
+  research
+- Create helmrelease.yaml with:
+  - YAML language server schema (Flux schemas)
+  - Controllers structure from Context7 docs
+  - Service definitions matching controller names
+  - Resource requests/limits from docker-compose
+  - Security context: runAsNonRoot, capabilities drop, readOnlyRootFilesystem
+  - Health probes (HTTP preferred, custom for complex apps)
+  - Reloader annotation: `reloader.stakater.com/auto: "true"`
+  - Volume mounting: advancedMounts for RWO, globalMounts for RWX
+  - Deployment strategy: `Recreate` for RWO volumes, `RollingUpdate` for RWX/stateless
 
-1. **Service Analysis Report**
-   - Current docker-compose configuration summary
-   - Resource requirements and dependencies
-   - Storage and networking needs
+**Database Integration:**
 
-2. **Implementation Strategy**
-   - Deployment pattern decision (chart vs app-template)
-   - Storage strategy selection
-   - Security and networking configuration
+- If required: Create separate HelmRelease using dedicated operator
+- MariaDB: Use mariadb-operator pattern from kubernetes/apps/kube-system/mariadb-operator/
+- PostgreSQL: Use cloudnative-pg pattern from kubernetes/apps/kube-system/cloudnative-pg/
+- Redis: Include as controller only if cache, not primary store
 
-3. **File Structure Visualization**
+**Storage Configuration:**
 
-   ```txt
-   kubernetes/apps/<namespace>/$ARGUMENTS/
-   [Detailed ASCII tree of all files to be created]
-   ```
+- Create PVC manifests for persistent data
+- Configure subPath mounting for existing data
+- Plan data migration from docker volumes
 
-4. **Migration Checklist**
-   - Pre-migration tasks
-   - Implementation steps
-   - Validation procedures
-   - Rollback plan
+**Secret Management:**
 
-5. **Risk Assessment**
-   - Potential migration challenges
-   - Data loss prevention measures
-   - Service availability considerations
+- Create secret.sops.yaml structure
+- Use `sops --set` commands for value insertion
+- Configure secret integration in helmrelease
 
-**REMEMBER: This is PLANNING ONLY. Present complete plan and wait for user approval before any
-implementation.**
+**Network Configuration:**
+
+- Create HTTPRoute for external access (if needed)
+- Configure service endpoints
+- Set up external-dns annotations
+
+**Validation Strategy:**
+
+1. Pre-commit validation: `pre-commit run --files <changed-files>`
+2. Flux validation: `./scripts/flux-local-test.sh`
+3. Kustomize build test: `kustomize build kubernetes/apps/<namespace>/$ARGUMENTS`
+
+## Migration Execution
+
+**Pre-Migration:**
+
+- Document current docker-compose state
+- Backup volume data if critical
+- Note current service URLs and access methods
+
+**Gradual Migration:**
+
+- Deploy to K8s alongside docker-compose
+- Validate functionality matches
+- Migrate DNS/routing when validated
+- Remove docker-compose deployment
+
+**Post-Migration:**
+
+- Verify all functionality working
+- Check data persistence across pod restarts
+- Validate external access and authentication
+- Monitor logs for errors
+
+**GitOps Integration:**
+
+- Commit changes to repository
+- Monitor Flux reconciliation
+- Verify automatic deployment
+- Use `task reconcile` for immediate sync
+
+## Output Format
+
+Present complete plan with:
+
+1. **Requirements from Docker Compose**: Images, env vars, volumes, ports, dependencies (NOT
+   architecture)
+2. **Research Findings**: Context7 insights, local patterns (with file citations), OctoCode
+   discoveries, chart availability
+3. **Kubernetes Architecture**: Service separation strategy with rationale, controller structure
+   from Context7 + repo patterns, explanation of why design differs from docker-compose
+4. **Implementation Strategy**: Deployment pattern, storage strategy, networking approach, secret
+   management
+5. **File Structure**: Complete directory tree matching repository conventions
+6. **Migration Checklist**: Step-by-step implementation and validation procedures
+7. **Risk Assessment**: Challenges and mitigation strategies
+
+**REMEMBER: This is PLANNING ONLY. Complete ALL research, present complete plan with citations
+showing Kubernetes-first design, and wait for user approval before ANY implementation.**
