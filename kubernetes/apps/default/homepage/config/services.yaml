@@ -16,11 +16,11 @@
 # Icons can be service names (e.g., 'plex', 'sonarr') or Material Design icons ('mdi-*').
 ---
 - Media:
-  - Overseerr:
-      icon: overseerr
+  - Jellyseerr:
+      icon: jellyseerr
       href: https://request.${SECRET_DOMAIN}/
       description: Request Movies & Shows
-      siteMonitor: http://overseerr.default:5055
+      siteMonitor: http://jellyseerr.media:80
 
   - Tautulli:
       icon: tautulli
