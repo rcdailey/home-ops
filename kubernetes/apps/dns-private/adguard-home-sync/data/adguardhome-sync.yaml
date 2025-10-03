@@ -11,23 +11,19 @@ continueOnError: false
 origin:
   # url of the origin instance
   url: "http://adguard-home-primary:3000"
-  username: ${ADGUARD_HOME_USERNAME}
-  password: "${ADGUARD_HOME_PASSWORD}"
+  # No authentication required - AdGuard Home has auth disabled
 
 # replicas instances
 replicas:
 # url of the replica instance
 - url: "http://adguard-home-replica:3000"
-  username: ${ADGUARD_HOME_USERNAME}
-  password: "${ADGUARD_HOME_PASSWORD}"
+  # No authentication required - AdGuard Home has auth disabled
 
 # Configure the sync API server
 api:
   # Port, default 8080
   port: 8080
-  # if username and password are defined, basic auth is applied to the sync API
-  username: admin
-  password: "${ADGUARD_HOME_PASSWORD}"
+  # No authentication - sync API is internal only
   # enable api dark mode
   darkMode: true
 

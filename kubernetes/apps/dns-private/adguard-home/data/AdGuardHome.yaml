@@ -1,7 +1,7 @@
 ---
-users:
-- name: ${ADGUARD_HOME_USERNAME}
-  password: ${ADGUARD_HOME_PASSWORD_HASH}
+# Explicitly disable authentication (overrides existing runtime config)
+# External access is protected by Authentik SecurityPolicy
+users: []
 
 dns:
   trusted_proxies:
