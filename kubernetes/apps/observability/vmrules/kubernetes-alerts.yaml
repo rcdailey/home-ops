@@ -19,7 +19,9 @@ spec:
         description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is restarting {{ $value }} times / 15 minutes"
 
     - alert: PodNotReady
-      expr: kube_pod_status_ready{condition="false"} == 1
+      expr: |
+        kube_pod_status_ready{condition="false"} == 1
+        and on (namespace, pod) kube_pod_status_phase{phase!~"Succeeded|Failed"} == 1
       for: 15m
       labels:
         severity: warning
