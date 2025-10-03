@@ -96,3 +96,8 @@ spec:
       readinessProbe:
         timeoutSeconds: 10
         initialDelaySeconds: 10
+
+    # Worker configuration - enable auto-reload on ConfigMap/Secret changes
+    worker:
+      annotations:
+        reloader.stakater.com/auto: "true"

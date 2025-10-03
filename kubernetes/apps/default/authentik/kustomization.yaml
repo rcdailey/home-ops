@@ -12,6 +12,8 @@ resources:
 configMapGenerator:
 - name: authentik-blueprints
   files:
+  - blueprints/adguard-home-provider.yaml
+  - blueprints/adguard-home-application.yaml
   - blueprints/bazarr-provider.yaml
   - blueprints/bazarr-application.yaml
   - blueprints/prowlarr-provider.yaml
