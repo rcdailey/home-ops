@@ -12,6 +12,8 @@ resources:
 configMapGenerator:
 - name: authentik-blueprints
   files:
+  - blueprints/bazarr-provider.yaml
+  - blueprints/bazarr-application.yaml
   - blueprints/prowlarr-provider.yaml
   - blueprints/prowlarr-application.yaml
   - blueprints/qbittorrent-provider.yaml
