@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/securitypolicy_v1alpha1.json
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
 # CRITICAL: This SecurityPolicy references Authentik's external auth service in the default namespace.
 # You MUST ensure this namespace (dns-private) is listed in the ReferenceGrant at:
 # kubernetes/apps/default/authentik/referencegrant.yaml
@@ -15,10 +15,22 @@ spec:
     kind: HTTPRoute
     name: adguard-home
   extAuth:
+    headersToExtAuth:
+    - cookie
+    - x-forwarded-host
+    - x-forwarded-proto
     http:
-      backendRefs:
-      - name: ak-outpost-authentik-embedded-outpost
+      backendRef:
+        name: ak-outpost-authentik-embedded-outpost
         namespace: default
         port: 9000
       path: /outpost.goauthentik.io/auth/envoy
-      headersToBackend: ["authorization", "cookie", "x-authentik-*"]
+      headersToBackend:
+      - x-authentik-username
+      - x-authentik-groups
+      - x-authentik-email
+      - x-authentik-uid
+      - set-cookie
+      backendSettings:
+        retry:
+          numRetries: 3

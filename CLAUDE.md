@@ -530,6 +530,42 @@ Kustomize hashes.
 4. Create SecurityPolicy targeting app's HTTPRoute name
 5. Deploy app with standard app-template route blocks
 
+### SecurityPolicy Standards
+
+**CRITICAL: ALL SecurityPolicy resources MUST follow the exact pattern from the canonical example.**
+
+**Canonical Reference:** `kubernetes/apps/media/radarr/securitypolicy.yaml`
+
+**Required Configuration Elements:**
+
+1. **headersToExtAuth** - CRITICAL for OAuth/session validation:
+   - `cookie` - Sends session cookies TO Authentik for validation
+   - `x-forwarded-host` - Required for OAuth callback URL validation
+   - `x-forwarded-proto` - Required for HTTPS callback validation
+   - **Without these**: "mismatched session ID" and "invalid state" errors occur
+
+2. **headersToBackend** - CRITICAL for session management:
+   - `set-cookie` - Passes Authentik session cookies BACK to client
+   - `x-authentik-username`, `x-authentik-groups`, `x-authentik-email`, `x-authentik-uid` - User
+     identity headers
+   - **Without set-cookie**: Authentication fails with HTTP 400 on callbacks
+   - **NEVER use wildcards** (`x-authentik-*`): Always use explicit headers
+
+3. **backendRef** - Use singular (not array `backendRefs`)
+
+4. **backendSettings.retry.numRetries: 3** - Retry configuration
+
+5. **Namespace inheritance** - NEVER specify `namespace` in metadata (inherits from parent
+   kustomization)
+
+6. **Schema URL**: `https://datreeio.github.io/CRDs-catalog/gateway.envoyproxy.io/securitypolicy_v1alpha1.json`
+
+**Validation Checklist:**
+- Compare against radarr/securitypolicy.yaml before committing
+- Verify namespace is listed in `kubernetes/apps/default/authentik/referencegrant.yaml`
+- Ensure all required headers are present (no wildcards)
+- Confirm NO explicit namespace in metadata (relies on kustomization inheritance)
+
 ### API Protection
 
 - **skip_path_regex: ^/api/.*$** excludes API endpoints from auth (use appropriate API path for the

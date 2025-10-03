@@ -9,7 +9,6 @@ apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
   name: sonarr-auth
-  namespace: media
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
