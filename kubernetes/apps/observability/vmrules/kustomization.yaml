@@ -7,3 +7,4 @@ resources:
 - ./cluster-health.yaml
 - ./kubernetes-alerts.yaml
 - ./ceph-alerts.yaml
+- ./pvc-alerts.yaml

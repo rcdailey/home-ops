@@ -1,0 +1,66 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/victoriametrics/operator/master/config/crd/bases/operator.victoriametrics.com_vmrules.yaml
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: pvc-alerts
+spec:
+  groups:
+  - name: persistent-volume-capacity
+    interval: 30s
+    rules:
+    - alert: PVCNearCapacity
+      expr: |
+        (
+          sum by (namespace, persistentvolumeclaim) (
+            container_fs_usage_bytes{job="kubelet", metrics_path="/metrics/cadvisor", device=~"/dev/rbd.*"}
+            * on (namespace, pod) group_left(persistentvolumeclaim)
+            kube_pod_spec_volumes_persistentvolumeclaims_info
+          )
+          /
+          sum by (namespace, persistentvolumeclaim) (
+            container_fs_limit_bytes{job="kubelet", metrics_path="/metrics/cadvisor", device=~"/dev/rbd.*"}
+            * on (namespace, pod) group_left(persistentvolumeclaim)
+            kube_pod_spec_volumes_persistentvolumeclaims_info
+          )
+        ) * 100 > 85
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is nearing capacity"
+        description: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+
+    - alert: PVCCriticalCapacity
+      expr: |
+        (
+          sum by (namespace, persistentvolumeclaim) (
+            container_fs_usage_bytes{job="kubelet", metrics_path="/metrics/cadvisor", device=~"/dev/rbd.*"}
+            * on (namespace, pod) group_left(persistentvolumeclaim)
+            kube_pod_spec_volumes_persistentvolumeclaims_info
+          )
+          /
+          sum by (namespace, persistentvolumeclaim) (
+            container_fs_limit_bytes{job="kubelet", metrics_path="/metrics/cadvisor", device=~"/dev/rbd.*"}
+            * on (namespace, pod) group_left(persistentvolumeclaim)
+            kube_pod_spec_volumes_persistentvolumeclaims_info
+          )
+        ) * 100 > 95
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is critically full"
+        description: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full - immediate action required"
+
+    - alert: PVCReadOnly
+      expr: |
+        kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyMany"} == 1
+        or
+        kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyOnce"} == 1
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is read-only"
+        description: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has been mounted read-only, possibly due to full capacity or filesystem errors"
