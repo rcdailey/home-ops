@@ -3,35 +3,90 @@
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMAlertmanagerConfig
 metadata:
-  name: discord-alerts
+  name: pushover-alerts
 spec:
   route:
-    receiver: discord-webhook
+    receiver: pushover
     group_by: [alertname, cluster, service]
     group_wait: 30s
     group_interval: 5m
     repeat_interval: 12h
     routes:
-    - receiver: discord-webhook-critical
+    - receiver: pushover-critical
       matchers:
       - severity = "critical"
       group_wait: 10s
       repeat_interval: 5m
-    - receiver: discord-webhook
+    - receiver: pushover
       matchers:
       - severity =~ "warning|info"
 
   receivers:
-  - name: discord-webhook
-    webhook_configs:
-    - url_secret:
-        name: discord-webhook-secret
-        key: webhook-url
+  - name: pushover
+    pushover_configs:
+    - user_key:
+        name: pushover-secret
+        key: PUSHOVER_USER_KEY
+      token:
+        name: pushover-secret
+        key: PUSHOVER_APP_TOKEN
       send_resolved: true
+      html: true
+      priority: |-
+        {{ if eq .Status "firing" }}1{{ else }}0{{ end }}
+      title: >-
+        [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
+      message: |-
+        {{- range .Alerts }}
+          {{- if ne .Annotations.description "" }}
+            {{ .Annotations.description }}
+          {{- else if ne .Annotations.summary "" }}
+            {{ .Annotations.summary }}
+          {{- else if ne .Annotations.message "" }}
+            {{ .Annotations.message }}
+          {{- else }}
+            Alert description not available
+          {{- end }}
+          {{- if gt (len .Labels.SortedPairs) 0 }}
+            <small>
+              {{- range .Labels.SortedPairs }}
+                <b>{{ .Name }}:</b> {{ .Value }}
+              {{- end }}
+            </small>
+          {{- end }}
+        {{- end }}
 
-  - name: discord-webhook-critical
-    webhook_configs:
-    - url_secret:
-        name: discord-webhook-secret
-        key: webhook-url
+  - name: pushover-critical
+    pushover_configs:
+    - user_key:
+        name: pushover-secret
+        key: PUSHOVER_USER_KEY
+      token:
+        name: pushover-secret
+        key: PUSHOVER_APP_TOKEN
       send_resolved: true
+      html: true
+      priority: "2"
+      retry: "60s"
+      expire: "3600s"
+      title: >-
+        [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
+      message: |-
+        {{- range .Alerts }}
+          {{- if ne .Annotations.description "" }}
+            {{ .Annotations.description }}
+          {{- else if ne .Annotations.summary "" }}
+            {{ .Annotations.summary }}
+          {{- else if ne .Annotations.message "" }}
+            {{ .Annotations.message }}
+          {{- else }}
+            Alert description not available
+          {{- end }}
+          {{- if gt (len .Labels.SortedPairs) 0 }}
+            <small>
+              {{- range .Labels.SortedPairs }}
+                <b>{{ .Name }}:</b> {{ .Value }}
+              {{- end }}
+            </small>
+          {{- end }}
+        {{- end }}
