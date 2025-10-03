@@ -1,5 +1,10 @@
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+# CRITICAL: This SecurityPolicy references Authentik's external auth service in the default namespace.
+# You MUST ensure this namespace (media) is listed in the ReferenceGrant at:
+# kubernetes/apps/default/authentik/referencegrant.yaml
+# ReferenceGrant does NOT support wildcards - each namespace must be explicitly listed.
+# MANDATORY: Copy this exact comment block to ALL new SecurityPolicy files that use Authentik auth.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:

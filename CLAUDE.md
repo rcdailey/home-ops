@@ -33,6 +33,12 @@ SECTION**
   - Place comments directly above or within relevant configuration sections
   - These comments are ESSENTIAL for future maintenance and decision-making
 - NEVER end cluster hostnames with `svc.cluster.local`; only use `<service>.<namespace>`.
+- **Authentik SecurityPolicy ReferenceGrant**: When creating SecurityPolicy resources that reference
+  Authentik's external auth service (`ak-outpost-authentik-embedded-outpost` in `default` namespace),
+  you MUST update the ReferenceGrant at
+  `kubernetes/apps/default/authentik/referencegrant.yaml` to include the SecurityPolicy's namespace.
+  ReferenceGrant does NOT support wildcards - each namespace must be explicitly listed. Without this,
+  the SecurityPolicy will fail with "backend ref not permitted by any ReferenceGrant" error.
 
 ## Namespace Management Strategy
 
