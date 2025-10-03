@@ -6,4 +6,4 @@ resources:
 - ./helmrelease.yaml
 - ./httproute.yaml
 - ./vmalertmanagerconfig.yaml
-- ./discord-webhook-secret.sops.yaml
+- ./externalsecret.yaml
