@@ -117,7 +117,7 @@
       icon: bookstack
       href: https://wiki.${SECRET_DOMAIN}/
       description: Documentation Wiki
-      siteMonitor: http://bookstack-app.default:8080
+      siteMonitor: http://bookstack.default:8080
 
   - Open Sprinkler:
       icon: mdi-sprinkler-variant
