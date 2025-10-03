@@ -162,12 +162,18 @@
       description: Alert Rules
       siteMonitor: http://vmalert-victoria-metrics-k8s-stack.observability:8080
 
+  - Ceph Dashboard:
+      icon: ceph
+      href: https://ceph.${SECRET_DOMAIN}/
+      description: Storage Cluster
+      siteMonitor: http://rook-ceph-mgr-dashboard.rook-ceph:7000
+
 - Local:
   - Unraid:
       icon: unraid
       href: http://nezuko/Dashboard
       description: NAS Server
-      ping: nezuko
+      ping: 192.168.1.58
 
   - Unifi (local):
       icon: ubiquiti-unifi
