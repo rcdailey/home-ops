@@ -7,6 +7,7 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
+- ./bazarr/ks.yaml
 - ./jellyseerr/ks.yaml
 - ./plex/ks.yaml
 - ./prowlarr/ks.yaml
