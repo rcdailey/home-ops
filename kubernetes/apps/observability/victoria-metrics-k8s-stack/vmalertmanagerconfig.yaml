@@ -67,8 +67,8 @@ spec:
       send_resolved: true
       html: true
       priority: "2"
-      retry: "60"
-      expire: "3600"
+      retry: "60s"
+      expire: "3600s"
       title: >-
         [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
       message: |-
