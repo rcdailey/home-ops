@@ -20,7 +20,7 @@
     },
     {
       description: "Auto-merge security updates",
-      matchDatasources: ["docker"],
+      matchDatasources: ["docker", "helm"],
       matchUpdateTypes: ["patch"],
       labels: ["security"],
       automerge: true,
