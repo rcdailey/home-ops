@@ -113,6 +113,11 @@ spec:
           requests:
             cpu: 10m
             memory: 25Mi
+        # Override chart defaults to enable automatic API path appending
+        # Without this, VMAlert sends requests to "/" instead of "/api/v1/write"
+        # Reference: https://docs.victoriametrics.com/vmalert/#remote-write
+        extraArgs:
+          remoteWrite.disablePathAppend: "false"
 
     # VMAgent configuration
     vmagent:
