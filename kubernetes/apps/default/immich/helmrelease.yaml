@@ -100,7 +100,7 @@ spec:
                 gpu.intel.com/i915: "1"
               limits:
                 cpu: 2
-                memory: 6Gi
+                memory: 8Gi
                 gpu.intel.com/i915: "1"
             # Extended probes for model loading
             probes:
