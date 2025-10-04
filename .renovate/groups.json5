@@ -4,7 +4,7 @@
     {
       description: "Flux Operator Group",
       groupName: "Flux Operator",
-      matchPackageNames: ["ghcr.io/fluxcd/flux-operator", "ghcr.io/fluxcd/flux-instance"],
+      matchPackageNames: ["/flux-operator/", "/flux-instance/"],
       matchDatasources: ["docker"],
       minimumGroupSize: 2
     },
