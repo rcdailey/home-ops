@@ -58,7 +58,7 @@ spec:
         kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyMany"} == 1
         or
         kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyOnce"} == 1
-      for: 1m
+      for: 5m
       labels:
         severity: critical
       annotations:
