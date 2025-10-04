@@ -51,7 +51,9 @@ spec:
         description: "Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value }}% CPU"
 
     - alert: ContainerHighMemory
-      expr: container_memory_usage_bytes{container!="POD",container!=""} / container_spec_memory_limit_bytes > 0.9
+      expr: |
+        (container_memory_usage_bytes{container!="POD",container!=""} / container_spec_memory_limit_bytes > 0.9)
+        and (container_spec_memory_limit_bytes > 0)
       for: 10m
       labels:
         severity: warning
