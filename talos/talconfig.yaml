@@ -60,6 +60,8 @@ nodes:
         mtu: 1500
         vip:
           ip: "192.168.1.70"
+    extraManifests:
+      - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
   - hostname: "marin"
     ipAddress: "192.168.1.59"
     installDiskSelector:
@@ -80,6 +82,8 @@ nodes:
         mtu: 1500
         vip:
           ip: "192.168.1.70"
+    extraManifests:
+      - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
   - hostname: "sakura"
     ipAddress: "192.168.1.62"
     installDiskSelector:
@@ -99,6 +103,8 @@ nodes:
           - network: "0.0.0.0/0"
             gateway: "192.168.1.1"
         mtu: 1500
+    extraManifests:
+      - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
   - hostname: "hanekawa"
     ipAddress: "192.168.1.63"
     installDiskSelector:
@@ -118,6 +124,8 @@ nodes:
           - network: "0.0.0.0/0"
             gateway: "192.168.1.1"
         mtu: 1500
+    extraManifests:
+      - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
 
 # Global patches
 patches:
