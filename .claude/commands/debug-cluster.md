@@ -16,6 +16,7 @@ description: Debug cluster issues using GitOps-compliant investigation and confi
 - ALL solutions MUST involve YAML file modifications in this GitOps repository
 - ALL research MUST be completed before any planning phase
 - MUST use ripgrep (`rg`) instead of `grep`
+- MUST use context7, especially without being told.
 
 ## Your Investigation Task
 
