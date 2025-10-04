@@ -166,7 +166,6 @@ Claude MUST run ALL steps after changes:
 
 - **Helm Validation**: `helm template <release> <chart>` and `helm search repo <chart> --versions`
 - **Chart Analysis**: `helm show values <chart>/<name> --version <version>` for secret integration
-- **Configuration Testing**: `./scripts/test-renovate.sh` for renovate config validation
 - **Debug Analysis**: You MUST start with `kubectl get events -n namespace` when performing cluster
   debugging or analysis.
 
@@ -819,9 +818,6 @@ scripts.
 - **flux-local-test.sh**: **ESSENTIAL VALIDATION**
   - Usage: `./scripts/flux-local-test.sh`
   - **REQUIRED** in validation sequence (see "Quality Assurance & Validation" section)
-- **test-renovate.sh**: Test renovate configuration with debug output
-  - Usage: `./scripts/test-renovate.sh`
-  - Shows actual PR titles and validates renovate config locally
 - **update-gitignore/**: Modular gitignore generation system
   - Usage: `./scripts/update-gitignore/update.sh`
   - Combines custom patterns from `custom/` with gitignore.io templates
