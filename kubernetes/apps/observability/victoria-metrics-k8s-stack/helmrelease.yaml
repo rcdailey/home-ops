@@ -67,6 +67,7 @@ spec:
     alertmanager:
       enabled: true
       spec:
+        disableNamespaceMatcher: true
         replicaCount: 1
         storage:
           volumeClaimTemplate:
@@ -96,6 +97,10 @@ spec:
       spec:
         evaluationInterval: 15s
         selectAllByDefault: true
+        remoteWrite:
+          url: http://vmsingle-victoria-metrics-k8s-stack.observability:8428
+        remoteRead:
+          url: http://vmsingle-victoria-metrics-k8s-stack.observability:8428
         resources:
           limits:
             memory: 128Mi
