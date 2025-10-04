@@ -43,7 +43,7 @@ spec:
         severity: warning
       annotations:
         summary: "Ceph pool {{ $labels.name }} usage is high"
-        description: "Ceph pool {{ $labels.name }} is {{ $value }}% full"
+        description: "Ceph pool {{ $labels.name }} is {{ $value | humanizePercentage }} full"
 
     - alert: CephPoolCriticalUsage
       expr: (ceph_pool_stored / ceph_pool_max_avail) * 100 > 95
@@ -52,7 +52,7 @@ spec:
         severity: critical
       annotations:
         summary: "Ceph pool {{ $labels.name }} usage is critical"
-        description: "Ceph pool {{ $labels.name }} is {{ $value }}% full"
+        description: "Ceph pool {{ $labels.name }} is {{ $value | humanizePercentage }} full"
 
   - name: ceph-osds
     interval: 30s
@@ -64,7 +64,7 @@ spec:
         severity: warning
       annotations:
         summary: "Ceph OSD {{ $labels.ceph_daemon }} is near full"
-        description: "OSD {{ $labels.ceph_daemon }} is {{ $value }}% full"
+        description: "OSD {{ $labels.ceph_daemon }} is {{ $value | humanizePercentage }} full"
 
     - alert: CephOSDFull
       expr: ceph_osd_utilization > 95
@@ -73,4 +73,4 @@ spec:
         severity: critical
       annotations:
         summary: "Ceph OSD {{ $labels.ceph_daemon }} is full"
-        description: "OSD {{ $labels.ceph_daemon }} is {{ $value }}% full"
+        description: "OSD {{ $labels.ceph_daemon }} is {{ $value | humanizePercentage }} full"
