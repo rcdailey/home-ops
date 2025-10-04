@@ -24,8 +24,6 @@
   dependencyDashboardAutoclose: true,
   suppressNotifications: ["prEditedNotification", "prIgnoreNotification"],
   configMigration: true,
-  prConcurrentLimit: 15,
-  prHourlyLimit: 8,
   ignorePresets: ["mergeConfidence:all-badges"],
   // I frequently rewrite commits on main, and as a result, orphaned commits on main are treated as
   // custom commits on renovate branches. This ignored authors setting prevents Renovate from
