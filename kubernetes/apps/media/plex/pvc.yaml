@@ -9,7 +9,7 @@ spec:
   accessModes: ["ReadWriteOnce"]
   resources:
     requests:
-      storage: 60Gi
+      storage: 120Gi
   storageClassName: ceph-block
 ---
 # yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/persistentvolumeclaim-v1.json
