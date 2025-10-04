@@ -101,3 +101,14 @@ spec:
     worker:
       annotations:
         reloader.stakater.com/auto: "true"
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: 200m
+        limits:
+          memory: 1Gi
+          cpu: 1000m
+      livenessProbe:
+        timeoutSeconds: 10
+      readinessProbe:
+        timeoutSeconds: 10
