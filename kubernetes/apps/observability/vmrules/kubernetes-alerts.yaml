@@ -52,7 +52,7 @@ spec:
 
     - alert: ContainerHighMemory
       expr: |
-        (container_memory_usage_bytes{container!="POD",container!=""} / container_spec_memory_limit_bytes > 0.9)
+        (container_memory_working_set_bytes{container!="POD",container!=""} / container_spec_memory_limit_bytes > 0.9)
         and (container_spec_memory_limit_bytes > 0)
       for: 10m
       labels:
