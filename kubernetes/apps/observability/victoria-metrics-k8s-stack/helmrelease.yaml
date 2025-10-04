@@ -83,6 +83,12 @@ spec:
           requests:
             cpu: 10m
             memory: 32Mi
+        configReloaderResources:
+          limits:
+            memory: 64Mi
+          requests:
+            cpu: 10m
+            memory: 25Mi
 
     # VMAlert configuration
     vmalert:
@@ -96,6 +102,12 @@ spec:
           requests:
             cpu: 10m
             memory: 32Mi
+        configReloaderResources:
+          limits:
+            memory: 32Mi
+          requests:
+            cpu: 10m
+            memory: 25Mi
 
     # VMAgent configuration
     vmagent:
@@ -109,6 +121,12 @@ spec:
           requests:
             cpu: 50m
             memory: 128Mi
+        configReloaderResources:
+          limits:
+            memory: 64Mi
+          requests:
+            cpu: 10m
+            memory: 25Mi
         extraArgs:
           promscrape.streamParse: "true"
           promscrape.dropOriginalLabels: "true"
