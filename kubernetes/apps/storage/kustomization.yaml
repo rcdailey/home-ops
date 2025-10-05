@@ -6,5 +6,4 @@ namespace: storage
 components:
 - ../../components/common
 resources:
-- ./openebs/ks.yaml
 - ./volsync/ks.yaml

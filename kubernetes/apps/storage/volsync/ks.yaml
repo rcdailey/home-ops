@@ -10,8 +10,6 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-  - name: openebs
-    namespace: storage
   - name: rook-ceph-cluster
     namespace: rook-ceph
   interval: 1h
