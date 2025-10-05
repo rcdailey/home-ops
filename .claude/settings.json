@@ -41,7 +41,7 @@
       "Bash(mount)",
       "Bash(nc:*)",
       "Bash(./scripts/app-scout.sh discover:*)",
-      "Bash(./scripts/app-scout.sh inspect:*)",
+      "Bash(./scripts/app-scout.sh correlate:*)",
       "Bash(./scripts/flux-local-test.sh:*)",
       "Bash(pkill:*)",
       "Bash(renovate --version)",

@@ -814,6 +814,11 @@ Only scripts relevant for AI usage is below; do not use the `annotate-yaml.py` o
 scripts.
 
 - **app-scout.sh**: Kubernetes migration discovery tool
+  - Usage: `./scripts/app-scout.sh discover <app-name>` for deployment pattern discovery
+  - Usage: `./scripts/app-scout.sh correlate <app1> <app2>` for multi-app pattern analysis
+  - **File Inspection**: After discovery, use octocode MCP tools (githubViewRepoStructure,
+    githubSearchCode, githubGetFileContent) to retrieve configuration files from discovered
+    repositories
 - **bootstrap-apps.sh**: Application bootstrap for cluster initialization
 - **flux-local-test.sh**: **ESSENTIAL VALIDATION**
   - Usage: `./scripts/flux-local-test.sh`

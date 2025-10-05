@@ -2,27 +2,26 @@
 """
 App Scout - Kubernetes Application Discovery Tool
 
-This script provides a two-phase approach for migrating Docker Compose services to Kubernetes:
+This script provides application discovery for migrating Docker Compose services to Kubernetes:
 
-1. DISCOVERY PHASE: `discover [app_name]`
-   - Searches kubesearch.dev database for real-world Helm chart and app-template usage
-   - Returns unified landscape view showing both dedicated charts and app-template deployments
-   - Includes repository metadata, file availability, and exact file paths
-   - Designed for AI consumption to make informed migration decisions
+DISCOVERY PHASE: `discover [app_name]`
+- Searches kubesearch.dev database for real-world Helm chart and app-template usage
+- Returns unified landscape view showing both dedicated charts and app-template deployments
+- Includes repository metadata and usage statistics
+- Designed for AI consumption to make informed migration decisions
 
-2. INSPECTION PHASE: `inspect [app_name] --repo [repo_name] --files [file_types]`
-   - Fetches specific configuration files using exact paths from discovery phase
-   - Uses GitHub CLI to retrieve file contents from real-world deployments
-   - Supports targeted file fetching (helmrelease, values, configmaps, secrets, etc.)
+After discovery, use octocode MCP tools for file inspection:
+- githubViewRepoStructure: Explore repository structure
+- githubSearchCode: Search for specific patterns
+- githubGetFileContent: Retrieve file contents
 
-The script uses the kubesearch.dev database (scraped from public GitOps repositories) and
-GitHub's GraphQL API for file operations. No API tokens needed - relies on user's `gh auth` setup.
+The script uses the kubesearch.dev database (scraped from public GitOps repositories).
+No API tokens needed - relies on user's `gh auth` setup for optional operations.
 
 Key design principles:
 - High-performance GraphQL batching for API efficiency
-- Exact file paths eliminate guesswork
 - Structured JSON output for AI processing
-- Clean separation between discovery and inspection phases
+- Simple, focused discovery without file fetching complexity
 """
 
 import sqlite3
@@ -31,10 +30,8 @@ import argparse
 import subprocess
 import json
 import os
-import re
-import asyncio
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict
 from datetime import datetime, timedelta
 import urllib.request
 import urllib.error
@@ -46,9 +43,7 @@ class AppMigrationDiscovery:
     """
     Main class for discovering Kubernetes deployment patterns for Docker Compose migration.
 
-    Provides two core functions:
-    1. discover_app_landscape() - Complete landscape analysis for an application
-    2. inspect_app_config() - Targeted file retrieval from specific repositories
+    Provides discovery function: discover_app_landscape() - Complete landscape analysis
     """
 
     def __init__(self, db_path: str = None):
@@ -76,11 +71,10 @@ class AppMigrationDiscovery:
 
     async def discover_app_landscape(self, app_name: str, sample_count: int = 3) -> Dict:
         """
-        Phase 1: Discover complete landscape for an application.
+        Discover complete landscape for an application.
 
         Returns comprehensive view of both dedicated Helm charts and app-template usage
-        patterns for the specified application. Includes repository metadata, file
-        availability with exact paths, and usage statistics.
+        patterns for the specified application. Includes repository metadata and usage statistics.
 
         Args:
             app_name: Name of application to discover (e.g., "authentik", "plex")
@@ -93,11 +87,11 @@ class AppMigrationDiscovery:
                     "dedicated_charts": {
                         "usage_count": int,
                         "chart_sources": [repo_names],
-                        "repositories": [repo_details_with_file_paths]
+                        "repositories": [repo_details]
                     },
                     "app_template": {
                         "usage_count": int,
-                        "repositories": [repo_details_with_file_paths]
+                        "repositories": [repo_details]
                     }
                 }
             }
@@ -114,63 +108,19 @@ class AppMigrationDiscovery:
         app_template_data = await self._discover_app_template_usage(app_name, sample_count)
         result[app_name]["app_template"] = app_template_data
 
+        # Print guidance for next steps
+        print("\nNOTE: To inspect configuration files from discovered repositories, use octocode MCP tools:", file=sys.stderr)
+        print("  - githubViewRepoStructure: Explore repository structure", file=sys.stderr)
+        print("  - githubSearchCode: Search for specific patterns", file=sys.stderr)
+        print("  - githubGetFileContent: Retrieve file contents\n", file=sys.stderr)
+
         return result
-
-    async def inspect_app_config(
-        self, app_name: str, repo_name: str, file_types: List[str]
-    ) -> Dict[str, str]:
-        """
-        Phase 2: Inspect specific configuration files from a repository.
-
-        Fetches exact files using paths discovered in Phase 1. No searching or
-        guessing - uses precise file locations identified during discovery.
-
-        Args:
-            app_name: Application name for context
-            repo_name: Repository name (e.g., "angelnu/k8s-gitops")
-            file_types: List of file types to fetch (e.g., ["helmrelease", "values"])
-                       or arbitrary file paths (starting with /)
-
-        Returns:
-            Dict mapping file types/paths to their contents:
-            {
-                "helmrelease": "file_content...",
-                "values": "file_content...",
-                "/path/to/file.yaml": "file_content..."
-            }
-        """
-        print(
-            f"Inspecting {repo_name} for {app_name} files: {', '.join(file_types)}",
-            file=sys.stderr,
-        )
-
-        # Check if file_types contains arbitrary file paths (starts with /)
-        arbitrary_files = [f for f in file_types if f.startswith('/')]
-        predefined_types = [f for f in file_types if not f.startswith('/')]
-
-        file_contents = {}
-
-        # Handle predefined file types using discovery
-        if predefined_types:
-            file_paths = await self._get_file_paths_for_repo(app_name, repo_name)
-            if file_paths:
-                predefined_contents = await self._gh_get_file_contents_batch(repo_name, file_paths, predefined_types)
-                file_contents.update(predefined_contents)
-
-        # Handle arbitrary file paths directly
-        if arbitrary_files:
-            arbitrary_paths = {f: f for f in arbitrary_files}  # Map filename to path
-            arbitrary_contents = await self._gh_get_file_contents_batch(repo_name, arbitrary_paths, arbitrary_files)
-            file_contents.update(arbitrary_contents)
-
-        return file_contents
 
     async def _discover_dedicated_charts(self, app_name: str, sample_count: int) -> Dict:
         """
         Discover dedicated Helm chart usage for an application.
 
         Searches for charts where chart_name exactly matches the app_name.
-        For top repositories, discovers available files and their exact paths.
         """
         # Query for dedicated charts (exact match on chart_name)
         query = """
@@ -236,12 +186,6 @@ class AppMigrationDiscovery:
             # Add batch-fetched metadata
             if repo_data["repo_name"] in batch_metadata:
                 repo_data.update(batch_metadata[repo_data["repo_name"]])
-
-            # Discover available files and their paths
-            file_paths = await self._discover_file_paths(
-                repo_data["repo_name"], repo_data["url"], "dedicated"
-            )
-            repo_data["available_files"] = file_paths
 
             repositories.append(repo_data)
 
@@ -316,176 +260,9 @@ class AppMigrationDiscovery:
             if repo_data["repo_name"] in batch_metadata:
                 repo_data.update(batch_metadata[repo_data["repo_name"]])
 
-            # Discover available files and their paths
-            file_paths = await self._discover_file_paths(
-                repo_data["repo_name"], repo_data["url"], "app-template"
-            )
-            repo_data["available_files"] = file_paths
-
             repositories.append(repo_data)
 
         return {"usage_count": total_count, "repositories": repositories}
-
-    async def _discover_file_paths(
-        self, repo_name: str, helm_release_url: str, deployment_type: str
-    ) -> Dict[str, str]:
-        """
-        Discover available configuration files and their exact paths in a repository.
-
-        Explores the directory structure around the known HelmRelease location to find
-        all files in the vicinity, not just predefined patterns.
-
-        Returns:
-            Dict mapping file types/names to exact repository paths:
-            {"helmrelease": "path/to/file.yaml", "values": "path/to/values.yaml",
-             "cupsd.conf": "path/to/cupsd.conf", "all_files": ["file1.yaml", "file2.conf"]}
-        """
-        # Extract the directory path from the HelmRelease URL
-        # URL format: https://github.com/user/repo/blob/branch/path/to/file.yaml
-        url_pattern = r"https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)"
-        match = re.match(url_pattern, helm_release_url)
-
-        if not match:
-            print(
-                f"Warning: Could not parse GitHub URL: {helm_release_url}",
-                file=sys.stderr,
-            )
-            return {}
-
-        user, repo, branch, file_path = match.groups()
-
-        # The file_path includes the filename, get just the directory
-        dir_path = "/".join(file_path.split("/")[:-1])
-
-        # File type patterns to search for (for categorization)
-        file_patterns = {
-            "helmrelease": ["helmrelease.yaml", "helm-release.yaml", "hr.yaml"],
-            "values": ["values.yaml", "values.yml"],
-            "configmaps": ["configmap.yaml", "configmaps.yaml", "config.yaml"],
-            "secrets": ["secret.yaml", "secrets.yaml"],
-            "pvcs": ["pvc.yaml", "pvcs.yaml", "storage.yaml", "volume.yaml"],
-            "ingress": ["ingress.yaml", "route.yaml", "httproute.yaml"],
-        }
-
-        discovered_files = {}
-        all_files = []
-
-        # Start with the known HelmRelease file
-        discovered_files["helmrelease"] = file_path
-
-        # Search for files in the same directory, parent directories, and subdirectories
-        search_paths = [dir_path]
-        if "/" in dir_path:
-            parent_path = "/".join(dir_path.split("/")[:-1])
-            search_paths.append(parent_path)
-
-        # Add common subdirectories
-        for subdir in ["resources", "config", "configs", "files"]:
-            search_paths.append(f"{dir_path}/{subdir}")
-
-        for search_path in search_paths:
-            files_in_dir = await self._gh_list_files(repo_name, search_path)
-
-            # Add all files to the list with their full paths
-            for filename in files_in_dir:
-                full_path = f"{search_path}/{filename}" if search_path else filename
-                all_files.append(full_path)
-
-                # Also add individual files by their filename (for easy access)
-                discovered_files[filename] = full_path
-
-            # Categorize files by type for backward compatibility
-            for file_type, patterns in file_patterns.items():
-                if file_type in discovered_files:  # Already found
-                    continue
-
-                for filename in files_in_dir:
-                    if any(pattern in filename.lower() for pattern in patterns):
-                        full_path = (
-                            f"{search_path}/{filename}" if search_path else filename
-                        )
-                        discovered_files[file_type] = full_path
-                        break
-
-        # Add summary of all files found
-        discovered_files["all_files"] = all_files
-
-        return discovered_files
-
-    async def _get_file_paths_for_repo(self, app_name: str, repo_name: str) -> Dict[str, str]:
-        """
-        Retrieve cached file paths for a specific app/repo combination.
-
-        This method looks up file paths that were discovered during the discovery phase.
-        In a production version, this would query a cache or re-run discovery.
-        For now, it re-runs a targeted discovery to get the paths.
-        """
-        # Find the HelmRelease URL for this specific repo/app combination
-        queries = [
-            # Try dedicated chart first
-            """
-            SELECT fhr.url FROM flux_helm_release fhr
-            JOIN repo r ON fhr.repo_name = r.repo_name
-            WHERE r.repo_name = ? AND fhr.chart_name = ?
-            LIMIT 1
-            """,
-            # Try app-template
-            """
-            SELECT fhr.url FROM flux_helm_release fhr
-            JOIN repo r ON fhr.repo_name = r.repo_name
-            WHERE r.repo_name = ? AND fhr.chart_name = 'app-template' AND fhr.release_name LIKE ?
-            LIMIT 1
-            """,
-        ]
-
-        helm_release_url = None
-        deployment_type = None
-
-        # Try dedicated chart
-        cursor = self.conn.execute(queries[0], (repo_name, app_name))
-        result = cursor.fetchone()
-        if result:
-            helm_release_url = result["url"]
-            deployment_type = "dedicated"
-        else:
-            # Try app-template
-            cursor = self.conn.execute(queries[1], (repo_name, f"%{app_name}%"))
-            result = cursor.fetchone()
-            if result:
-                helm_release_url = result["url"]
-                deployment_type = "app-template"
-
-        if not helm_release_url:
-            return {}
-
-        return await self._discover_file_paths(repo_name, helm_release_url, deployment_type)
-
-
-    async def _gh_list_files(self, repo_name: str, path: str) -> List[str]:
-        """
-        List files in a repository directory using GitHub API.
-
-        Returns list of filenames in the specified directory path.
-        """
-        try:
-            owner, name = repo_name.split('/')
-            response = await self.http_client.get(
-                f"https://api.github.com/repos/{repo_name}/contents/{path}",
-                timeout=30.0
-            )
-
-            if response.status_code == 200:
-                contents = response.json()
-                if isinstance(contents, list):
-                    return [item["name"] for item in contents if item["type"] == "file"]
-        except Exception as e:
-            print(
-                f"Warning: Could not list files in {repo_name}/{path}: {e}",
-                file=sys.stderr,
-            )
-
-        return []
-
 
     def _is_database_stale(self, db_path):
         """Check if the database file is older than a week"""
@@ -633,63 +410,6 @@ class AppMigrationDiscovery:
 
         return results
 
-    async def _gh_get_file_contents_batch(self, repo_name: str, file_paths: Dict[str, str], file_types: List[str]) -> Dict[str, str]:
-        """Batch fetch file contents using GraphQL"""
-        if not file_paths:
-            return {file_type: f"Error: No file paths available" for file_type in file_types}
-
-        # Build GraphQL query for multiple files
-        file_queries = []
-        requested_files = []
-
-        for file_type in file_types:
-            if file_type in file_paths:
-                file_path = file_paths[file_type]
-                # Create a valid GraphQL field name from file_type
-                field_name = file_type.replace('/', '_').replace('-', '_').replace('.', '_')
-                file_queries.append(f'''
-                    {field_name}: object(expression: "HEAD:{file_path}") {{
-                        ... on Blob {{
-                            text
-                        }}
-                    }}
-                ''')
-                requested_files.append((file_type, field_name))
-
-        if not file_queries:
-            return {file_type: f"Error: File type '{file_type}' not available in this repository" for file_type in file_types}
-
-        owner, name = repo_name.split('/')
-        query = f'''
-        query {{
-            repository(owner: "{owner}", name: "{name}") {{
-                {' '.join(file_queries)}
-            }}
-        }}
-        '''
-
-        data = await self._github_graphql_request(query)
-
-        results = {}
-        if "data" in data and "repository" in data["data"]:
-            repo_data = data["data"]["repository"]
-            for file_type, field_name in requested_files:
-                file_data = repo_data.get(field_name)
-                if file_data and file_data.get("text"):
-                    results[file_type] = file_data["text"]
-                else:
-                    results[file_type] = f"Error: Could not fetch {file_paths.get(file_type, 'unknown path')}"
-
-            # Handle file_types that weren't in requested_files
-            for file_type in file_types:
-                if file_type not in results:
-                    results[file_type] = f"Error: File type '{file_type}' not available in this repository"
-        else:
-            for file_type in file_types:
-                results[file_type] = f"Error: Could not access repository {repo_name}"
-
-        return results
-
     async def correlate_applications(self, app_names: List[str], sample_count: int = 10) -> Dict:
         """
         Find repositories that contain multiple specific applications deployed together.
@@ -798,7 +518,7 @@ async def main():
 
     Supports two primary commands:
     - discover [app_name]: Get complete landscape view
-    - inspect [app_name] --repo [repo] --files [types]: Fetch specific files
+    - correlate [app_names...]: Find repos with multiple apps
     """
     parser = argparse.ArgumentParser(
         description="Discover Kubernetes deployment patterns for Docker Compose migration",
@@ -811,14 +531,13 @@ Examples:
   # Find repositories that have both blocky and external-dns
   python3 app-scout.py correlate blocky external-dns
 
-  # Inspect specific files from a repository
-  python3 app-scout.py inspect authentik --repo angelnu/k8s-gitops --files helmrelease,values
-
-  # Inspect arbitrary file paths
-  python3 app-scout.py inspect authentik --repo angelnu/k8s-gitops --files /path/to/file.yaml,/another/file.yml
-
   # Get larger sample size for discovery
   python3 app-scout.py discover plex --sample-count 5
+
+After discovery, use octocode MCP tools to inspect files:
+  - githubViewRepoStructure: Explore repository structure
+  - githubSearchCode: Search for specific patterns
+  - githubGetFileContent: Retrieve file contents
         """,
     )
 
@@ -838,7 +557,7 @@ Examples:
         help="Number of repositories to analyze per category (default: 3)",
     )
 
-    # Correlate command (NEW)
+    # Correlate command
     correlate_parser = subparsers.add_parser(
         "correlate", help="Find repositories containing multiple applications"
     )
@@ -850,20 +569,6 @@ Examples:
         type=int,
         default=10,
         help="Number of repositories to return (default: 10)",
-    )
-
-    # Inspect command
-    inspect_parser = subparsers.add_parser(
-        "inspect", help="Inspect specific configuration files"
-    )
-    inspect_parser.add_argument("app_name", help="Application name")
-    inspect_parser.add_argument(
-        "--repo", required=True, help="Repository name (e.g., angelnu/k8s-gitops)"
-    )
-    inspect_parser.add_argument(
-        "--files",
-        required=True,
-        help="Comma-separated file types (helmrelease,values,configmaps,secrets,pvcs,ingress) or arbitrary file paths (starting with /)",
     )
 
     args = parser.parse_args()
@@ -883,18 +588,6 @@ Examples:
             result = await discovery.correlate_applications(args.app_names, args.sample_count)
             print(json.dumps(result, indent=2))
 
-        elif args.command == "inspect":
-            file_types = [f.strip() for f in args.files.split(",")]
-            result = await discovery.inspect_app_config(args.app_name, args.repo, file_types)
-
-            # Output file contents verbatim with clear separation
-            for i, (file_type, content) in enumerate(result.items()):
-                if i > 0:
-                    print("\n" + "=" * 80 + "\n")
-                print(f"# File: {file_type}")
-                print("=" * 80)
-                print(content)
-
     except KeyboardInterrupt:
         print("\nOperation cancelled by user", file=sys.stderr)
         sys.exit(1)
@@ -906,4 +599,5 @@ Examples:
 
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(main())
