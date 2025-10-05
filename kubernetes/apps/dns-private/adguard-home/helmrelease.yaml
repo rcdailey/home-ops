@@ -167,14 +167,10 @@ spec:
           http:
             port: 3000
 
-    serviceMonitor:
-      primary:
-        serviceName: adguard-home-primary
-        endpoints:
-        - port: http
-          scheme: http
-          path: /control/stats
-          interval: 30s
+    # ServiceMonitor intentionally disabled: AdGuard Home lacks native Prometheus metrics support
+    # (upstream issue: https://github.com/AdguardTeam/AdGuardHome/issues/516)
+    # The /control/stats endpoint returns JSON, not Prometheus format, causing continuous scrape errors
+    # Alternative: Deploy a dedicated exporter sidecar (e.g., github.com/csfreak/adguard-exporter)
 
     persistence:
       configmap:
