@@ -30,8 +30,9 @@ spec:
       enabled: false
 
     # Use VMSingle for homelab deployment
-    # Note: NOT increasing maxLabelsPerTimeseries beyond default (40) per VictoriaMetrics best practices
-    # High cardinality addressed via aggressive metricRelabelConfigs to drop node feature discovery labels
+    # Note: Default maxLabelsPerTimeseries (30) is sufficient with proper label filtering
+    # High cardinality addressed by dropping NFD labels in relabelConfigs (not metricRelabelConfigs)
+    # This ensures the synthetic "up" metric also has filtered labels, preventing rejection
     vmsingle:
       enabled: true
       spec:
@@ -298,7 +299,13 @@ spec:
             insecureSkipVerify: true
             caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
           bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-          metricRelabelConfigs:
+          # CRITICAL: Label filtering must happen in relabelConfigs, not metricRelabelConfigs
+          # relabelConfigs applies to ALL metrics including synthetic "up" metric
+          # metricRelabelConfigs only applies to scraped metrics, causing "up" to exceed label limits
+          # Pattern: labelmap → labeldrop (immediately filter) → add operational labels
+          relabelConfigs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
           - action: labeldrop
             regex: (uid)
           - action: labeldrop
@@ -309,16 +316,15 @@ spec:
             regex: (feature_node_kubernetes_io_.*)
           - action: labeldrop
             regex: (extensions_talos_dev_.*)
-          - action: drop
-            source_labels: [__name__]
-            regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
-          relabelConfigs:
-          - action: labelmap
-            regex: __meta_kubernetes_node_label_(.+)
           - sourceLabels: [__metrics_path__]
             targetLabel: metrics_path
           - targetLabel: job
             replacement: kubelet
+          # metricRelabelConfigs for dropping entire metrics (not labels)
+          metricRelabelConfigs:
+          - action: drop
+            source_labels: [__name__]
+            regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
 
     # VictoriaMetrics Operator
     victoria-metrics-operator:
