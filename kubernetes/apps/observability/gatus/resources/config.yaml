@@ -22,6 +22,90 @@ endpoints:
   conditions:
   - "[CONNECTED] == true"
 
+- name: Bazarr
+  group: media
+  url: http://bazarr-app.media:6767/health
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Jellyseerr
+  group: media
+  url: http://jellyseerr-app.media:80
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Plex
+  group: media
+  url: http://plex-app.media:32400/identity
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Prowlarr
+  group: media
+  url: http://prowlarr-app.media:9696/ping
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: qBittorrent
+  group: media
+  url: http://qbittorrent-app.media:8080
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Radarr
+  group: media
+  url: http://radarr-app.media:7878/ping
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Radarr 4K
+  group: media
+  url: http://radarr-4k-app.media:7878/ping
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Radarr Anime
+  group: media
+  url: http://radarr-anime-app.media:7878/ping
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: SABnzbd
+  group: media
+  url: http://sabnzbd-app.media:8080/api?mode=version
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Sonarr
+  group: media
+  url: http://sonarr-app.media:8989/ping
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Sonarr Anime
+  group: media
+  url: http://sonarr-anime-app.media:8989/ping
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Tautulli
+  group: media
+  url: http://tautulli-main.media:8181/status
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
 external-endpoints:
 - name: Heartbeat
   token: ${GATUS_HEARTBEAT_TOKEN}
