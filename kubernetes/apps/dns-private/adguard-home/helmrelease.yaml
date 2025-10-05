@@ -28,6 +28,7 @@ spec:
 
         statefulset:
           serviceName: adguard-home-headless
+          podManagementPolicy: Parallel
           volumeClaimTemplates:
           - name: data
             storageClass: ceph-block
