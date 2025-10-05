@@ -8,3 +8,4 @@ components:
 resources:
 - ./operator/ks.yaml
 - ./cluster/ks.yaml
+- ./toolbox/ks.yaml
