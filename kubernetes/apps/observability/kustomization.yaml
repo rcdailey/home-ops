@@ -10,4 +10,5 @@ resources:
 - ./victoria-metrics-k8s-stack/ks.yaml
 - ./victoria-logs-single/ks.yaml
 - ./grafana/ks.yaml
+- ./gatus/ks.yaml
 - ./vmrules

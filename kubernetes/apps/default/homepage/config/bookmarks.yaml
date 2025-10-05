@@ -14,4 +14,8 @@
 # Icons will override abbreviations if both are specified.
 # Use ${SECRET_DOMAIN} for domain substitution via Flux.
 ---
-# Bookmarks section currently empty - add bookmark groups here as needed
+- Monitoring:
+  - Status Page:
+    - href: https://status.${SECRET_DOMAIN}
+      icon: mdi-heart-pulse
+      description: Public status page showing service uptime

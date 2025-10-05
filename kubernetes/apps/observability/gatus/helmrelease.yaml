@@ -1,0 +1,94 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app gatus
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  interval: 30m
+  maxHistory: 3
+  uninstall:
+    keepHistory: false
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+
+    controllers:
+      main:
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          gatus:
+            image:
+              repository: ghcr.io/twin/gatus
+              tag: v5.25.2@sha256:9ff09fe5eb5e96b7f2126dc95b375a87a7bc16380d5cb9d798af4e0ef36f0049
+            env:
+              TZ: America/Chicago
+              GATUS_WEB_PORT: &port 80
+              GATUS_CONFIG_PATH: /config
+              GATUS_DELAY_START_SECONDS: 5
+            envFrom:
+            - secretRef:
+                name: gatus-secret
+            securityContext:
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                add: ["NET_RAW"]
+                drop: ["ALL"]
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                memory: 256Mi
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+
+    service:
+      main:
+        controller: main
+        ports:
+          http:
+            port: *port
+
+    route:
+      main:
+        hostnames:
+        - status.${SECRET_DOMAIN}
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+
+    persistence:
+      config-file:
+        type: configMap
+        name: gatus-configmap
+        globalMounts:
+        - path: /config/config.yaml
+          subPath: config.yaml
+          readOnly: true
