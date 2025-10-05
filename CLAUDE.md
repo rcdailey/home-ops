@@ -600,6 +600,32 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 - **Gateways**: DNS `192.168.1.71`, Internal `192.168.1.72`, External `192.168.1.73`
 - **Tunnel**: `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.1.73`
 
+### Ceph Toolbox
+
+Permanent toolbox deployment for Ceph operations and troubleshooting at
+`kubernetes/apps/rook-ceph/toolbox/`.
+
+**Common Commands:**
+
+```bash
+# Interactive shell
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -it -- bash
+
+# Check cluster health
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status
+
+# RBD operations
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd ls ceph-block
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd status <image-name> -p ceph-block
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd info <image-name> -p ceph-block
+
+# Check RBD watchers (for debugging stuck volumes)
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd status <image-name> -p ceph-block
+
+# Force unmap RBD image (emergency use only - data loss risk)
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd unmap -o force /dev/rbd/<number>
+```
+
 ### Nodes
 
 - **Control Plane**:
