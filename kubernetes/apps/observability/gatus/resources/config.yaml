@@ -1,0 +1,32 @@
+---
+connectivity:
+  checker:
+    target: 1.1.1.1:53
+    interval: 1m
+
+metrics: true
+
+ui:
+  title: Status | Home Operations
+  header: Status
+  logo: https://raw.githubusercontent.com/rcdailey/home-ops/main/kubernetes/apps/observability/gatus/resources/logo.png
+  link: https://github.com/rcdailey
+  buttons:
+  - name: Github
+    link: https://github.com/rcdailey/home-ops
+
+endpoints:
+- name: Internet Connectivity
+  url: icmp://1.1.1.1
+  interval: 1m
+  conditions:
+  - "[CONNECTED] == true"
+
+external-endpoints:
+- name: Heartbeat
+  token: ${GATUS_HEARTBEAT_TOKEN}
+  heartbeat:
+    interval: 10m
+
+web:
+  port: ${GATUS_WEB_PORT}

@@ -12,6 +12,12 @@ spec:
     group_interval: 5m
     repeat_interval: 12h
     routes:
+    - receiver: gatus-heartbeat
+      matchers:
+      - alertname = "Watchdog"
+      group_wait: 0s
+      group_interval: 5m
+      repeat_interval: 5m
     - receiver: pushover-critical
       matchers:
       - severity = "critical"
@@ -22,6 +28,14 @@ spec:
       - severity =~ "warning|info"
 
   receivers:
+  - name: gatus-heartbeat
+    webhook_configs:
+    - url: http://gatus.observability/api/v1/endpoints/_Heartbeat/external?success=true
+      http_config:
+        bearer_token_secret:
+          name: gatus-secret
+          key: GATUS_HEARTBEAT_TOKEN
+
   - name: pushover
     pushover_configs:
     - user_key:
