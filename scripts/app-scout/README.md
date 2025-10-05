@@ -1,10 +1,6 @@
 # App Scout - Kubernetes Migration Discovery Tool
 
-App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.dev), designed to
-automate the discovery of real-world Kubernetes deployment patterns. This tool enables AI-assisted
-analysis and automated searches across thousands of GitOps repositories, making it ideal for
-migrating Docker Compose services to Kubernetes and learning deployment best practices from
-production environments.
+App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.dev), designed to automate the discovery of real-world Kubernetes deployment patterns. This tool enables AI-assisted analysis and automated searches across thousands of GitOps repositories, making it ideal for migrating Docker Compose services to Kubernetes and learning deployment best practices from production environments.
 
 ## Quick Start
 
@@ -14,9 +10,6 @@ production environments.
 
 # Find repositories with multiple apps deployed together
 ./scripts/app-scout.sh correlate blocky external-dns
-
-# Inspect configuration files
-./scripts/app-scout.sh inspect plex --repo onedr0p/home-ops --files helmrelease,values
 ```
 
 ## Commands
@@ -28,7 +21,7 @@ production environments.
 ```
 
 **Purpose**: Find all deployment patterns for an application
-**Output**: JSON showing dedicated charts vs app-template usage with available files
+**Output**: JSON showing dedicated charts vs app-template usage
 
 **Example**:
 
@@ -51,36 +44,32 @@ production environments.
 ./scripts/app-scout.sh correlate blocky external-dns --sample-count 10
 ```
 
-### Inspect Command
-
-```bash
-./scripts/app-scout.sh inspect <app_name> --repo <repo_name> --files <file_list>
-```
-
-**Purpose**: Get raw file contents from specific repositories
-**Output**: Raw file contents with clear separation between files
-
-**File Types**: `helmrelease`, `values`, `configmaps`, `secrets`, `pvcs`, `ingress`, or any filename from discovery
-**File Paths**: Use `/path/to/file.yaml` for arbitrary files
-
-**Examples**:
-
-```bash
-# Standard file types
-./scripts/app-scout.sh inspect plex --repo onedr0p/home-ops --files helmrelease,values
-
-# Specific files found in discovery
-./scripts/app-scout.sh inspect cups --repo wipash/homelab --files cupsd.conf
-
-# Arbitrary file paths
-./scripts/app-scout.sh inspect app --repo user/repo --files /path/to/config.yaml
-```
-
 ## Workflow
 
-1. **Discover** → Find deployment patterns and available files
+1. **Discover** → Find deployment patterns and repository information
 2. **Correlate** → Find architectural patterns where apps are deployed together
-3. **Inspect** → Get actual configuration files
+3. **Inspect Files** → Use octocode MCP tools for file retrieval
+
+## File Inspection with OctoCode MCP
+
+After discovering repositories, use octocode MCP tools to inspect configuration files:
+
+**Available Tools**:
+- `githubViewRepoStructure`: Explore repository directory structure
+- `githubSearchCode`: Search for specific code patterns across files
+- `githubGetFileContent`: Retrieve complete file contents
+
+**Example Workflow**:
+
+```bash
+# Step 1: Discover repositories using app-scout
+./scripts/app-scout.sh discover plex
+
+# Step 2: Use octocode MCP tools to inspect files (via Claude)
+# - githubViewRepoStructure for onedr0p/home-ops kubernetes/apps
+# - githubSearchCode for "plex" in helmrelease files
+# - githubGetFileContent to read specific helmrelease.yaml files
+```
 
 ## Discovery Output Structure
 
@@ -94,12 +83,14 @@ production environments.
         {
           "repo_name": "onedr0p/home-ops",
           "stars": 1500,
-          "available_files": {
-            "helmrelease": "path/to/helmrelease.yaml",
-            "values": "path/to/values.yaml",
-            "cupsd.conf": "path/to/resources/cupsd.conf",
-            "all_files": ["file1.yaml", "file2.conf", "..."]
-          }
+          "release_name": "plex",
+          "chart_name": "plex",
+          "chart_version": "1.2.3",
+          "namespace": "media",
+          "url": "https://github.com/onedr0p/home-ops/blob/main/.../helmrelease.yaml",
+          "helm_repo_name": "k8s-at-home",
+          "description": "My home operations repository",
+          "last_commit": "2025-01-15T10:30:00Z"
         }
       ]
     },
@@ -114,24 +105,16 @@ production environments.
 ## Key Features
 
 - **Real-world Examples**: Searches 1000+ GitOps repositories
-- **Complete File Discovery**: Finds all files in app directories including subdirectories
 - **Dual Deployment Patterns**: Shows both dedicated Helm charts and app-template usage
-- **Raw File Access**: Returns unmodified file contents
+- **Repository Metadata**: Includes stars, descriptions, last commit dates
 - **No Setup Required**: Proxy script handles dependencies automatically
-
-## File Discovery Scope
-
-Searches these locations around each HelmRelease:
-
-- Same directory as HelmRelease
-- Parent directory
-- Common subdirectories: `resources/`, `config/`, `configs/`, `files/`
+- **OctoCode Integration**: Seamless transition to file inspection via MCP tools
 
 ## Use Cases
 
 - **Migration Planning**: See how others deploy the same app
 - **Architectural Research**: Discover how applications are combined in production
-- **Configuration Examples**: Get proven configurations from active deployments
+- **Configuration Examples**: Identify repositories with working configurations
 - **Best Practices**: Learn from most-starred repositories
 - **Troubleshooting**: Compare your setup against working examples
 
@@ -144,5 +127,5 @@ Searches these locations around each HelmRelease:
 ## Data Source
 
 - **Database**: kubesearch.dev (auto-downloads weekly)
-- **File Access**: GitHub API via your authenticated `gh` CLI
+- **Repository Access**: GitHub API via your authenticated `gh` CLI
 - **Updates**: Database refreshes automatically when >7 days old

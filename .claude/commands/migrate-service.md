@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Glob, Grep, TodoWrite, Bash(ls:*), Bash(rg:*), Bash(./scripts/app-scout.sh discover:*), Bash(./scripts/flux-local-test.sh:*), Bash(pre-commit run:*), Bash(kustomize build:*), mcp__context7__resolve-library-id, mcp__context7__get-library-docs, mcp__octocode__githubSearchCode, mcp__octocode__githubGetFileContent, mcp__octocode__githubViewRepoStructure
+allowed-tools: Read, Glob, Grep, TodoWrite, Bash(ls:*), Bash(rg:*), Bash(./scripts/app-scout.sh discover:*), Bash(./scripts/app-scout.sh correlate:*), Bash(./scripts/flux-local-test.sh:*), Bash(pre-commit run:*), Bash(kustomize build:*), mcp__context7__resolve-library-id, mcp__context7__get-library-docs, mcp__octocode__githubSearchCode, mcp__octocode__githubGetFileContent, mcp__octocode__githubViewRepoStructure
 argument-hint: <service-name> - Name of the service to migrate from docker-compose
 description: Systematic Docker Compose to Kubernetes migration with comprehensive discovery and analysis
 ---
@@ -86,19 +86,20 @@ description: Systematic Docker Compose to Kubernetes migration with comprehensiv
 - Document: controller patterns, storage strategies (RWO/RWX, advancedMounts), networking (HTTPRoute
   usage), security contexts
 
-### 3. OctoCode External Research
-
-- `githubViewRepoStructure` for onedr0p/home-ops kubernetes/apps
-- Parallel `githubSearchCode` queries: [$ARGUMENTS, "app-template", "controllers", "persistence",
-  "route"]
-- `githubGetFileContent` for specific helmrelease.yaml examples
-- Cross-reference findings against Context7 documentation
-
-### 4. App-Scout Chart Discovery
+### 3. App-Scout Chart Discovery
 
 - Run `./scripts/app-scout.sh discover $ARGUMENTS`
 - Assess dedicated charts vs app-template patterns
-- Use for chart availability assessment ONLY
+- Identify top-starred repositories with working implementations
+- **Note output for next step**: Repository names, URLs, and deployment patterns
+
+### 4. OctoCode File Inspection
+
+- Use `githubViewRepoStructure` for discovered repository structure exploration
+- Use `githubSearchCode` for pattern searches: [$ARGUMENTS, "app-template", "controllers",
+  "persistence", "route"]
+- Use `githubGetFileContent` to retrieve specific helmrelease.yaml files from top repositories
+- Cross-reference findings against Context7 documentation
 
 ### 5. Validation Cross-Check
 
