@@ -1,0 +1,29 @@
+{
+  // Package Compatibility Management Strategy:
+  //
+  // This module manages dependencies with uncertain compatibility requirements.
+  // Instead of hard-blocking version upgrades (allowedVersions), we use manual approval
+  // for major updates while allowing automatic security patches and minor updates.
+  //
+  // Benefits:
+  // - Automatic security updates within major versions
+  // - Manual review for potentially breaking changes
+  // - Avoids premature blocking of compatible updates
+  // - Dependency Dashboard visibility for informed decisions
+  //
+  // Use this pattern when:
+  // - Application docs don't specify version requirements
+  // - Breaking changes are uncertain but possible
+  // - You want control without blocking future compatibility
+  //
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      description: "FileRun Elasticsearch - require manual approval for major version upgrades",
+      matchPackageNames: ["elasticsearch"],
+      matchFileNames: ["kubernetes/apps/default/filerun/**"],
+      matchUpdateTypes: ["major"],
+      dependencyDashboardApproval: true,
+    }
+  ]
+}
