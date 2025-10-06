@@ -24,6 +24,22 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
+  # CRITICAL: postRenderers patch Prometheus rules to exclude NFS/tmpfs from disk space alerts
+  # Without this, NFS volumes (e.g., 160TB media share) trigger false CephNodeDiskspaceWarning
+  # The alert is at /spec/groups/6 (nodes group) /rules/4 (CephNodeDiskspaceWarning)
+  # See: https://github.com/rook/rook/issues/9082, https://github.com/rook/rook/pull/9837
+  postRenderers:
+  - kustomize:
+      patches:
+      - target:
+          group: monitoring.coreos.com
+          version: v1
+          kind: PrometheusRule
+          name: prometheus-ceph-rules
+        patch: |-
+          - op: replace
+            path: /spec/groups/6/rules/4/expr
+            value: 'predict_linear(node_filesystem_free_bytes{device=~"/.*",fstype!~"nfs.*|tmpfs"}[2d], 3600 * 24 * 5) *on(instance) group_left(nodename) node_uname_info < 0'
   values:
     # Rook Ceph Cluster Configuration
     # 3-node cluster with device selectors for each node
