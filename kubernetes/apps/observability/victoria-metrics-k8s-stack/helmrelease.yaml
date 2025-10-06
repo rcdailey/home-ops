@@ -253,10 +253,20 @@ spec:
       endpoints: []
       service:
         enabled: true
-        port: 2379
-        targetPort: 2379
+        port: 2381
+        targetPort: 2381
         selector:
-          component: etcd
+          component: kube-apiserver
+      vmScrape:
+        enabled: true
+        spec:
+          jobLabel: jobLabel
+          namespaceSelector:
+            matchNames:
+            - kube-system
+          endpoints:
+          - port: http-metrics
+            scheme: http
 
     coreDns:
       enabled: true
