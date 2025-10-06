@@ -122,7 +122,7 @@ spec:
           main:
             image:
               repository: public.ecr.aws/docker/library/redis
-              tag: 8.2.1
+              tag: 8.2.2
             command: ["redis-server"]
             resources:
               requests:
