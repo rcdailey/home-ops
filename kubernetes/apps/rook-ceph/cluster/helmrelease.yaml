@@ -62,6 +62,9 @@ spec:
       dashboard:
         enabled: false
 
+    toolbox:
+      enabled: true
+
     cephClusterSpec:
       cleanupPolicy:
         wipeDevicesFromOtherClusters: false
