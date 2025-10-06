@@ -28,6 +28,7 @@ spec:
   postBuild:
     substitute:
       APP: filerun
+      VOLSYNC_PVC: filerun-html-pvc
     substituteFrom:
     - kind: Secret
       name: cluster-secrets

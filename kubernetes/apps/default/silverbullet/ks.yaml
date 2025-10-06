@@ -26,6 +26,7 @@ spec:
   postBuild:
     substitute:
       APP: *app
+      VOLSYNC_PVC: silverbullet-data
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
