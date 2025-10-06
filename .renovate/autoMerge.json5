@@ -19,21 +19,30 @@
       ignoreTests: true
     },
     {
-      description: "Auto-merge security updates",
-      matchDatasources: ["docker", "helm"],
-      matchUpdateTypes: ["patch"],
-      labels: ["security"],
-      automerge: true,
-      automergeType: "branch",
-      minimumReleaseAge: "1 day"
-    },
-    {
-      description: "Auto-merge trusted home-operations containers",
+      description: "Auto-merge trusted container digests",
       matchDatasources: ["docker"],
       automerge: true,
       automergeType: "pr",
-      matchUpdateTypes: ["minor", "patch", "digest"],
+      matchUpdateTypes: ["digest"],
       matchPackageNames: ["/home-operations/"],
+      ignoreTests: false
+    },
+    {
+      description: "Auto-merge OCI Charts",
+      matchDatasources: ["docker"],
+      automerge: true,
+      automergeType: "pr",
+      matchUpdateTypes: ["minor", "patch"],
+      matchPackageNames: ["/victoria-metrics-k8s-stack/", "/grafana/"],
+      ignoreTests: false
+    },
+    {
+      description: "Auto-merge app-template chart updates",
+      matchDatasources: ["helm"],
+      matchPackageNames: ["/app-template/"],
+      automerge: true,
+      automergeType: "pr",
+      matchUpdateTypes: ["minor", "patch"],
       ignoreTests: false
     },
     {
@@ -43,19 +52,9 @@
         "/^actions\\//",
         "/^renovatebot\\//",
         "/^tj-actions\\//",
-        "/^dorny\\//",
         "/^peter-evans\\//",
-        "/^stefanzweifel\\//",
-        "/^crazy-max\\//",
-        "/^docker\\//",
-        "/^helm\\//",
-        "/^hashicorp\\//",
-        "/^aquasecurity\\//",
-        "/^github\\//",
-        "/^google-github-actions\\//",
-        "/^azure\\//",
-        "/^aws-actions\\//",
-        "/^codecov\\//"
+        "/^mshick\\//",
+        "/^docker:\\//"
       ],
       automerge: true,
       automergeType: "branch",
