@@ -6,11 +6,10 @@ This document describes the DNS architecture and resolution flow for services ru
 
 ## Design Challenges
 
-The DNS architecture solves three fundamental problems:
+The DNS architecture solves two fundamental problems:
 
 - **Local traffic efficiency**: Internal requests to `domain.com` services must short-circuit to local cluster gateways instead of routing through external Cloudflare infrastructure
 - **Subnet-specific filtering**: Different VLANs require distinct content filtering policies, demanding DNS server solutions that preserve client source IPs
-- **Service migration support**: Gradual Docker-to-Kubernetes migration requires seamless fallback to legacy Unraid services while maintaining automatic DNS updates
 
 ## DNS Resolution Flow
 
@@ -43,15 +42,9 @@ flowchart LR
         IntGW[Internal Gateway<br/>192.168.1.72<br/>🏠 Private Services]
     end
 
-    subgraph LegacyServices["📦 Legacy Services"]
-        direction TB
-        Legacy[Unraid Server<br/>192.168.1.58<br/>🔄 Migration Fallback]
-    end
-
     %% Internal resolution paths
     UDMP -->|"service.domain.com<br/>CNAME: external.domain.com"| ExtGW
     UDMP -->|"internal-app.domain.com<br/>CNAME: internal.domain.com"| IntGW
-    UDMP -->|"unmigrated.domain.com<br/>Wildcard: *.domain.com"| Legacy
 
     %% External resolution path
     CFTunnel --> ExtGW
@@ -63,7 +56,7 @@ flowchart LR
 
     class Client,AGH,UDMP,Upstream internal
     class ExternalClient,CloudflareDNS,CFTunnel external
-    class ExtGW,IntGW,Legacy services
+    class ExtGW,IntGW services
 ```
 
 ## External-DNS Integration Architecture
@@ -182,14 +175,6 @@ Network segmentation enables subnet-specific content filtering:
 - **Parental Controls**: Comprehensive content restrictions for kids and guest networks
 - **Minimal Filtering**: Camera-compatible protection with malware blocking only
 
-### Service Migration
-
-Gradual migration from Docker to Kubernetes with automatic DNS updates:
-
-- **Wildcard Fallback**: Legacy services accessible via `*.domain.com` → Unraid server
-- **Specific Overrides**: New Kubernetes services create specific DNS records that override wildcards
-- **Zero Downtime**: External-DNS automatically creates records when HTTPRoutes are deployed
-
 ## Core Components
 
 ### AdGuard Home DNS Server
@@ -233,7 +218,6 @@ When home devices query DNS through AdGuard Home:
 When internet clients query DNS through Cloudflare:
 
 1. **Service domains** (`service.domain.com`): Cloudflare DNS → tunnel endpoint
-2. **Legacy domains** (`*.domain.com`): Cloudflare DNS → dynamic proxy
 
 ### Client IP Preservation
 
@@ -258,11 +242,10 @@ AdGuard Home applies subnet-specific filtering based on client source IP:
 
 - **Client IP Preservation**: Direct client connections enable real source IP visibility
 - **VLAN-Based Filtering**: Subnet-specific ad/tracker blocking and content restrictions
-- **Migration-Friendly**: Gradual service migration with automatic DNS updates
 - **Zero-Downtime Capable**: Infrastructure changes without service interruption
 - **Advanced Filtering**: 590,523+ filtering rules with automatic updates
 - **Tunnel Compatible**: Proper CNAME chains for Cloudflare tunnel architecture
-- **Intelligent Fallback**: Conditional forwarding with wildcard fallback support
+- **Intelligent Forwarding**: Conditional forwarding for local domain resolution
 - **High Performance**: Direct DNS resolution without proxy overhead
 - **Secure**: Encrypted secrets management and namespace isolation
 - **Family-Friendly**: Comprehensive parental controls and safe search enforcement
@@ -350,8 +333,7 @@ filters:
 - **Record Pattern**: `external.domain.com` → CNAME → `tunnel.cfargotunnel.com`
 
 **Manual Records** (Cloudflare dashboard):
-- **Wildcard fallback**: `*.domain.com` → CNAME → `dynamic.domain.com` (legacy services)
-- **Dynamic IP**: `dynamic.domain.com` → A → Cloudflare proxy IP
+- **Tunnel endpoint**: Managed via Cloudflare Tunnel configuration
 
 #### UniFi External-DNS
 
@@ -368,7 +350,6 @@ filters:
 # Manual entries (infrastructure)
 external.domain.com     A      192.168.1.73
 internal.domain.com     A      192.168.1.72
-*.domain.com            A      192.168.1.58  # Fallback for unmigrated services
 
 # External-DNS managed (Kubernetes services)
 service.domain.com      CNAME  external.domain.com
@@ -415,27 +396,6 @@ spec:
 ```
 
 
-## Service Migration Workflow
-
-### Migration Process
-
-1. **Deploy K8s service**: Create HTTPRoute with correct parentRefs
-2. **Automatic DNS**: External-DNS detects HTTPRoute and creates records
-3. **Target inheritance**: HTTPRoute inherits correct target from Gateway
-4. **DNS resolution**: Specific record overrides wildcard fallback
-5. **Traffic flows**: Home devices connect to appropriate gateway
-
-### Post-Migration Cleanup
-
-**Migration Support Infrastructure** (Temporary):
-- Wildcard A record `*.domain.com → 192.168.1.58` provides fallback for unmigrated Docker services
-- Will be removed once all services complete Docker-to-Kubernetes migration
-
-**Final Cleanup Steps**:
-1. Remove wildcard A record: `*.domain.com → .58`
-2. Keep specific records created by external-dns
-3. Clean unused Docker Compose configurations
-
 ## Traffic Flow Examples
 
 ### External Service Access
@@ -480,11 +440,6 @@ HTTPRoutes with `parentRefs: internal` create records only locally:
 - **Cloudflare**: `external.domain.com` → CNAME → `123abcd...cfargotunnel.com`
 - **UDMP**: `external.domain.com` → A → `192.168.1.73`
 - **UDMP**: `internal.domain.com` → A → `192.168.1.72`
-
-### Wildcard Fallback Records
-
-- **Cloudflare**: `*.domain.com` → CNAME → `dynamic.domain.com` (legacy external access)
-- **UDMP**: `*.domain.com` → A → `192.168.1.58` (legacy internal access)
 
 ## Key Design Principles
 
