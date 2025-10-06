@@ -19,12 +19,11 @@
       ignoreTests: true
     },
     {
-      description: "Auto-merge trusted container digests",
+      description: "Auto-merge container patch and digest updates",
       matchDatasources: ["docker"],
       automerge: true,
       automergeType: "pr",
-      matchUpdateTypes: ["digest"],
-      matchPackageNames: ["/home-operations/"],
+      matchUpdateTypes: ["patch", "digest"],
       ignoreTests: false
     },
     {
