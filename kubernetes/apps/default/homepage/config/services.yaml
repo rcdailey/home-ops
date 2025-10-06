@@ -131,6 +131,12 @@
       description: Identity Provider
       siteMonitor: http://authentik-server.default:80
 
+  - Kopia:
+      icon: mdi-backup-restore
+      href: https://kopia.${SECRET_DOMAIN}/
+      description: Backup Server
+      siteMonitor: http://kopia.storage:80
+
 - Observability:
   - Grafana:
       icon: grafana
