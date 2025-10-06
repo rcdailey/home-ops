@@ -172,6 +172,9 @@ spec:
     # (upstream issue: https://github.com/AdguardTeam/AdGuardHome/issues/516)
     # The /control/stats endpoint returns JSON, not Prometheus format, causing continuous scrape errors
     # Alternative: Deploy a dedicated exporter sidecar (e.g., github.com/csfreak/adguard-exporter)
+    serviceMonitor:
+      app:
+        enabled: false
 
     persistence:
       configmap:
