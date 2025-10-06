@@ -22,18 +22,6 @@ spec:
 
     replicaCount: 1
 
-    image:
-      repository: oci.external-secrets.io/external-secrets/external-secrets
-      pullPolicy: IfNotPresent
-
-    webhook:
-      image:
-        repository: oci.external-secrets.io/external-secrets/external-secrets
-
-    certController:
-      image:
-        repository: oci.external-secrets.io/external-secrets/external-secrets
-
     resources:
       requests:
         cpu: 50m
