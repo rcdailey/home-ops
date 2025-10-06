@@ -721,7 +721,7 @@ AWS_ACCESS_KEY_ID=<key> AWS_SECRET_ACCESS_KEY=<secret> AWS_DEFAULT_REGION=garage
 
 - **postgres-backups**: CloudNativePG database backups (immich, etc.)
 - **volsync-backups**: Kopia-based application data backups via volsync
-- **bookstack-backups**: Legacy application backups
+- **bookstack-backups**: Application backups
 - S3-compatible API for application integration
 
 ### Application Integration
