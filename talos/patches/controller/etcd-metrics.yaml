@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://schemas.talos.dev/v1alpha1/patch.json
+---
+# Expose etcd metrics endpoint for Prometheus/VictoriaMetrics scraping
+# etcd will listen on 0.0.0.0:2381 for metrics while continuing to serve
+# client requests on 127.0.0.1:2379 (secure, localhost-only access)
+- op: add
+  path: /cluster/etcd/extraArgs
+  value:
+    listen-metrics-urls: http://0.0.0.0:2381
