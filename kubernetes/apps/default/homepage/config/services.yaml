@@ -131,6 +131,18 @@
       description: Identity Provider
       siteMonitor: http://authentik-server.default:80
 
+  - SilverBullet:
+      icon: silverbullet
+      href: https://notes.${SECRET_DOMAIN}/
+      description: Note-Taking & Knowledge Base
+      siteMonitor: http://silverbullet.default:3000
+
+  - AdGuard Home Sync:
+      icon: adguard-home
+      href: https://dns-sync.${SECRET_DOMAIN}/
+      description: DNS Sync Dashboard
+      siteMonitor: http://adguard-home-sync.dns-private:8080
+
   - Kopia:
       icon: mdi-backup-restore
       href: https://kopia.${SECRET_DOMAIN}/
