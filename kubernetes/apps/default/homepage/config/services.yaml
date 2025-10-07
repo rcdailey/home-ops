@@ -125,11 +125,11 @@
       description: Irrigation Control
       siteMonitor: http://192.168.2.108
 
-  - Authentik:
-      icon: authentik
+  - Authelia:
+      icon: authelia
       href: https://auth.${SECRET_DOMAIN}/
-      description: Identity Provider
-      siteMonitor: http://authentik-server.default:80
+      description: Authentication Gateway
+      siteMonitor: http://authelia.default:9091
 
   - SilverBullet:
       icon: silverbullet
