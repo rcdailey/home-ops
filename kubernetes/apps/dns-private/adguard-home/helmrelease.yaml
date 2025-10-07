@@ -175,6 +175,10 @@ spec:
     serviceMonitor:
       app:
         enabled: false
+    # VMServiceScrape must also be explicitly disabled (app-template creates both monitoring resources)
+    vmServiceScrape:
+      app:
+        enabled: false
 
     persistence:
       configmap:
