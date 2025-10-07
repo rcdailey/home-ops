@@ -28,6 +28,8 @@ configMapGenerator:
   - blueprints/radarr-anime-application.yaml
   - blueprints/sabnzbd-provider.yaml
   - blueprints/sabnzbd-application.yaml
+  - blueprints/silverbullet-provider.yaml
+  - blueprints/silverbullet-application.yaml
   - blueprints/sonarr-provider.yaml
   - blueprints/sonarr-application.yaml
   - blueprints/sonarr-anime-provider.yaml

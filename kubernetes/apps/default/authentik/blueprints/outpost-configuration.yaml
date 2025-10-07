@@ -23,6 +23,7 @@ entries:
     - !Find [authentik_providers_proxy.proxyprovider, [name, radarr-4k]]
     - !Find [authentik_providers_proxy.proxyprovider, [name, radarr-anime]]
     - !Find [authentik_providers_proxy.proxyprovider, [name, sabnzbd]]
+    - !Find [authentik_providers_proxy.proxyprovider, [name, silverbullet]]
     - !Find [authentik_providers_proxy.proxyprovider, [name, sonarr]]
     - !Find [authentik_providers_proxy.proxyprovider, [name, sonarr-anime]]
     config:
