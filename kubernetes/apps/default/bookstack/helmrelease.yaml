@@ -33,6 +33,10 @@ spec:
               TZ: America/Chicago
               APP_URL: https://wiki.${SECRET_DOMAIN}
 
+              # Session & Cache drivers (prevents file-based GC performance issues)
+              SESSION_DRIVER: database
+              CACHE_DRIVER: database
+
               # Database connection
               DB_HOST: bookstack-mariadb
               DB_PORT: 3306
