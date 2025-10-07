@@ -3,7 +3,7 @@ SOPS_AGE_KEY_FILE = "{{config_root}}/age.key"
 TALOSCONFIG = "{{config_root}}/talos/clusterconfig/talosconfig"
 
 [tools]
-"aqua:budimanjojo/talhelper" = "3.0.36"
+"aqua:budimanjojo/talhelper" = "3.0.37"
 "aqua:fluxcd/flux2" = "2.7.1"
 "aqua:getsops/sops" = "3.11.0"
 "aqua:helm/helm" = "3.19.0"
