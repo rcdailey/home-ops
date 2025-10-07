@@ -31,6 +31,15 @@ spec:
     remediation:
       retries: 3
   values:
+    image: &image
+      repository: ghcr.io/perfectra1n/volsync
+      tag: v0.16.10
+    kopia: *image
+    rclone: *image
+    restic: *image
+    rsync: *image
+    rsync-tls: *image
+    syncthing: *image
     manageCRDs: true
     metrics:
       disableAuth: true
