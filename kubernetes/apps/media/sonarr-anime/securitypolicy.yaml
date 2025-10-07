@@ -1,10 +1,10 @@
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
-# CRITICAL: This SecurityPolicy references Authentik's external auth service in the default namespace.
+# CRITICAL: This SecurityPolicy references Authelia's external auth service in the default namespace.
 # You MUST ensure this namespace (media) is listed in the ReferenceGrant at:
-# kubernetes/apps/default/authentik/referencegrant.yaml
+# kubernetes/apps/default/authelia/referencegrant.yaml
 # ReferenceGrant does NOT support wildcards - each namespace must be explicitly listed.
-# MANDATORY: Copy this exact comment block to ALL new SecurityPolicy files that use Authentik auth.
+# MANDATORY: Copy this exact comment block to ALL new SecurityPolicy files that use Authelia auth.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
@@ -16,20 +16,21 @@ spec:
     name: sonarr-anime
   extAuth:
     headersToExtAuth:
+    - accept
     - cookie
-    - x-forwarded-host
+    - authorization
     - x-forwarded-proto
     http:
       backendRef:
-        name: ak-outpost-authentik-embedded-outpost
+        name: authelia-app
         namespace: default
-        port: 9000
-      path: /outpost.goauthentik.io/auth/envoy
+        port: 9091
+      path: /api/authz/ext-authz/
       headersToBackend:
-      - x-authentik-username
-      - x-authentik-groups
-      - x-authentik-email
-      - x-authentik-uid
+      - remote-user
+      - remote-groups
+      - remote-email
+      - remote-name
       - set-cookie
       backendSettings:
         retry:

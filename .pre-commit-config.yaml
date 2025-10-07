@@ -57,7 +57,7 @@ repos:
     name: Format YAML with yamlfmt
     description: Formats YAML files with Google's yamlfmt tool
     files: '^kubernetes/.*\.ya?ml$'
-    exclude: '\.sops\.yaml$'
+    exclude: '(\.sops\.yaml$|kubernetes/apps/default/authelia/config/)'
 
 - repo: https://github.com/adrienverge/yamllint
   rev: v1.37.1
