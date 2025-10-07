@@ -7,7 +7,7 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
-- ./authentik/ks.yaml
+- ./authelia/ks.yaml
 - ./bookstack/ks.yaml
 - ./filerun/ks.yaml
 - ./homepage/ks.yaml
