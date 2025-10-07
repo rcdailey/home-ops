@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/referencegrant_v1beta1.json
+---
+# ReferenceGrant allows SecurityPolicy resources in other namespaces
+# to reference the Authelia service in the default namespace.
+# ReferenceGrant does NOT support wildcards - each namespace must be explicitly listed.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: authelia-service
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: default
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: media
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: network
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: observability
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: dns-private
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: storage
+  to:
+  - group: ""
+    kind: Service
+    name: authelia

@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://www.authelia.com/schemas/v4.39/json-schema/configuration.json
+---
+# Authelia configuration for domain-level SSO
+# This configuration provides unified authentication across *.${SECRET_DOMAIN}
+# solving the multiple login issue from per-app Authentik providers
+
+server:
+  address: tcp://0.0.0.0:9091
+
+log:
+  level: info
+
+identity_validation:
+  reset_password:
+    jwt_lifespan: 5m
+
+totp:
+  issuer: ${SECRET_DOMAIN}
+  period: 30
+  skew: 1
+
+# File-based authentication - no database required
+authentication_backend:
+  file:
+    path: /etc/authelia/users.yaml
+    password:
+      algorithm: argon2
+      argon2:
+        variant: argon2id
+        iterations: 3
+        memory: 65536
+        parallelism: 4
+        key_length: 32
+        salt_length: 16
+
+# Domain-level access control - single login for all apps
+access_control:
+  default_policy: deny
+  rules:
+  # Allow API endpoints without authentication
+  # Required for: qBittorrent API, Radarr/Sonarr API clients, etc.
+  - domain: "*.${SECRET_DOMAIN}"
+    policy: bypass
+    resources:
+    - "^/api.*$"
+
+  # Require two-factor authentication for all apps under domain
+  # This creates unified SSO experience across all subdomains
+  - domain: "*.${SECRET_DOMAIN}"
+    policy: two_factor
+
+# Session configuration with Redis storage
+# Domain-level cookies enable SSO across all *.${SECRET_DOMAIN} apps
+# Note: session.secret is provided via AUTHELIA_SESSION_SECRET environment variable
+session:
+  cookies:
+  - domain: ${SECRET_DOMAIN}
+    authelia_url: https://auth.${SECRET_DOMAIN}
+    default_redirection_url: https://www.${SECRET_DOMAIN}
+  redis:
+    host: authelia-redis.default
+    port: 6379
+
+# Rate limiting for brute force protection
+regulation:
+  max_retries: 4
+  find_time: 2m
+  ban_time: 5m
+
+# Local SQLite storage
+# Note: storage.encryption_key is provided via AUTHELIA_STORAGE_ENCRYPTION_KEY environment variable
+storage:
+  local:
+    path: /config/db.sqlite3
+
+# Filesystem notifier for development
+# TODO: Replace with SMTP for production notifications
+notifier:
+  disable_startup_check: false
+  filesystem:
+    filename: /config/notifications.txt

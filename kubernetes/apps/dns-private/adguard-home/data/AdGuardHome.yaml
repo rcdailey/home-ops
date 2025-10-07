@@ -1,6 +1,6 @@
 ---
 # Explicitly disable authentication (overrides existing runtime config)
-# External access is protected by Authentik SecurityPolicy
+# External access is protected by Authelia SecurityPolicy
 users: []
 
 dns:
