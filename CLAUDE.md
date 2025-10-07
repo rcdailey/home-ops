@@ -33,12 +33,12 @@ SECTION**
   - Place comments directly above or within relevant configuration sections
   - These comments are ESSENTIAL for future maintenance and decision-making
 - NEVER end cluster hostnames with `svc.cluster.local`; only use `<service>.<namespace>`.
-- **Authentik SecurityPolicy ReferenceGrant**: When creating SecurityPolicy resources that reference
-  Authentik's external auth service (`ak-outpost-authentik-embedded-outpost` in `default` namespace),
-  you MUST update the ReferenceGrant at
-  `kubernetes/apps/default/authentik/referencegrant.yaml` to include the SecurityPolicy's namespace.
-  ReferenceGrant does NOT support wildcards - each namespace must be explicitly listed. Without this,
-  the SecurityPolicy will fail with "backend ref not permitted by any ReferenceGrant" error.
+- **Authelia SecurityPolicy ReferenceGrant**: When creating SecurityPolicy resources that reference
+  Authelia's external auth service (`authelia` in `default` namespace), you MUST update the
+  ReferenceGrant at `kubernetes/apps/default/authelia/referencegrant.yaml` to include the
+  SecurityPolicy's namespace. ReferenceGrant does NOT support wildcards - each namespace must be
+  explicitly listed. Without this, the SecurityPolicy will fail with "backend ref not permitted by
+  any ReferenceGrant" error.
 
 ## Namespace Management Strategy
 
@@ -242,6 +242,9 @@ validation.**
   encrypted secrets
 - **App-Template**: Use bjw-s OCIRepository with `chartRef: {kind: OCIRepository, name:
   app-template}`, HTTPRoute over Ingress, add `postBuild.substituteFrom: cluster-secrets`
+- **App-Template Service Naming**: Services auto-prefixed with release name when multiple services exist.
+  Pattern: `{{ .Release.Name }}-{{ service-identifier }}`. Example: HelmRelease `immich` with service
+  identifier `redis` creates service `immich-redis.default`. DNS references use full prefixed name.
 - **Directory Structure**: `kubernetes/apps/<namespace>/<app>/` - namespace dirs MUST match names
   exactly
 - **File Organization**: All manifests co-located (helmrelease.yaml, ks.yaml, kustomization.yaml,
@@ -509,25 +512,7 @@ Kustomize hashes.
 - **Health Probes**: NEVER use executable commands
 - **Hostnames**: Use shortest resolvable form, avoid FQDNs when unnecessary
 
-## Authentik App Protection
-
-### Required Components
-
-4 items for protected apps:
-
-- Proxy provider blueprint (external_host, internal_host, mode: forward_single)
-- Application blueprint (links provider to app catalog)
-- Provider entry in `blueprints/outpost-configuration.yaml` providers list
-- SecurityPolicy targeting HTTPRoute (backend: ak-outpost-authentik-embedded-outpost, path:
-  /outpost.goauthentik.io/auth/envoy)
-
-### Setup Workflow
-
-1. Create provider blueprint: external/internal hosts, intercept_header_auth: true
-2. Create application blueprint: references provider by name
-3. Add provider to outpost-configuration.yaml providers list
-4. Create SecurityPolicy targeting app's HTTPRoute name
-5. Deploy app with standard app-template route blocks
+## Authelia App Protection
 
 ### SecurityPolicy Standards
 
@@ -537,20 +522,22 @@ Kustomize hashes.
 
 **Required Configuration Elements:**
 
-1. **headersToExtAuth** - CRITICAL for OAuth/session validation:
-   - `cookie` - Sends session cookies TO Authentik for validation
-   - `x-forwarded-host` - Required for OAuth callback URL validation
-   - `x-forwarded-proto` - Required for HTTPS callback validation
-   - **Without these**: "mismatched session ID" and "invalid state" errors occur
+1. **headersToExtAuth** - CRITICAL for session validation:
+   - `accept` - HTTP Accept header
+   - `cookie` - Sends session cookies to Authelia for validation
+   - `authorization` - Authorization header for bearer tokens
+   - `x-forwarded-proto` - Required for HTTPS validation
+   - **Without these**: Authentication validation fails
 
 2. **headersToBackend** - CRITICAL for session management:
-   - `set-cookie` - Passes Authentik session cookies BACK to client
-   - `x-authentik-username`, `x-authentik-groups`, `x-authentik-email`, `x-authentik-uid` - User
-     identity headers
-   - **Without set-cookie**: Authentication fails with HTTP 400 on callbacks
-   - **NEVER use wildcards** (`x-authentik-*`): Always use explicit headers
+   - `set-cookie` - Passes Authelia session cookies back to client
+   - `remote-user`, `remote-groups`, `remote-email`, `remote-name` - User identity headers
+   - **Without set-cookie**: Authentication fails
+   - **NEVER use wildcards**: Always use explicit headers
 
 3. **backendRef** - Use singular (not array `backendRefs`)
+   - Backend: `authelia` service in `default` namespace, port `9091`
+   - Path: `/api/authz/ext-authz/`
 
 4. **backendSettings.retry.numRetries: 3** - Retry configuration
 
@@ -561,16 +548,9 @@ Kustomize hashes.
 
 **Validation Checklist:**
 - Compare against radarr/securitypolicy.yaml before committing
-- Verify namespace is listed in `kubernetes/apps/default/authentik/referencegrant.yaml`
+- Verify namespace is listed in `kubernetes/apps/default/authelia/referencegrant.yaml`
 - Ensure all required headers are present (no wildcards)
 - Confirm NO explicit namespace in metadata (relies on kustomization inheritance)
-
-### API Protection
-
-- **skip_path_regex: ^/api/.*$** excludes API endpoints from auth (use appropriate API path for the
-  app)
-- **Required for**: Mobile clients, webhooks, API integrations
-- **Alternative**: Separate HTTPRoute for API paths
 
 ## Stack Overview
 

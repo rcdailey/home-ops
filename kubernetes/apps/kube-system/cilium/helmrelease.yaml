@@ -75,7 +75,7 @@ spec:
       prometheus:
         serviceMonitor:
           enabled: true
-    gatewayAPI: # Disabled in favor of Envoy Gateway for Authentik forward auth support
+    gatewayAPI: # Disabled in favor of Envoy Gateway for Authelia forward auth support
       enabled: false
     # bgpControlPlane:
     #   enabled: false

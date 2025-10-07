@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://www.authelia.com/schemas/v4.39/json-schema/user-database.json
+---
+# Authelia user database
+# Password hash and email stored in Infisical and injected via environment variables
+
+users:
+  robert:
+    disabled: false
+    displayname: Robert Dailey
+    password: ${ROBERT_PASSWORD_HASH}
+    email: ${ROBERT_EMAIL}
+    groups:
+    - admins
