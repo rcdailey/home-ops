@@ -22,7 +22,7 @@ spec:
     - x-forwarded-proto
     http:
       backendRef:
-        name: authelia
+        name: authelia-app
         namespace: default
         port: 9091
       path: /api/authz/ext-authz/

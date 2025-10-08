@@ -30,4 +30,4 @@ spec:
   to:
   - group: ""
     kind: Service
-    name: authelia
+    name: authelia-app
