@@ -94,7 +94,7 @@ spec:
                 memory: 256Mi
 
     service:
-      main:
+      app:
         controller: authelia
         ports:
           http:
@@ -104,6 +104,23 @@ spec:
         ports:
           http:
             port: 6379
+
+    route:
+      app:
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+        hostnames:
+        - auth.${SECRET_DOMAIN}
+        rules:
+        - matches:
+          - path:
+              type: PathPrefix
+              value: /
+          backendRefs:
+          - name: app
+            port: 9091
 
     persistence:
       config-files:
