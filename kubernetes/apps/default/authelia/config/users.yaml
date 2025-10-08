@@ -2,7 +2,7 @@
 ---
 # Authelia user database
 # Password hash and email stored in Infisical and injected via environment variables
-# Requires X_AUTHELIA_CONFIG_FILTERS=template to process {{ env }} syntax
+# Requires X_AUTHELIA_CONFIG_FILTERS=template to process environment variable templates
 
 users:
   robert:
