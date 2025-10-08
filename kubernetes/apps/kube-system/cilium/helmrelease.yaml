@@ -71,10 +71,7 @@ spec:
     endpointRoutes:
       enabled: true
     envoy:
-      rollOutPods: true
-      prometheus:
-        serviceMonitor:
-          enabled: true
+      enabled: false
     gatewayAPI: # Disabled in favor of Envoy Gateway for Authentik forward auth support
       enabled: false
     # bgpControlPlane:
