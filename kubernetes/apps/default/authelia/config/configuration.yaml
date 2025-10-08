@@ -58,7 +58,7 @@ session:
   cookies:
   - domain: ${SECRET_DOMAIN}
     authelia_url: https://auth.${SECRET_DOMAIN}
-    default_redirection_url: https://auth.${SECRET_DOMAIN}
+    default_redirection_url: https://home.${SECRET_DOMAIN}
   redis:
     host: authelia-redis.default
     port: 6379
