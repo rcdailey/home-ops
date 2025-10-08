@@ -27,7 +27,7 @@ spec:
           main:
             image:
               repository: ghcr.io/authelia/authelia
-              tag: 4.39.11
+              tag: 4.39.12
             env:
               TZ: America/New_York
               # Enable template filter for environment variable substitution in config files
