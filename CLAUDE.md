@@ -247,6 +247,9 @@ validation.**
   exist. Pattern: `{{ .Release.Name }}-{{ service-identifier }}`. Example: HelmRelease `immich` with
   service identifier `redis` creates service `immich-redis.default`. DNS references use full
   prefixed name.
+- **Route backendRefs**: When using explicit `route.*.rules.backendRefs.name`, use full service name
+  (e.g., `authelia-app`), not identifier (e.g., `app`). Without explicit rules, app-template
+  auto-resolves service names.
 - **Directory Structure**: `kubernetes/apps/<namespace>/<app>/` - namespace dirs MUST match names
   exactly
 - **File Organization**: All manifests co-located (helmrelease.yaml, ks.yaml, kustomization.yaml,

@@ -119,7 +119,7 @@ spec:
               type: PathPrefix
               value: /
           backendRefs:
-          - name: app
+          - name: authelia-app
             port: 9091
 
     persistence:
