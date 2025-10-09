@@ -66,6 +66,14 @@ spec:
       enabled: true
 
     cephClusterSpec:
+      # Enable per-RBD image metrics for PVC monitoring dashboards
+      # Required for ceph_rbd_* metrics (read/write IOPS, throughput, latency)
+      # to populate Grafana dashboard panels. Without this, only cluster-level
+      # metrics are available and per-PVC RBD performance panels show no data.
+      cephConfig:
+        global:
+          mgr/prometheus/rbd_stats_pools: "ceph-blockpool"
+          mgr/prometheus/rbd_stats_pools_refresh_interval: "60"
       cleanupPolicy:
         wipeDevicesFromOtherClusters: false
       mon:
