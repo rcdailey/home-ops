@@ -15,3 +15,11 @@ configMapGenerator:
       grafana_dashboard: "1"
     annotations:
       grafana_folder: "Custom"
+- name: pvc-capacity-overview-dashboard
+  files:
+  - pvc-capacity-overview.json=resources/pvc-capacity-overview.json
+  options:
+    labels:
+      grafana_dashboard: "1"
+    annotations:
+      grafana_folder: "Custom"
