@@ -170,6 +170,11 @@ spec:
           gnetId: 11454
           revision: 14
           datasource: VictoriaMetrics
+        k8s-pvc-stats:
+          # renovate: dashboardName="Kubernetes PVC Stats"
+          gnetId: 23233
+          revision: 6
+          datasource: VictoriaMetrics
 
     datasources:
       datasources.yaml:

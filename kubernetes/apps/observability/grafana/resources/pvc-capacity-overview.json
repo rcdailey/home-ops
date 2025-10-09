@@ -218,6 +218,228 @@
         ]
       },
       "gridPos": { "h": 16, "w": 24, "x": 0, "y": 8 }
+    },
+    {
+      "id": 3,
+      "title": "RBD Read IOPS",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_read_ops[5m]))",
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "iops",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["mean", "max"]
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 }
+    },
+    {
+      "id": 4,
+      "title": "RBD Write IOPS",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_write_ops[5m]))",
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "iops",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["mean", "max"]
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 }
+    },
+    {
+      "id": 5,
+      "title": "RBD Read Throughput",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_read_bytes[5m]))",
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "binBps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["mean", "max"]
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 }
+    },
+    {
+      "id": 6,
+      "title": "RBD Write Throughput",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_write_bytes[5m]))",
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "binBps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["mean", "max"]
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 }
+    },
+    {
+      "id": 7,
+      "title": "RBD Read Latency",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) (rate(ceph_rbd_read_latency_sum[5m]) / on (image) rate(ceph_rbd_read_latency_count[5m]))) or max by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_info * 0)",
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ns",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["mean", "max"]
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 }
+    },
+    {
+      "id": 8,
+      "title": "RBD Write Latency",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) (rate(ceph_rbd_write_latency_sum[5m]) / on (image) rate(ceph_rbd_write_latency_count[5m]))) or max by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_info * 0)",
+          "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ns",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": ["mean", "max"]
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 }
     }
   ],
   "time": {
