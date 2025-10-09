@@ -84,6 +84,44 @@ spec:
                 drop:
                 - ALL
 
+          search-indexer:
+            image:
+              repository: filerun/filerun
+              tag: "8.1"
+            command:
+            - /bin/sh
+            - -c
+            - |
+              while true; do
+                php /var/www/html/cron/process_search_index_queue.php
+                sleep 300
+              done
+            env:
+              FR_DB_HOST: filerun-mariadb
+              FR_DB_PORT: "3306"
+              FR_DB_NAME: filerun
+              FR_DB_USER: filerun
+            envFrom:
+            - secretRef:
+                name: filerun-secret
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - SETUID
+                - SETGID
+                drop:
+                - ALL
+
       elasticsearch:
         replicas: 1
         strategy: Recreate
@@ -178,6 +216,63 @@ spec:
                 drop:
                 - ALL
 
+      search-indexer:
+        type: cronjob
+        cronjob:
+          schedule: "*/5 * * * *"
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+          ttlSecondsAfterFinished: 300
+
+        pod:
+          restartPolicy: Never
+          securityContext:
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+            seccompProfile:
+              type: RuntimeDefault
+
+        containers:
+          app:
+            image:
+              repository: filerun/filerun
+              tag: "8.1"
+            command:
+            - php
+            args:
+            - /var/www/html/cron/process_search_index_queue.php
+            env:
+              FR_DB_HOST: filerun-mariadb
+              FR_DB_PORT: "3306"
+              FR_DB_NAME: filerun
+              FR_DB_USER: filerun
+              APACHE_RUN_USER: "1000"
+              APACHE_RUN_USER_ID: "1000"
+              APACHE_RUN_GROUP: "1000"
+              APACHE_RUN_GROUP_ID: "1000"
+            envFrom:
+            - secretRef:
+                name: filerun-secret
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - SETUID
+                - SETGID
+                drop:
+                - ALL
+
     service:
       app:
         controller: filerun
@@ -226,6 +321,8 @@ spec:
         advancedMounts:
           filerun:
             app:
+            - path: /var/www/html
+            search-indexer:
             - path: /var/www/html
 
       user-files:
