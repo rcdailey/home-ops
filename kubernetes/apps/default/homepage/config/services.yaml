@@ -117,7 +117,7 @@
       icon: bookstack
       href: https://wiki.${SECRET_DOMAIN}/
       description: Documentation Wiki
-      siteMonitor: http://bookstack.default:8080
+      siteMonitor: http://bookstack.default:8080/status
 
   - Open Sprinkler:
       icon: mdi-sprinkler-variant
@@ -129,7 +129,7 @@
       icon: authelia
       href: https://auth.${SECRET_DOMAIN}/
       description: Authentication Gateway
-      siteMonitor: http://authelia.default:9091
+      siteMonitor: http://authelia-app.default:9091
 
   - SilverBullet:
       icon: silverbullet
