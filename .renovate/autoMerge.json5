@@ -19,6 +19,18 @@
       ignoreTests: true
     },
     {
+      // Python minor version updates frequently introduce breaking changes to stdlib APIs
+      // Example: Python 3.14's BooleanOptionalAction no longer accepts 'type' parameter,
+      // breaking flux-local and other tools. Only auto-merge patch versions (security fixes).
+      description: "Auto-merge Mise Python (patch only)",
+      matchManagers: ["mise"],
+      matchPackageNames: ["python"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["patch"],
+      ignoreTests: true
+    },
+    {
       description: "Auto-merge container patch and digest updates",
       matchDatasources: ["docker"],
       automerge: true,
