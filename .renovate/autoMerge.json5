@@ -11,7 +11,24 @@
       ignoreTests: true
     },
     {
-      description: "Auto-merge Mise Tools",
+      // IMPORTANT: Specific packageRules must come BEFORE broader rules. Renovate evaluates
+      // packageRules sequentially and the first matching rule wins. If this Python-specific
+      // rule came after the general Mise rule below, Python would match the broader rule
+      // first and incorrectly auto-merge minor versions.
+      //
+      // Python minor version updates frequently introduce breaking changes to stdlib APIs
+      // Example: Python 3.14's BooleanOptionalAction no longer accepts 'type' parameter,
+      // breaking flux-local and other tools. Only auto-merge patch versions (security fixes).
+      description: "Auto-merge Mise Python (patch only)",
+      matchManagers: ["mise"],
+      matchPackageNames: ["python"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["patch"],
+      ignoreTests: true
+    },
+    {
+      description: "Auto-merge Mise Tools (except Python)",
       matchManagers: ["mise"],
       automerge: true,
       automergeType: "branch",
