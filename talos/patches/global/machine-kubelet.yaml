@@ -2,6 +2,7 @@ machine:
   kubelet:
     extraConfig:
       serializeImagePulls: false
+      volumeStatsAggPeriod: 1m
     nodeIP:
       validSubnets:
         - 192.168.1.0/24
