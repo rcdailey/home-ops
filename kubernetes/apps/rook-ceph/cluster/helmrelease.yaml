@@ -67,7 +67,7 @@ spec:
 
     cephClusterSpec:
       cephVersion:
-        image: quay.io/ceph/ceph:v19.2.3
+        image: quay.io/ceph/ceph:v20.1.1
       # Enable per-RBD image metrics for PVC monitoring dashboards
       # Required for ceph_rbd_* metrics (read/write IOPS, throughput, latency)
       # to populate Grafana dashboard panels. Without this, only cluster-level
