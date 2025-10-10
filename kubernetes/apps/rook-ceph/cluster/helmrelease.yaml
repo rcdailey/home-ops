@@ -93,12 +93,13 @@ spec:
         useAllNodes: false
         useAllDevices: false
         nodes:
-        - name: "rias"
-          devicePathFilter: "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi2"
-          config:
-            deviceClass: "ssd"
-            metadataDevice: ""
-            osdsPerDevice: "1"
+        # Temporarily disabled for bare metal reprovisioning
+        # - name: "rias"
+        #   devicePathFilter: "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi2"
+        #   config:
+        #     deviceClass: "ssd"
+        #     metadataDevice: ""
+        #     osdsPerDevice: "1"
         - name: "nami"
           devicePathFilter: "/dev/disk/by-id/ata-CT2000BX500SSD1_2513E9B2B5A5"
           config:
