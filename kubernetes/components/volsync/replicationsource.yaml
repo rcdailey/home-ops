@@ -21,6 +21,16 @@ spec:
       runAsUser: ${VOLSYNC_PUID:=1000}
       runAsGroup: ${VOLSYNC_PGID:=1000}
       fsGroup: ${VOLSYNC_PGID:=1000}
+    moverAffinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: volsync.backube/privileged-mover
+                operator: Exists
+            topologyKey: kubernetes.io/hostname
     parallelism: 2
     repository: ${APP}-volsync-secret
     retain:
