@@ -166,6 +166,14 @@ spec:
     defaultRules:
       create: true
       additionalGroupByLabels: []
+      # Individual rule overrides via defaultRules.rules.<RuleName>.create: false
+      # This disables specific default rules while keeping the rule group enabled
+      # VictoriaMetrics operator aggregates ALL VMRule resources - there is no true override mechanism
+      # To customize a default rule: disable it here, then create custom VMRule with desired configuration
+      # Reference: https://github.com/VictoriaMetrics/helm-charts chart values.yaml structure
+      rules:
+        TooManyLogs:
+          create: false # Using custom VMRule (vmrule.yaml) with >20 threshold vs default >0
       groups:
         etcd:
           create: true
