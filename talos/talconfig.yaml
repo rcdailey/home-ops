@@ -27,7 +27,7 @@ nodes:
     machineSpec:
       secureboot: false
     talosImageURL: factory.talos.dev/installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba
-    controlPlane: true
+    controlPlane: false
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: "bc:24:11:a7:98:2d"
@@ -38,8 +38,6 @@ nodes:
           - network: "0.0.0.0/0"
             gateway: "192.168.1.1"
         mtu: 1500
-        vip:
-          ip: "192.168.1.70"
   - hostname: "nami"
     ipAddress: "192.168.1.50"
     installDiskSelector:
@@ -47,7 +45,7 @@ nodes:
     machineSpec:
       secureboot: false
     talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
-    controlPlane: true
+    controlPlane: false
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: "94:c6:91:a1:e5:e8"
@@ -58,9 +56,7 @@ nodes:
           - network: "0.0.0.0/0"
             gateway: "192.168.1.1"
         mtu: 1500
-        vip:
-          ip: "192.168.1.70"
-    extraManifests:
+    patches:
       - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
   - hostname: "marin"
     ipAddress: "192.168.1.59"
@@ -82,7 +78,7 @@ nodes:
         mtu: 1500
         vip:
           ip: "192.168.1.70"
-    extraManifests:
+    patches:
       - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
   - hostname: "sakura"
     ipAddress: "192.168.1.62"
@@ -92,7 +88,7 @@ nodes:
     machineSpec:
       secureboot: false
     talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
-    controlPlane: false
+    controlPlane: true
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: "1c:69:7a:0e:f7:ed"
@@ -103,7 +99,9 @@ nodes:
           - network: "0.0.0.0/0"
             gateway: "192.168.1.1"
         mtu: 1500
-    extraManifests:
+        vip:
+          ip: "192.168.1.70"
+    patches:
       - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
   - hostname: "hanekawa"
     ipAddress: "192.168.1.63"
@@ -113,7 +111,7 @@ nodes:
     machineSpec:
       secureboot: false
     talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
-    controlPlane: false
+    controlPlane: true
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: "1c:69:7a:0d:62:d4"
@@ -124,7 +122,9 @@ nodes:
           - network: "0.0.0.0/0"
             gateway: "192.168.1.1"
         mtu: 1500
-    extraManifests:
+        vip:
+          ip: "192.168.1.70"
+    patches:
       - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
 
 # Global patches
