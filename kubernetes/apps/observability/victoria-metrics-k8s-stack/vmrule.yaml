@@ -1,0 +1,26 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: vm-health-overrides
+spec:
+  groups:
+  - name: vm-health
+    interval: 30s
+    concurrency: 2
+    rules:
+    # Override default TooManyLogs alert to ignore transient startup errors
+    # The config-reloader sidecar logs harmless connection errors during pod startup
+    # when it tries to connect to vmagent before the main container is ready.
+    # This adjusted threshold only fires when errors persist beyond startup (>20 errors/5min).
+    - alert: TooManyLogs
+      expr: sum(increase(vm_log_messages_total{level="error"}[5m])) without (app_version, location) > 20
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Too many logs printed for job {{ $labels.job }} ({{ $labels.instance }})
+        description: |
+          Logging rate for job "{{ $labels.job }}" ({{ $labels.instance }}) is {{ $value }} for last 15m.
+          Worth to check logs for specific error messages.
