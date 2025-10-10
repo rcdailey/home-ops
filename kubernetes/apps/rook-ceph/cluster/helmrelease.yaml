@@ -39,25 +39,6 @@ spec:
             predict_linear(node_filesystem_free_bytes{device=~"/.*",fstype!~"nfs.*|tmpfs"}[2d], 3600 * 24 * 5)
             *on(instance) group_left(nodename) node_uname_info < 0
 
-        # CRITICAL: Disable CephNodeNetworkPacketDrops alert
-        # This alert triggers on transient packet drops during Ceph I/O bursts on nami node (192.168.1.50)
-        #
-        # Root cause analysis:
-        # - nami: 1.82TB OSD + control plane (mon-d) = 804K RX drops (0.295%)
-        # - marin: 0.91TB OSD + control plane (mon-a, mgr-a) = 439K RX drops (0.221%)
-        # - sakura/hanekawa: 0.91TB OSD workers = 332 RX drops (0.000%)
-        # - All nodes use same Intel e1000e NICs with identical tuning (4096 ring buffers, TSO/GSO/GRO disabled)
-        #
-        # Conclusion: Not a hardware/driver issue - nami's disproportionate workload (2x OSD + control plane)
-        # creates network load exceeding alert thresholds (0.5% drop rate + 10 pkt/s) during traffic bursts.
-        # Workers with same NICs show zero drops, proving hardware is capable.
-        # Cumulative 0.29% drop rate is acceptable with no operational impact.
-        # Alternative solutions (hardware upgrade, OSD rebalancing) are unnecessary for this drop rate.
-        #
-        # Disabling via expr: "0" prevents false positives while maintaining rule structure
-        CephNodeNetworkPacketDrops:
-          expr: "0"
-
     ingress:
       dashboard:
         enabled: false

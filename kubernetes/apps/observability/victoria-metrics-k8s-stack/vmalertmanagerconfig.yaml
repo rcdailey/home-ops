@@ -20,9 +20,6 @@ spec:
       - alertname = "CephNodeNetworkPacketErrors"
     - receiver: blackhole
       matchers:
-      - alertname = "CephNodeNetworkPacketDrops"
-    - receiver: blackhole
-      matchers:
       - alertname = "CephNodeInconsistentMTU"
     - receiver: gatus-heartbeat
       matchers:
