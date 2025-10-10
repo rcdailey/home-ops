@@ -72,6 +72,8 @@ spec:
       enabled: true
     envoy:
       enabled: false
+      prometheus:
+        enabled: false
     gatewayAPI: # Disabled in favor of Envoy Gateway for Authelia forward auth support
       enabled: false
     # bgpControlPlane:
