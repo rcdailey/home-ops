@@ -3,49 +3,47 @@
   packageRules: [
     {
       matchUpdateTypes: ["major"],
-      semanticCommitType: "feat",
+      semanticCommitType: "build",
+      semanticCommitScope: "deps",
       commitMessagePrefix: "{{semanticCommitType}}({{semanticCommitScope}})!:",
       commitMessageExtra: "( {{currentVersion}} ➔{{newVersion}} )"
     },
     {
       matchUpdateTypes: ["minor"],
-      semanticCommitType: "feat",
+      semanticCommitType: "build",
+      semanticCommitScope: "deps",
       commitMessageExtra: "( {{currentVersion}} ➔{{newVersion}} )"
     },
     {
       matchUpdateTypes: ["patch"],
-      semanticCommitType: "fix",
+      semanticCommitType: "build",
+      semanticCommitScope: "deps",
       commitMessageExtra: "( {{currentVersion}} ➔{{newVersion}} )"
     },
     {
       matchUpdateTypes: ["digest"],
-      semanticCommitType: "chore",
+      semanticCommitType: "build",
+      semanticCommitScope: "deps",
       commitMessageExtra: "( {{currentDigestShort}} ➔{{newDigestShort}} )"
     },
     {
       matchDatasources: ["docker"],
-      semanticCommitScope: "container",
       commitMessageTopic: "image {{depName}}"
     },
     {
       matchDatasources: ["helm"],
-      semanticCommitScope: "helm",
       commitMessageTopic: "chart {{depName}}"
     },
     {
       matchManagers: ["github-actions"],
-      semanticCommitType: "ci",
-      semanticCommitScope: "github-action",
       commitMessageTopic: "action {{depName}}"
     },
     {
       matchDatasources: ["github-releases"],
-      semanticCommitScope: "github-release",
       commitMessageTopic: "release {{depName}}"
     },
     {
       matchManagers: ["mise"],
-      semanticCommitScope: "mise",
       commitMessageTopic: "tool {{depName}}"
     }
   ]
