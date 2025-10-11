@@ -15,7 +15,7 @@ Query current alerts in vmalert and fix specified alert(s) or pick one to invest
 
 1. **Query alerts**:
    - With arguments (`$ARGUMENTS`): Run `./scripts/vmalert-query.py detail <alertname>` for each
-   - Without arguments: Run `./scripts/vmalert-query.py all` to list firing and pending alerts, then pick one
+   - Without arguments: Run `./scripts/vmalert-query.py` to list firing and pending alerts, then pick one
 
 2. **Check git history BEFORE attempting any fix**:
    ```bash
@@ -60,9 +60,9 @@ Query current alerts in vmalert and fix specified alert(s) or pick one to invest
 ## Available Query Commands
 
 ```bash
-./scripts/vmalert-query.py                # Firing alerts only
+./scripts/vmalert-query.py                # Firing and pending alerts (default)
 ./scripts/vmalert-query.py detail <name>  # Full details + troubleshooting commands
-./scripts/vmalert-query.py all            # All alerts (firing + pending)
+./scripts/vmalert-query.py firing         # Firing alerts only
 ./scripts/vmalert-query.py pending        # Pending alerts only
 ./scripts/vmalert-query.py rules          # All alert rules
 ```

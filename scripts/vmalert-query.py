@@ -57,21 +57,22 @@ def format_labels(labels: dict[str, str], exclude: set[str] | None = None) -> li
     return [f"{k}={v}" for k, v in labels.items() if k not in exclude]
 
 
-def list_alerts(state: str = "firing") -> None:
+def list_alerts(states: list[str] | None = None) -> None:
     """List alerts filtered by state with formatted output."""
-    print(colorize(f"Querying vmalert for {state} alerts...\n", "blue"))
+    states = states or ["firing", "pending"]
+    state_desc = " and ".join(states)
+    print(colorize(f"Querying vmalert for {state_desc} alerts...\n", "blue"))
 
     data = query_vmalert("/api/v1/alerts")
     alerts = data.get("data", {}).get("alerts", [])
 
-    if state != "all":
-        alerts = [a for a in alerts if a.get("state") == state]
+    filtered_alerts = [a for a in alerts if a.get("state") in states]
 
-    if not alerts:
-        print(colorize(f"No alerts in {state} state", "green"))
+    if not filtered_alerts:
+        print(colorize(f"No alerts in {state_desc} state", "green"))
         return
 
-    for alert in alerts:
+    for alert in filtered_alerts:
         labels = alert.get("labels", {})
         annotations = alert.get("annotations", {})
         severity = labels.get("severity", "none")
@@ -167,10 +168,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Query vmalert for alert information")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    subparsers.add_parser("firing", help="List all firing alerts (default)")
-    subparsers.add_parser("pending", help="List all pending alerts")
-    subparsers.add_parser("inactive", help="List all inactive alerts")
-    subparsers.add_parser("all", help="List all alerts regardless of state")
+    subparsers.add_parser("firing", help="List only firing alerts")
+    subparsers.add_parser("pending", help="List only pending alerts")
+    subparsers.add_parser("inactive", help="List only inactive alerts")
 
     detail_parser = subparsers.add_parser("detail", help="Show detailed information for an alert")
     detail_parser.add_argument("name", help="Alert name")
@@ -181,11 +181,18 @@ def main() -> None:
     json_parser.add_argument("state", nargs="?", default="all", help="Filter by state")
 
     args = parser.parse_args()
-    command = args.command or "firing"
+    command = args.command
 
     try:
-        if command in ("firing", "pending", "inactive", "all"):
-            list_alerts(command)
+        if command is None:
+            # Default: show both firing and pending alerts
+            list_alerts()
+        elif command == "firing":
+            list_alerts(["firing"])
+        elif command == "pending":
+            list_alerts(["pending"])
+        elif command == "inactive":
+            list_alerts(["inactive"])
         elif command == "detail":
             detail_alert(args.name)
         elif command == "rules":
