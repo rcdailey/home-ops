@@ -135,14 +135,11 @@ plex:
   clean_bundles: false
   empty_trash: false
   optimize: false
-  db_cache:
-  verify_ssl:
 
 tmdb:
   apikey: <<TMDB_API_KEY>>
   language: en
   cache_expiration: 60
-  region:
 
 mdblist:
   apikey: <<MDBLIST_API_KEY>>
@@ -151,11 +148,6 @@ mdblist:
 trakt:
   client_id: <<TRAKT_CLIENT_ID>>
   client_secret: <<TRAKT_CLIENT_SECRET>>
-  pin:
   authorization:
     access_token: <<TRAKT_ACCESS_TOKEN>>
-    token_type: Bearer
-    expires_in: 7889238
     refresh_token: <<TRAKT_REFRESH_TOKEN>>
-    scope: public
-    created_at: 1740776404
