@@ -6,4 +6,3 @@ resources:
 - ./external-dns.yaml
 - ./external-secrets.yaml
 - ./intel.yaml
-- ./node-feature-discovery.yaml
