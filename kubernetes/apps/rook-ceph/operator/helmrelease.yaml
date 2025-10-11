@@ -1,14 +1,4 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrepository-source-v1.json
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: rook-ceph
-  namespace: rook-ceph # Required for Renovate lookups
-spec:
-  interval: 1h
-  url: https://charts.rook.io/release
----
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -16,14 +6,10 @@ metadata:
   name: rook-ceph-operator
 spec:
   interval: 1h
-  chart:
-    spec:
-      chart: rook-ceph
-      version: v1.18.4
-      sourceRef:
-        kind: HelmRepository
-        name: rook-ceph
-        namespace: rook-ceph
+  chartRef:
+    kind: OCIRepository
+    name: rook-ceph
+    namespace: rook-ceph
   install:
     remediation:
       retries: -1
@@ -48,7 +34,6 @@ spec:
       limits:
         memory: 512Mi
 
-    nodeSelector: {}
     # NOTE: tolerations removed to fix Helm template bug in v1.17.5 (same issue as Cilium #40937)
     # Previously: tolerations: []
     # The empty array causes "YAML parse error: line 32: could not find expected ':'"

@@ -6,14 +6,10 @@ metadata:
   name: rook-ceph-cluster
 spec:
   interval: 1h
-  chart:
-    spec:
-      chart: rook-ceph-cluster
-      version: v1.18.4
-      sourceRef:
-        kind: HelmRepository
-        name: rook-ceph
-        namespace: rook-ceph
+  chartRef:
+    kind: OCIRepository
+    name: rook-ceph-cluster
+    namespace: rook-ceph
   dependsOn:
   - name: rook-ceph-operator
     namespace: rook-ceph
@@ -54,8 +50,6 @@ spec:
       enabled: true
 
     cephClusterSpec:
-      cephVersion:
-        image: quay.io/ceph/ceph:v19.2.3
       # Enable per-RBD image metrics for PVC monitoring dashboards
       # Required for ceph_rbd_* metrics (read/write IOPS, throughput, latency)
       # to populate Grafana dashboard panels. Without this, only cluster-level
@@ -132,11 +126,11 @@ spec:
           imageFormat: "2"
           imageFeatures: layering
           csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
-          csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+          csi.storage.k8s.io/provisioner-secret-namespace: "{{ .Release.Namespace }}"
           csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
-          csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+          csi.storage.k8s.io/controller-expand-secret-namespace: "{{ .Release.Namespace }}"
           csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
-          csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+          csi.storage.k8s.io/node-stage-secret-namespace: "{{ .Release.Namespace }}"
           csi.storage.k8s.io/fstype: ext4
     cephBlockPoolsVolumeSnapshotClass:
       enabled: true
@@ -167,11 +161,11 @@ spec:
         volumeBindingMode: Immediate
         parameters:
           csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
-          csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+          csi.storage.k8s.io/provisioner-secret-namespace: "{{ .Release.Namespace }}"
           csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
-          csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+          csi.storage.k8s.io/controller-expand-secret-namespace: "{{ .Release.Namespace }}"
           csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
-          csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+          csi.storage.k8s.io/node-stage-secret-namespace: "{{ .Release.Namespace }}"
           csi.storage.k8s.io/fstype: ext4
     cephFileSystemVolumeSnapshotClass:
       enabled: true
