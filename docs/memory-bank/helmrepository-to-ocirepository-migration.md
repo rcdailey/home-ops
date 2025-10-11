@@ -1,12 +1,24 @@
 # HelmRepository to OCIRepository Migration Analysis
 
-**Date**: 2025-10-11 **Analysis Method**: Comprehensive scan using Octocode, Tavily, and Context7
+**Date**: 2025-10-11 **Last Updated**: 2025-10-11
+**Analysis Method**: Comprehensive scan using Octocode, Tavily, Context7, and manual verification
 
 ## Overview
 
 This document tracks the migration status of HelmRepository resources to OCIRepository in the
 home-ops cluster. OCIRepository provides better performance, native container registry integration,
 and simplified dependency management.
+
+## Summary Status
+
+**Total Repositories**: 8
+**Completed Migrations**: 2 (victoriametrics, node-feature-discovery)
+**Ready for Migration**: 3 (external-secrets, grafana, intel)
+**Blocked (No OCI)**: 3 (external-dns, metrics-server, cloudnative-pg)
+
+**Key Finding**: Initial Context7 analysis missed 3 repositories with OCI support. Manual
+verification via onedr0p/home-ops patterns revealed official OCI registries for external-secrets,
+grafana, and intel GPU drivers.
 
 ## Current HelmRepository Inventory
 
@@ -51,52 +63,61 @@ and simplified dependency management.
 - **Status**: Production-ready, OCI registry accessible
 - **Migration Priority**: COMPLETED
 
-### ❌ No OCI Support (6)
+### ✅ Ready for Migration (3) - OCI Support CONFIRMED
 
 #### 3. external-secrets
 
 - **Current**: `https://charts.external-secrets.io`
+- **Target**: `oci://ghcr.io/external-secrets/charts/external-secrets`
 - **Charts Used**: `external-secrets` (kube-system/external-secrets)
-- **Verification**: Context7 documentation shows ONLY traditional Helm repo methods
-- **Initial Assessment**: INCORRECT - GitHub issue #3208 mentions OCI packages but not in production
-- **Status**: No OCI support in official documentation
-- **Migration Priority**: N/A - Wait for upstream
+- **Verification**: Manual helm pull successful (digest: sha256:367317248a695565604c51ee1b05896ed16c272b92158e392292f69c37f5e645)
+- **Initial Assessment**: CORRECTED - OCI support exists but not documented in Context7
+- **Status**: Production-ready OCI registry confirmed
+- **Migration Priority**: HIGH - Critical infrastructure component
+- **onedr0p Reference**: Uses OCI at version 0.20.2
 
-#### 4. intel
-
-- **Current**: `https://intel.github.io/helm-charts/`
-- **Charts Used**: `intel-device-plugins-gpu` (kube-system/intel-gpu-plugin)
-- **Verification**: Context7 returned no Intel Helm chart documentation
-- **Status**: Cannot confirm OCI support
-- **Migration Priority**: N/A - Requires upstream investigation
-
-#### 5. external-dns
-
-- **Current**: `https://kubernetes-sigs.github.io/external-dns`
-- **Charts Used**: `external-dns` (network/cloudflare-dns, dns-private/external-dns,
-  network/external-dns)
-- **Verification**: Context7 confirms only traditional Helm repo
-- **GitHub Issue**: #4630 requests OCI support but NOT implemented
-- **Status**: No OCI support
-- **Migration Priority**: N/A - Wait for upstream
-
-#### 6. grafana
+#### 4. grafana
 
 - **Current**: `https://grafana.github.io/helm-charts`
+- **Target**: `oci://ghcr.io/grafana/helm-charts/grafana`
 - **Charts Used**: `grafana` (observability/grafana)
-- **Verification**: Context7 shows only traditional Helm repo: `helm repo add grafana
-  https://grafana.github.io/helm-charts`
-- **Status**: No OCI registry documented
-- **GitHub Issue**: #3068 requests OCI support, some charts available but NOT main grafana chart
-- **Migration Priority**: N/A - Wait for upstream
+- **Verification**: Manual helm pull successful (digest: sha256:b02b4687b11570f82c8bc9967556f782efaa9bf0422b39b5b2a1b0c2203f3cb3)
+- **Initial Assessment**: CORRECTED - Official OCI registry exists
+- **Status**: Production-ready OCI registry confirmed
+- **Migration Priority**: HIGH - Critical observability component
+- **onedr0p Reference**: Uses OCI at version 10.1.0
+
+#### 5. intel
+
+- **Current**: `https://intel.github.io/helm-charts/`
+- **Target**: `oci://ghcr.io/intel/intel-resource-drivers-for-kubernetes/intel-gpu-resource-driver-chart`
+- **Charts Used**: `intel-device-plugins-gpu` (kube-system/intel-gpu-plugin)
+- **Verification**: Manual helm pull successful (digest: sha256:4aebce98cb10d1a0c7c39786819f638627b8453f7790c3a77a95f91b60887f64)
+- **Note**: Different chart name - `intel-gpu-resource-driver` vs `intel-device-plugins-gpu`
+- **Status**: Production-ready OCI registry confirmed
+- **Migration Priority**: MEDIUM - GPU workload enablement
+- **onedr0p Reference**: Uses OCI at version 0.9.0
+
+### ❌ No OCI Support (3) - Confirmed Blocked
+
+#### 6. external-dns
+
+- **Current**: `https://kubernetes-sigs.github.io/external-dns`
+- **Charts Used**: `external-dns` (dns-private/external-dns)
+- **Verification**: Context7 confirms only traditional Helm repo, manual OCI pull failed
+- **GitHub Issue**: #4630 requests OCI support but NOT implemented
+- **Status**: No OCI support from kubernetes-sigs
+- **Alternative**: onedr0p uses charts-mirror at `oci://ghcr.io/home-operations/charts-mirror/external-dns`
+- **Migration Priority**: MEDIUM - Could use self-hosted mirror like onedr0p
 
 #### 7. metrics-server
 
 - **Current**: `https://kubernetes-sigs.github.io/metrics-server`
 - **Charts Used**: `metrics-server` (kube-system/metrics-server)
 - **Verification**: No Context7 data, Tavily confirmed GitHub issue #1527
-- **Status**: Only HTTP Helm repo available
-- **Migration Priority**: N/A - Wait for upstream
+- **Status**: Only HTTP Helm repo available from kubernetes-sigs
+- **Alternative**: onedr0p uses charts-mirror at `oci://ghcr.io/home-operations/charts-mirror/metrics-server`
+- **Migration Priority**: LOW - Core metric collection, could use self-hosted mirror
 
 #### 8. cloudnative-pg
 
@@ -104,6 +125,7 @@ and simplified dependency management.
 - **Charts Used**: `cloudnative-pg` (kube-system/cloudnative-pg)
 - **Verification**: Context7 documentation shows only traditional Helm repo methods
 - **Status**: No OCI registry available
+- **Note**: onedr0p does NOT use cloudnative-pg
 - **Migration Priority**: N/A - Wait for upstream
 
 ## Verification Methodology
@@ -279,12 +301,14 @@ research into popular repos (onedr0p, bjw-s-labs) revealed the correct pattern i
 
 1. **GitHub Issues Are Not Documentation**: Issues requesting features don't mean features exist
 2. **Web Search Can Be Misleading**: Found references to OCI packages that aren't production-ready
-3. **Context7 Is Most Reliable**: Official documentation analysis revealed true support status
-4. **Manual Verification Essential**: Always test `helm pull oci://` before migrating
+3. **Context7 Is Not Always Complete**: Official docs may lag behind actual OCI registry availability
+4. **Manual Verification Essential**: Always test `helm pull oci://` before declaring no OCI support
 5. **Pattern Research Critical**: Don't assume centralized structure - check popular repos for
    patterns
 6. **OCIRepository Is Per-App**: Each app owns its ocirepository.yaml, not centralized like
    HelmRepository
+7. **onedr0p/home-ops Is Gold Standard**: Check onedr0p's implementations for real-world OCI patterns
+8. **Documentation Lags Reality**: external-secrets, grafana, and intel all have OCI but limited docs
 
 ## OCIRepository Migration Pattern
 
