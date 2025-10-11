@@ -5,14 +5,9 @@ kind: HelmRelease
 metadata:
   name: external-secrets
 spec:
-  chart:
-    spec:
-      chart: external-secrets
-      version: 0.20.2
-      sourceRef:
-        kind: HelmRepository
-        name: external-secrets
-        namespace: flux-system
+  chartRef:
+    kind: OCIRepository
+    name: external-secrets
   interval: 30m
   maxHistory: 3
   uninstall:
