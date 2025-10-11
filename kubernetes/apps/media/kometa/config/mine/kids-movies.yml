@@ -1,0 +1,15 @@
+---
+collections:
+  Kids Movies:
+    plex_search:
+      any:
+        content_rating: [G, PG, PG-13]
+        genre: Family
+        studio: Disney
+        title:
+        - Godzilla
+        collection:
+        - Godzilla
+    item_label: kids
+    url_poster: https://theposterdb.com/api/assets/105157
+    sort_title: +++++_Kids Movies
