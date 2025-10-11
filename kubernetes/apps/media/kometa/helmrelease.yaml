@@ -34,6 +34,57 @@ spec:
           # Cleanup completed jobs after 1 hour
           ttlSecondsAfterFinished: 3600
 
+        # CRITICAL: Vector logging sidecar MUST be in initContainers with restartPolicy: Always
+        #
+        # WHY: CronJobs with ReadWriteOnce (RWO) PVCs require sidecars to terminate when main container completes.
+        #      Without this, the sidecar keeps running after the job finishes, preventing the RWO volume from being
+        #      released. This causes subsequent CronJob runs to fail with "Multi-Attach error" because the volume
+        #      is still attached to the previous pod.
+        #
+        # WHAT: Native Kubernetes sidecar pattern (stable since K8s 1.29, fully supported in 1.34+):
+        #       - Sidecar placed in initContainers with restartPolicy: Always
+        #       - Starts BEFORE main containers (ensures log collection is ready)
+        #       - Runs ALONGSIDE main containers (collects logs during job execution)
+        #       - Terminates AFTER main containers complete (prevents volume attachment conflicts)
+        #
+        # ALTERNATIVES CONSIDERED:
+        #       - shareProcessNamespace + manual termination: Rejected due to complexity and security implications
+        #       - PreStop hooks: Rejected due to race conditions and unreliability with Jobs
+        #       - Separate log collection: Rejected due to loss of per-job log isolation
+        #
+        # WHEN TO RECONSIDER:
+        #       - If switching from RWO (ceph-block) to RWX (ceph-filesystem) storage
+        #       - If removing Vector logging entirely
+        #       - If moving to a different log collection architecture
+        #
+        # REFERENCES:
+        #       - https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/
+        #       - https://kubernetes.io/blog/2023/08/25/native-sidecar-containers/
+        initContainers:
+          vector-sidecar:
+            image:
+              repository: timberio/vector
+              tag: 0.50.0-alpine
+            restartPolicy: Always # Makes this a native sidecar - auto-terminates after main container
+            env:
+              TZ: America/Chicago
+              VECTOR_CONFIG_PATH: /etc/vector/vector.yaml
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                cpu: 100m
+                memory: 128Mi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: [ALL]
+
         containers:
           app:
             image:
@@ -58,29 +109,6 @@ spec:
                 memory: 4Gi
               limits:
                 memory: 8Gi
-            securityContext:
-              runAsUser: 1000
-              runAsGroup: 1000
-              runAsNonRoot: true
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities:
-                drop: [ALL]
-
-          vector-sidecar:
-            image:
-              repository: timberio/vector
-              tag: 0.50.0-alpine
-            env:
-              TZ: America/Chicago
-              VECTOR_CONFIG_PATH: /etc/vector/vector.yaml
-            resources:
-              requests:
-                cpu: 10m
-                memory: 32Mi
-              limits:
-                cpu: 100m
-                memory: 128Mi
             securityContext:
               runAsUser: 1000
               runAsGroup: 1000
