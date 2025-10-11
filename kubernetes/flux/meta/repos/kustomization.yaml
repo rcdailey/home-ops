@@ -7,4 +7,3 @@ resources:
 - ./external-secrets.yaml
 - ./intel.yaml
 - ./node-feature-discovery.yaml
-- ./victoriametrics.yaml
