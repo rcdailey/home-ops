@@ -27,9 +27,8 @@ spec:
         - weight: 100
           podAffinityTerm:
             labelSelector:
-              matchExpressions:
-              - key: volsync.backube/privileged-mover
-                operator: Exists
+              matchLabels:
+                app.kubernetes.io/created-by: volsync
             topologyKey: kubernetes.io/hostname
     parallelism: 2
     repository: ${APP}-volsync-secret
