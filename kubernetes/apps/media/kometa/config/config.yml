@@ -1,0 +1,151 @@
+---
+plex:
+  url: http://plex.media:32400
+  token: <<PLEXTOKEN>>
+  timeout: 60
+  clean_bundles: false
+  empty_trash: false
+  optimize: false
+
+tmdb:
+  apikey: <<TMDBAPIKEY>>
+  language: en
+  cache_expiration: 60
+
+mdblist:
+  apikey: <<MDBLISTAPIKEY>>
+  cache_expiration: 60
+
+trakt:
+  client_id: <<TRAKTCLIENTID>>
+  client_secret: <<TRAKTCLIENTSECRET>>
+  authorization:
+    access_token: <<TRAKTACCESSTOKEN>>
+    refresh_token: <<TRAKTREFRESHTOKEN>>
+
+libraries:
+  Anime Series:
+    metadata_files:
+    - file: config/metadata/mine/monogatari.yml
+    collection_files:
+    - file: config/metadata/mine/kids-anime.yml
+
+  Movies:
+    operations:
+      delete_unmanaged_collections: true
+      mass_content_rating_update: mdb
+    template_variables:
+      visible_library: false
+    collection_files:
+    - file: config/metadata/mine/movies.yml
+    - file: config/metadata/mine/kids-movies.yml
+    overlay_files:
+    - reapply_overlays: false
+    - pmm: mediastinger # Adds icon for post-credits scenes
+    - pmm: resolution
+      template_variables:
+        use_1080p: false
+        use_720p: false
+        use_576p: false
+        use_480p: false
+    - pmm: audio_codec
+      template_variables:
+        style: standard
+        use_opus: false
+        use_mp3: false
+
+  TV Shows:
+    operations:
+      delete_unmanaged_collections: true
+    template_variables:
+      visible_library: false
+    overlay_files:
+    - reapply_overlays: false
+    - pmm: resolution
+      template_variables:
+        use_1080p: false
+        use_720p: false
+        use_576p: false
+        use_480p: false
+    - pmm: resolution
+      template_variables:
+        overlay_level: season
+        use_1080p: false
+        use_720p: false
+        use_576p: false
+        use_480p: false
+    - pmm: resolution
+      template_variables:
+        overlay_level: episode
+        use_1080p: false
+        use_720p: false
+        use_576p: false
+        use_480p: false
+    - pmm: audio_codec
+      template_variables:
+        style: standard
+        use_opus: false
+        use_mp3: false
+    - pmm: audio_codec
+      template_variables:
+        style: standard
+        overlay_level: season
+        use_opus: false
+        use_mp3: false
+    - pmm: audio_codec
+      template_variables:
+        style: standard
+        overlay_level: episode
+        use_opus: false
+        use_mp3: false
+
+settings: # Can be individually specified per library as well
+  cache: true
+  cache_expiration: 60
+  # asset_directory: config/assets
+  asset_folders: true
+  assets_for_all: false
+  sync_mode: append
+  show_unmanaged: true
+  show_filtered: false
+  show_missing: true
+  save_missing: true
+  run_again_delay: 2
+  missing_only_released: false
+  create_asset_folders: false
+  delete_below_minimum: false
+  tvdb_language: default
+  show_missing_assets: true
+  show_missing_season_assets: false
+  delete_not_scheduled: false
+  only_filter_missing: false
+  ignore_ids:
+  ignore_imdb_ids:
+  asset_depth: 0
+  dimensional_asset_rename: false
+  show_options: false
+  minimum_items: 1
+  download_url_assets: false
+  default_collection_order:
+  verify_ssl: true
+  playlist_sync_to_users: all
+  show_missing_episode_assets: false
+  show_asset_not_needed: true
+  item_refresh_delay: 0
+  custom_repo:
+  delete_unmanaged_collections: true
+  prioritize_assets: false
+  playlist_report: true
+  check_nightly: false
+  show_unconfigured: true
+  playlist_exclude_users:
+  run_order:
+  - operations
+  - metadata
+  - collections
+  - overlays
+
+  asset_directory:
+  overlay_artwork_filetype: jpg
+  overlay_artwork_quality:
+  show_unfiltered: false

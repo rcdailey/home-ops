@@ -1,0 +1,452 @@
+---
+metadata:
+  Monogatari:
+    seasons:
+      1:
+        title: Bakemonogatari
+        summary: Koyomi Araragi, a high school student, returns to a normal human life after a vampire attack. As he lives with remnants of his vampire half still persisting, he finds himself returning to the world of the supernatural after discovering the unusual case of Hitagi Senjougahara, who is afflicted with a condition that leaves her weightless.
+      2:
+        title: Kizumonogatari
+        summary: Araragi's encounter with the vampire Kiss-shot Acerola-orion Heart-under-blade and his journey back into humanity from being a vampire.
+      3:
+        title: Nisemonogatari
+        summary: Unlike ne'er-do-well former vampire Araragi, his two younger sisters Karen and Tsukihi, who attend a private junior high, are little balls of energy and charisma that their peers look up to. That the "ka" in Karen and "hi" in Tsukihi are both written with the character for "fire" isn't the only reason they've come to be known as the Fire Sisters.
+      4:
+        title: Nekomonogatari (Black)
+        summary: The flawless class president, Tsubasa Hanekawa. The girl whom Koyomi Araragi owes his life to was charmed by a cat during Golden Week. This is the story of a human who plays a forbidden game towards becoming a monster. Those nightmarish nine days, once sealed off and hidden, is now finally revealed!
+      5:
+        title: Nekomonogatari (White)
+        summary: The flawless class president Tsubasa Hanekawa's first day of the second semester is closely watched by a monstrous tiger. Amidst the lifeless monologue is an unreachable confession...
+      6:
+        title: Kabukimonogatari
+        summary: Araragi Koyomi and Oshino Shinobu decided to time travel back into 11 years ago using up the remaining spirit particles at the shrine from Nadeko Snake. In their adventure, Koyomi saved Hachikuji Mayoi from the car accident that killed her. When they returned to the present, they discover the world has changed drastically as a consequence of what Koyomi has done. Now they have to find an alternate way to get back to their original world.
+      7:
+        title: Hanamonogatari
+        summary: Our sorry hero, his reformed girlfriend, and the amnesiac class president have all graduated from their high school out in the boondocks, and self-described Sapphist and ex-basketball ace Kanbaru, retired by reason of an "injury," is starting her senior year and the narrator of this volume—her voice far more introspective than the smutty jock's we thought we knew.
+      8:
+        title: Otorimonogatari
+        summary: The girl who has been in love with Koyomi Araragi for so long now appears as an "angel" in pure white. But her true colors are...?
+      9:
+        title: Onimonogatari
+        summary: Immediately following the events of Kabukimonogatari, Araragi and Hachikuji begin having run-ins with a near-indescribable void, which seems to be pursuing them for reasons they cannot determine. The answer to the question, and the solution to their predicament, lies in the memories of Shinobu and the insight of literal know-it-all Izuko Gaen, but it will require Mayoi to finally abandon her existence as a Lost Cow and leave the living world behind for good.
+      10:
+        title: Koimonogatari
+        summary: Hitagi Senjougahara made a deal with the gods with her life in order to protect Koyomi Araragi. As winter holidays approach with the promised "destined day", she chose the darkest and the worst option...
+      11:
+        title: Tsukimonogatari
+        summary: Slowly but surely, Koyomi Araragi has no choice but to face reality. February comes, and the college entrance exam is approaching. What is this change that is happening to his body that cannot be overlooked? This is Oddity taking place in the modern world! In a story of youth, a word of farewell is inevitable.
+      12:
+        title: Koyomimonogatari
+        summary: Koyomimonogatari includes twelve short stories about Koyomi from that destined Spring Break to the end of university exams.
+      13:
+        title: Owarimonogatari
+        summary: The transfer student with pitch black eyes, Ougi Oshino. As she explains with a smile on her lips, what is Koyomi Araragi's starting point? On that day during his first year in middle school, the boy tastes despair—These are the modern-day oddities! Oddities! Oddities!
+      14:
+        title: Owarimonogatari S2
+        summary: Koyomi finds himself reunited with Mayoi Hachikuji on the day of his college exam. She explains that he's fallen down into the deepest part of hell.
+      15:
+        title: Zoku Owarimonogatari
+        summary: With the battle with Ougi Oshino over, it was finally time to graduate from Naoetsu High School the next morning.
+    episodes:
+      S01E01:
+        title: Hitagi Crab - Part 1
+        originally_available: 2009-07-03
+        summary: After Koyomi Araragi catches his classmate, Hitagi Senjougahara, when she fell down some stairs, he makes a strange discovery about her. Trying to keep her secret Hitagi attacks Koyomi. However, he has a secret of his own and might be able to help her.
+      S01E02:
+        title: Hitagi Crab - Part 2
+        originally_available: 2009-07-10
+        summary: To overcome her problems, Hitagi has to face some difficult and painful memories from her past.
+      S01E03:
+        title: Mayoi Snail - Part 1
+        originally_available: 2009-07-17
+        summary: Koyomi Araragi has an argument with his sister and then finds it difficult to stay in the house. He goes to the park where he meets Hitagi Senjyogahara. They see a little girl, Mayoi Hachikuji, comparing the town map displayed in the park to the memo in her hand. Learning that Mayoi has lost her way and route to a relative's home, Koyomi offers to help, only to be violently rebuffed.
+      S01E04:
+        title: Mayoi Snail - Part 2
+        originally_available: 2009-07-24
+        summary: After Koyomi Araragi and Hitagi Senjyogahara discover that the girl they met in the park, Mayoi Hachikuji, is trying to get to her mother's house, they offer to walk along with her. However, they keep getting incredibly lost.
+      S01E05:
+        title: Mayoi Snail - Part 3
+        originally_available: 2009-07-31
+        summary: While Hitagi is off to Oshino for advice, Koyomi learns more about Mayoi's life. When Hitagi finally returns, she reveals some information that surprises Koyomi.
+      S01E06:
+        title: Suruga Monkey - Part 1
+        originally_available: 2009-08-09
+        summary: On his way to Hitagi's house, Koyomi bumps in to Suruga Kanbaru, the school's basketball star and an old friend of Hitagi, of whom he can't get rid of. Later that day, Koyomi is attacked by a mysterious being.
+      S01E07:
+        title: Suruga Monkey - Part 2
+        originally_available: 2009-08-21
+        summary: The day after his attack, Koyomi goes to see Suruga, where she tells him something about herself he can't quite grasp.
+      S01E08:
+        title: Suruga Monkey - Part 3
+        originally_available: 2009-08-28
+        summary: Koyomi takes Suruga to see Oshino in order to help her. However, the help he offers isn't the help Koyomi wanted...
+      S01E09:
+        title: Nadeko Snake - Part 1
+        originally_available: 2009-09-04
+        summary: Koyomi and Suruga travel to an abandoned shrine in order to perform a favor for Oshino. As they climb the mountain the shrine is located on, they pass a girl running down the path, who only briefly exchanges glances before continuing in the other direction. Once they reach the shrine, Koyomi and Suruga discover a number of dismembered snake corpses in what appears to be some sort of ritual. They both quickly decide to leave. Later, Koyomi comes across Hanekawa in a bookstore, where they begin to converse. Hanekawa warns Koyomi that he and Hitagi must set down boundaries in their relationship if it is to last. She then leaves after getting a sudden headache. Koyomi then meets the girl again, who he finally realizes is Nadeko Sengoku, a friend of his sisters who he met as a child. He and Suruga intercept her at the shrine, and return to Koyomi's house. Once there, Nadeko takes off her clothes, revealing snakelike skin, and pleads for Koyomi to save her.
+      S01E10:
+        title: Nadeko Snake - Part 2
+        originally_available: 2009-09-11
+        summary: Oshino informs Koyomi that Nadeko is under the effects of a Snake Constrictor, a snake spirit that slowly constricts the life out of its victim. Nadeko explains that it is a curse a classmate placed on her after Nadeko inadvertently rejected the confession of a boy the classmate liked. Normally, a curse placed by an amateur would be harmless, but Nadeko accidentally made the curse worse by performing her ritual at the shrine, which has been corrupted by Shinobu's presence. Koyomi obtains a special charm that will banish the Snake Constrictor and they return to the shrine. While the ritual is seemingly successful, Koyomi realizes that Nadeko is under the attack of two Snake Constrictors, the second being placed by the rejected boy. While the first one is banished, Koyomi is forced to battle the second to keep it from killing Nadeko. He and Kanbaru manage to chase it off, but Koyomi feels guilty for not being able to destroy it, as the Snake Constrictor will return to the person who originally placed the curse.
+      S01E11:
+        title: Tsubasa Cat - Part 1
+        originally_available: 2009-09-18
+        summary: After school Koyomi finds Nadeko and they talk about how Shinobu looked at her and Suruga with a different gaze than Koyomi and Oshino. Tsubasa appears and Nadeko leaves abruptly, Koyomi and Tsubasa talk about how Koyomi has become a bad influence to Hitagi in school. Tsubasa gets a headache and Koyomi flashbacks into what happened in Golden Week, Tsubasa turned into a white "cat-woman" and attacked people by absorbing their vitality. Oshino reveals the problem is because of a huge amount of stress built up over the years. Koyomi acts as bait to attract the cat and Shinobu bites her draining her energy until she turns back into Tsubasa.
+      S01E12:
+        title: Tsubasa Cat - Part 2
+        originally_available: 2009-09-25
+        summary: Hitagi and Koyomi are having lunch. Her teases him and roughly "asks" him to go on a date. He comes late but Hitagi doesn't seem to mind. Her father drives them to a location where Hitagi teases him more. She leaves him with her father where at first Koyomi was nervous. Her father goes on talking about how he isn't there for her often and asks Koyomi to take cake of her. Hitagi blindfolds him and then shows him an area where a blanket is laid on the ground. They lay down and she tells him that the stars are all she has rest to give him. She tells him that she loves him and Koyomi returns the same feelings. She asks him to kiss her.
+      S01E13:
+        title: Tsubasa Cat - Part 3
+        originally_available: 2009-11-02
+        summary: On the way to school, Koyomi finds Hachikuji in the middle of the street and assaults her in a teasing manner. Hachikuji panics and breaks his finger. Later after they calm down, Hachikuji tells Koyomi that she saw Shinobu at the donut store. Koyomi goes to the school bike rack and gets a text from Tsubasa, asking him to ditch school and come to the playground. He finds her there still in her pajamas and wearing a hat. They begin talking about her recent headaches and Koyomi persuades her to take her hat off. He finds out that she had grown cat ears. They agree to go to Oshino's place. When they reach there, they find him crouching down, buring something in the dirt. Oshino asks them to come in and hits the side of Tsubasa's head, knocking her out. Oshino tells Koyomi that she was already half cat. Tsubasa's hair turns white, and the cat is revealed.
+      S01E14:
+        title: Tsubasa Cat - Part 4
+        originally_available: 2010-02-23
+        summary: After supressing the bakeneko, Oshino explains Hanekawa's situation to Araragi. Araragi realizes that he may need Shinobu's powers to help him bottle up the oddity. The problem escalates when Araragi learns that Shinobu has gone missing. Enlisting the help of his friends, he starts looking for Shinobu, but to no avail. The cat soon escapes from Oshino, then goes after Araragi, only this time she sides with him and aids in finding Shinobu. The two had conversations regarding Araragi's interactions with oddities, while they scour the city for the missing vampire. The search proves to be difficult even with the bakeneko's keen sense of smell and hearing. This leads the two to change topics, now talking about Hanekawa's situation. The cat explains that there is a way to confine her without relying on a vampire, that she is the personification of Hanekawa's stress, and that she knows exactly what's causing it. She remarks that Araragi, of all people, can deal with it easily. The oddity then reveals that Hanekawa being possessed by the bakeneko was because of the stress that she loves Araragi, and that the oddity itself may be sealed away for good if Araragi falls in love with Hanekawa.
+      S01E15:
+        title: Tsubasa Cat - Part 5
+        originally_available: 2010-06-25
+        summary: Araragi is confused after hearing that Hanekawa loved him as he heard from the bakeneko. After an arguing with the bakeneko that "it was a mistake", the bakaneko told him that there was another way to suppress the stress for good, to kill him. Araragi thinks that he could agree with that because he owed Hanekawa his life. But, Hitagi comes upon his mind and he chooses not to be killed. The bakeneko tells him that no one would help him in this situation. Araragi calls out Shinobu's name yelling for her help, and the vampire girl suddenly appears from Araragi's shadow. Everything is settled after Shinobu bites the bakeneko's neck and it reverts back to Hanekawa. The next day before school started, Araragi goes to Oshino's place to bring Shinobu back to him. It seems that nothing is left in the ruined cram school that used to be Oshino's place. After school, Araragi, Hitagi, Kanbaru and Hanekawa went back to Oshino's place searching for him. It seems he had left the place, making Araragi believe that Oshino believed he could handle the problems concerning Hanekawa and Shinobu.
+      S02E01:
+        title: 'Tekketsu: Iron Blood Arc'
+        originally_available: 2016-01-08
+        summary: Koyomi Araragi, a second year high school student at Naoetsu High School, befriends Tsubasa Hanekawa, the top honors student at his school. Tsubasa mentions a rumor about a "blonde vampire" that has been sighted around their town recently. Koyomi, who is usually anti-social, takes a liking to Tsubasa's down-to-earth personality. That evening, Koyomi encounters this rumored vampire. She is Kiss-Shot Acerola-Orion Heart-Under-Blade, also known as the "King of Apparitions."
+      S02E02:
+        title: 'Nekketsu: Hot Blooded Arc'
+        originally_available: 2016-08-19
+        summary: Now a vampire, Koyomi is charged with retrieving Kiss-shot's severed limbs from the vampire hunters who took them.
+      S02E03:
+        title: 'Reiketsu: Cold Blooded Arc'
+        originally_available: 2017-01-06
+        summary: Koyomi and Meme finally succeed at fully restoring Kiss-Shot. Koyomi expects Kiss-Shot to then change him back to human.
+      S03E01:
+        title: Karen Bee, Part One
+        originally_available: 2012-01-07
+        summary: Araragi finds himself chained up in Oshino's old hideout by Senjougahara, having been kidnapped by her. The scene then shifts to a hot summer's day, where he ponders on what to do with his unstable vampirism and whether he should tell his two sisters, Karen and Tsukihi about oddities.
+      S03E02:
+        title: Karen Bee, Part Two
+        originally_available: 2012-01-14
+        summary: Araragi turns up at Sengoku's house, and tries to not get turned on by her lack of clothes and seductive advances at a time when her parents are conveniently out. After he leaves, he meets his sister Karen on the way to Kanbaru's house, where he realizes that the Fire Sisters are up to something suspicious but decides not to interfere.
+      S03E03:
+        title: Karen Bee, Part Three
+        originally_available: 2012-01-21
+        summary: Araragi finishes up cleaning at Kanbaru's house, and proceeds to head home on his bike. Right outside of Kanbaru's he sees a strange, ill-omened man, named Kaiki Deishuu who he instantly relates to having a similar aura to Oshino.
+      S03E04:
+        title: Karen Bee, Part Four
+        originally_available: 2012-01-28
+        summary: Araragi tries to get Karen and Tsukihi to tell him about the incident, however they refuse and Tsubasa has to explain to him that while investigating Sengoku's curse, Karen met up with Kaiki Deishuu and had something done to her. Later on, while in the bath, Shinobu suddenly comes out of Araragi's shadow again and tells him that she recognizes that Karen has an oddity Oshino once told her about – the Wreathe-Fire Bee.
+      S03E05:
+        title: Karen Bee, Part Five
+        originally_available: 2012-02-04
+        summary: Tsukihi and Tsubasa tell Araragi about the meeting between Karen and Kaiki Deishuu, who infects Karen with the Wreathe-Fire Bee after a monologue about his beliefs on the importance of money.
+      S03E06:
+        title: Karen Bee, Part Six
+        originally_available: 2012-02-11
+        summary: Koyomi only managed to drain half of the poison in Karen's body, and although she was not completely healed, her fever has become slightly diminished.
+      S03E07:
+        title: Karen Bee, Part Seven
+        originally_available: 2012-02-18
+        summary: Thanks to Shinobu, Koyomi manages to find Karen and after a serious fight between them, he convinces her to let him deal with Kaiki by himself.
+      S03E08:
+        title: Tsukihi Phoenix, Part One
+        originally_available: 2012-02-26
+        summary: Koyomi is concentrated on his studies when he is interrupted by Karen who, much by his surprise, is wearing her sister Tsukihi's clothes, displaying an air more feminine than usual. Karen asks Koyomi to introduce her to Suruga knowing that she is friends with him, but he refuses without giving a reason, fearing that she would make a move on his sister.
+      S03E09:
+        title: Tsukihi Phoenix, Part Two
+        originally_available: 2012-03-04
+        summary: Koyomi sets for Suruga's house to introduce Karen to her as he promised. On their way they meet a woman introducing herself as Yozuru Kagenui, asking for directions.
+      S03E10:
+        title: Tsukihi Phoenix, Part Three
+        originally_available: 2012-03-10
+        summary: Shinobu asks Koyomi to take her to the donuts shop. Before leaving, he notices that Tsukihi's scar on her chest was healed, and after stripping her naked, finds that all other scars on her body disappeared too.
+      S03E11:
+        title: Tsukihi Phoenix, Part Four
+        originally_available: 2012-03-17
+        summary: After learning from Shinobu that Tsukihi is actually a supernatural being that endlessly reincarnates as a human child after dying, Koyomi leaves Karen standing guard at their house's destroyed front door before setting to the place Oshino used to live to confront Yozuru and Yotsugi.
+      S04E01:
+        title: Tsubasa Family, Part One
+        originally_available: 2012-12-31
+        summary: It's the beginning of Golden Week, before the events of Bakemonogatari. After Tsukihi kicks Koyomi out of bed, he takes the opportunity to ask her about his growing feelings for a new classmate of his, wondering if he has fallen in love with her.
+      S04E02:
+        title: Tsubasa Family, Part Two
+        originally_available: 2012-12-31
+        summary: Koyomi pays a visit to Oshino bringing him some donuts, but ends up giving them to Shinobu instead. Oshino asks Koyomi about his encounter with Tsubasa and learns from him that after having her wound healed, the two of them came across a dead silver cat with no tail, which Tsubasa buried.
+      S04E03:
+        title: Tsubasa Family, Part Three
+        originally_available: 2012-12-31
+        summary: Koyomi breaks into Tsubasa's house and is shocked to discover that she does not have her own room there. He rushes back home, where he learns from Tsukihi that people all over the city are being attacked by a mysterious cat-girl, who he realizes must be Tsubasa.
+      S04E04:
+        title: Tsubasa Family, Part Four
+        originally_available: 2012-12-31
+        summary: After Koyomi spends several days begging for Shinobu's help, she entrusts him with the demon sword "Heartspan", able to kill Oddities without harming the humans they possess.
+      S05E01:
+        title: Tsubasa Tiger, Part One
+        originally_available: 2013-07-06
+        summary: It's the beginning of the second semester and on her way to the first day of school, Tsubasa has a short meeting with Mayoi who reveals that she has just came from Koyomi's house where she forgot her backpack, but could not retrieve it as he was not at home by that time. Soon after, Tsubasa has an encounter with an apparition in the form of a huge white tiger who just passes by her and upon arriving at school she tells Hitagi about it.
+      S05E02:
+        title: Tsubasa Tiger, Part Two
+        originally_available: 2013-07-13
+        summary: As her parents still had not found another place to live, Tsubasa keeps staying at Hitagi's place. However, it is later revealed that the recent events had such an impact on Tsubasa that she is once again possessed by the Cursed Cat.
+      S05E03:
+        title: Tsubasa Tiger, Part Three
+        originally_available: 2013-07-20
+        summary: Following her question, Hitagi points out to Tsubasa that despite being similar at willing to help others, she and Koyomi are too different in everything else, including how Tsubasa is too innocent to realize if someone could approach her with malice.
+      S05E04:
+        title: Tsubasa Tiger, Part Four
+        originally_available: 2013-07-27
+        summary: Tsubasa awakens in the next day at the Araragi house and finds out that she was possessed again. As she leaves the house, she is stopped by Koyomi's mother, Mrs. Araragi. The mother explains that while having Tsubasa as a guest is no burden to them, she should not consider the Araragi family as her own.
+      S05E05:
+        title: Tsubasa Tiger, Part Five
+        originally_available: 2013-08-03
+        summary: In her letter to the cat spirit, Tsubasa reveals that just like her, Kako is another apparition sired by her repressed feelings, this time of jealousy, and asks her to return both to her heart, as she is finally determined to shoulder all of her negative feelings no matter how it will change herself.
+      S06E01:
+        title: Mayoi Jiangshi, Part One
+        originally_available: 2013-08-17
+        summary: It's the last day of summer vacation and Koyomi looks for Mayoi to return the backpack she left behind at his house. On the way, he has an encounter with Yotsugi who reveals that just like him and Mayoi, she once died, but while Koyomi was transformed into an immortal being and Mayoi became a ghost, she was revived by Yuzuru as a shikigami to serve under her.
+      S06E02:
+        title: Mayoi Jiangshi, Part Two
+        originally_available: 2013-08-24
+        summary: Realizing that he has time-traveled to a day before Mayoi's death, Koyomi decides to save her and prevent her becoming a ghost.
+      S06E03:
+        title: Mayoi Jiangshi, Part Three
+        originally_available: 2013-08-31
+        summary: Returning to the present, Koyomi and Shinobu find the whole city deserted and it does not take long for them to realize that it was a consequence of saving Mayoi's life in the past. Based on the date of the most recent newspaper they found, they come to the conclusion that something dire happened during the events of "Tsubasa Cat" and return to the shrine to look for a way to return to the past.
+      S06E04:
+        title: Mayoi Jiangshi, Part Four
+        originally_available: 2018-09-07
+        summary: A woman appears to drive out the undead by throwing rice at them. Much to his awe and joy, Koyomi learns that the woman is none other than a grown up Mayoi.
+      S07E01:
+        title: Suruga Devil, Part One
+        originally_available: 2014-08-16
+        summary: Set after the graduation of Koyomi Araragi and Hitagi Senjougahara, Suruga Kanbaru begins her third year in high school. She continues to deal with her left hand that had been turned monstrous through the use of her mother's monkey paw charm.
+      S07E02:
+        title: Suruga Devil, Part Two
+        originally_available: 2014-08-16
+        summary: With her hand restored, Suruga attempts to adjust to this change, and how it impacts her daily life. She has many questions for the "Devil" who cured her, but she is informed by Ougi that the "Devil" has vanished, and is no longer giving counsel to others.
+      S07E03:
+        title: Suruga Devil, Part Three
+        originally_available: 2014-08-16
+        summary: Suruga confronts Rouka, who confirms that she is the collector of devil parts. The two play a bit of one-on-one basketball. Contrary to her appearance as an injured cripple, Rouka is more than a match for Suruga. Rouka and Suruga then recount their stories.
+      S07E04:
+        title: Suruga Devil, Part Four
+        originally_available: 2014-08-16
+        summary: Rouka continues her explanation from the previous episode, recalling how she came to know Kaiki. As Kaiki is a con artist, and Rouka a collector, their methodologies are similar in how they attract their clients. They butted heads at one point, and resolved to simply pass information between them, and not interfere with the other. Finally she reveals why she came to collect devil parts.
+      S07E05:
+        title: Suruga Devil, Part Five
+        originally_available: 2014-08-16
+        summary: Upon returning home, Suruga finds a package left to her by Kaiki. It is a mummified monkey's head. Now armed with the proper leverage and conviction, Suruga calls out Rouka for a basketball rematch. Using the head as bait, Suruga challenges Rouka for control of the devil parts.
+      S08E01:
+        title: Nadeko Medusa, Part One
+        originally_available: 2013-09-21
+        summary: Fully transformed into an apparition, Nadeko confronts Shinobu and a battered Koyomi who attack with the intention of killing her, and envious of their relationship, she stabs Koyomi's heart.
+      S08E02:
+        title: Nadeko Medusa, Part Two
+        originally_available: 2013-09-28
+        summary: After lying to Koyomi claiming that she was just imagining things, Nadeko decides to help Kuchinawa find his lost corpse, but they agree that she will attend school as usual, while looking for his body at night.
+      S08E03:
+        title: Nadeko Medusa, Part Three
+        originally_available: 2013-10-05
+        summary: Nadeko awakens in the next day with Tsukihi, who had snuck into Koyomi's bed with the intention of sleeping beside him, at her side.
+      S08E04:
+        title: Nadeko Medusa, Part Four
+        originally_available: 2013-10-12
+        summary: Despite Koyomi's warnings, Nadeko swallows the talisman and revives Kuchinawa after Shinobu berates her for once again playing the victim.
+      S09E01:
+        title: Shinobu Time, Part One
+        originally_available: 2013-10-26
+        summary: After returning from his trip through time, Koyomi comes back home and meets Mayoi, finally returning her backpack.
+      S09E02:
+        title: Shinobu Time, Part Two
+        originally_available: 2013-11-02
+        summary: Shinobu reveals that during her first visit to Japan, 400 years ago, she saved the local people from a severe drought by accident and was revered as a goddess by them.
+      S09E03:
+        title: Shinobu Time, Part Three
+        originally_available: 2013-11-09
+        summary: After Shinobu tells Koyomi her story, they realize that Yotsugi was overhearing their entire conversation and after Mayoi awakens, they start discussing ways to deal with the darkness being before it appears before them.
+      S09E04:
+        title: Shinobu Time, Part Four
+        originally_available: 2013-11-16
+        summary: In exchange for her help, Gaen requests three tasks from Koyomi, all being connected to Suruga Kanbaru, formerly known as Suruga Gaen.
+      S10E01:
+        title: Hitagi End, Part One
+        originally_available: 2013-11-23
+        summary: On New Year's Day, Kaiki receives a call from Hitagi requesting his services as a con man. After claiming that he is in Okinawa in an attempt to shake her off, Hitagi affirms that she will take a flight to meet him there, forcing him to do the same to keep his lie from being exposed and Hitagi from killing him.
+      S10E02:
+        title: Hitagi End, Part Two
+        originally_available: 2013-11-30
+        summary: Kaiki decides to help Hitagi for a mere ¥100,000, much to her surprise.
+      S10E03:
+        title: Hitagi End, Part Three
+        originally_available: 2013-12-07
+        summary: Returning from his visit at the Polar Snake Shrine, Kaiki asks Hitagi to meet him again, ending up in a Mister Donut restaurant. Kaiki claims that it will be easy for him to deceive Nadeko as at her current condition, she can't doubt anyone - she has turned even more childish than she was in her human state, unable to detect any ill will.
+      S10E04:
+        title: Hitagi End, Part Four
+        originally_available: 2013-12-14
+        summary: Kaiki returns to his hotelroom and finds an envelope with an anonymous message telling him to pull off. After tearing it up and flushing it in the toilet, he contacts Hitagi, telling her about the incident with Gaen and Yotsugi.
+      S10E05:
+        title: Hitagi End, Part Five
+        originally_available: 2013-12-21
+        summary: Kaiki learns from Tsubasa that strange phenomena have been happening in the town even before Shinobu arrived and because of that, Gaen was intending to have her become the new god of the Polar Shrine. However, because of Koyomi's interference, her plans have failed and Nadeko turned into a god instead.
+      S10E06:
+        title: Hitagi End, Part Six
+        originally_available: 2013-12-28
+        summary: Kaiki realizes that he failed to deceive Nadeko because she never trusted him at all, and because she was previously deceived by Ougi into claiming the charm and becoming a god. Nadeko unleashes a swarm of snakes onto the entire Polar Snake Shrine, immobilizing Kaiki.
+      S11E01:
+        title: Yotsugi Doll, Part One
+        originally_available: 2014-12-31
+        summary: The arc opens with Koyomi Araragi and Shinobu Oshino musing about the true nature of Shikigami doll Yotsugi Ononoki. Koyomi supposes that as an apparition, Yotsugi isn't well suited to life among humans, in spite of her attempts at being human-like.
+      S11E02:
+        title: Yotsugi Doll, Part Two
+        originally_available: 2014-12-31
+        summary: Koyomi narrowly avoids letting Tsukihi see that he has no reflection. The pair are then caught by Karen, who proceeds to beat them up. Later, Koyomi explains his discovery to Shinobu.
+      S11E03:
+        title: Yotsugi Doll, Part Three
+        originally_available: 2014-12-31
+        summary: As Yotsugi's words sink in, Koyomi remains unfazed. He reasons that his experiences as a vampire must have come with a price. One that he should have to pay. Yozuru commends Koyomi for his acceptance, but tells him that while there is no way to undo the progress of his transformation, there is a way he can stop it from progressing further.
+      S11E04:
+        title: Yotsugi Doll, Part Four
+        originally_available: 2014-12-31
+        summary: Koyomi and Yotsugi land at the base of the mountain, where they are surprisingly met by Ougi Oshino. She talks with Koyomi for a while about his current situation and his upcoming confrontation with Teori. Koyomi and Yotsugi begin their journey up the mountain. The two discuss how they will be able to rescue Koyomi's sisters and Suruga.
+      S12E01:
+        title: Koyomi Stone
+        originally_available: 2016-01-10
+        summary: Before the events of Bakemonogatari, Koyomi and Tsubasa delve into the mystery surrounding a stone that was enshrined into one of the school's gardens.
+      S12E02:
+        title: Koyomi Flower
+        originally_available: 2016-01-17
+        summary: After Hitagi's condition is treated, she and Koyomi investigate the true reason why some flowers were left behind on a street and the school's rooftop.
+      S12E03:
+        title: Koyomi Sand
+        originally_available: 2016-01-24
+        summary: After Oshino leaves the city, Mayoi informs Koyomi about a sandbox whose shape resembles a devil and he decides to find out why.
+      S12E04:
+        title: Koyomi Water
+        originally_available: 2016-01-31
+        summary: After Koyomi helps Kanbaru tidy her room, he has a bath in her house, and learns a curious story about the water of the tub.
+      S12E05:
+        title: Koyomi Wind
+        originally_available: 2016-02-07
+        summary: Nadeko comes over to Koyomi's house, and is pleasantly surprised that Koyomi's parents and siblings are all absent. The two then engage in a discussion about Kaiki's curse and his means of spreading the rumor amongst the middle schoolers in town.
+      S12E06:
+        title: Koyomi Tree
+        originally_available: 2016-02-14
+        summary: Karen asked Koyomi for advice regarding a mysterious grown tree that suddenly appeared on her dojo's backyard.
+      S12E07:
+        title: Koyomi Tea
+        originally_available: 2016-02-21
+        summary: Tsukihi consults Koyomi regarding her Tea Club members on why her fellow members still believe in the ghostly "eight member" despite Tsukihi proving the rumor was fake.
+      S12E08:
+        title: Koyomi Mountain
+        originally_available: 2016-02-28
+        summary: Ougi accompanies Koyomi to the North Shirahebi Shrine, where she tells him that the shrine was originally located not on this mountain top but somewhere else.
+      S12E09:
+        title: Koyomi Torus
+        originally_available: 2016-03-06
+        summary: During December, after the events of Otorimonogatari, Koyomi is sitting in his room studying for entrance exams when Shinobu suddenly appears. Koyomi, who had received donuts from Hitagi earlier in the day, decides to treat Shinobu to some of them. While inspecting the donuts, Shinobu notices that they are not "Mr. Donut" brand and states that Koyomi's girlfriend likely poisoned them.
+      S12E10:
+        title: Koyomi Seed
+        originally_available: 2016-03-13
+        summary: Yotsugi encounters Koyomi on his way home from the national exams, and asks for his help to search for something. On their hunt, Koyomi discusses his feelings of responsibility to reap the consequences of the seeds he has sown over the past few months.
+      S12E11:
+        title: Koyomi Nothing
+        originally_available: 2016-03-20
+        summary: Late February. Araragi is seen fighting with Yozuru in order to become stronger without the use of his vampire powers as she does. Yozuru tells Araragi that he will die before he becomes able to learn her technique.
+      S12E12:
+        title: Koyomi Dead
+        originally_available: 2016-03-27
+        summary: March 13, before Araragi is supposed to meet with Senjougahara to go to the university for entrance exams, he goes to the Snake Shrine where he meets Gaen. As Kagenui, Kaiki and Oshino are all missing she feels she has to act.
+      S13E01:
+        title: Ougi Formula - Parts 1 & 2
+        originally_available: 2015-10-04
+        summary: During the month of October of his third year in high school, Koyomi Araragi is introduced to a transfer student named Ougi Oshino, who tells him she has something to consult with him. This reveals a tale that brings to light “what” makes Koyomi Araragi.
+      S13E02:
+        title: Sodachi Riddle - Part 1
+        originally_available: 2015-10-11
+        summary: In the aftermath of the previous day, Araragi is about to enter his classroom when Hanekawa informs him that a student absent all year is finally attending. The story pushes further into the past, as more of “what” makes Koyomi Araragi is revealed.
+      S13E03:
+        title: Sodachi Riddle - Part 2
+        originally_available: 2015-10-18
+        summary: Having rediscovered the room on the second floor of the ruined house, Koyomi tells Ougi of the events that happened there five years earlier.
+      S13E04:
+        title: Sodachi Lost - Part 1
+        originally_available: 2015-10-25
+        summary: Hanekawa reveals her concerns about Ougi as she and Araragi go to visit Oikura.
+      S13E05:
+        title: Sodachi Lost - Part 2
+        originally_available: 2015-11-01
+        summary: Araragi and Hanekawa visit Oikura and learn the painful story of her family's past.
+      S13E06:
+        title: Sodachi Lost - Part 3
+        originally_available: 2015-11-08
+        summary: Ougi claims to have figured out the whereabouts of Oikura's mother and, in her own way, helps Araragi and Hanekawa to solve the mystery.
+      S13E07:
+        title: Shinobu Mail - Part 1
+        originally_available: 2015-11-15
+        summary: Koyomi Araragi waits in the ruins of the cram school to ask Suruga Kanbaru for help, a request he hopes she will refuse.
+      S13E08:
+        title: Shinobu Mail - Part 2
+        originally_available: 2015-11-22
+        summary: After a hurried departure from the cram school ruins, Koyomi and Suruga head toward the meeting place, only to encounter some difficulty along the way.
+      S13E09:
+        title: Shinobu Mail - Part 3
+        originally_available: 2015-11-29
+        summary: Having finally arrived at the meeting place, Koyomi and Suruga find an unexpected person waiting for them. Before their reunion can take place, they must face an unexpected foe!
+      S13E10:
+        title: Shinobu Mail - Part 4
+        originally_available: 2015-12-06
+        summary: The group relocates to the North Shirahebi Shrine where Izuko Gaen tells them the story behind the location and the effect Shinobu's first minion had on it.
+      S13E11:
+        title: Shinobu Mail - Part 5
+        originally_available: 2015-12-13
+        summary: Koyomi is confronted by Shinobu's first minion, the original apparition killer. But instead of starting a battle, the samurai makes a simple request.
+      S13E12:
+        title: Shinobu Mail - Part 6
+        originally_available: 2015-12-20
+        summary: As Koyomi prepares for his duel, he learns of the crisis that Hanekawa is facing and must decide what battle he should fight.
+      S14E01:
+        title: Mayoi Hell - Part 1
+        originally_available: 2017-08-12
+        summary: March 13th, the morning of college entrance exams. Koyomi Araragi has died due to Izuko Gaen. Mayoi Hachikuji was waiting for him in the afterlife, and guides him towards an unknown destination. Koyomi would have never thought that this certain someone would be waiting for him there.
+      S14E02:
+        title: Mayoi Hell - Part 2
+        originally_available: 2017-08-12
+        summary: Mayoi takes Koyomi to meet Teori, who offers him a way to return to the world of the living. Koyomi is in doubt about accepting his offer, as he believes others like Mayoi are more worthy of reviving than him, until he comes with a surprising decision.
+      S14E03:
+        title: Hitagi Rendezvous - Part 1
+        originally_available: 2017-08-12
+        summary: Now fully human again, Koyomi is called by Hitagi for a date, as they spend some time together, Koyomi has a vision of Ougi.
+      S14E04:
+        title: Hitagi Rendezvous - Part 2
+        originally_available: 2017-08-12
+        summary: Koyomi and Hitagi spend the rest of the date bonding further. Once back home, Koyomi has another encounter with Ougi.
+      S14E05:
+        title: Ougi Dark - Part 1
+        originally_available: 2017-08-13
+        summary: Gaen assembles Koyomi, Shinobu, Mayoi and Yozuru and reveals that Ougi is the responsible for some of the previous ordeals they faced.
+      S14E06:
+        title: Ougi Dark - Part 2
+        originally_available: 2017-08-13
+        summary: To stop Ougi from meddling further, Koyomi has a final confrontation with her.
+      S14E07:
+        title: Ougi Dark - Part 3
+        originally_available: 2017-08-13
+        summary: After being exposed, Ougi is about to be engulfed by the darkness, but Koyomi refuses to give up on her and Meme reappears in the nick of time to save them.
+      S15E01:
+        title: Koyomi Reverse - Part 1
+        originally_available: 2018-11-10
+      S15E02:
+        title: Koyomi Reverse - Part 2
+        originally_available: 2018-11-10
+      S15E03:
+        title: Koyomi Reverse - Part 3
+        originally_available: 2018-11-10
+      S15E04:
+        title: Koyomi Reverse - Part 4
+        originally_available: 2018-11-10
+      S15E05:
+        title: Koyomi Reverse - Part 5
+        originally_available: 2018-11-10
+      S15E06:
+        title: Koyomi Reverse - Part 6
+        originally_available: 2018-11-10

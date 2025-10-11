@@ -1,0 +1,18 @@
+---
+collections:
+  # Anime:
+  #   url_poster: https://theposterdb.com/api/assets/126743
+  #   sort_title: ++++_Anime
+  #   plex_search:
+  #     all:
+  #       any: {genre: [Anime, Animation]}
+  #       country: Japan
+
+  Kids Anime:
+    plex_search:
+      any:
+        content_rating: [TV-14, TV-PG, TV-G, TV-Y]
+      validate: false
+    item_label: kids
+    # url_poster: https://theposterdb.com/api/assets/105157
+    sort_title: +++++_Kids Anime

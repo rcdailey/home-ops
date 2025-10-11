@@ -1,0 +1,79 @@
+---
+templates:
+  movie_collection:
+    tmdb_collection_details: <<tmdb_collection>>
+    sort_title: +_<<collection_name>>
+    minimum_items: 2
+  Genre:
+    optional:
+    - genre_poster
+    url_poster: <<genre_poster>>
+    sort_title: ++++_<<collection_name>>
+    smart_filter:
+      # limit: all
+      sort_by: user_rating.desc
+      any:
+        genre: <<genre>>
+  Studio:
+    trakt_list: https://trakt.tv/users/movistapp/lists/<<studio>>
+
+dynamic_collections:
+  TMDb Collections:
+    type: tmdb_collection
+    remove_suffix: Collection
+    remove_prefix: The
+    template: movie_collection
+  Genres:
+    type: genre
+    title_format: <<key_name>>
+    exclude:
+    - Children
+    - Music
+    - Suspense
+    - TV Movie
+    - Anime
+    template: Genre
+    template_variables:
+      genre_poster:
+        Action: https://theposterdb.com/api/assets/52018
+        Adventure: https://theposterdb.com/api/assets/52218
+        Animation: https://theposterdb.com/api/assets/120090
+        Biography: https://theposterdb.com/api/assets/60369
+        Comedy: https://theposterdb.com/api/assets/51397
+        Crime: https://theposterdb.com/api/assets/53057
+        Documentary: https://theposterdb.com/api/assets/51430
+        Drama: https://theposterdb.com/api/assets/52016
+        Family: https://theposterdb.com/api/assets/53059
+        Fantasy: https://theposterdb.com/api/assets/51476
+        History: https://theposterdb.com/api/assets/58022
+        Horror: https://theposterdb.com/api/assets/51475
+        Martial Arts: https://theposterdb.com/api/assets/51773
+        Musical: https://theposterdb.com/api/assets/51427
+        Mystery: https://theposterdb.com/api/assets/53060
+        Romance: https://theposterdb.com/api/assets/53062
+        Science Fiction: https://theposterdb.com/api/assets/51772
+        Short: https://theposterdb.com/api/assets/53063
+        Sport: https://theposterdb.com/api/assets/60371
+        Thriller: https://theposterdb.com/api/assets/52019
+        War: https://theposterdb.com/api/assets/51477
+        Western: https://theposterdb.com/api/assets/51774
+
+collections:
+  Marvel Universe:
+    trakt_list: https://trakt.tv/users/tetharion/lists/marvel-cinematic-universe
+    sort_title: +++_<<collection_name>>
+    collection_order: release.desc
+    url_poster: https://theposterdb.com/api/assets/5912
+    sync_mode: sync
+  DC Universe:
+    trakt_list: https://trakt.tv/users/asmobarki/lists/dc-universe
+    sort_title: +++_<<collection_name>>
+    collection_order: release.desc
+    url_poster: https://theposterdb.com/api/assets/49347
+    sync_mode: sync
+  Dwayne Johnson:
+    tmdb_actor: 18918
+    sort_title: ++_<<collection_name>>
+    collection_order: release.desc
+    url_poster: https://theposterdb.com/api/assets/50026
+    sync_mode: sync

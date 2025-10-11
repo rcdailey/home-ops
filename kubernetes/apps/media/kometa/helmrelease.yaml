@@ -1,0 +1,96 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kometa
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      kometa:
+        type: cronjob
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        cronjob:
+          # Run 4x daily - reduced frequency to prevent overlap
+          # Schedule: 01:00, 09:00, 15:00, 21:00 (6 hour intervals)
+          schedule: "0 1,9,15,21 * * *"
+          timeZone: America/Chicago
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+          # Timeout jobs after 5 hours to prevent blocking next run
+          activeDeadlineSeconds: 18000
+          # Limit retries to prevent infinite loops
+          backoffLimit: 0
+          # Cleanup completed jobs after 1 hour
+          ttlSecondsAfterFinished: 3600
+
+        containers:
+          app:
+            image:
+              repository: kometateam/kometa
+              tag: v2.2.2@sha256:32992226d1a505da3ed5d4e9c97bed8a6deb7aef36cd5ef8b1f519762607df45
+            command:
+            - /bin/sh
+            - -c
+            args:
+            - |
+              python3 kometa.py --run --read-only-config --run-libraries "Anime Series";
+              python3 kometa.py --run --read-only-config --run-libraries "Movies";
+              python3 kometa.py --run --read-only-config --run-libraries "TV Shows";
+            env:
+              TZ: America/Chicago
+            envFrom:
+            - secretRef:
+                name: kometa-secret
+            resources:
+              requests:
+                cpu: 10m
+                memory: 4Gi
+              limits:
+                memory: 8Gi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: [ALL]
+
+    defaultPodOptions:
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: kometa
+        advancedMounts:
+          kometa:
+            app:
+            - path: /config
+
+      config-file:
+        type: configMap
+        name: kometa-configmap
+        globalMounts:
+        - path: /config/config.yml
+          subPath: config.yml
+          readOnly: true
+
+      logs:
+        type: emptyDir
+        advancedMounts:
+          kometa:
+            app:
+            - path: /config/logs
+              subPath: logs
