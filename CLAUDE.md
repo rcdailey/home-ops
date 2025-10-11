@@ -139,10 +139,10 @@ When ANY namespace-related error occurs, Claude MUST immediately:
 
 ### Why This Pattern
 
-**Reliability**: Explicit targetNamespace declarations provide deterministic namespace resolution
-**Clarity**: App kustomizations are self-contained with clear namespace targets **Debugging**:
-Easier to trace namespace-related issues with explicit app declarations **Consistency**: Prevents
-timing issues during resource creation and backup operations
+- **Reliability**: Deterministic namespace resolution with explicit targetNamespace
+- **Clarity**: Self-contained apps with clear namespace targets
+- **Debugging**: Easier tracing of namespace-related issues
+- **Consistency**: Prevents timing issues during resource creation/backups
 
 ## Quality Assurance & Validation
 
@@ -150,9 +150,10 @@ timing issues during resource creation and backup operations
 
 Claude MUST check FIRST before analysis:
 
-- Apply complete namespace requirements from "Namespace Management Strategy" section above
-- Never do `kubectl port-forward`; run debug pods instead for introspection
-- Never do adhoc fixes against the cluster; all solutions MUST be gitops/configuration-based
+- Apply complete namespace requirements from "Namespace Management Strategy"
+- Use debug pods for introspection (NOT `kubectl port-forward`)
+- All solutions MUST be GitOps/configuration-based (NO adhoc cluster fixes)
+- Start debugging with `kubectl get events -n <namespace>`
 
 ### Essential Validation Sequence
 
@@ -160,17 +161,12 @@ Claude MUST run ALL steps after changes:
 
 1. **Flux Testing**: `./scripts/flux-local-test.sh`
 2. **Pre-commit Checks**: `pre-commit run --all-files` (or `pre-commit run --files <files>`)
-3. **Additional Validation**: kustomize build → kubectl dry-run (server) → flux check
+3. **Additional Validation**: kustomize build → kubectl dry-run → flux check
 
-### Required Tools for Verification
+### Required Tools
 
-- **Helm Validation**: `helm template <release> <chart>` and `helm search repo <chart> --versions`
-- **Chart Analysis**: `helm show values <chart>/<name> --version <version>` for secret integration
-- **Debug Analysis**: You MUST start with `kubectl get events -n namespace` when performing cluster
-  debugging or analysis.
-
-**Claude MUST NOT proceed to user commit without completing flux-local-test.sh and pre-commit
-validation.**
+- **Helm**: `helm template`, `helm search repo <chart> --versions`, `helm show values` for secrets
+- **MUST NOT proceed to commit without completing flux-local-test.sh and pre-commit validation**
 
 ## Container Image Standards
 
@@ -208,29 +204,24 @@ validation.**
 3. **Security Context Configuration:**
 
    ```yaml
-   # REQUIRED Kubernetes security context for home-operations images
    securityContext:
-     runAsUser: 1000          # Can be customized
-     runAsGroup: 1000         # Can be customized
-     fsGroup: 65534           # Requires CSI support
+     runAsUser: 1000          # Customizable
+     runAsGroup: 1000         # Customizable
+     fsGroup: 65534
      fsGroupChangePolicy: OnRootMismatch
      allowPrivilegeEscalation: false
-     readOnlyRootFilesystem: true  # May require additional emptyDir mounts
+     readOnlyRootFilesystem: true  # Requires emptyDir mounts for /tmp
      capabilities:
        drop: [ALL]
    ```
 
 4. **Volume Standards:**
-   - **Configuration volume**: ALWAYS `/config` (hardcoded, non-configurable)
-   - **Temporary storage**: Mount emptyDir volumes to `/tmp` for readOnlyRootFilesystem
-   - **Command arguments**: Use Kubernetes `args:` field for CLI-only configuration options
+   - Config volume: ALWAYS `/config` (hardcoded)
+   - Temp storage: emptyDir to `/tmp` for readOnlyRootFilesystem
+   - CLI options: Use `args:` field
 
-5. **Image Signature Verification:**
-
-   ```bash
-   # Verify GitHub CI build provenance
-   gh attestation verify --repo home-operations/containers oci://ghcr.io/home-operations/${APP}:${TAG}
-   ```
+5. **Signature Verification:** `gh attestation verify --repo home-operations/containers
+   oci://ghcr.io/home-operations/${APP}:${TAG}`
 
 ## Deployment Standards
 
@@ -342,38 +333,23 @@ spec:
 **Common Operations:**
 
 ```bash
-# List secrets in path
-infisical secrets --env=prod --path=/namespace/app
-
-# Get specific secret(s)
-infisical secrets get secret-name --env=prod --path=/namespace/app
-
-# Set secrets (supports multiple)
-infisical secrets set secret-name=value --env=prod --path=/namespace/app
-infisical secrets set api-key=value db-password=secret --env=prod --path=/namespace/app
-
-# Delete secret
-infisical secrets delete secret-name --env=prod --path=/namespace/app
+infisical secrets --env=prod --path=/namespace/app              # List
+infisical secrets get <name> --env=prod --path=/namespace/app   # Get
+infisical secrets set <name>=<value> --env=prod --path=/ns/app  # Set (multi supported)
+infisical secrets delete <name> --env=prod --path=/ns/app       # Delete
 ```
 
 **Folder Management:**
 
 ```bash
-# List folders in path
 infisical secrets folders get --env=prod --path=/namespace
-
-# Create folder (REQUIRED before setting secrets)
 infisical secrets folders create --name app-name --path=/namespace --env=prod
 ```
 
-**CRITICAL:** Folders MUST be created BEFORE setting secrets. Setting secrets in non-existent
-folders fails silently (exit code 0) without creating secrets. Always create folder structure first.
+**CRITICAL:** Create folders BEFORE setting secrets. Setting secrets in non-existent folders fails
+silently (exit 0) without creating secrets.
 
-**Conventions:**
-
-- **Secret names:** kebab-case (e.g., `secret-key`, `postgres-password`, `api-token`)
-- **Folder names:** kebab-case (e.g., `default`, `media`, `silverbullet`, `radarr-4k`)
-- **Path structure:** `/namespace/app/secret-name` (hierarchical organization by namespace/app)
+**Conventions:** kebab-case for names/folders, path structure: `/namespace/app/secret-name`
 
 ### PVC Strategy
 
@@ -391,42 +367,19 @@ Claude MUST enforce these patterns:
 
 #### Deployment Strategy Requirements
 
-**MANDATORY: ReadWriteOnce volumes require Recreate strategy:**
+**MANDATORY: ReadWriteOnce (RWO) volumes require Recreate strategy:**
 
-- **ReadWriteOnce (RWO) + RollingUpdate = INCOMPATIBLE** - causes ContainerCreating failures
-- **RWO volumes can only be mounted by ONE pod at a time**
-- **RollingUpdate starts new pod before terminating old pod = volume conflict**
-- **SOLUTION: Always use `strategy: Recreate` with RWO volumes**
+- RWO + RollingUpdate = INCOMPATIBLE (ContainerCreating failures)
+- RWO volumes: single pod exclusive access
+- RollingUpdate starts new pod before terminating old = volume conflict
+- **SOLUTION: `strategy: Recreate` with RWO volumes**
 
-```yaml
-# CORRECT: Recreate strategy with RWO volumes
-controllers:
-  app:
-    strategy: Recreate    # REQUIRED for RWO volumes
-    containers:
-      main:
-        # app config
-persistence:
-  config:
-    type: persistentVolumeClaim
-    existingClaim: app-config-pvc  # RWO volume
-    advancedMounts:
-      app:
-        main:
-        - path: /config
+**Strategy Selection:**
 
-# WRONG: RollingUpdate with RWO volumes causes stuck pods
-controllers:
-  app:
-    strategy: RollingUpdate  # FAILS with RWO volumes
-```
-
-**Strategy Selection Rules:**
-
-- **Apps with RWO volumes**: ALWAYS use `strategy: Recreate`
-- **Apps with only RWX/emptyDir/configMap volumes**: Can use `strategy: RollingUpdate`
-- **Stateless apps**: Prefer `RollingUpdate` for zero-downtime updates
-- **Stateful apps with persistent data**: Use `Recreate` to ensure data consistency
+- RWO volumes → `strategy: Recreate` (REQUIRED)
+- RWX/emptyDir/configMap only → `strategy: RollingUpdate` (acceptable)
+- Stateless apps → prefer RollingUpdate (zero-downtime)
+- Stateful apps → use Recreate (data consistency)
 
 #### Volume Mounting Strategy
 
@@ -444,48 +397,12 @@ controllers:
   `RollingUpdate`
 - **emptyDir/configMap**: Always multi-pod compatible
 
-##### Volume Mount Patterns
-
-```yaml
-# CORRECT: RWO volume with advancedMounts + Recreate strategy
-controllers:
-  app:
-    strategy: Recreate
-persistence:
-  data:
-    type: persistentVolumeClaim
-    existingClaim: app-data-pvc  # RWO
-    advancedMounts:
-      app:
-        main:
-        - path: /data
-
-# CORRECT: RWX volume with globalMounts + RollingUpdate
-controllers:
-  app:
-    strategy: RollingUpdate
-persistence:
-  shared:
-    type: persistentVolumeClaim
-    existingClaim: shared-data-pvc  # RWX
-    globalMounts:
-    - path: /shared
-
-# WRONG: RWO volume with globalMounts causes Multi-Attach errors
-persistence:
-  data:
-    type: persistentVolumeClaim
-    existingClaim: app-data-pvc  # RWO
-    globalMounts:  # WRONG - will fail in multi-controller apps
-    - path: /data
-```
-
 ##### Storage Selection Strategy
 
-- **App-specific persistent data**: `ceph-block` (RWO) + `advancedMounts` + `strategy: Recreate`
-- **Shared configuration**: ConfigMaps + `globalMounts` + any strategy
-- **Multi-pod shared data**: `ceph-filesystem` (RWX) + `globalMounts` + `RollingUpdate`
-- **Large media/file storage**: NFS PVs (RWX) + `globalMounts` + `RollingUpdate`
+- **App-specific data**: `ceph-block` (RWO) + `advancedMounts` + `Recreate`
+- **Shared config**: ConfigMaps + `globalMounts` + any strategy
+- **Multi-pod data**: `ceph-filesystem` (RWX) + `globalMounts` + `RollingUpdate`
+- **Large media**: NFS PVs (RWX) + `globalMounts` + `RollingUpdate`
 
 ## ConfigMap & Reloader Strategy
 
@@ -694,14 +611,10 @@ Credentials are stored in
 ### AWS CLI Usage
 
 ```bash
-# Extract credentials
+# Extract credentials from cluster-secrets
 eval $(sops -d kubernetes/components/common/sops/cluster-secrets.sops.yaml | yq eval '.stringData | to_entries | .[] | select(.key | startswith("S3_")) | "export " + .key + "=" + .value' -)
 
-# Use AWS CLI with Garage
 aws --endpoint-url=$S3_ENDPOINT --region=$S3_REGION s3 ls
-
-# Alternative direct usage
-AWS_ACCESS_KEY_ID=<key> AWS_SECRET_ACCESS_KEY=<secret> AWS_DEFAULT_REGION=garage aws --endpoint-url=http://192.168.1.58:3900 s3 ls
 ```
 
 ### Current S3 Buckets
@@ -726,34 +639,15 @@ Then use `${S3_ENDPOINT}`, `${S3_ACCESS_KEY_ID}`, etc. in manifests.
 
 ### SOPS Commands
 
-#### Set values in encrypted files
-
 ```bash
-# Syntax: sops set file index value
+# Set value
 sops set secret.sops.yaml '["stringData"]["KEY_NAME"]' '"value"'
 
-# Examples:
-sops set secret.sops.yaml '["stringData"]["API_KEY"]' '"abc123"'
-sops set secret.sops.yaml '["stringData"]["WIREGUARD_PRIVATE_KEY"]' '"wOEI9rqq..."'
-```
-
-#### Remove values from encrypted files
-
-```bash
-# Syntax: sops unset file index
+# Remove value
 sops unset secret.sops.yaml '["stringData"]["KEY_NAME"]'
-
-# Examples:
-sops unset secret.sops.yaml '["stringData"]["MULLVAD_ACCOUNT"]'
-sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 ```
 
-#### Key points
-
-- Index format: `'["section"]["key"]'` for YAML files
-- Values must be JSON-encoded strings
-- Always use single quotes around index path
-- Use `--idempotent` flag to avoid errors if key exists/doesn't exist
+**Notes:** Index format `'["section"]["key"]'`, values JSON-encoded, use `--idempotent` flag
 
 ## Backup & Data Protection
 
@@ -766,44 +660,24 @@ sops unset secret.sops.yaml '["stringData"]["OLD_API_KEY"]'
 #### Usage Pattern
 
 ```yaml
-# In app kustomization.yaml
-components:
-- ../../../components/volsync
+components: [../../../components/volsync]
 postBuild:
   substitute:
-    APP: appname  # REQUIRED for component substitution
-    VOLSYNC_PVC: custom-pvc-name  # Override if PVC name != app name
+    APP: appname  # REQUIRED
+    VOLSYNC_PVC: custom-name  # Override if PVC name != app name
 ```
 
-#### Key Features
+**Features:** Hourly backups, 24h/7d retention, zstd-fastest compression, non-root (1000:1000), 5Gi
+cache PVC
 
-- **Scheduling**: Hourly backups (`0 * * * *`)
-- **Retention**: 24 hourly, 7 daily snapshots
-- **Compression**: zstd-fastest for speed/size balance
-- **Security**: Runs as non-root (1000:1000), snapshot-based for consistency
-- **Cache**: Dedicated 5Gi cache PVC per app for performance
-
-#### Validation Commands
-
-```bash
-kubectl get replicationsources -A              # Check backup sources
-kubectl describe replicationsource <app> -n <ns>  # Detailed status
-rclone ls garage:volsync-backups/              # Verify S3 contents
-```
+**Validation:** `kubectl get replicationsources -A`, `rclone ls garage:volsync-backups/`
 
 ### CloudNativePG (Database Backups)
 
-- **Scope**: PostgreSQL clusters only
-- **Method**: Barman with continuous WAL archiving
-- **Destination**: `s3://postgres-backups/{cluster}/`
-- **Features**: Point-in-time recovery, automated retention, compression
+PostgreSQL only. Barman with WAL archiving to `s3://postgres-backups/{cluster}/`. PITR, automated
+retention, compression.
 
-#### Status Check
-
-```bash
-kubectl get scheduledbackup -A                 # Backup schedules
-kubectl describe cluster <name> | grep -i backup  # Cluster backup status
-```
+**Status:** `kubectl get scheduledbackup -A`, `kubectl describe cluster <name> | rg -i backup`
 
 ### Component Integration Requirements
 
@@ -825,32 +699,24 @@ Apps using volsync component must provide:
 
 ### Vector Standard Fields
 
-Vector uses schema-neutral log events. **ALWAYS use standard fields** for compatibility:
+**ALWAYS use standard fields** (NEVER create custom equivalents):
 
-- `message` - Log message content (required)
+- `message` - Log content (required)
 - `timestamp` - Event time (required)
-- `level` - Log level: debug, info, warning, error, critical (standard)
-- `severity` - Severity class for filtering (optional)
-- `host` - Hostname (standard)
-- `source_type` - Source name (standard)
-
-**NEVER create custom fields** when standard fields exist (e.g., use `level` not `log_level`).
+- `level` - Log level: debug, info, warning, error, critical
+- `severity` - Severity class (optional)
+- `host`, `source_type` - Standard metadata
 
 ### Vector Sidecar Pattern (MANDATORY)
 
-**REQUIRED: Use sidecar pattern for per-app log collection** (separation of concerns):
+**REQUIRED: Sidecar per app** (separation of concerns, app-owned config, isolated parsing):
 
 ```yaml
 containers:
-  app:
-    # Main application
+  app: {}
   vector-sidecar:
-    image:
-      repository: timberio/vector
-      tag: 0.50.0-alpine
+    image: {repository: timberio/vector, tag: 0.50.0-alpine}
 ```
-
-**Pattern benefits**: App-owned configuration, no centralized coupling, isolated parsing logic.
 
 ### Vector Directory Convention (STRICT)
 
@@ -893,37 +759,30 @@ configMapGenerator:
 
 ### Vector Configuration Testing (MANDATORY)
 
-**REQUIRED: Test before deployment** (fail-fast validation):
+**REQUIRED: Test before deployment:**
 
 ```bash
-# Standard test (follows convention automatically)
 ./scripts/test-vector-config.py kubernetes/apps/<ns>/<app>/vector/parse-<app>.vrl
-
-# With explicit test samples path
-./scripts/test-vector-config.py kubernetes/apps/<ns>/<app>/vector/parse-<app>.vrl --samples vector/test-samples.json
+./scripts/test-vector-config.py <vrl-file> --samples <test.json>  # Explicit samples
 ```
 
 **Test sample format** (`test-samples.json`):
 
 ```json
 [
-  {
-    "name": "descriptive-test-name",
-    "input": {"message": "log line", "field": "value"},
-    "expect": {"field": "expected_value"}
-  },
-  {
-    "name": "blank-message-dropped",
-    "input": {"message": ""},
-    "expect": null
-  }
+  {"name": "test-name", "input": {"message": "log"}, "expect": {"field": "value"}},
+  {"name": "blank-dropped", "input": {"message": ""}, "expect": null}
 ]
 ```
 
-**Script auto-discovers**: When testing `parse-<app>.vrl`, script looks for `test-samples.json` in
-same directory.
+Script auto-discovers `test-samples.json` in VRL directory. **ALWAYS run before committing Vector
+changes.**
 
-**Integration**: ALWAYS run before committing Vector config changes. Add to validation workflow.
+### VRL Regex Best Practices
+
+**Regex quantifiers**: Prefer non-greedy `.*?` over greedy `.*` for general best practice, though
+performance impact is negligible with typical log message sizes (< 500 chars). IDE warnings about
+`.*` performance are technically valid but overly cautious for log parsing use cases.
 
 ## Available Scripts
 
