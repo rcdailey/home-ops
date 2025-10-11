@@ -1,6 +1,6 @@
 # HelmRepository to OCIRepository Migration Analysis
 
-**Date**: 2025-10-11 **Last Updated**: 2025-10-11
+**Date**: 2025-10-11 **Last Updated**: 2025-10-11 15:30
 **Analysis Method**: Comprehensive scan using Octocode, Tavily, Context7, and manual verification
 
 ## Overview
@@ -12,8 +12,8 @@ and simplified dependency management.
 ## Summary Status
 
 **Total Repositories**: 8
-**Completed Migrations**: 2 (victoriametrics, node-feature-discovery)
-**Ready for Migration**: 3 (external-secrets, grafana, intel)
+**Completed Migrations**: 4 (victoriametrics, node-feature-discovery, external-secrets, grafana)
+**Ready for Migration**: 1 (intel)
 **Blocked (No OCI)**: 3 (external-dns, metrics-server, cloudnative-pg)
 
 **Key Finding**: Initial Context7 analysis missed 3 repositories with OCI support. Manual
@@ -63,29 +63,31 @@ grafana, and intel GPU drivers.
 - **Status**: Production-ready, OCI registry accessible
 - **Migration Priority**: COMPLETED
 
-### ✅ Ready for Migration (3) - OCI Support CONFIRMED
+### ✅ Completed Migrations (2) - Previously Documented
 
-#### 3. external-secrets
+#### 3. external-secrets (COMPLETED 2025-10-11)
 
 - **Current**: `https://charts.external-secrets.io`
 - **Target**: `oci://ghcr.io/external-secrets/charts/external-secrets`
 - **Charts Used**: `external-secrets` (kube-system/external-secrets)
 - **Verification**: Manual helm pull successful (digest: sha256:367317248a695565604c51ee1b05896ed16c272b92158e392292f69c37f5e645)
 - **Initial Assessment**: CORRECTED - OCI support exists but not documented in Context7
-- **Status**: Production-ready OCI registry confirmed
-- **Migration Priority**: HIGH - Critical infrastructure component
+- **Status**: MIGRATED - Production-ready OCI registry confirmed
+- **Migration Priority**: COMPLETED
 - **onedr0p Reference**: Uses OCI at version 0.20.2
 
-#### 4. grafana
+#### 4. grafana (COMPLETED 2025-10-11)
 
 - **Current**: `https://grafana.github.io/helm-charts`
 - **Target**: `oci://ghcr.io/grafana/helm-charts/grafana`
 - **Charts Used**: `grafana` (observability/grafana)
 - **Verification**: Manual helm pull successful (digest: sha256:b02b4687b11570f82c8bc9967556f782efaa9bf0422b39b5b2a1b0c2203f3cb3)
 - **Initial Assessment**: CORRECTED - Official OCI registry exists
-- **Status**: Production-ready OCI registry confirmed
-- **Migration Priority**: HIGH - Critical observability component
+- **Status**: MIGRATED - Had embedded HelmRepository (not centralized)
+- **Migration Priority**: COMPLETED
 - **onedr0p Reference**: Uses OCI at version 10.1.0
+
+### ✅ Ready for Migration (1)
 
 #### 5. intel
 
@@ -282,9 +284,73 @@ research into popular repos (onedr0p, bjw-s-labs) revealed the correct pattern i
 - Manual helm pull: SUCCESS (digest: sha256:9f80bc5cb0e01ba9630ac7fa2f8e603e3fe1a63485d3940d9a3c47b8060928ff)
 - OCI registry confirmed accessible at gcr.io/k8s-staging-nfd
 
-### Phase 3: Wait for Upstream
+### Phase 3: External Secrets (COMPLETED)
 
-- Monitor GitHub issues for remaining 6 repositories
+**Date Completed**: 2025-10-11
+
+**Implementation Pattern** (consistent with previous phases):
+
+- Per-app `ocirepository.yaml` ownership
+- HelmRelease uses `chartRef: {kind: OCIRepository, name: external-secrets}`
+- OCIRepository structure: `layerSelector`, `ref.tag: 0.17.0`, `url: oci://ghcr.io/external-secrets/charts/external-secrets`
+
+**Files Created:**
+
+1. `kubernetes/apps/kube-system/external-secrets/ocirepository.yaml`
+
+**Files Modified:**
+
+1. `kubernetes/apps/kube-system/external-secrets/helmrelease.yaml` - Changed to `chartRef`
+2. `kubernetes/apps/kube-system/external-secrets/kustomization.yaml` - Added ocirepository.yaml
+
+**Files Removed:**
+
+1. `kubernetes/flux/meta/repos/external-secrets.yaml` (centralized HelmRepository removed)
+
+**Validation:**
+
+- flux-local-test: 103 tests passed
+- pre-commit: All checks passed
+
+### Phase 4: Grafana (COMPLETED)
+
+**Date Completed**: 2025-10-11
+
+**Implementation Pattern** (consistent with previous phases):
+
+- Per-app `ocirepository.yaml` ownership
+- HelmRelease uses `chartRef: {kind: OCIRepository, name: grafana}`
+- OCIRepository structure: `layerSelector`, `ref.tag: 10.0.0`, `url: oci://ghcr.io/grafana/helm-charts/grafana`
+
+**Files Created:**
+
+1. `kubernetes/apps/observability/grafana/ocirepository.yaml`
+
+**Files Modified:**
+
+1. `kubernetes/apps/observability/grafana/helmrelease.yaml` - Changed to `chartRef`, removed embedded HelmRepository
+2. `kubernetes/apps/observability/grafana/kustomization.yaml` - Added ocirepository.yaml
+
+**Files Removed:**
+
+None (grafana used embedded HelmRepository, not centralized)
+
+**Validation:**
+
+- flux-local-test: 103 tests passed
+- pre-commit: All checks passed
+
+### Phase 5: Remaining Work
+
+**Next Priority: Intel GPU Plugin** (1 repository)
+
+- Ready for migration with verified OCI support
+- Medium priority - GPU workload enablement
+
+**Blocked Repositories** (3 repositories - wait for upstream):
+
+- external-dns, metrics-server, cloudnative-pg
+- Monitor GitHub issues for OCI support
 - Re-evaluate quarterly for new OCI support
 - Consider contributing to upstream projects if needed
 
@@ -370,9 +436,12 @@ spec:
 
 ## Next Steps
 
-1. ✅ Document this analysis
-2. ✅ Migrate victoriametrics to OCIRepository
-3. ✅ Manually verify node-feature-discovery OCI support
-4. ✅ Migrate node-feature-discovery to OCIRepository
-5. ⏳ Set quarterly reminder to check upstream progress (external-dns, grafana, metrics-server, etc.)
-6. ✅ Document OCIRepository pattern in CLAUDE.md
+1. COMPLETED - Document this analysis
+2. COMPLETED - Migrate victoriametrics to OCIRepository
+3. COMPLETED - Manually verify node-feature-discovery OCI support
+4. COMPLETED - Migrate node-feature-discovery to OCIRepository
+5. COMPLETED - Migrate external-secrets to OCIRepository
+6. COMPLETED - Migrate grafana to OCIRepository
+7. COMPLETED - Document OCIRepository pattern in CLAUDE.md
+8. TODO - Migrate intel GPU plugin to OCIRepository (final ready repository)
+9. TODO - Set quarterly reminder to check upstream progress (external-dns, metrics-server, cloudnative-pg)
