@@ -1,4 +1,28 @@
 ---
+plex:
+  url: http://plex.media:32400
+  token: <<PLEX_TOKEN>>
+  timeout: 60
+  clean_bundles: false
+  empty_trash: false
+  optimize: false
+
+tmdb:
+  apikey: <<TMDB_API_KEY>>
+  language: en
+  cache_expiration: 60
+
+mdblist:
+  apikey: <<MDBLIST_API_KEY>>
+  cache_expiration: 60
+
+trakt:
+  client_id: <<TRAKT_CLIENT_ID>>
+  client_secret: <<TRAKT_CLIENT_SECRET>>
+  authorization:
+    access_token: <<TRAKT_ACCESS_TOKEN>>
+    refresh_token: <<TRAKT_REFRESH_TOKEN>>
+
 libraries:
   Anime Series:
     metadata_files:
@@ -127,27 +151,3 @@ settings: # Can be individually specified per library as well
   overlay_artwork_filetype: jpg
   overlay_artwork_quality:
   show_unfiltered: false
-
-plex:
-  url: http://plex.media:32400
-  token: <<PLEX_TOKEN>>
-  timeout: 60
-  clean_bundles: false
-  empty_trash: false
-  optimize: false
-
-tmdb:
-  apikey: <<TMDB_API_KEY>>
-  language: en
-  cache_expiration: 60
-
-mdblist:
-  apikey: <<MDBLIST_API_KEY>>
-  cache_expiration: 60
-
-trakt:
-  client_id: <<TRAKT_CLIENT_ID>>
-  client_secret: <<TRAKT_CLIENT_SECRET>>
-  authorization:
-    access_token: <<TRAKT_ACCESS_TOKEN>>
-    refresh_token: <<TRAKT_REFRESH_TOKEN>>
