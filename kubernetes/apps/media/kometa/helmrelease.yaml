@@ -65,6 +65,29 @@ spec:
               capabilities:
                 drop: [ALL]
 
+          vector-sidecar:
+            image:
+              repository: timberio/vector
+              tag: 0.50.0-alpine
+            env:
+              TZ: America/Chicago
+              VECTOR_CONFIG_PATH: /etc/vector/vector.yaml
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                cpu: 100m
+                memory: 128Mi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: [ALL]
+
     defaultPodOptions:
       securityContext:
         fsGroup: 1000
@@ -82,10 +105,32 @@ spec:
       config-file:
         type: configMap
         name: kometa-configmap
-        globalMounts:
-        - path: /config/config.yml
-          subPath: config.yml
-          readOnly: true
+        advancedMounts:
+          kometa:
+            app:
+            - path: /config/config.yml
+              subPath: config.yml
+              readOnly: true
+
+      vector-config:
+        type: configMap
+        name: kometa-vector-configmap
+        advancedMounts:
+          kometa:
+            vector-sidecar:
+            - path: /etc/vector/vector.yaml
+              subPath: vector.yaml
+              readOnly: true
+            - path: /etc/vector/parse-kometa.vrl
+              subPath: parse-kometa.vrl
+              readOnly: true
+
+      vector-data:
+        type: emptyDir
+        advancedMounts:
+          kometa:
+            vector-sidecar:
+            - path: /var/lib/vector
 
       logs:
         type: emptyDir
@@ -94,3 +139,7 @@ spec:
             app:
             - path: /config/logs
               subPath: logs
+            vector-sidecar:
+            - path: /config/logs
+              subPath: logs
+              readOnly: true

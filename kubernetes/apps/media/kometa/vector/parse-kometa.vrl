@@ -1,0 +1,59 @@
+.log_file = split(string!(.file), "/")[-1]
+
+log_msg = string!(.message)
+
+# Parse structured log format: [LEVEL] | the message |
+level_match = parse_regex(log_msg, r'\[(?P<level>CRITICAL|ERROR|WARNING|INFO|DEBUG|TRACE)\]') ?? {}
+
+# Extract message content between pipes and trim whitespace
+pipe_match = parse_regex(log_msg, r'\|\s*(?P<content>.*?)\s*\|$') ?? {}
+if exists(pipe_match.content) {
+  .message = pipe_match.content
+} else {
+  .message = log_msg
+}
+
+# Drop blank/empty messages
+if .message == "" {
+  abort
+}
+
+# Set standard level field and severity from parsed level
+if exists(level_match.level) {
+  level_str = downcase(string!(level_match.level))
+  .level = level_str
+
+  if level_str == "critical" {
+    .severity = "critical"
+  } else if level_str == "error" {
+    .severity = "error"
+  } else if level_str == "warning" {
+    .severity = "warning"
+  } else if level_str == "debug" || level_str == "trace" {
+    .severity = "debug"
+  } else {
+    .severity = "info"
+  }
+} else {
+  .level = "info"
+  .severity = "info"
+}
+
+# Mark special sections for filtering
+if contains(log_msg, "Error Summary") || contains(log_msg, "Config Warning") {
+  .is_summary = true
+}
+
+if contains(log_msg, "Finished Libraries Run") {
+  .is_completion = true
+}
+
+# Extract library name if present
+library_match = parse_regex(log_msg, r'Libraries Run.*?"(?P<library>[^"]+)"') ?? {}
+if exists(library_match.library) {
+  .library = library_match.library
+}
+
+# Add app metadata
+.app = "kometa"
+.namespace = "media"

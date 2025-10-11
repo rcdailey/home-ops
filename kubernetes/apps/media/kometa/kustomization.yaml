@@ -10,5 +10,9 @@ configMapGenerator:
 - name: kometa-configmap
   files:
   - ./config/config.yml
+- name: kometa-vector-configmap
+  files:
+  - vector.yaml=./vector/vector.yaml
+  - parse-kometa.vrl=./vector/parse-kometa.vrl
 generatorOptions:
   disableNameSuffixHash: true

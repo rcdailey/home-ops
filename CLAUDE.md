@@ -821,6 +821,110 @@ Apps using volsync component must provide:
 - Wrong PVC name → `PersistentVolumeClaim "appname" not found`
 - Check PVC names: `kubectl get pvc -n <namespace>`
 
+## Log Collection Standards
+
+### Vector Standard Fields
+
+Vector uses schema-neutral log events. **ALWAYS use standard fields** for compatibility:
+
+- `message` - Log message content (required)
+- `timestamp` - Event time (required)
+- `level` - Log level: debug, info, warning, error, critical (standard)
+- `severity` - Severity class for filtering (optional)
+- `host` - Hostname (standard)
+- `source_type` - Source name (standard)
+
+**NEVER create custom fields** when standard fields exist (e.g., use `level` not `log_level`).
+
+### Vector Sidecar Pattern (MANDATORY)
+
+**REQUIRED: Use sidecar pattern for per-app log collection** (separation of concerns):
+
+```yaml
+containers:
+  app:
+    # Main application
+  vector-sidecar:
+    image:
+      repository: timberio/vector
+      tag: 0.50.0-alpine
+```
+
+**Pattern benefits**: App-owned configuration, no centralized coupling, isolated parsing logic.
+
+### Vector Directory Convention (STRICT)
+
+**MANDATORY structure**: `kubernetes/apps/<namespace>/<app>/vector/`
+
+```txt
+<app>/
+├── vector/
+│   ├── vector.yaml        # REQUIRED: Vector config (sources, transforms, sinks)
+│   ├── parse-<app>.vrl    # REQUIRED: VRL transform program (separate file)
+│   └── test-samples.json  # REQUIRED: Test data for validation
+```
+
+**Critical requirements**:
+
+1. **Separate VRL file**: NEVER use inline `source:` in vector.yaml. ALWAYS use `file:` parameter
+2. **Naming convention**: VRL file MUST be named `parse-<appname>.vrl`
+3. **Test data**: ALWAYS include `test-samples.json` with representative log samples
+4. **Transform reference**: Use `file: /etc/vector/parse-<app>.vrl` in vector.yaml
+
+**Example vector.yaml**:
+
+```yaml
+transforms:
+  parse_app:
+    type: remap
+    inputs: [app_logs]
+    file: /etc/vector/parse-app.vrl  # NOT inline source
+```
+
+**Example kustomization.yaml**:
+
+```yaml
+configMapGenerator:
+- name: app-vector-configmap
+  files:
+  - vector.yaml=./vector/vector.yaml
+  - parse-app.vrl=./vector/parse-app.vrl
+```
+
+### Vector Configuration Testing (MANDATORY)
+
+**REQUIRED: Test before deployment** (fail-fast validation):
+
+```bash
+# Standard test (follows convention automatically)
+./scripts/test-vector-config.py kubernetes/apps/<ns>/<app>/vector/parse-<app>.vrl
+
+# With explicit test samples path
+./scripts/test-vector-config.py kubernetes/apps/<ns>/<app>/vector/parse-<app>.vrl --samples vector/test-samples.json
+```
+
+**Test sample format** (`test-samples.json`):
+
+```json
+[
+  {
+    "name": "descriptive-test-name",
+    "input": {"message": "log line", "field": "value"},
+    "expect": {"field": "expected_value"}
+  },
+  {
+    "name": "blank-message-dropped",
+    "input": {"message": ""},
+    "expect": null
+  }
+]
+```
+
+**Script auto-discovers**: When testing `parse-<app>.vrl`, script looks for `test-samples.json` in
+same directory.
+
+**Integration**: ALWAYS run before committing Vector config changes. Add to validation workflow.
+
 ## Available Scripts
 
 Only scripts relevant for AI usage is below; do not use the `annotate-yaml.py` or `validate-yaml.py`
@@ -836,6 +940,9 @@ scripts.
 - **flux-local-test.sh**: **ESSENTIAL VALIDATION**
   - Usage: `./scripts/flux-local-test.sh`
   - **REQUIRED** in validation sequence (see "Quality Assurance & Validation" section)
+- **test-vector-config.py**: Vector VRL configuration testing
+  - Usage: `./scripts/test-vector-config.py <config.yaml> [-v] [--samples <test.json>]`
+  - **REQUIRED** for Vector config changes (fail-fast validation)
 - **update-gitignore/**: Modular gitignore generation system
   - Usage: `./scripts/update-gitignore/update.sh`
   - Combines custom patterns from `custom/` with gitignore.io templates

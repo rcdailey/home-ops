@@ -1,0 +1,46 @@
+[
+  {
+    "name": "info-message",
+    "input": {
+      "message": "[2025-10-11 10:30:23,155] [overlays.py:550] [INFO] | Overlay update complete |",
+      "file": "/config/logs/meta.log"
+    },
+    "expect": {
+      "message": "Overlay update complete",
+      "level": "info",
+      "severity": "info"
+    }
+  },
+  {
+    "name": "blank-message-dropped",
+    "input": {
+      "message": "[2025-10-11 10:30:23,155] [builder.py:2296] [DEBUG] |                    |",
+      "file": "/config/logs/meta.log"
+    },
+    "expect": null
+  },
+  {
+    "name": "error-message",
+    "input": {
+      "message": "[2025-10-11 10:30:23,155] [error.py:100] [ERROR] | Failed to process item |",
+      "file": "/config/logs/meta.log"
+    },
+    "expect": {
+      "message": "Failed to process item",
+      "level": "error",
+      "severity": "error"
+    }
+  },
+  {
+    "name": "warning-message",
+    "input": {
+      "message": "[2025-10-11 10:30:23,155] [builder.py:150] [WARNING] | Config value missing |",
+      "file": "/config/logs/meta.log"
+    },
+    "expect": {
+      "message": "Config value missing",
+      "level": "warning",
+      "severity": "warning"
+    }
+  }
+]
