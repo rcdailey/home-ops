@@ -22,9 +22,11 @@ spec:
           # Schedule: 01:00, 09:00, 15:00, 21:00 (6 hour intervals)
           schedule: "0 1,9,15,21 * * *"
           timeZone: America/Chicago
+          # CRITICAL: Forbid prevents overlapping jobs - CronJob will skip new runs if previous still active
           concurrencyPolicy: Forbid
-          successfulJobsHistory: 2
-          failedJobsHistory: 2
+          # Keep only 1 job in history to prevent Flux from triggering duplicate jobs during reconciliation
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
           # Timeout jobs after 5 hours to prevent blocking next run
           activeDeadlineSeconds: 18000
           # Limit retries to prevent infinite loops
