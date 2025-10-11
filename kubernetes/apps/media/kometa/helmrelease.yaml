@@ -23,8 +23,8 @@ spec:
           schedule: "0 1,9,15,21 * * *"
           timeZone: America/Chicago
           concurrencyPolicy: Forbid
-          successfulJobsHistory: 1
-          failedJobsHistory: 1
+          successfulJobsHistory: 2
+          failedJobsHistory: 2
           # Timeout jobs after 5 hours to prevent blocking next run
           activeDeadlineSeconds: 18000
           # Limit retries to prevent infinite loops
