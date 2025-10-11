@@ -174,6 +174,12 @@ spec:
           create: true
         general:
           create: true
+        # kubeScheduler recording rules disabled due to deprecated/removed metrics in Kubernetes 1.27+
+        # Summary: Old scheduler histogram metrics don't exist, causing RecordingRulesNoData alerts
+        # The new scheduler_scheduling_attempt_duration_seconds metric exists and is being scraped
+        # See commit message (2025-10-11) for detailed investigation and upstream context
+        kubeScheduler:
+          create: false
         k8sContainerCpuLimits:
           create: true
         k8sContainerMemoryLimits:
