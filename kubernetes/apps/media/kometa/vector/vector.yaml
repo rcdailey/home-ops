@@ -1,0 +1,37 @@
+---
+sources:
+  kometa_logs:
+    type: file
+    include:
+    - "/config/logs/*.log"
+    read_from: beginning
+    data_dir: /var/lib/vector
+    oldest_first: true
+    max_read_bytes: 2048
+    glob_minimum_cooldown_ms: 60000
+    fingerprint:
+      strategy: checksum
+      lines: 1
+
+transforms:
+  parse_kometa:
+    type: remap
+    inputs:
+    - kometa_logs
+    file: /etc/vector/parse-kometa.vrl
+
+sinks:
+  victorialogs:
+    type: elasticsearch
+    inputs:
+    - parse_kometa
+    endpoints:
+    - http://victoria-logs-single.observability:9428/insert/elasticsearch/
+    api_version: v8
+    compression: gzip
+    healthcheck:
+      enabled: false
+    query:
+      _msg_field: message
+      _time_field: timestamp
+      _stream_fields: app,namespace,source_type,log_file,severity,level
