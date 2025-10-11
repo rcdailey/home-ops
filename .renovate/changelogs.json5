@@ -1,0 +1,35 @@
+{
+  // Changelog URL Configuration Strategy:
+  //
+  // This module ensures Renovate PRs include changelogs for packages that don't
+  // automatically provide them. Without changelogs, maintainers cannot easily verify
+  // what changes are being introduced before merging.
+  //
+  // Configuration approach:
+  // - Use changelogUrl for packages with release notes/changelogs
+  // - Use sourceUrl for packages where GitHub releases are the primary changelog
+  // - Template variables available: {{{packageName}}}, {{{currentVersion}}}, {{{newVersion}}}
+  //
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      description: "Python (mise) - Link to official changelog documentation",
+      matchManagers: ["mise"],
+      matchPackageNames: ["python"],
+      changelogUrl: "https://docs.python.org/3/whatsnew/changelog.html"
+    },
+    {
+      description: "CoreDNS - Link to GitHub releases for changelog",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/coredns/charts/coredns"],
+      sourceUrl: "https://github.com/coredns/coredns",
+      changelogUrl: "https://github.com/coredns/coredns/releases"
+    },
+    {
+      description: "Elasticsearch - Link to Elastic release notes",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["elasticsearch"],
+      changelogUrl: "https://www.elastic.co/docs/release-notes/elasticsearch"
+    }
+  ]
+}
