@@ -75,9 +75,9 @@ spec:
             resources:
               requests:
                 cpu: 150m
-                memory: 256Mi
+                memory: 512Mi
               limits:
-                memory: 1Gi
+                memory: 2Gi
             securityContext:
               runAsUser: 1000
               runAsGroup: 1000
