@@ -15,6 +15,7 @@
     ":timezone(America/Chicago)",
     "helpers:pinGitHubActionDigestsToSemver",
     "github>rcdailey/home-ops//.renovate/autoMerge.json5",
+    "github>rcdailey/home-ops//.renovate/changelogs.json5",
     "github>rcdailey/home-ops//.renovate/groups.json5",
     "github>rcdailey/home-ops//.renovate/labels.json5",
     "github>rcdailey/home-ops//.renovate/packagePins.json5",
