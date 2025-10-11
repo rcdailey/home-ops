@@ -38,6 +38,13 @@ spec:
           expr: >-
             predict_linear(node_filesystem_free_bytes{device=~"/.*",fstype!~"nfs.*|tmpfs"}[2d], 3600 * 24 * 5)
             *on(instance) group_left(nodename) node_uname_info < 0
+        # CRITICAL: Disable CephNodeNetworkPacketDrops alert for Intel NIC false positives
+        # Intel NUCs (nami, marin) with eno1 interfaces show benign receive packet drops
+        # due to hardware checksum offloading dropping invalid packets (multicast/broadcast noise)
+        # Ceph cluster remains HEALTH_OK, indicating no operational impact
+        # See: Intel I219/I225 NICs commonly drop packets with checksum offload enabled
+        CephNodeNetworkPacketDrops:
+          expr: "0"
 
     ingress:
       dashboard:
