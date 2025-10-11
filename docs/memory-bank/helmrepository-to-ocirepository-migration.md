@@ -40,22 +40,16 @@ and simplified dependency management.
 - **Status**: Production-ready, fully documented
 - **Migration Priority**: HIGH - Most widely used repository in cluster
 
-### ⚠️ Requires Manual Verification (1)
+### ✅ Ready for Migration (2)
 
 #### 2. node-feature-discovery
 
 - **Current**: `https://kubernetes-sigs.github.io/node-feature-discovery/charts`
 - **Target**: `oci://gcr.io/k8s-staging-nfd/charts/node-feature-discovery`
 - **Charts Used**: `node-feature-discovery` (kube-system/node-feature-discovery)
-- **Verification**: Tavily search found official README mentioning OCI as primary method
-- **Status**: OCI mentioned in documentation but not verified by Context7
-- **Manual Test Required**:
-
-  ```bash
-  helm pull oci://gcr.io/k8s-staging-nfd/charts/node-feature-discovery --version 0.18.1
-  ```
-
-- **Migration Priority**: MEDIUM
+- **Verification**: Manual helm pull successful, digest verified
+- **Status**: Production-ready, OCI registry accessible
+- **Migration Priority**: COMPLETED
 
 ### ❌ No OCI Support (6)
 
@@ -238,12 +232,33 @@ documented OCI support.
 **Key Learning**: Initial approach was to centralize OCIRepository like HelmRepository was, but
 research into popular repos (onedr0p, bjw-s-labs) revealed the correct pattern is per-app ownership.
 
-### Phase 2: Node Feature Discovery (Pending Verification)
+### Phase 2: Node Feature Discovery (COMPLETED ✅)
 
-1. Manually verify OCI support: `helm pull
-   oci://gcr.io/k8s-staging-nfd/charts/node-feature-discovery`
-2. If successful, migrate following Phase 1 pattern
-3. Document any version compatibility issues
+**Date Completed**: 2025-10-11
+
+**Implementation Pattern** (consistent with Phase 1):
+
+- Per-app `ocirepository.yaml` ownership
+- HelmRelease uses `chartRef: {kind: OCIRepository, name: node-feature-discovery}`
+- OCIRepository structure: `layerSelector`, `ref.tag: 0.18.1`, `url: oci://gcr.io/k8s-staging-nfd/charts/node-feature-discovery`
+
+**Files Created:**
+
+1. `kubernetes/apps/kube-system/node-feature-discovery/ocirepository.yaml`
+
+**Files Modified:**
+
+1. `kubernetes/apps/kube-system/node-feature-discovery/helmrelease.yaml` - Changed to `chartRef`, upgraded from 0.17.4 to 0.18.1
+2. `kubernetes/apps/kube-system/node-feature-discovery/kustomization.yaml` - Added ocirepository.yaml
+
+**Files Removed:**
+
+1. `kubernetes/flux/meta/repos/node-feature-discovery.yaml` (centralized HelmRepository removed)
+
+**Validation:**
+
+- Manual helm pull: SUCCESS (digest: sha256:9f80bc5cb0e01ba9630ac7fa2f8e603e3fe1a63485d3940d9a3c47b8060928ff)
+- OCI registry confirmed accessible at gcr.io/k8s-staging-nfd
 
 ### Phase 3: Wait for Upstream
 
@@ -333,6 +348,7 @@ spec:
 
 1. ✅ Document this analysis
 2. ✅ Migrate victoriametrics to OCIRepository
-3. ⏳ Manually verify node-feature-discovery OCI support
-4. ⏳ Set quarterly reminder to check upstream progress (external-dns, grafana, metrics-server, etc.)
-5. ✅ Document OCIRepository pattern in CLAUDE.md
+3. ✅ Manually verify node-feature-discovery OCI support
+4. ✅ Migrate node-feature-discovery to OCIRepository
+5. ⏳ Set quarterly reminder to check upstream progress (external-dns, grafana, metrics-server, etc.)
+6. ✅ Document OCIRepository pattern in CLAUDE.md
