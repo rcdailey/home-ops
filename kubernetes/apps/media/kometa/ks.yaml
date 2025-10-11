@@ -12,8 +12,6 @@ spec:
   dependsOn:
   - name: rook-ceph-cluster
     namespace: rook-ceph
-  - name: plex
-    namespace: flux-system
   interval: 1h
   path: ./kubernetes/apps/media/kometa
   prune: true
