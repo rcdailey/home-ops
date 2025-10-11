@@ -231,8 +231,14 @@ Claude MUST run ALL steps after changes:
 - **CRITICAL**: GitRepository sourceRef MUST include `namespace: flux-system`
 - **CRITICAL**: SOPS decryption MUST include `secretRef: {name: sops-age}` - this is required for
   encrypted secrets
-- **HelmRelease OCIRepository**: Use `chartRef` (not `chart.spec.sourceRef`) for OCIRepository
-  references: `chartRef: {kind: OCIRepository, name: app-template, namespace: flux-system}`
+- **OCIRepository over HelmRepository**: ALWAYS prefer OCIRepository when available. Verify OCI
+  support via Context7/official docs before migration. HelmRepository is legacy - only use when
+  upstream lacks OCI. Reference: `docs/memory-bank/helmrepository-to-ocirepository-migration.md`
+- **OCIRepository Pattern**: Each app owns its `ocirepository.yaml` (NOT centralized). Use
+  `chartRef` (not `chart.spec.sourceRef`): `chartRef: {kind: OCIRepository, name: app-name}`. No
+  namespace needed in chartRef (same namespace). Structure: `ocirepository.yaml` with
+  `layerSelector`, `ref.tag`, `url: oci://registry/path/chart-name`. Example: rook-ceph,
+  victoria-metrics-k8s-stack
 - **App-Template**: HTTPRoute over Ingress, add `postBuild.substituteFrom: cluster-secrets`
 - **App-Template Service Naming**: Services auto-prefixed with release name when multiple services
   exist. Pattern: `{{ .Release.Name }}-{{ service-identifier }}`. Example: HelmRelease `immich` with
