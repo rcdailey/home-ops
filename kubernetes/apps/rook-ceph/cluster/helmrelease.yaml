@@ -44,7 +44,7 @@ spec:
         # Ceph cluster remains HEALTH_OK, indicating no operational impact
         # See: Intel I219/I225 NICs commonly drop packets with checksum offload enabled
         CephNodeNetworkPacketDrops:
-          expr: "0"
+          disabled: true
 
     ingress:
       dashboard:
