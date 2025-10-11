@@ -717,12 +717,28 @@ Apps using volsync component must provide:
 
 **REQUIRED: Sidecar per app** (separation of concerns, app-owned config, isolated parsing):
 
+**Standard Deployments/StatefulSets:**
+
 ```yaml
 containers:
   app: {}
   vector-sidecar:
     image: {repository: timberio/vector, tag: 0.50.0-alpine}
 ```
+
+**Jobs/CronJobs with RWO volumes:**
+
+```yaml
+initContainers:
+  vector-sidecar:
+    image: {repository: timberio/vector, tag: 0.50.0-alpine}
+    restartPolicy: Always  # Native sidecar - auto-terminates after main container
+```
+
+**CRITICAL**: Jobs/CronJobs using ReadWriteOnce (RWO) PVCs MUST use native sidecar pattern
+(`initContainers` + `restartPolicy: Always`). Without this, sidecar keeps running after job
+completes, preventing RWO volume release and causing Multi-Attach errors on next run. See kometa
+example.
 
 ### Vector Directory Convention (STRICT)
 
