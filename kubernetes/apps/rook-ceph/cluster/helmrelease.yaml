@@ -83,7 +83,7 @@ spec:
         #     metadataDevice: ""
         #     osdsPerDevice: "1"
         - name: "nami"
-          devicePathFilter: "/dev/disk/by-id/ata-CT2000BX500SSD1_2513E9B2B5A5"
+          devicePathFilter: "/dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_S7L9NJ0Y903689D"
           config:
             deviceClass: "ssd"
             metadataDevice: ""

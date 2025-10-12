@@ -41,7 +41,7 @@ nodes:
   - hostname: "nami"
     ipAddress: "192.168.1.50"
     installDiskSelector:
-      model: "CT500MX500SSD4"
+      model: "CT2000BX500SSD1"
     machineSpec:
       secureboot: false
     talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
