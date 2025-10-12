@@ -109,8 +109,6 @@ spec:
   # Enable metrics for monitoring
   metrics:
     enabled: true
-    serviceMonitor:
-      enabled: true
 
   # Update strategy
   updateStrategy:
