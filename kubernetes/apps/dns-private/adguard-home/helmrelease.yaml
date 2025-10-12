@@ -91,9 +91,15 @@ spec:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet:
-                    path: /login.html
-                    port: 3000
+                  exec:
+                    command:
+                    - /bin/sh
+                    - -c
+                    - |
+                      # Test actual DNS functionality via UDP query to localhost
+                      # Query for google.com A record, timeout after 2 seconds
+                      printf '\x00\x1c\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x06google\x03com\x00\x00\x01\x00\x01' | \
+                      timeout 2 nc -u -w1 127.0.0.1 5353 | grep -q . || exit 1
                   initialDelaySeconds: 30
                   periodSeconds: 10
                   timeoutSeconds: 5
