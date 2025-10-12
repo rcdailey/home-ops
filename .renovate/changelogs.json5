@@ -19,11 +19,11 @@
       changelogUrl: "https://docs.python.org/3/whatsnew/changelog.html"
     },
     {
-      description: "CoreDNS - Link to GitHub releases for changelog",
+      description: "CoreDNS - Link to Helm chart releases (not CoreDNS app releases)",
       matchDatasources: ["docker"],
       matchPackageNames: ["ghcr.io/coredns/charts/coredns"],
-      sourceUrl: "https://github.com/coredns/coredns",
-      changelogUrl: "https://github.com/coredns/coredns/releases"
+      sourceUrl: "https://github.com/coredns/helm",
+      changelogUrl: "https://github.com/coredns/helm/releases"
     },
     {
       description: "Elasticsearch - Link to Elastic release notes",
