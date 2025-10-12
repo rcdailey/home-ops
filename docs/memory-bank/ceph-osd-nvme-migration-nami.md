@@ -1,8 +1,8 @@
 # Ceph OSD NVMe Migration - Nami Node
 
 **Date**: 2025-10-11
-**Last Updated**: 2025-10-11
-**Status**: Planning Complete - Awaiting Hardware Delivery
+**Last Updated**: 2025-10-12
+**Status**: Hardware Delivered - Ready for Migration
 
 ## Context
 
@@ -61,17 +61,23 @@ sakura (870 EVO):       13,839s - NO WARNING
 
 ### NUC8i7BEH Storage Capabilities
 
-**Specifications:**
+**CORRECTED Specifications** (verified via physical inspection and talosctl):
 - CPU: Intel Core i7-8559U (8th gen)
 - Storage slots:
-  - 1x M.2 22x42/80 (PCIe NVMe or SATA M.2) - **CURRENTLY EMPTY**
-  - 2x 2.5" SATA bays - **BOTH OCCUPIED**
+  - 1x M.2 22x42/80 (PCIe NVMe or SATA M.2) - **OCCUPIED**
+  - 1x 2.5" SATA bay - **OCCUPIED**
 - Active cooling: CPU fan provides airflow
 
-**Current Configuration:**
-- sda: 500GB MX500 SATA SSD (OS)
-- sdb: 2TB BX500 SATA SSD (OSD.1)
-- M.2 slot: **EMPTY** ← NEW DRIVE DESTINATION
+**CORRECTED Current Configuration:**
+- sda: 500GB MX500 **M.2 SATA** (model: `CT500MX500SSD4`) - OS/system
+- sdb: 2TB BX500 **2.5" SATA** (model: `CT2000BX500SSD1`) - OSD.1
+- M.2 slot: **OCCUPIED by MX500** (not empty as originally documented)
+
+**Critical Discovery:**
+- Original documentation incorrectly stated "2x 2.5" SATA bays"
+- Physical inspection revealed: **1x M.2 slot + 1x 2.5" SATA bay**
+- MX500 is M.2 SATA drive (not 2.5" SATA as assumed)
+- Both interfaces currently occupied, no empty slots available
 
 ## Solution: Add NVMe Drive for New OSD
 
@@ -113,31 +119,53 @@ sakura (870 EVO):       13,839s - NO WARNING
 
 ### Final Configuration
 
-**Post-Migration Setup (3 drives):**
-1. M.2 NVMe: 2TB Samsung 990 Pro → **New OSD (OSD.6 or next available)**
-2. SATA sda: 500GB MX500 → OS/system
-3. SATA sdb: 2TB BX500 → Repurpose (non-critical storage, or remove from Ceph)
+**REVISED Post-Migration Setup (2 drives):**
+1. M.2 NVMe: 2TB Samsung 990 Pro → **New Ceph OSD**
+2. 2.5" SATA: 2TB BX500 → **Talos OS** (reinstalled)
 
-**Total Storage:** 4.5TB on nami node
+**Critical Design Decision:**
+- **990 Pro allocated to Ceph OSD** (not OS) - Correct priority for bottleneck resolution
+- **BX500 allocated to OS** (adequate for Talos, poor for Ceph)
+- **MX500 M.2 SATA removed** - No longer needed after swap
+
+**Rationale:**
+- Talos OS has minimal disk I/O after boot (mostly in-memory operations)
+- Talos ephemeral partition writes are light compared to Ceph OSD workload
+- 990 Pro's superior random I/O performance directly addresses the BX500 bottleneck
+- BX500 adequate for OS/container ephemeral storage (sequential reads, light writes)
+
+**Total Storage:** 4TB on nami node (OS + OSD on separate drives)
 
 ## Migration Plan
 
+**IMPORTANT:** This migration follows procedures documented in:
+- [Ceph OSD Operations Runbook](../runbooks/ceph-osd-operations.md) - Generic OSD add/remove procedures
+- [Talos Node Replacement Runbook](../runbooks/talos-node-replacement.md) - Generic Talos disk replacement
+
+### REVISED Migration Strategy
+
+**Key Changes from Original Plan:**
+1. **Cannot add 990 Pro without removing MX500** - M.2 slot occupied
+2. **Must reinstall Talos OS on BX500** - OS moving from MX500 to BX500
+3. **990 Pro replaces MX500 in M.2 slot** - For Ceph OSD workload
+4. **Requires Talos reinstallation** - Using talhelper + `talosctl apply-config --insecure`
+
 ### Prerequisites
 
-**Physical Installation:**
-1. Power down nami node
-2. Install Samsung 990 Pro 2TB in M.2 slot
-3. Power up nami node
-4. Verify drive detection
+**Required before migration:**
+1. Talos USB installer (bootable USB with Talos ISO)
+2. talhelper installed and configured (`talos/talconfig.yaml` exists)
+3. Access to `talos/clusterconfig/` generated configs
+4. Samsung 990 Pro 2TB NVMe drive
 
-**Verification Commands:**
+**Verification of current disk models:**
 ```bash
-# Check drive is detected
-talosctl -n 192.168.1.50 get disks | rg nvme
+# Current Talos disk detection
+talosctl -e 192.168.1.50 -n 192.168.1.50 get disks
 
-# Get device ID (needed for Rook config)
-talosctl -n 192.168.1.50 get disks | rg nvme
-# Look for: /dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_<SERIAL>
+# Output (verified 2025-10-12):
+# sda: CT500MX500SSD4 (M.2 SATA, OS)
+# sdb: CT2000BX500SSD1 (2.5" SATA, OSD.1)
 ```
 
 ### Current Rook-Ceph Configuration
@@ -178,200 +206,139 @@ storage:
 
 ### Migration Steps
 
-#### Phase 1: Add New NVMe OSD (Day 1 - After Hardware Install)
+#### Phase 1: Drain and Remove Old OSD (Day 1 - Before Physical Swap)
 
-**Step 1: Get Device ID**
+**Reference:** Follow [Removing an OSD](../runbooks/ceph-osd-operations.md#removing-an-osd) procedure.
+
+**Specific parameters for this migration:**
+- OSD to remove: `osd.1`
+- Device: BX500 (ata-CT2000BX500SSD1_2513E9B2B5A5)
+- Node: nami
+
+**Quick reference commands:**
 ```bash
-talosctl -n 192.168.1.50 get disks | rg nvme
-# Expected output includes:
-# nvme0n1   2.0 TB   false   nvme   Samsung_SSD_990_PRO_2TB   <SERIAL>
-# Device ID will be: /dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_<SERIAL>
-```
-
-**Step 2: Add New OSD to Configuration**
-
-Edit `kubernetes/apps/rook-ceph/cluster/helmrelease.yaml`:
-
-```yaml
-storage:
-  useAllNodes: false
-  useAllDevices: false
-  nodes:
-  # Keep existing nami entry for BX500
-  - name: "nami"
-    devicePathFilter: "/dev/disk/by-id/ata-CT2000BX500SSD1_2513E9B2B5A5"
-    config:
-      deviceClass: "ssd"
-      metadataDevice: ""
-      osdsPerDevice: "1"
-  # ADD NEW: nami-nvme entry
-  - name: "nami"
-    devicePathFilter: "/dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_<ACTUAL_SERIAL>"
-    config:
-      deviceClass: "ssd"
-      metadataDevice: ""
-      osdsPerDevice: "1"
-  # ... other nodes unchanged
-```
-
-**Step 3: Validate and Apply**
-```bash
-# Validate configuration
-./scripts/flux-local-test.sh
-pre-commit run --files kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
-
-# Commit and push
-git add kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
-git commit -m "feat(rook-ceph): add Samsung 990 Pro NVMe OSD to nami node"
-git push
-
-# Monitor OSD creation
-kubectl get pods -n rook-ceph -w | rg osd
-
-# Wait for new OSD to appear (will be OSD.6 or next available)
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd tree
-```
-
-**Step 4: Monitor Rebalancing**
-```bash
-# Watch cluster rebalance (automatic)
-watch -n 5 "kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status"
-
-# Monitor OSD utilization
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd df tree
-
-# Check PG migration progress
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph pg dump | rg active+clean | wc -l
-# Should equal 265 (total PGs) when complete
-```
-
-**Expected Timeline:**
-- OSD creation: 5-10 minutes
-- Initial rebalancing: 30-60 minutes (depends on data)
-- Full cluster rebalance: 2-4 hours
-
-**Validation:**
-- New OSD appears in `ceph osd tree` as OSD.6 (or next available)
-- Cluster status: `HEALTH_OK` after rebalancing
-- New OSD receives ~256 PGs (balanced with other OSDs)
-
-#### Phase 2: Remove Old BX500 OSD (Day 2 - After Rebalance Complete)
-
-**Wait Criteria:**
-- Cluster status: `HEALTH_OK`
-- All PGs: `active+clean`
-- Rebalancing complete (check `ceph status` shows no rebalancing)
-- At least 24 hours of stable operation
-
-**Step 1: Reduce OSD.1 Weight (Optional - Gradual Migration)**
-
-If you want gradual data migration before removal:
-```bash
-# Reduce OSD.1 weight to trigger slow rebalancing
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd reweight 1 0.5
-
-# Wait for rebalancing to complete (monitor with ceph status)
-# This will migrate ~128 PGs away from OSD.1
-
-# Further reduce if desired
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd reweight 1 0.25
-```
-
-**Step 2: Mark OSD.1 Out and Remove**
-```bash
-# Mark OSD.1 out (triggers data migration)
+# Mark out and wait for drain
 kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd out 1
 
-# Wait for all PGs to migrate off OSD.1 (can take 1-2 hours)
-watch -n 5 "kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd df tree | rg 'osd.1'"
-# Wait until PGS column shows 0
+# Monitor (wait for PGS = 0)
+watch -n 10 "kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd df tree | rg 'osd.1'"
 
-# Stop OSD.1
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd down 1
+# Verify safe to destroy
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd safe-to-destroy osd.1
 
-# Remove OSD.1 from CRUSH map
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd crush remove osd.1
-
-# Delete OSD.1 authentication
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph auth del osd.1
-
-# Remove OSD.1 from cluster
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd rm 1
-```
-
-**Step 3: Update Rook Configuration**
-
-Edit `kubernetes/apps/rook-ceph/cluster/helmrelease.yaml`:
-
-Remove the BX500 entry:
-```yaml
-# REMOVE THIS ENTIRE BLOCK:
-# - name: "nami"
-#   devicePathFilter: "/dev/disk/by-id/ata-CT2000BX500SSD1_2513E9B2B5A5"
-#   config:
-#     deviceClass: "ssd"
-#     metadataDevice: ""
-#     osdsPerDevice: "1"
-
-# Keep the NVMe entry
-- name: "nami"
-  devicePathFilter: "/dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_<ACTUAL_SERIAL>"
-  config:
-    deviceClass: "ssd"
-    metadataDevice: ""
-    osdsPerDevice: "1"
-```
-
-**Step 4: Validate and Apply**
-```bash
-# Validate configuration
-./scripts/flux-local-test.sh
-pre-commit run --files kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
-
-# Commit and push
-git add kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
-git commit -m "feat(rook-ceph): migrate nami OSD from BX500 SATA to 990 Pro NVMe"
-git push
-```
-
-**Step 5: Physical Cleanup (Optional)**
-```bash
-# Power down nami
-# Remove BX500 drive if no longer needed
-# Or repurpose for non-critical storage
+# Remove from cluster (follow full procedure in runbook)
 ```
 
 **Validation:**
 - OSD.1 removed from `ceph osd tree`
 - Cluster status: `HEALTH_OK`
-- 4 OSDs total (was 5 during migration, now 4)
-- PG distribution balanced across remaining OSDs
+- 3 OSDs remaining (OSD.2, OSD.4, OSD.5)
+
+#### Phase 2: Physical Hardware Swap and Talos Reinstall (Day 1 - After OSD Drain)
+
+**Reference:** Follow [System Disk Replacement](../runbooks/talos-node-replacement.md#system-disk-replacement) procedure.
+
+**Specific parameters for this migration:**
+- Node: nami (192.168.1.50)
+- Old disk: MX500 M.2 SATA (CT500MX500SSD4) - being removed
+- New system disk: BX500 2.5" SATA (CT2000BX500SSD1)
+- Additional disk: 990 Pro M.2 NVMe (replacing MX500 in M.2 slot)
+
+**Physical steps:**
+1. Power down nami: `talosctl -n 192.168.1.50 shutdown`
+2. Remove MX500 from M.2 slot
+3. Install 990 Pro NVMe in M.2 slot
+4. Verify BX500 still connected to SATA port
+5. Boot from Talos USB installer
+
+**Configuration steps:**
+```bash
+# Verify disks in installer
+talosctl disks --insecure --nodes 192.168.1.50
+
+# Update talconfig.yaml installDiskSelector to CT2000BX500SSD1
+# Regenerate configs
+task talos:generate-config
+
+# Apply configuration (follow runbook for full procedure)
+talosctl apply-config --insecure \
+  --nodes 192.168.1.50 \
+  --file talos/clusterconfig/home-ops-nami.yaml
+```
+
+**Expected timeline:**
+- Talos install: 2-5 minutes
+- Boot and rejoin: 3-5 minutes
+- Total downtime: 10-15 minutes
+
+**Validation:**
+- Node status: `Ready`
+- 990 Pro NVMe appears in disk list
+- BX500 shows as system disk
+
+#### Phase 3: Add 990 Pro as New Ceph OSD (Day 1 - After Talos Reinstall)
+
+**Reference:** Follow [Adding an OSD](../runbooks/ceph-osd-operations.md#adding-an-osd) procedure.
+
+**Specific parameters for this migration:**
+- Device: Samsung 990 Pro 2TB NVMe
+- Node: nami
+- Expected OSD ID: OSD.6 (or next available)
+
+**Quick reference:**
+```bash
+# Get device ID
+talosctl -e 192.168.1.50 -n 192.168.1.50 get disks | rg nvme
+
+# Update helmrelease.yaml with devicePathFilter
+# Example: /dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_<SERIAL>
+
+# Validate and commit (follow runbook validation steps)
+./scripts/flux-local-test.sh
+pre-commit run --files kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
+
+# Monitor OSD creation
+kubectl get pods -n rook-ceph -w | rg osd
+```
+
+**Expected timeline:**
+- OSD creation: 5-10 minutes
+- Rebalancing: 2-4 hours
+
+**Validation:**
+- New OSD appears in `ceph osd tree`
+- Cluster status: `HEALTH_OK`
+- 4 OSDs total
+- PG distribution balanced
 
 ### Rollback Plan
 
-If issues occur during migration:
-
-**During Phase 1 (New OSD Addition):**
+**Phase 1 Rollback (OSD Drain Failure):**
 ```bash
-# Remove new OSD immediately if problematic
+# If OSD.1 drain fails or causes issues
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd in 1
+
+# Revert Rook config if already committed
+git revert <commit-hash>
+git push
+```
+
+**Phase 2 Rollback (Talos Install Failure):**
+- Boot from USB installer again
+- Revert `talconfig.yaml` to MX500 model
+- Regenerate configs and reapply
+- **Last resort:** Swap MX500 back into M.2 slot
+
+**Phase 3 Rollback (New OSD Addition Failure):**
+```bash
+# Remove problematic OSD
 kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd out <new-osd-id>
 kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd down <new-osd-id>
 kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd crush remove osd.<new-osd-id>
 kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph auth del osd.<new-osd-id>
 kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd rm <new-osd-id>
 
-# Revert Git changes
-git revert <commit-hash>
-git push
-```
-
-**During Phase 2 (Old OSD Removal):**
-```bash
-# If OSD.1 removal causes issues, add it back
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd in 1
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd up 1
-
-# Restore Git configuration
+# Revert Rook config
 git revert <commit-hash>
 git push
 ```
@@ -574,52 +541,73 @@ kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status
 
 ## Next Steps
 
-**Immediate (Today):**
+**Completed (2025-10-11):**
 - [x] Complete investigation and root cause analysis
 - [x] Document findings and migration plan
 - [x] Purchase Samsung 990 Pro 2TB from Amazon
 - [x] Add temporary anti-affinity rules to reduce nami load
 
-**After Hardware Delivery (Tomorrow):**
-- [ ] Power down nami node
-- [ ] Install Samsung 990 Pro 2TB in M.2 slot
-- [ ] Power up and verify drive detection
-- [ ] Execute Phase 1: Add new OSD to cluster
-- [ ] Monitor rebalancing (2-4 hours)
-- [ ] Validate cluster health and performance
+**Hardware Delivered (2025-10-12):**
+- [x] Samsung 990 Pro 2TB received
+- [x] Physical inspection revealed hardware configuration correction
+- [x] Updated migration plan for Talos reinstallation requirement
 
-**Day 2-3 (After Stable Operation):**
-- [ ] Monitor new OSD performance for 24 hours
-- [ ] Execute Phase 2: Remove old BX500 OSD
-- [ ] Update configuration to remove BX500 entry
-- [ ] Validate final cluster state
+**Ready to Execute (Phase 1 - Ceph Drain):**
+- [ ] Mark OSD.1 out and wait for data migration (1-2 hours)
+- [ ] Verify OSD.1 safe to destroy
+- [ ] Remove OSD.1 from cluster
+- [ ] Update Rook helmrelease.yaml to remove BX500 entry
+- [ ] Validate cluster healthy with 3 OSDs
+
+**Phase 2 - Hardware Swap and Talos Reinstall:**
+- [ ] Power down nami node
+- [ ] Physical swap: Remove MX500 M.2, install 990 Pro M.2
+- [ ] Boot from Talos USB installer
+- [ ] Verify disk detection and note exact model strings
+- [ ] Update `talos/talconfig.yaml` with BX500 model
+- [ ] Regenerate Talos configs with `task talos:generate-config`
+- [ ] Apply config with `talosctl apply-config --insecure`
+- [ ] Verify node rejoins cluster and 990 Pro detected
+
+**Phase 3 - Add New Ceph OSD:**
+- [ ] Get 990 Pro device ID from `talosctl get disks`
+- [ ] Update Rook helmrelease.yaml to add 990 Pro entry
+- [ ] Monitor OSD creation and rebalancing (2-4 hours)
+- [ ] Validate cluster health with 4 OSDs
 - [ ] Confirm `NodeSystemSaturation` alert resolved
 
 **Post-Migration:**
+- [ ] Remove temporary workload anti-affinity rules from helmreleases
+- [ ] Monitor cluster performance for 1 week
 - [ ] Update this document with actual performance metrics
 - [ ] Document any issues encountered
-- [ ] Consider repurposing BX500 for non-critical storage
-- [ ] Monitor cluster performance over 1 week
 
 ## Session Resume Context
 
-**When resuming after hardware installation, Claude should:**
+**Critical Discoveries (2025-10-12):**
+1. **Hardware configuration corrected**: NUC8i7BEH has 1x M.2 + 1x SATA (not 2x SATA)
+2. **M.2 slot occupied**: MX500 M.2 SATA currently installed (not empty as assumed)
+3. **Migration requires Talos reinstall**: OS must move from MX500 to BX500
+4. **talhelper configured**: Can regenerate configs with `task talos:generate-config`
 
-1. Verify drive is detected: `talosctl -n 192.168.1.50 get disks | rg nvme`
-2. Get exact device ID: `/dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_<SERIAL>`
-3. Guide through adding new OSD entry to helmrelease.yaml
-4. Monitor OSD creation and rebalancing
-5. Provide validation commands
-6. Wait for stable operation before OSD.1 removal
+**Disk Models (verified via talosctl):**
+- MX500 M.2 SATA: `CT500MX500SSD4` (will be removed)
+- BX500 2.5" SATA: `CT2000BX500SSD1` (will become OS drive)
+- 990 Pro NVMe: Model TBD after installation
 
-**Critical files to review:**
-- `kubernetes/apps/rook-ceph/cluster/helmrelease.yaml` - OSD configuration
-- This document - Complete migration plan and context
+**Migration Phases:**
+1. **Ceph Drain** (1-2 hours) - Remove OSD.1 from cluster
+2. **Hardware Swap + Talos Reinstall** (15 minutes downtime) - Physical swap, reinstall OS
+3. **Add New OSD** (2-4 hours rebalance) - Add 990 Pro to Ceph
 
-**Expected questions from user:**
-- "Drive is installed, what's the device ID?"
-- "How do I add it to the cluster?"
-- "Is rebalancing complete?"
-- "When can I remove the old OSD?"
+**Critical files to modify:**
+- `talos/talconfig.yaml` - Update installDiskSelector to BX500 model
+- `kubernetes/apps/rook-ceph/cluster/helmrelease.yaml` - Remove BX500, add 990 Pro
 
-**Ready to proceed with Phase 1 migration steps.**
+**Talos Reinstall Research:**
+- Verified `talosctl apply-config --insecure` is correct method
+- Must boot from USB installer first
+- Config preserves node identity (IP, hostname, certs)
+- Install takes 2-5 minutes
+
+**Ready to begin Phase 1 (Ceph OSD drain).**
