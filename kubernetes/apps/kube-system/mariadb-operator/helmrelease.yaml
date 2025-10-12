@@ -50,13 +50,11 @@ spec:
       strategy: rollback
     force: true
   values:
-    # Enable metrics integration with prometheus-operator
+    # Enable metrics integration with VictoriaMetrics Operator
     metrics:
       enabled: true
       serviceMonitor:
         enabled: true
-        additionalLabels:
-          release: kube-prometheus-stack
 
     # Enable cert-manager integration
     webhook:

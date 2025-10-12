@@ -110,7 +110,7 @@ spec:
   metrics:
     enabled: true
     serviceMonitor:
-      prometheusRelease: kube-prometheus-stack
+      enabled: true
 
   # Update strategy
   updateStrategy:
