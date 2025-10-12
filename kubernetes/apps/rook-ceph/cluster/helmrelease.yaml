@@ -54,10 +54,22 @@ spec:
       # Required for ceph_rbd_* metrics (read/write IOPS, throughput, latency)
       # to populate Grafana dashboard panels. Without this, only cluster-level
       # metrics are available and per-PVC RBD performance panels show no data.
+      #
+      # Recovery/backfill tuning for NVMe OSDs (Samsung 990 PRO/970 EVO Plus)
+      # Aggressive settings to prevent backfill_wait queue buildup and slow ops
+      # Default osd_recovery_max_active=1 causes cascading delays with client I/O
+      # Reference: https://docs.ceph.com/en/latest/rados/configuration/osd-config-ref/
       cephConfig:
         global:
           mgr/prometheus/rbd_stats_pools: "ceph-blockpool"
           mgr/prometheus/rbd_stats_pools_refresh_interval: "60"
+          # Backfill/recovery parallelism - balance speed vs client I/O impact
+          osd_max_backfills: "3"
+          osd_recovery_max_active: "12"
+          # Small sleep prevents recovery from monopolizing OSD threads
+          osd_recovery_sleep_ssd: "0.025"
+          # Lower priority vs client I/O (default=3, client ops default to 63)
+          osd_recovery_op_priority: "2"
       cleanupPolicy:
         wipeDevicesFromOtherClusters: false
       mon:
@@ -106,6 +118,16 @@ spec:
             deviceClass: "ssd"
             metadataDevice: ""
             osdsPerDevice: "1"
+      # OSD resource limits - prevent memory pressure during recovery
+      # OSD.2 observed using 1.7GB during backfill operations
+      resources:
+        osd:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
 
     # Storage classes configuration - using defaults
     cephBlockPools:
