@@ -824,6 +824,12 @@ scripts.
 - **test-vector-config.py**: Vector VRL configuration testing
   - Usage: `./scripts/test-vector-config.py <config.yaml> [-v] [--samples <test.json>]`
   - **REQUIRED** for Vector config changes (fail-fast validation)
+- **validate-vmrules.sh**: VMRule CRD syntax validation using vmalert dry-run
+  - Usage: `./scripts/validate-vmrules.sh [path-to-vmrules-directory]`
+- **vmalert-query.py**: Query vmalert API for alert/rule inspection via ephemeral kubectl pods
+  - Usage: `./scripts/vmalert-query.py [firing|pending|inactive|detail <name>|rules|json]`
+- **ceph.sh**: Ceph command convenience wrapper via rook-ceph-tools pod
+  - Usage: `./scripts/ceph.sh <ceph-command>` (e.g., `./scripts/ceph.sh status`)
 - **update-gitignore/**: Modular gitignore generation system
   - Usage: `./scripts/update-gitignore/update.sh`
   - Combines custom patterns from `custom/` with gitignore.io templates
