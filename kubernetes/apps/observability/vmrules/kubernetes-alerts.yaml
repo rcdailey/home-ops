@@ -10,13 +10,13 @@ spec:
     interval: 30s
     rules:
     - alert: PodCrashLooping
-      expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
-      for: 15m
+      expr: rate(kube_pod_container_status_restarts_total[5m]) > 0
+      for: 5m
       labels:
         severity: warning
       annotations:
         summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
-        description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is restarting {{ $value }} times / 15 minutes"
+        description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is restarting {{ $value }} times / 5 minutes"
 
     - alert: PodNotReady
       expr: |
