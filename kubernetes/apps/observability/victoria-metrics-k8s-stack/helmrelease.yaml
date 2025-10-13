@@ -104,6 +104,8 @@ spec:
       spec:
         evaluationInterval: 15s
         selectAllByDefault: true
+        datasource:
+          url: http://vmsingle-victoria-metrics-k8s-stack.observability:8428
         remoteWrite:
           url: http://vmsingle-victoria-metrics-k8s-stack.observability:8428
         remoteRead:

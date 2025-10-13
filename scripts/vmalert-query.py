@@ -7,8 +7,10 @@ import json
 import subprocess
 import sys
 from typing import Any
+from urllib.parse import quote
 
 VMALERT_URL = "http://vmalert-victoria-metrics-k8s-stack.observability:8080"
+VMSINGLE_URL = "http://vmsingle-victoria-metrics-k8s-stack.observability:8428"
 CURL_IMAGE = "curlimages/curl:latest"
 
 COLORS = {
@@ -26,24 +28,32 @@ SEVERITY_COLORS = {
 }
 
 
-def query_vmalert(endpoint: str) -> dict[str, Any]:
-    """Execute query against vmalert API via ephemeral kubectl pod."""
+def kubectl_curl(url: str) -> dict[str, Any]:
+    """Execute curl via rook-ceph-tools pod (used as utility pod, not for Ceph operations)."""
     cmd = [
         "kubectl",
-        "run",
-        f"vmalert-query-{subprocess.os.getpid()}",
-        "--rm",
-        "-i",
-        "--quiet",
-        f"--image={CURL_IMAGE}",
-        "--restart=Never",
+        "exec",
+        "-n",
+        "rook-ceph",
+        "deploy/rook-ceph-tools",
         "--",
         "curl",
         "-s",
-        f"{VMALERT_URL}{endpoint}",
+        url,
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return json.loads(result.stdout)
+
+
+def query_vmalert(endpoint: str) -> dict[str, Any]:
+    """Execute query against vmalert API."""
+    return kubectl_curl(f"{VMALERT_URL}{endpoint}")
+
+
+def query_vmsingle(query: str) -> dict[str, Any]:
+    """Execute PromQL query against VictoriaMetrics."""
+    encoded_query = quote(query)
+    return kubectl_curl(f"{VMSINGLE_URL}/api/v1/query?query={encoded_query}")
 
 
 def colorize(text: str, color: str) -> str:
@@ -163,6 +173,38 @@ def json_output(state: str = "all") -> None:
     print(json.dumps(alerts, indent=2))
 
 
+def alert_history(duration: str) -> None:
+    """Show historical alert firing frequency over specified duration."""
+    print(colorize(f"Querying alert history for last {duration}...\n", "blue"))
+
+    query = f"topk(20, sum(changes(ALERTS{{alertstate=\"firing\"}}[{duration}])) by (alertname,severity))"
+    data = query_vmsingle(query)
+    results = data.get("data", {}).get("result", [])
+
+    if not results:
+        print(colorize(f"No alerts fired in last {duration}", "green"))
+        return
+
+    # Sort by firing count descending
+    results.sort(key=lambda x: float(x["value"][1]), reverse=True)
+
+    print(f"{'Alert Name':<45} {'Severity':<12} {'Fired Count'}")
+    print("-" * 70)
+
+    for result in results:
+        metric = result["metric"]
+        alertname = metric.get("alertname", "Unknown")
+        severity = metric.get("severity", "none")
+        count = int(float(result["value"][1]))
+
+        if count == 0:
+            continue
+
+        color = SEVERITY_COLORS.get(severity, "reset")
+        severity_colored = colorize(f"{severity:<12}", color)
+        print(f"{alertname:<45} {severity_colored} {count}")
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="Query vmalert for alert information")
@@ -180,12 +222,18 @@ def main() -> None:
     json_parser = subparsers.add_parser("json", help="Output raw JSON")
     json_parser.add_argument("state", nargs="?", default="all", help="Filter by state")
 
+    history_parser = subparsers.add_parser(
+        "history", help="Show historical alert firing frequency (e.g., 5m, 1h, 6h, 24h)"
+    )
+    history_parser.add_argument(
+        "duration", nargs="?", default="6h", help="Time duration (default: 6h)"
+    )
+
     args = parser.parse_args()
     command = args.command
 
     try:
         if command is None:
-            # Default: show both firing and pending alerts
             list_alerts()
         elif command == "firing":
             list_alerts(["firing"])
@@ -199,6 +247,8 @@ def main() -> None:
             list_rules()
         elif command == "json":
             json_output(args.state)
+        elif command == "history":
+            alert_history(args.duration)
     except subprocess.CalledProcessError as e:
         print(f"Error querying vmalert: {e}", file=sys.stderr)
         sys.exit(1)
