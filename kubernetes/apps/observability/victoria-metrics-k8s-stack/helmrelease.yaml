@@ -183,8 +183,12 @@ spec:
       groups:
         etcd:
           create: true
+        # general recording rules disabled due to count:up0 producing no data when no targets are down
+        # Recording rule: count(up == 0) without(instance,pod,node)
+        # Returns empty result when all targets healthy, triggering RecordingRulesNoData alert
+        # Same pattern as kubeScheduler - rule designed for dashboards, not critical for operations
         general:
-          create: true
+          create: false
         # kubeScheduler recording rules disabled due to deprecated/removed metrics in Kubernetes 1.27+
         # Summary: Old scheduler histogram metrics don't exist, causing RecordingRulesNoData alerts
         # The new scheduler_scheduling_attempt_duration_seconds metric exists and is being scraped
