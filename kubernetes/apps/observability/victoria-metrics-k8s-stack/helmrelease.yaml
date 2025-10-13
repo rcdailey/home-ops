@@ -161,6 +161,10 @@ spec:
     # Kube-state-metrics
     kube-state-metrics:
       enabled: true
+      metricLabelsAllowlist:
+      - pods=[*]
+      - deployments=[*]
+      - persistentvolumeclaims=[*]
       resources:
         limits:
           memory: 256Mi
