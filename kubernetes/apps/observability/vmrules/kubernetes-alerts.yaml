@@ -42,7 +42,11 @@ spec:
     interval: 30s
     rules:
     - alert: ContainerHighCPU
-      expr: rate(container_cpu_usage_seconds_total{container!="POD",container!=""}[5m]) > 0.8
+      expr: |
+        rate(container_cpu_usage_seconds_total{container!="POD",container!=""}[5m]) > 0.8
+        and on (namespace, pod, container) (
+          container_spec_cpu_quota / container_spec_cpu_period > 0
+        )
       for: 15m
       labels:
         severity: warning
