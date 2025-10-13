@@ -7,6 +7,7 @@ metadata:
   namespace: default
 spec:
   interval: 1h
+  timeout: 10m
   chartRef:
     kind: OCIRepository
     name: app-template
@@ -41,6 +42,49 @@ spec:
         strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
+
+        initContainers:
+          bootstrap-html:
+            image:
+              repository: docker.io/rclone/rclone
+              tag: 1.71@sha256:d5971950c2b370fb04dd3292541b5bda6d9103143fd7e345aeb435a399388afc
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              # Check if already initialized (look for core/classes directory as sentinel)
+              if [ -d "/html/core/classes" ]; then
+                echo "HTML directory already initialized, skipping bootstrap"
+                exit 0
+              fi
+              echo "Initializing HTML directory from S3 bootstrap data..."
+
+              # Download and extract using rclone (configured via env vars)
+              echo "Downloading filerun-html.zip from S3..."
+              rclone copy garage:bootstrap-data/filerun/filerun-html.zip /tmp/ \
+                --multi-thread-streams=4 --buffer-size=64M \
+                --low-level-retries=10 --retries=3 --timeout=10s -vv
+              echo "Extracting files..."
+              unzip -q /tmp/filerun-html.zip -d /html
+              echo "Bootstrap complete"
+            env:
+            - name: RCLONE_CONFIG_GARAGE_TYPE
+              value: s3
+            - name: RCLONE_CONFIG_GARAGE_PROVIDER
+              value: Other
+            - name: RCLONE_CONFIG_GARAGE_ACCESS_KEY_ID
+              value: "${S3_ACCESS_KEY_ID}"
+            - name: RCLONE_CONFIG_GARAGE_SECRET_ACCESS_KEY
+              value: "${S3_SECRET_ACCESS_KEY}"
+            - name: RCLONE_CONFIG_GARAGE_ENDPOINT
+              value: "http://192.168.1.58:3900"
+            - name: RCLONE_CONFIG_GARAGE_REGION
+              value: "${S3_REGION}"
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              allowPrivilegeEscalation: false
 
         containers:
           app:
@@ -320,9 +364,14 @@ spec:
         existingClaim: filerun-html-pvc
         advancedMounts:
           filerun:
+            bootstrap-html:
+            - path: /html
             app:
             - path: /var/www/html
             search-indexer:
+            - path: /var/www/html
+          search-indexer:
+            app:
             - path: /var/www/html
 
       user-files:

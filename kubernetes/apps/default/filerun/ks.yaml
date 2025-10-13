@@ -6,22 +6,17 @@ metadata:
   name: filerun
 spec:
   targetNamespace: default
-  # TEMPORARY: Fast sync for development - change to 5m for production
-  interval: 30s
-  timeout: 10m # TEMPORARY: Longer timeout for init containers
+  interval: 1h
   path: ./kubernetes/apps/default/filerun
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: true # TEMPORARY: Wait for deployment feedback
   decryption:
     provider: sops
     secretRef:
       name: sops-age
-  # TEMPORARY: Force replacement for faster iteration
-  force: true
   commonMetadata:
     labels:
       app.kubernetes.io/name: filerun
