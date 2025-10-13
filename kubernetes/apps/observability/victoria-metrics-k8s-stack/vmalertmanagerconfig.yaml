@@ -30,14 +30,6 @@ spec:
     - receiver: blackhole
       matchers:
       - severity = "none"
-    - receiver: pushover-critical
-      matchers:
-      - severity = "critical"
-      group_wait: 10s
-      repeat_interval: 5m
-    - receiver: pushover
-      matchers:
-      - severity =~ "warning|info"
 
   inhibit_rules:
   - source_matchers:
@@ -69,41 +61,9 @@ spec:
       html: true
       priority: |-
         {{ if eq .Status "firing" }}1{{ else }}0{{ end }}
-      title: >-
-        [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
-      message: |-
-        {{- range .Alerts }}
-          {{- if ne .Annotations.description "" }}
-            {{ .Annotations.description }}
-          {{- else if ne .Annotations.summary "" }}
-            {{ .Annotations.summary }}
-          {{- else if ne .Annotations.message "" }}
-            {{ .Annotations.message }}
-          {{- else }}
-            Alert description not available
-          {{- end }}
-          {{- if gt (len .Labels.SortedPairs) 0 }}
-            <small>
-              {{- range .Labels.SortedPairs }}
-                <b>{{ .Name }}:</b> {{ .Value }}
-              {{- end }}
-            </small>
-          {{- end }}
-        {{- end }}
-
-  - name: pushover-critical
-    pushover_configs:
-    - user_key:
-        name: pushover-secret
-        key: PUSHOVER_USER_KEY
-      token:
-        name: pushover-secret
-        key: PUSHOVER_APP_TOKEN
-      send_resolved: true
-      html: true
-      priority: "2"
-      retry: "60s"
-      expire: "3600s"
+      sound: gamelan
+      ttl: 86400s
+      url_title: View in Alertmanager
       title: >-
         [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
       message: |-
