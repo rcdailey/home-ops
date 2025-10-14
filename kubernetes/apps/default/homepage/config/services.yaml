@@ -93,7 +93,7 @@
       icon: home-assistant
       href: https://ha.${SECRET_DOMAIN}/
       description: Home Automation
-      ping: 192.168.1.55
+      siteMonitor: http://home-assistant.external:8123
 
   - Filerun:
       icon: filerun
@@ -123,7 +123,7 @@
       icon: mdi-sprinkler-variant
       href: https://sprinkler.${SECRET_DOMAIN}/
       description: Irrigation Control
-      siteMonitor: http://192.168.2.108
+      siteMonitor: http://opensprinkler.external:80
 
   - Authelia:
       icon: authelia
