@@ -49,6 +49,12 @@ repos:
     additional_dependencies: ["PyYAML>=6.0"]
     files: '^kubernetes/apps/.*/ks\.yaml$'
     description: Validates that Kubernetes apps using secrets/configmaps have reloader annotations
+  - id: vector-vrl-validator
+    name: Vector VRL Validation
+    entry: scripts/pre-commit/validate-vector-vrl.sh
+    language: script
+    files: '^kubernetes/apps/.*/.*\.(yaml|vrl)$'
+    description: Validates Vector Remap Language (VRL) configurations in HelmReleases and .vrl files
 
 - repo: https://github.com/google/yamlfmt
   rev: v0.17.2
