@@ -14,7 +14,7 @@ spec:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "internal.${SECRET_DOMAIN}"
       # Static IP assignment via Cilium IPAM
-      lbipam.cilium.io/ips: "${INTERNAL_GATEWAY_IP}"
+      lbipam.cilium.io/ips: 192.168.50.72
     parametersRef:
       group: gateway.envoyproxy.io
       kind: EnvoyProxy
