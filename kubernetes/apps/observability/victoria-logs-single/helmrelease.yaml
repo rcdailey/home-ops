@@ -87,10 +87,10 @@ spec:
       - vector-vl-config
       resources:
         limits:
-          memory: 512Mi
+          memory: 1Gi
         requests:
           cpu: 20m
-          memory: 128Mi
+          memory: 256Mi
 
       # Mount VRL files from ConfigMap
       extraVolumes:
@@ -116,9 +116,17 @@ spec:
         sources:
           k8s:
             type: kubernetes_logs
-            # Collect from all namespaces
             # Memory optimization: Use API server cache instead of etcd
             use_apiserver_cache: true
+            # Exclude high-volume, low-value namespaces
+            exclude_paths_glob_patterns:
+            - /var/log/pods/rook-ceph_*/**
+            - /var/log/pods/kube-system_*/**
+            - /var/log/pods/flux-system_*/**
+            - /var/log/pods/cert-manager_*/**
+            # Exclude rotated/compressed log files (only watch current logs)
+            - "**/*.gz"
+            - "**/*.log.[0-9]*"
           internal_metrics:
             type: internal_metrics
 
@@ -127,22 +135,7 @@ spec:
           default_parser:
             type: remap
             inputs: [k8s]
-            source: |
-              # Try to parse JSON logs
-              .log = parse_json(.message) ?? .message
-
-              # Extract app name from pod labels or pod name
-              .app = .kubernetes.pod_labels.app
-              if .app == null && .kubernetes.pod_name != null {
-                .app = split(string!(.kubernetes.pod_name), "-")[0]
-              }
-              .namespace = .kubernetes.pod_namespace
-
-              # Set default level if not present
-              if !exists(.level) {
-                .level = "info"
-                .severity = "info"
-              }
+            file: /etc/vector/vrl/parse-default.vrl
 
           # Filter for kometa logs
           kometa_filter:

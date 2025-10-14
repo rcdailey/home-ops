@@ -56,3 +56,6 @@ if exists(library_match.library) {
 # Add app metadata
 .app = "kometa"
 .namespace = "media"
+
+# Remove entire pod_labels object to eliminate 51+ feature.node.* labels
+.kubernetes = del(.kubernetes.pod_labels)
