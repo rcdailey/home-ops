@@ -1,4 +1,7 @@
 {
   "sops.configPath": ".sops.yaml",
   "sops.defaults.ageKeyFile": "age.key",
+  "[yaml]": {
+    "editor.defaultFormatter": "kennylong.kubernetes-yaml-formatter"
+  }
 }
