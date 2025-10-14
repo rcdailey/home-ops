@@ -124,6 +124,9 @@ spec:
             - /var/log/pods/kube-system_*/**
             - /var/log/pods/flux-system_*/**
             - /var/log/pods/cert-manager_*/**
+            # Exclude rotated/compressed log files (only watch current logs)
+            - "**/*.gz"
+            - "**/*.log.[0-9]*"
           internal_metrics:
             type: internal_metrics
 
