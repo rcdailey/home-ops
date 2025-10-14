@@ -107,10 +107,13 @@ spec:
     sessionAffinity: None
 
   # Enable metrics for monitoring
+  # VictoriaMetrics Operator with selectAllByDefault=true automatically discovers
+  # ServiceMonitors. The prometheusRelease label is compatibility metadata for the
+  # MariaDB operator (not a selector requirement for VictoriaMetrics).
   metrics:
     enabled: true
     serviceMonitor:
-      enabled: true
+      prometheusRelease: kube-prometheus-stack
 
   # Update strategy
   updateStrategy:

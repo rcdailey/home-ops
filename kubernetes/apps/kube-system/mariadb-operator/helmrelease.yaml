@@ -51,10 +51,15 @@ spec:
     force: true
   values:
     # Enable metrics integration with VictoriaMetrics Operator
+    # VictoriaMetrics Operator with selectAllByDefault=true automatically discovers
+    # ServiceMonitors. The 'release' label is compatibility metadata (not a selector
+    # requirement for VictoriaMetrics).
     metrics:
       enabled: true
       serviceMonitor:
         enabled: true
+        additionalLabels:
+          release: kube-prometheus-stack
 
     # Enable cert-manager integration
     webhook:
