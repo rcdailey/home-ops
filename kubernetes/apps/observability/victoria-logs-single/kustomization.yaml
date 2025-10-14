@@ -11,5 +11,6 @@ configMapGenerator:
   options:
     disableNameSuffixHash: true
   files:
+  - parse-default.vrl=./vrl/parse-default.vrl
   - parse-kometa.vrl=./vrl/parse-kometa.vrl
   - parse-qbittorrent.vrl=./vrl/parse-qbittorrent.vrl

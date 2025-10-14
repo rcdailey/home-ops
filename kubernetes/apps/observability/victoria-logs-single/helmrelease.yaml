@@ -135,22 +135,7 @@ spec:
           default_parser:
             type: remap
             inputs: [k8s]
-            source: |
-              # Try to parse JSON logs
-              .log = parse_json(.message) ?? .message
-
-              # Extract app name from pod labels or pod name
-              .app = .kubernetes.pod_labels.app
-              if .app == null && .kubernetes.pod_name != null {
-                .app = split(string!(.kubernetes.pod_name), "-")[0]
-              }
-              .namespace = .kubernetes.pod_namespace
-
-              # Set default level if not present
-              if !exists(.level) {
-                .level = "info"
-                .severity = "info"
-              }
+            file: /etc/vector/vrl/parse-default.vrl
 
           # Filter for kometa logs
           kometa_filter:

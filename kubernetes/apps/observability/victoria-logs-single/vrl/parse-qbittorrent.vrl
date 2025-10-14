@@ -62,3 +62,6 @@ if exists(ip_match.ip) {
 .app = "qbittorrent"
 .namespace = "media"
 .source_type = "qbittorrent"
+
+# Remove entire pod_labels object to eliminate 51+ feature.node.* labels
+.kubernetes = del(.kubernetes.pod_labels)

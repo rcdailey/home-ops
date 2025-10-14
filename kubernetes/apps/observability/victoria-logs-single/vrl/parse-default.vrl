@@ -1,0 +1,23 @@
+# Default parser for all logs (fallback)
+
+# Try to parse JSON logs
+.log = parse_json(.message) ?? .message
+
+# Extract app name from pod labels BEFORE cleanup
+.app = .kubernetes.pod_labels.app
+if .app == null {
+  .app = .kubernetes.pod_labels."app.kubernetes.io/name"
+}
+if .app == null && .kubernetes.pod_name != null {
+  .app = split(string!(.kubernetes.pod_name), "-")[0]
+}
+.namespace = .kubernetes.pod_namespace
+
+# Remove entire pod_labels object to eliminate 51+ feature.node.* labels
+.kubernetes = del(.kubernetes.pod_labels)
+
+# Set default level if not present
+if !exists(.level) {
+  .level = "info"
+  .severity = "info"
+}
