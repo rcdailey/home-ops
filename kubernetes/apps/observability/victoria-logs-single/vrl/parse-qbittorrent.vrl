@@ -1,0 +1,64 @@
+# Extract log level and message from qBittorrent log format
+# Format examples:
+#   (I) 2025-10-14T10:06:32 - Successfully listening on IP. IP: "::1". Port: "UTP/34655"
+#   (N) 2025-10-14T10:06:32 - Restored torrent. Torrent: "Some Torrent Name"
+#   (W) 2025-10-14T10:06:32 - Failed to restore torrent. Files were probably moved...
+
+log_msg = string!(.message)
+
+# Parse structured log format: (LEVEL) TIMESTAMP - message content
+log_match = parse_regex(log_msg, r'\((?P<level>[IWNC])\)\s+(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\s+-\s+(?P<content>.*?)$') ?? {}
+
+# Drop blank messages
+if log_msg == "" {
+  abort
+}
+
+# Extract message content
+if exists(log_match.content) {
+  .message = log_match.content
+} else {
+  .message = log_msg
+}
+
+# Map qBittorrent log levels to standard levels
+if exists(log_match.level) {
+  level_code = string!(log_match.level)
+
+  if level_code == "C" {
+    .level = "critical"
+    .severity = "critical"
+  } else if level_code == "W" {
+    .level = "warning"
+    .severity = "warning"
+  } else if level_code == "N" {
+    .level = "info"
+    .severity = "info"
+  } else if level_code == "I" {
+    .level = "info"
+    .severity = "info"
+  } else {
+    .level = "info"
+    .severity = "info"
+  }
+} else {
+  .level = "info"
+  .severity = "info"
+}
+
+# Extract torrent name if present
+torrent_match = parse_regex(log_msg, r'Torrent:\s+"(?P<torrent>[^"]+)"') ?? {}
+if exists(torrent_match.torrent) {
+  .torrent = torrent_match.torrent
+}
+
+# Extract IP information if present
+ip_match = parse_regex(log_msg, r'IP:\s+"(?P<ip>[^"]+)"') ?? {}
+if exists(ip_match.ip) {
+  .ip = ip_match.ip
+}
+
+# Add app metadata
+.app = "qbittorrent"
+.namespace = "media"
+.source_type = "qbittorrent"

@@ -6,3 +6,10 @@ resources:
 - ./ocirepository.yaml
 - ./helmrelease.yaml
 - ./httproute.yaml
+configMapGenerator:
+- name: victoria-logs-vector-vrl
+  options:
+    disableNameSuffixHash: true
+  files:
+  - parse-kometa.vrl=./vrl/parse-kometa.vrl
+  - parse-qbittorrent.vrl=./vrl/parse-qbittorrent.vrl

@@ -1,5 +1,4 @@
-.log_file = split(string!(.file), "/")[-1]
-
+# Kometa logs to stdout - extract from message field
 log_msg = string!(.message)
 
 # Parse structured log format: [LEVEL] | the message |
