@@ -21,8 +21,8 @@ services:
     - ./configs:/config/configs:ro
     # Map cluster-internal service names to external gateway IP for local resolution
     extra_hosts:
-    - radarr.media:192.168.1.73
-    - radarr-4k.media:192.168.1.73
-    - radarr-anime.media:192.168.1.73
-    - sonarr.media:192.168.1.73
-    - sonarr-anime.media:192.168.1.73
+    - radarr.media:192.168.50.73
+    - radarr-4k.media:192.168.50.73
+    - radarr-anime.media:192.168.50.73
+    - sonarr.media:192.168.50.73
+    - sonarr-anime.media:192.168.50.73

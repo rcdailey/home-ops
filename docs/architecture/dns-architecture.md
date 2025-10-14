@@ -18,7 +18,7 @@ flowchart LR
     subgraph Internal["🏠 Internal Access Path"]
         direction TB
         Client[Home Device<br/>192.168.X.Y]
-        AGH[AdGuard Home<br/>192.168.1.71<br/>🛡️ Filtering + Real IPs]
+        AGH[AdGuard Home<br/>192.168.50.71<br/>🛡️ Filtering + Real IPs]
         UDMP[UDMP Gateway<br/>192.168.1.1<br/>📋 Local DNS Records]
 
         Client --> AGH
@@ -38,8 +38,8 @@ flowchart LR
 
     subgraph ClusterServices["🎯 Cluster Services"]
         direction TB
-        ExtGW[External Gateway<br/>192.168.1.73<br/>🌐 Public Services]
-        IntGW[Internal Gateway<br/>192.168.1.72<br/>🏠 Private Services]
+        ExtGW[External Gateway<br/>192.168.50.73<br/>🌐 Public Services]
+        IntGW[Internal Gateway<br/>192.168.50.72<br/>🏠 Private Services]
     end
 
     %% Internal resolution paths
@@ -76,7 +76,7 @@ flowchart TD
         UniFiExtDNS[UniFi External-DNS<br/>Webhook Provider]
         CFExtDNS[Cloudflare External-DNS<br/>HTTPRoute Provider]
         HTTPRoutes[HTTPRoutes<br/>service.domain.com<br/>internal-app.domain.com]
-        Gateways[Gateways<br/>External: 192.168.1.73<br/>Internal: 192.168.1.72]
+        Gateways[Gateways<br/>External: 192.168.50.73<br/>Internal: 192.168.50.72]
 
         UniFiExtDNS ~~~ CFExtDNS
         CFExtDNS ~~~ HTTPRoutes
@@ -222,7 +222,7 @@ When internet clients query DNS through Cloudflare:
 ### Client IP Preservation
 
 Direct client connections to AdGuard Home eliminate proxy masking:
-- Clients connect directly to AdGuard Home (192.168.1.71)
+- Clients connect directly to AdGuard Home (192.168.50.71)
 - Real source IPs enable VLAN-based filtering rules
 - No UDMP DNS forwarding to mask client identities
 
@@ -288,7 +288,7 @@ filters:
 **Configuration**: `kubernetes/apps/dns-private/dns-gateway/service.yaml`
 
 - **Type**: LoadBalancer
-- **VIP**: `192.168.1.71` (Cilium LBIPAM)
+- **VIP**: `192.168.50.71` (Cilium LBIPAM)
 - **Traffic Policy**: Local
 - **Selector**: `app.kubernetes.io/component: dns-server`
 - **Ports**: TCP/UDP 53 → 5353
@@ -301,12 +301,12 @@ filters:
 ### Envoy Gateway Infrastructure
 
 **External Gateway** (`kubernetes/apps/network/envoy-gateway/external.yaml`):
-- **VIP**: `192.168.1.73`
+- **VIP**: `192.168.50.73`
 - **Target**: `external.domain.com`
 - **Purpose**: WAN/tunnel accessible services
 
 **Internal Gateway** (`kubernetes/apps/network/envoy-gateway/internal.yaml`):
-- **VIP**: `192.168.1.72`
+- **VIP**: `192.168.50.72`
 - **Target**: `internal.domain.com`
 - **Purpose**: LAN-only services
 
@@ -348,8 +348,8 @@ filters:
 
 ```txt
 # Manual entries (infrastructure)
-external.domain.com     A      192.168.1.73
-internal.domain.com     A      192.168.1.72
+external.domain.com     A      192.168.50.73
+internal.domain.com     A      192.168.50.72
 
 # External-DNS managed (Kubernetes services)
 service.domain.com      CNAME  external.domain.com
@@ -438,8 +438,8 @@ HTTPRoutes with `parentRefs: internal` create records only locally:
 ### Gateway Infrastructure Records
 
 - **Cloudflare**: `external.domain.com` → CNAME → `123abcd...cfargotunnel.com`
-- **UDMP**: `external.domain.com` → A → `192.168.1.73`
-- **UDMP**: `internal.domain.com` → A → `192.168.1.72`
+- **UDMP**: `external.domain.com` → A → `192.168.50.73`
+- **UDMP**: `internal.domain.com` → A → `192.168.50.72`
 
 ## Key Design Principles
 

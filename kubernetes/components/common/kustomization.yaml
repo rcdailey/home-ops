@@ -6,4 +6,3 @@ resources:
 - ./namespace.yaml
 - ./repos
 - ./sops
-- ./network-config

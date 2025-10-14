@@ -6,25 +6,12 @@ metadata:
   name: infrastructure-static-pool
 spec:
   # Infrastructure pool: restricted to specific services to prevent unwanted auto-assignment
+  # Dedicated subnet (192.168.50.0/24) for LoadBalancer IPs to enable BGP-only routing
+  # (LoadBalancer IPs on same subnet as nodes/clients require L2 announcements for ARP)
   disabled: false
   blocks:
-  - start: "192.168.1.71" # Start after Talos API (.70)
-    stop: "192.168.1.79" # Infrastructure range end
+  - cidr: 192.168.50.0/24
+  allowFirstLastIPs: "No"
   serviceSelector:
     matchLabels:
       app.kubernetes.io/component: proxy # Infrastructure proxy services
----
-# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliuml2announcementpolicy_v2alpha1.json
-apiVersion: cilium.io/v2alpha1
-kind: CiliumL2AnnouncementPolicy
-metadata:
-  name: l2-policy
-spec:
-  loadBalancerIPs: true
-  # NOTE: interfaces might need to be set if you have more than one active NIC on your hosts
-  # interfaces:
-  #   - ^eno[0-9]+
-  #   - ^eth[0-9]+
-  nodeSelector:
-    matchLabels:
-      kubernetes.io/os: linux

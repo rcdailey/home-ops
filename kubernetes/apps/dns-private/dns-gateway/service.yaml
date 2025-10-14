@@ -15,7 +15,7 @@ metadata:
     # For IP pool selector - marks this as infrastructure proxy service
     app.kubernetes.io/component: proxy
   annotations:
-    lbipam.cilium.io/ips: "${DNS_GATEWAY_IP}"
+    lbipam.cilium.io/ips: 192.168.50.71
 spec:
   type: LoadBalancer
   # Changed from Local to Cluster for issue #27800 workaround

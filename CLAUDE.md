@@ -431,7 +431,7 @@ Kustomize hashes.
 
 - **HTTPRoute ONLY**: HTTPRoute over Ingress, route through existing gateways
 - **LoadBalancer Ban**: NEVER create LoadBalancer without explicit user discussion
-- **Gateway IPs**: Use externalIPs (192.168.1.72 internal, 192.168.1.73 external) not LoadBalancer
+- **Gateway IPs**: Use externalIPs (192.168.50.72 internal, 192.168.50.73 external) not LoadBalancer
 - **External-DNS**: Configure target annotations on Gateways ONLY, never HTTPRoutes. Use
   gateway-httproute source for CNAME inheritance
 - **Route Priority**: Use app-template `route:` blocks for all app-template applications. Only use
@@ -507,8 +507,8 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 ## Cluster Info
 
 - **Network**: `192.168.1.0/24`, Gateway: `192.168.1.1`, API: `192.168.1.70`
-- **Gateways**: DNS `192.168.1.71`, Internal `192.168.1.72`, External `192.168.1.73`
-- **Tunnel**: `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.1.73`
+- **Gateways**: DNS `192.168.50.71`, Internal `192.168.50.72`, External `192.168.50.73`
+- **Tunnel**: `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.50.73`
 
 ### Ceph Toolbox
 
