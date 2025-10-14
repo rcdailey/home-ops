@@ -62,7 +62,6 @@ spec:
       priority: |-
         {{ if eq .Status "firing" }}1{{ else }}0{{ end }}
       sound: gamelan
-      ttl: 86400s
       url_title: View in Alertmanager
       title: >-
         [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
