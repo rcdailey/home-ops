@@ -74,10 +74,10 @@ spec:
                   periodSeconds: 5
             resources:
               requests:
-                cpu: 150m
-                memory: 1536Mi
-              limits:
+                cpu: 200m
                 memory: 4Gi
+              limits:
+                memory: 8Gi
             securityContext:
               runAsUser: 1000
               runAsGroup: 1000
