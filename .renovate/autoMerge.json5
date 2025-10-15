@@ -5,7 +5,7 @@
       description: "Auto-merge GitHub Actions",
       matchManagers: ["github-actions"],
       automerge: true,
-      automergeType: "branch",
+      automergeType: "pr",
       matchUpdateTypes: ["minor", "patch", "digest"],
       minimumReleaseAge: "3 days",
       ignoreTests: true
@@ -14,7 +14,7 @@
       description: "Auto-merge Mise Tools (except Python)",
       matchManagers: ["mise"],
       automerge: true,
-      automergeType: "branch",
+      automergeType: "pr",
       matchUpdateTypes: ["minor", "patch"],
       ignoreTests: true
     },
@@ -26,6 +26,7 @@
       matchManagers: ["mise"],
       matchPackageNames: ["python"],
       automerge: false,
+      automergeType: "pr",
       matchUpdateTypes: ["minor", "major"]
     },
     {
@@ -66,7 +67,7 @@
         "/^docker:\\//"
       ],
       automerge: true,
-      automergeType: "branch",
+      automergeType: "pr",
       matchUpdateTypes: ["minor", "patch", "digest"],
       minimumReleaseAge: "1 minute",
       ignoreTests: true
