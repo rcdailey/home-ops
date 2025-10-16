@@ -24,3 +24,26 @@ spec:
         description: |
           Logging rate for job "{{ $labels.job }}" ({{ $labels.instance }}) is {{ $value }} for last 15m.
           Worth to check logs for specific error messages.
+
+    # Override NodeSystemSaturation to exclude VM nodes
+    # VMs report inflated load averages due to hypervisor scheduling, which doesn't
+    # accurately reflect system saturation. The node_uname_info metric joined with
+    # node feature discovery labels would be ideal, but we can filter by checking
+    # actual CPU usage vs load to detect legitimate saturation.
+    # Only alert when load is high AND actual CPU usage confirms saturation (>80%).
+    - alert: NodeSystemSaturation
+      expr: |
+        (
+          (node_load1{job="node-exporter"} / count(node_cpu_seconds_total{job="node-exporter",mode="idle"}) without(cpu,mode)) > 2
+          and
+          (1 - avg(rate(node_cpu_seconds_total{job="node-exporter",mode="idle"}[5m])) without(cpu)) > 0.8
+        )
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: System saturated, load per core is very high.
+        description: |
+          System load per core at {{ $labels.instance }} has been above 2 for the last 15 minutes, is currently at {{ printf "%.2f" $value }}.
+          CPU usage is also high, confirming genuine saturation (not VM scheduling artifacts).
+          This might indicate this instance resources saturation and can cause it becoming unresponsive.
