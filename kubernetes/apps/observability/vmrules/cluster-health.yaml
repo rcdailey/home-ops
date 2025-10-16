@@ -18,8 +18,15 @@ spec:
         summary: "Node {{ $labels.instance }} is down"
         description: "Node {{ $labels.instance }} has been down for more than 5 minutes"
 
+    # Exclude iowait from CPU usage calculation since high iowait indicates I/O bottleneck,
+    # not actual CPU processing load. iowait represents time CPUs are idle waiting for I/O.
     - alert: NodeHighCPU
-      expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+      expr: |
+        (
+          sum by (instance) (irate(node_cpu_seconds_total{mode!="idle",mode!="iowait"}[5m]))
+          / on (instance) group_left
+          count by (instance) (node_cpu_seconds_total{mode="idle"})
+        ) * 100 > 80
       for: 10m
       labels:
         severity: warning
