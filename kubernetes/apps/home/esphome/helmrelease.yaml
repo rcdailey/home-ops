@@ -29,7 +29,7 @@ spec:
           app:
             image:
               repository: ghcr.io/home-operations/esphome
-              tag: 2025.1.1@sha256:68d2bf2ea40f940fe9f19b2c93b5c53bc3ac81e96d92b2d0e0f5784ca3c16aa5
+              tag: 2025.10.1@sha256:1a136d426f23b3417f63d4e7dd5dcfbb3f98ce863885094d52cd0b5ef9f91231
             env:
               TZ: America/Chicago
               ESPHOME_DASHBOARD_USE_PING: "true"
