@@ -113,47 +113,9 @@ spec:
             resources:
               requests:
                 cpu: 100m
-                memory: 256Mi
+                memory: 512Mi
               limits:
-                memory: 1Gi
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: false
-              capabilities:
-                add:
-                - CHOWN
-                - DAC_OVERRIDE
-                - SETUID
-                - SETGID
-                drop:
-                - ALL
-
-          search-indexer:
-            image:
-              repository: filerun/filerun
-              tag: "8.1"
-            command:
-            - /bin/sh
-            - -c
-            - |
-              while true; do
-                php /var/www/html/cron/process_search_index_queue.php
-                sleep 300
-              done
-            env:
-              FR_DB_HOST: filerun-mariadb
-              FR_DB_PORT: "3306"
-              FR_DB_NAME: filerun
-              FR_DB_USER: filerun
-            envFrom:
-            - secretRef:
-                name: filerun-secret
-            resources:
-              requests:
-                cpu: 10m
-                memory: 64Mi
-              limits:
-                memory: 128Mi
+                memory: 2Gi
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
@@ -367,8 +329,6 @@ spec:
             bootstrap-html:
             - path: /html
             app:
-            - path: /var/www/html
-            search-indexer:
             - path: /var/www/html
           search-indexer:
             app:
