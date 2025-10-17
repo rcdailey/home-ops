@@ -9,3 +9,13 @@ resources:
 - ./externalsecret.yaml
 - ./vmalertmanagerconfig.yaml
 - ./vmrule.yaml
+patches:
+- patch: |
+    apiVersion: operator.victoriametrics.com/v1beta1
+    kind: VMRule
+    metadata:
+      name: victoria-metrics-k8s-stack-kube-prometheus-general.rules
+    $patch: delete
+  target:
+    kind: VMRule
+    name: victoria-metrics-k8s-stack-kube-prometheus-general.rules
