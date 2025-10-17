@@ -22,11 +22,11 @@
       description: Request Movies & Shows
       siteMonitor: http://jellyseerr.media:80
 
-  - Tautulli:
-      icon: tautulli
-      href: https://tautulli.${SECRET_DOMAIN}/
-      description: Plex Statistics
-      siteMonitor: http://tautulli.media:8181
+  - Prowlarr:
+      icon: prowlarr
+      href: https://prowlarr.${SECRET_DOMAIN}/
+      description: Indexer Management
+      siteMonitor: http://prowlarr.media:9696
 
   - Sonarr:
       icon: sonarr
@@ -58,12 +58,6 @@
       description: Anime Movie Management
       siteMonitor: http://radarr-anime.media:7878
 
-  - Prowlarr:
-      icon: prowlarr
-      href: https://prowlarr.${SECRET_DOMAIN}/
-      description: Indexer Management
-      siteMonitor: http://prowlarr.media:9696
-
   - Sabnzbd:
       icon: sabnzbd
       href: https://nzb.${SECRET_DOMAIN}/
@@ -88,7 +82,13 @@
       description: Subtitle Management
       siteMonitor: http://bazarr.media:6767
 
-- Services:
+  - Tautulli:
+      icon: tautulli
+      href: https://tautulli.${SECRET_DOMAIN}/
+      description: Plex Statistics
+      siteMonitor: http://tautulli.media:8181
+
+- Home & IoT:
   - Home Assistant:
       icon: home-assistant
       href: https://ha.${SECRET_DOMAIN}/
@@ -107,6 +107,13 @@
       description: Z-Wave Device Manager
       siteMonitor: http://zwave-js-ui.home:80
 
+  - Open Sprinkler:
+      icon: mdi-sprinkler-variant
+      href: https://sprinkler.${SECRET_DOMAIN}/
+      description: Irrigation Control
+      siteMonitor: http://opensprinkler.external:80
+
+- Storage & Productivity:
   - Filerun:
       icon: filerun
       href: https://cloud.${SECRET_DOMAIN}/
@@ -119,29 +126,11 @@
       description: Photo Management
       siteMonitor: http://immich-server.default:2283
 
-  - AdGuard Home:
-      icon: adguard-home
-      href: https://dns.${SECRET_DOMAIN}/
-      description: DNS Filtering
-      siteMonitor: http://adguard-home-primary.dns-private:3000
-
-  - BookStack (Wiki):
+  - BookStack:
       icon: bookstack
       href: https://wiki.${SECRET_DOMAIN}/
       description: Documentation Wiki
       siteMonitor: http://bookstack.default:8080/status
-
-  - Open Sprinkler:
-      icon: mdi-sprinkler-variant
-      href: https://sprinkler.${SECRET_DOMAIN}/
-      description: Irrigation Control
-      siteMonitor: http://opensprinkler.external:80
-
-  - Authelia:
-      icon: authelia
-      href: https://auth.${SECRET_DOMAIN}/
-      description: Authentication Gateway
-      siteMonitor: http://authelia-app.default:9091
 
   - SilverBullet:
       icon: silverbullet
@@ -149,17 +138,30 @@
       description: Note-Taking & Knowledge Base
       siteMonitor: http://silverbullet.default:3000
 
-  - AdGuard Home Sync:
-      icon: adguard-home
-      href: https://dns-sync.${SECRET_DOMAIN}/
-      description: DNS Sync Dashboard
-      siteMonitor: http://adguard-home-sync.dns-private:8080
-
   - Kopia:
       icon: mdi-backup-restore
       href: https://kopia.${SECRET_DOMAIN}/
       description: Backup Server
       siteMonitor: http://kopia.storage:80
+
+- Infrastructure:
+  - AdGuard Home:
+      icon: adguard-home
+      href: https://dns.${SECRET_DOMAIN}/
+      description: DNS Filtering
+      siteMonitor: http://adguard-home-primary.dns-private:3000
+
+  - AdGuard Sync:
+      icon: adguard-home
+      href: https://dns-sync.${SECRET_DOMAIN}/
+      description: DNS Sync Dashboard
+      siteMonitor: http://adguard-home-sync.dns-private:8080
+
+  - Authelia:
+      icon: authelia
+      href: https://auth.${SECRET_DOMAIN}/
+      description: Authentication Gateway
+      siteMonitor: http://authelia-app.default:9091
 
 - Observability:
   - Grafana:
