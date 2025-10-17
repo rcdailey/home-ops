@@ -96,6 +96,16 @@ spec:
             app:
             - path: /config
 
+      vue3-config:
+        type: configMap
+        name: esphome-config
+        advancedMounts:
+          esphome:
+            app:
+            - path: /config/vue3.yaml
+              subPath: vue3.yaml
+              readOnly: true
+
       tmp:
         type: emptyDir
         advancedMounts:

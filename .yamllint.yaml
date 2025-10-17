@@ -1,6 +1,9 @@
 # yamllint configuration for Kubernetes manifests
 extends: default
 
+ignore: |
+  kubernetes/apps/home/esphome/config/
+
 rules:
   # Allow longer lines for Kubernetes manifests (schema URLs, etc.)
   line-length:
