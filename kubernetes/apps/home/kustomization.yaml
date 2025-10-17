@@ -2,8 +2,11 @@
 # yaml-language-server: $schema=https://www.schemastore.org/kustomization.json
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: external
+namespace: home
 components:
 - ../../components/common
+- ../../components/drift-detection
 resources:
-- ./opensprinkler/ks.yaml
+- ./home-assistant/ks.yaml
+- ./zwave-js-ui/ks.yaml
+- ./esphome/ks.yaml

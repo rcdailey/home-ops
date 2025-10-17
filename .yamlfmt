@@ -1,3 +1,6 @@
+exclude:
+  - kubernetes/apps/home/esphome/config/
+
 formatter:
   type: basic
   indent: 2

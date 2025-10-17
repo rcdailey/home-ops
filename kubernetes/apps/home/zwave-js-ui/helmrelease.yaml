@@ -1,0 +1,125 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: zwave-js-ui
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  maxHistory: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      zwave-js-ui:
+        replicas: 1
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          # TODO: Determine which node has the USB device and update this
+          # affinity:
+          #   nodeAffinity:
+          #     requiredDuringSchedulingIgnoredDuringExecution:
+          #       nodeSelectorTerms:
+          #       - matchExpressions:
+          #         - key: kubernetes.io/hostname
+          #           operator: In
+          #           values:
+          #           - rias
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/zwave-js/zwave-js-ui
+              tag: 11.5.2@sha256:0fc5d18604b43eb75227e16ce108f7297b905d6095113890318c3fcd37b0284a
+            env:
+              TZ: America/Chicago
+              PORT: &port 80
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+            # TODO: USB device passthrough requires privileged security context
+            # Uncomment when USB device path is confirmed
+            # securityContext:
+            #   privileged: true
+            resources:
+              requests:
+                cpu: 10m
+                memory: 256Mi
+              limits:
+                memory: 512Mi
+
+    service:
+      app:
+        controller: zwave-js-ui
+        ports:
+          http:
+            port: *port
+          websocket:
+            port: 3000
+
+    route:
+      app:
+        hostnames:
+        - zwave.${SECRET_DOMAIN}
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: zwave-js-ui
+            port: 80
+
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: zwave-js-ui
+        advancedMounts:
+          zwave-js-ui:
+            app:
+            - path: /usr/src/app/store
+            - path: /data
+
+      # TODO: USB device passthrough
+      # Uncomment and update path when USB device location is confirmed
+      # usb:
+      #   type: hostPath
+      #   hostPath: /dev/serial/by-id/usb-<YOUR-ZWAVE-DEVICE-ID>
+      #   hostPathType: CharDevice
+      #   advancedMounts:
+      #     zwave-js-ui:
+      #       app:
+      #       - path: /dev/ttyACM0
+
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          zwave-js-ui:
+            app:
+            - path: /tmp

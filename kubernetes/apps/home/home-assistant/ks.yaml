@@ -5,24 +5,30 @@ kind: Kustomization
 metadata:
   name: &app home-assistant
 spec:
-  targetNamespace: external
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-  - name: envoy-gateway
-    namespace: network
-  path: ./kubernetes/apps/external/home-assistant
+  - name: multus
+    namespace: kube-system
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  - name: zwave-js-ui
+  interval: 1h
+  path: ./kubernetes/apps/home/home-assistant
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
+  targetNamespace: home
+  timeout: 5m
+  wait: false
   postBuild:
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
-  wait: false
-  interval: 30m
-  retryInterval: 1m
-  timeout: 5m
+    substitute:
+      APP: home-assistant
+      VOLSYNC_PVC: home-assistant

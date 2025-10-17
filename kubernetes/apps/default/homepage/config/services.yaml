@@ -93,7 +93,19 @@
       icon: home-assistant
       href: https://ha.${SECRET_DOMAIN}/
       description: Home Automation
-      siteMonitor: http://home-assistant.external:8123
+      siteMonitor: http://home-assistant.home:8123
+
+  - ESPHome:
+      icon: esphome
+      href: https://esphome.${SECRET_DOMAIN}/
+      description: ESP Device Manager
+      siteMonitor: http://esphome.home:6052
+
+  - Z-Wave JS UI:
+      icon: zwave
+      href: https://zwave.${SECRET_DOMAIN}/
+      description: Z-Wave Device Manager
+      siteMonitor: http://zwave-js-ui.home:80
 
   - Filerun:
       icon: filerun
