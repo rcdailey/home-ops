@@ -106,6 +106,27 @@ endpoints:
   conditions:
   - "[STATUS] == 200"
 
+- name: Home Assistant
+  group: home
+  url: http://home-assistant.home:8123
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: ESPHome
+  group: home
+  url: http://esphome.home:6052
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Z-Wave JS UI
+  group: home
+  url: http://zwave-js-ui.home:80/health
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
 external-endpoints:
 - name: Heartbeat
   token: ${GATUS_HEARTBEAT_TOKEN}

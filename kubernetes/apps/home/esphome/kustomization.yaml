@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+components:
+- ../../../components/volsync
+resources:
+- ../../../components/common/repos/app-template
+- ./helmrelease.yaml
+- ./pvc.yaml
+configMapGenerator:
+- name: esphome-config
+  files:
+  - vue3.yaml=./config/vue3.yaml
+generatorOptions:
+  disableNameSuffixHash: true
