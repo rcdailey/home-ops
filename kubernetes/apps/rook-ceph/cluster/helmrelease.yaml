@@ -91,13 +91,12 @@ spec:
         useAllNodes: false
         useAllDevices: false
         nodes:
-        # Temporarily disabled for bare metal reprovisioning
-        # - name: "rias"
-        #   devicePathFilter: "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi2"
-        #   config:
-        #     deviceClass: "ssd"
-        #     metadataDevice: ""
-        #     osdsPerDevice: "1"
+        - name: "lucy"
+          devicePathFilter: "/dev/disk/by-id/nvme-CT2000P3PSSD8_2510E9ACCA3D"
+          config:
+            deviceClass: "ssd"
+            metadataDevice: ""
+            osdsPerDevice: "1"
         - name: "nami"
           devicePathFilter: "/dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_S7L9NJ0Y903689D"
           config:

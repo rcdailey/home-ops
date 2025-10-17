@@ -27,7 +27,7 @@ flowchart TB
 
     subgraph K8S["K8s Cluster"]
         direction TB
-        CP1[Control Plane: rias<br/>192.168.1.61]
+        CP1[Worker: lucy<br/>192.168.1.54]
         CP2[Control Plane: nami<br/>192.168.1.50]
         CP3[Control Plane: marin<br/>192.168.1.59]
         W1[Worker: sakura<br/>192.168.1.62]
