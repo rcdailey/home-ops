@@ -7,10 +7,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  dataSourceRef:
-    apiGroup: volsync.backube
-    kind: ReplicationSource
-    name: home-assistant
   resources:
     requests:
       storage: 10Gi

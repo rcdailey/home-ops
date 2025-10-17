@@ -7,10 +7,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  dataSourceRef:
-    apiGroup: volsync.backube
-    kind: ReplicationSource
-    name: esphome
   resources:
     requests:
       storage: 2Gi
