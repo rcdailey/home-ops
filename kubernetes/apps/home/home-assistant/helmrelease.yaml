@@ -1,0 +1,117 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: home-assistant
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  maxHistory: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      home-assistant:
+        replicas: 0
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/home-operations/home-assistant
+              tag: 2025.10.2@sha256:7f38ac027c09d5bc21f2e9cb5c2356dad46d356ae2f41a4e3acd8d8320e8f1eb
+            env:
+              TZ: America/Chicago
+              HASS_HTTP_TRUSTED_PROXY_1: 192.168.1.0/24
+              HASS_HTTP_TRUSTED_PROXY_2: 10.42.0.0/16
+            envFrom:
+            - secretRef:
+                name: home-assistant-secret
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 5
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 4Gi
+
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+    service:
+      app:
+        controller: home-assistant
+        ports:
+          http:
+            appProtocol: kubernetes.io/ws
+            port: 8123
+
+    route:
+      app:
+        hostnames:
+        - hass.${SECRET_DOMAIN}
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: home-assistant-app
+            port: 8123
+
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: home-assistant
+        advancedMounts:
+          home-assistant:
+            app:
+            - path: /config
+
+      config-cache:
+        type: persistentVolumeClaim
+        existingClaim: home-assistant-cache
+        advancedMounts:
+          home-assistant:
+            app:
+            - path: /config/.venv
+
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          home-assistant:
+            app:
+            - path: /tmp

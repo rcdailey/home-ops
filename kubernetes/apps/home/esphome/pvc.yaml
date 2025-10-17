@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/v1/persistentvolumeclaim.json
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: esphome
+spec:
+  accessModes:
+  - ReadWriteOnce
+  dataSourceRef:
+    apiGroup: volsync.backube
+    kind: ReplicationSource
+    name: esphome
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: ceph-block
