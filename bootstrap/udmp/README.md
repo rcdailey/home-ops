@@ -14,7 +14,7 @@ BGP configuration for Cilium LB-IPAM integration with UniFi Dream Machine Pro.
 
 Control plane nodes:
 
-- rias: 192.168.1.61
+- lucy: 192.168.1.54
 - nami: 192.168.1.50
 - marin: 192.168.1.59
 

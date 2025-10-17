@@ -544,7 +544,7 @@ kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd unmap -o force /dev/rbd/
 ### Nodes
 
 - **Control Plane**:
-  - rias: `192.168.1.61` (VM)
+  - lucy: `192.168.1.54` (physical)
   - nami: `192.168.1.50` (NUC)
   - marin: `192.168.1.59` (NUC)
 - **Workers**:
