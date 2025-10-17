@@ -28,6 +28,13 @@ spec:
     # Note: Default maxLabelsPerTimeseries (30) is sufficient with proper label filtering
     # High cardinality addressed by dropping NFD labels in relabelConfigs (not metricRelabelConfigs)
     # This ensures the synthetic "up" metric also has filtered labels, preventing rejection
+    #
+    # Memory sizing rationale (2025-10-17):
+    # - Increased from 2Gi to 4Gi to resolve query timeout issues
+    # - 2Gi limit caused 86% memory usage, triggering "timeout exceeded while fetching data block" errors
+    # - VictoriaMetrics official docs recommend 4-10Gi for production workloads
+    # - Default -memory.allowedPercent is 60% of container limit for internal caches
+    # - Next steps if issues persist: tune query limits via extraArgs (-search.maxQueryDuration, -search.maxMemoryPerQuery)
     vmsingle:
       enabled: true
       spec:
@@ -42,7 +49,7 @@ spec:
           storageClassName: ceph-block
         resources:
           limits:
-            memory: 2Gi
+            memory: 4Gi
           requests:
             cpu: 100m
             memory: 512Mi
