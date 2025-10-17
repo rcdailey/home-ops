@@ -26,21 +26,25 @@ spec:
           reloader.stakater.com/auto: "true"
 
         pod:
-          # TODO: Determine which node has the USB device and update this
-          # affinity:
-          #   nodeAffinity:
-          #     requiredDuringSchedulingIgnoredDuringExecution:
-          #       nodeSelectorTerms:
-          #       - matchExpressions:
-          #         - key: kubernetes.io/hostname
-          #           operator: In
-          #           values:
-          #           - lucy
+          # TODO-ZWAVE-NETWORK-CONTROLLER: TEMPORARY node affinity for USB Z-Wave controller
+          # Remove this affinity section when network-enabled Z-Wave controller arrives
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                    - lucy
+          # TODO-ZWAVE-NETWORK-CONTROLLER: TEMPORARY pod security context for USB access
+          # Remove these settings when network-enabled Z-Wave controller arrives
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
+          terminationGracePeriodSeconds: 5
 
         containers:
           app:
@@ -63,10 +67,10 @@ spec:
                   timeoutSeconds: 1
                   failureThreshold: 3
               readiness: *probes
-            # TODO: USB device passthrough requires privileged security context
-            # Uncomment when USB device path is confirmed
-            # securityContext:
-            #   privileged: true
+            # TODO-ZWAVE-NETWORK-CONTROLLER: TEMPORARY privileged mode for USB access
+            # Remove this securityContext when network-enabled Z-Wave controller arrives
+            securityContext:
+              privileged: true
             resources:
               requests:
                 cpu: 10m
@@ -106,16 +110,16 @@ spec:
             - path: /usr/src/app/store
             - path: /data
 
-      # TODO: USB device passthrough
-      # Uncomment and update path when USB device location is confirmed
-      # usb:
-      #   type: hostPath
-      #   hostPath: /dev/serial/by-id/usb-<YOUR-ZWAVE-DEVICE-ID>
-      #   hostPathType: CharDevice
-      #   advancedMounts:
-      #     zwave-js-ui:
-      #       app:
-      #       - path: /dev/ttyACM0
+      # TODO-ZWAVE-NETWORK-CONTROLLER: TEMPORARY USB device passthrough
+      # Remove this entire usb volume when network-enabled Z-Wave controller arrives
+      usb:
+        type: hostPath
+        hostPath: /dev/zwave
+        hostPathType: CharDevice
+        advancedMounts:
+          zwave-js-ui:
+            app:
+            - path: /dev/ttyACM0
 
       tmp:
         type: emptyDir
