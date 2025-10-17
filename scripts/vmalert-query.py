@@ -173,36 +173,69 @@ def json_output(state: str = "all") -> None:
     print(json.dumps(alerts, indent=2))
 
 
-def alert_history(duration: str) -> None:
+def alert_history(duration: str, alert_name: str | None = None) -> None:
     """Show historical alert firing frequency over specified duration."""
-    print(colorize(f"Querying alert history for last {duration}...\n", "blue"))
+    title = f"Querying alert history for last {duration}"
+    if alert_name:
+        title += f" (filtered by {alert_name})"
+    print(colorize(f"{title}...\n", "blue"))
 
-    query = f"topk(20, sum(changes(ALERTS{{alertstate=\"firing\"}}[{duration}])) by (alertname,severity))"
+    # Build query with optional alert name filter
+    if alert_name:
+        query = f'sum(changes(ALERTS{{alertstate="firing",alertname="{alert_name}"}}[{duration}])) by (alertname,severity,instance,namespace,job,pod,node)'
+    else:
+        query = f"topk(20, sum(changes(ALERTS{{alertstate=\"firing\"}}[{duration}])) by (alertname,severity))"
+
     data = query_vmsingle(query)
     results = data.get("data", {}).get("result", [])
 
     if not results:
-        print(colorize(f"No alerts fired in last {duration}", "green"))
+        filter_msg = f" for alert '{alert_name}'" if alert_name else ""
+        print(colorize(f"No alerts fired in last {duration}{filter_msg}", "green"))
         return
 
     # Sort by firing count descending
     results.sort(key=lambda x: float(x["value"][1]), reverse=True)
 
-    print(f"{'Alert Name':<45} {'Severity':<12} {'Fired Count'}")
-    print("-" * 70)
+    if alert_name:
+        # Detailed view with all labels when filtering by alert name
+        for result in results:
+            metric = result["metric"]
+            count = int(float(result["value"][1]))
 
-    for result in results:
-        metric = result["metric"]
-        alertname = metric.get("alertname", "Unknown")
-        severity = metric.get("severity", "none")
-        count = int(float(result["value"][1]))
+            if count == 0:
+                continue
 
-        if count == 0:
-            continue
+            alertname = metric.get("alertname", "Unknown")
+            severity = metric.get("severity", "none")
+            color = SEVERITY_COLORS.get(severity, "reset")
 
-        color = SEVERITY_COLORS.get(severity, "reset")
-        severity_colored = colorize(f"{severity:<12}", color)
-        print(f"{alertname:<45} {severity_colored} {count}")
+            print(colorize(f"[{severity}]", color), f"{alertname} - Fired {count} times")
+
+            # Show relevant labels
+            relevant_labels = format_labels(metric, exclude={"alertname", "severity", "__name__"})
+            if relevant_labels:
+                print("  Labels:")
+                for label in relevant_labels:
+                    print(f"    {label}")
+            print()
+    else:
+        # Summary view when showing all alerts
+        print(f"{'Alert Name':<45} {'Severity':<12} {'Fired Count'}")
+        print("-" * 70)
+
+        for result in results:
+            metric = result["metric"]
+            alertname = metric.get("alertname", "Unknown")
+            severity = metric.get("severity", "none")
+            count = int(float(result["value"][1]))
+
+            if count == 0:
+                continue
+
+            color = SEVERITY_COLORS.get(severity, "reset")
+            severity_colored = colorize(f"{severity:<12}", color)
+            print(f"{alertname:<45} {severity_colored} {count}")
 
 
 def main() -> None:
@@ -228,6 +261,9 @@ def main() -> None:
     history_parser.add_argument(
         "duration", nargs="?", default="6h", help="Time duration (default: 6h)"
     )
+    history_parser.add_argument(
+        "--alert", "-a", help="Filter history by specific alert name"
+    )
 
     args = parser.parse_args()
     command = args.command
@@ -248,7 +284,7 @@ def main() -> None:
         elif command == "json":
             json_output(args.state)
         elif command == "history":
-            alert_history(args.duration)
+            alert_history(args.duration, args.alert)
     except subprocess.CalledProcessError as e:
         print(f"Error querying vmalert: {e}", file=sys.stderr)
         sys.exit(1)
