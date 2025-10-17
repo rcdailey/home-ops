@@ -486,6 +486,11 @@ Kustomize hashes.
 
 Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfile, mise, talhelper.
 
+### Renovate
+
+- **Bot Name**: `renohate[bot]` (intentional name, not a typo)
+- **Config**: `renovate.json5` at repo root, modular configs in `.renovate/`
+
 ## Essential Commands
 
 - **Setup**: `mise trust .mise.toml && mise install`
