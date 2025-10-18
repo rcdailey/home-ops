@@ -169,6 +169,8 @@ spec:
         - name: external
           namespace: network
           sectionName: https
+        timeouts:
+          request: 5m
 
     service:
       app:
