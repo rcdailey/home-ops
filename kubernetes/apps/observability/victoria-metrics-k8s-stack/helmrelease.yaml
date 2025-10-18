@@ -10,6 +10,32 @@ spec:
   chartRef:
     kind: OCIRepository
     name: victoria-metrics-k8s-stack
+  # WORKAROUND: Chart bug - defaultRules.groups.general.create: false doesn't prevent VMRule creation
+  # The chart creates victoria-metrics-k8s-stack-kube-prometheus-general.rules regardless of create: false setting
+  #
+  # WHY this is needed:
+  # - Recording rule count:up0 expression: count(up == 0) without(instance,pod,node)
+  # - Returns empty result when all targets healthy (no targets with up == 0)
+  # - Empty results are EXPECTED BEHAVIOR in Prometheus/VictoriaMetrics - not a bug
+  # - This triggers RecordingRulesNoData info alerts during normal healthy operations
+  #
+  # ALTERNATIVES considered:
+  # - Modify rule expression to: count(up == 0) without(...) OR on() vector(0)
+  #   Would always produce output (0 when healthy) but chart doesn't expose rule customization
+  # - Use defaultRules.disabled config - doesn't work for entire rule groups
+  #
+  # WHEN to reconsider:
+  # - Chart fixes create: false configuration (upstream issue #517, #1123)
+  # - Chart exposes per-rule expression customization
+  # - Recording rules become operationally critical (currently optional dashboard optimizations)
+  postRenderers:
+  - kustomize:
+      patches:
+      - target:
+          kind: VMRule
+          name: victoria-metrics-k8s-stack-kube-prometheus-general.rules
+        patch: |
+          $patch: delete
   install:
     crds: CreateReplace
     remediation:
