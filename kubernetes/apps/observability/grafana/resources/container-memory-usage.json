@@ -1,0 +1,408 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Container memory usage and utilization analysis for all containers in a namespace",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "VictoriaMetrics"
+      },
+      "description": "Shows current working memory usage for all containers in the selected namespace",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Memory",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "${__field.labels.pod_short} - ${__field.labels.container}"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true,
+          "width": 400
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "label_replace(\n  max(\n    container_memory_working_set_bytes{namespace=\"$namespace\", image!=\"\", container!=\"\"}\n    * on(namespace, pod) group_left()\n    (kube_pod_status_phase{phase=\"Running\"} == 1)\n  ) by (pod, container),\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
+          "interval": "",
+          "legendFormat": "{{pod_short}} - {{container}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Container Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "VictoriaMetrics"
+      },
+      "description": "Shows memory utilization percentage for containers. Red (>80%) indicates containers near limits that may need increases. Green (<50%) indicates potential for limit reductions.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Container"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Current Usage"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory Limit"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Utilization %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Utilization %"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "label_replace(\n  (\n    sum(\n      container_memory_working_set_bytes{namespace=\"$namespace\", image!=\"\", container!=\"\"}\n      * on(namespace, pod) group_left()\n      (kube_pod_status_phase{phase=\"Running\"} == 1)\n    ) by (pod, container)\n    /\n    sum(\n      kube_pod_container_resource_limits{namespace=\"$namespace\", resource=\"memory\"}\n      * on(namespace, pod) group_left()\n      (kube_pod_status_phase{phase=\"Running\"} == 1)\n    ) by (pod, container)\n  ) * 100,\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "__auto",
+          "refId": "Utilization"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "label_replace(\n  sum(\n    container_memory_working_set_bytes{namespace=\"$namespace\", image!=\"\", container!=\"\"}\n    * on(namespace, pod) group_left()\n    (kube_pod_status_phase{phase=\"Running\"} == 1)\n  ) by (pod, container),\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "__auto",
+          "refId": "Usage"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "label_replace(\n  sum(\n    kube_pod_container_resource_limits{namespace=\"$namespace\", resource=\"memory\"}\n    * on(namespace, pod) group_left()\n    (kube_pod_status_phase{phase=\"Running\"} == 1)\n  ) by (pod, container),\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "__auto",
+          "refId": "Limit"
+        }
+      ],
+      "title": "Container Memory Utilization",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "pod": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "Time": 0,
+              "Value #Limit": 5,
+              "Value #Usage": 4,
+              "Value #Utilization": 6,
+              "container": 1,
+              "pod": 2,
+              "pod_short": 3
+            },
+            "renameByName": {
+              "Value #Limit": "Memory Limit",
+              "Value #Usage": "Current Usage",
+              "Value #Utilization": "Utilization %",
+              "container": "Container",
+              "pod_short": "Pod"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 42,
+  "tags": [
+    "Kubernetes",
+    "Memory",
+    "Containers"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "default",
+          "value": "default"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "VictoriaMetrics"
+        },
+        "definition": "label_values(kube_pod_info, namespace)",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "query": "label_values(kube_pod_info, namespace)",
+          "refId": "VictoriaMetrics-namespace-Variable-Query"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Container Memory Usage",
+  "uid": "container_memory_usage",
+  "version": 1
+}
