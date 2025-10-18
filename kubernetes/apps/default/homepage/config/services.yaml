@@ -102,7 +102,7 @@
       siteMonitor: http://esphome.home:6052
 
   - Z-Wave JS UI:
-      icon: zwave
+      icon: mdi-z-wave
       href: https://zwave.${SECRET_DOMAIN}/
       description: Z-Wave Device Manager
       siteMonitor: http://zwave-js-ui.home:80
