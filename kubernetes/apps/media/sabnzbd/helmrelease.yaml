@@ -69,8 +69,13 @@ spec:
                     port: *port
                   initialDelaySeconds: 0
                   periodSeconds: 10
-                  timeoutSeconds: 5
-                  failureThreshold: 3
+                  # IMPORTANT: Increased timeout and failure threshold for I/O-heavy operations
+                  # Sabnzbd becomes unresponsive during large archive extraction (unrar/par2)
+                  # Heavy I/O causes API endpoint timeouts, triggering false-positive probe failures
+                  # Default 1s timeout insufficient - observed connection refused/reset during processing
+                  # 10s timeout + 5 failures = 50s grace period before pod restart
+                  timeoutSeconds: 10
+                  failureThreshold: 5
               readiness: *probes
               startup:
                 enabled: true
