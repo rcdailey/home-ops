@@ -32,15 +32,6 @@ configMapGenerator:
       grafana_dashboard: "1"
     annotations:
       grafana_folder: "Observability"
-- name: k8s-views-pods-dashboard
-  files:
-  - k8s-views-pods.json=resources/k8s-views-pods.json
-  options:
-    labels:
-      grafana_dashboard: "1"
-    annotations:
-      grafana_folder: "Kubernetes"
-      kustomize.toolkit.fluxcd.io/substitute: disabled
 - name: container-memory-usage-dashboard
   files:
   - container-memory-usage.json=resources/container-memory-usage.json
