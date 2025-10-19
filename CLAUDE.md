@@ -512,7 +512,13 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 ## Cluster Info
 
 - **Network**: `192.168.1.0/24`, Gateway: `192.168.1.1`, API: `192.168.1.70`
-- **Gateways**: DNS `192.168.50.71`, Internal `192.168.50.72`, External `192.168.50.73`
+- **LoadBalancer IPs** (Cilium IPAM):
+  - `.71-.99`: Kubernetes infrastructure (gateways, DNS, system services)
+    - DNS: `192.168.50.71`
+    - Internal Gateway: `192.168.50.72`
+    - External Gateway: `192.168.50.73`
+  - `.100+`: Application LoadBalancers (direct pod access, bypassing gateways)
+    - Plex: `192.168.50.100`
 - **Tunnel**: `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.50.73`
 
 ### Ceph Toolbox
@@ -623,7 +629,12 @@ Credentials are stored in
 
 ```bash
 # Extract credentials from cluster-secrets
-eval $(sops -d kubernetes/components/common/sops/cluster-secrets.sops.yaml | yq eval '.stringData | to_entries | .[] | select(.key | startswith("S3_")) | "export " + .key + "=" + .value' -)
+eval $(
+  sops -d kubernetes/components/common/sops/cluster-secrets.sops.yaml \
+    | yq eval '.stringData | to_entries | .[]
+        | select(.key | startswith("S3_"))
+        | "export " + .key + "=" + .value' -
+)
 
 aws --endpoint-url=$S3_ENDPOINT --region=$S3_REGION s3 ls
 ```
@@ -832,7 +843,8 @@ scripts.
 - **validate-vmrules.sh**: VMRule CRD syntax validation using vmalert dry-run
   - Usage: `./scripts/validate-vmrules.sh [path-to-vmrules-directory]`
 - **vmalert-query.py**: Query vmalert API for alert/rule inspection via ephemeral kubectl pods
-  - Usage: `./scripts/vmalert-query.py [firing|pending|inactive|detail <name>|rules|json|history [duration]]`
+  - Usage: `./scripts/vmalert-query.py [firing|pending|inactive|detail <name>|rules|json|history
+    [duration]]`
   - History: `history [duration]` shows alert firing frequency (default: 6h, e.g., 5m, 1h, 24h)
 - **ceph.sh**: Ceph command convenience wrapper via rook-ceph-tools pod
   - Usage: `./scripts/ceph.sh <ceph-command>` (e.g., `./scripts/ceph.sh status`)
