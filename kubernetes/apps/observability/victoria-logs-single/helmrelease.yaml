@@ -66,18 +66,6 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
 
-      # TEMPORARY: Avoid nami node until NVMe OSD migration completes
-      # Remove this affinity rule after Samsung 990 Pro NVMe is installed and BX500 SATA OSD is removed
-      # See: docs/memory-bank/ceph-osd-nvme-migration-nami.md
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: NotIn
-                values: [nami]
-
     # Enable Vector log collection
     vector:
       enabled: true
