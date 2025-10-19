@@ -40,6 +40,46 @@ SECTION**
   explicitly listed. Without this, the SecurityPolicy will fail with "backend ref not permitted by
   any ReferenceGrant" error.
 
+## Conventional Commit Rules
+
+**MANDATORY path-based commit classification for this GitOps repository:**
+
+**Direct path mapping:**
+
+- `ci:` → `.github/workflows/**`, `.taskfiles/**`, `Taskfile.yaml`
+- `build:` → `renovate.json5`, `.renovate/**`
+- `chore:` → `.editorconfig`, `.gitignore`, `.yamllint.yaml`, `.markdownlint-cli2.yaml`,
+  `.pre-commit-config.yaml`, tooling configs
+- `docs:` → `*.md`, `docs/**`, `LICENSE`, `SECURITY.md`, `CODEOWNERS`
+
+**Kubernetes manifests - inspect git diff:**
+
+- `feat:` → New apps/services, new capabilities (new `kubernetes/apps/<ns>/<app>/` directories)
+- `fix:` → Bug fixes, crash loops, probe failures, resource issues, alert resolutions
+- `refactor:` → Resource reorganization, manifest restructuring, no behavior change
+
+**Scripts:**
+
+- `feat:` → New script capabilities in `scripts/`
+- `fix:` → Script bug fixes, validation corrections
+- `chore:` → Script reorganization without behavior change
+
+**Breaking changes (!:):**
+
+- API/CRD version upgrades requiring manual intervention
+- Incompatible Helm chart major version upgrades
+- Storage class or PVC changes requiring data migration
+
+**Scopes from paths:**
+
+- `kubernetes/apps/<namespace>/<app>/**` → `(<app>)` (e.g., `fix(plex): resolve crash loop`)
+- `kubernetes/flux/**` → `(flux)`
+- `talos/**` → `(talos)`
+- `.github/**`, `.taskfiles/**` → `(ci)`
+- `scripts/**` → `(scripts)`
+- `.renovate/**`, `renovate.json5` → `(deps)` when modifying Renovate behavior (NOT for automated
+  dependency PRs)
+
 ## Namespace Management Strategy
 
 **CRITICAL NAMESPACE PATTERNS - MANDATORY ENFORCEMENT:**
