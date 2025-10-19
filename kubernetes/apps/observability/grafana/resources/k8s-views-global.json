@@ -18,7 +18,7 @@
             "type": "prometheus",
             "uid": "VictoriaMetrics"
           },
-          "expr": "avg(sum by (node) (rate(node_cpu_seconds_total{mode!=\"idle\"}[1m])))",
+          "expr": "sum(rate(node_cpu_seconds_total{mode!=\"idle\"}[1m])) / sum(kube_node_status_allocatable{resource=\"cpu\"})",
           "legendFormat": "Real",
           "refId": "Real"
         },
