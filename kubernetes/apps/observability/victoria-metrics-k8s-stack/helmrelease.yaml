@@ -209,6 +209,8 @@ spec:
       rules:
         TooManyLogs:
           create: false # Using custom VMRule (vmrule.yaml) with >20 threshold vs default >0
+        NodeSystemSaturation:
+          create: false # Using custom VMRule (vmrule.yaml) requiring both high load AND high CPU
       groups:
         etcd:
           create: true
