@@ -7,7 +7,7 @@ metadata:
   labels:
     app.kubernetes.io/component: proxy
   annotations:
-    lbipam.cilium.io/sharing-key: "internal-gateway"
+    lbipam.cilium.io/ips: 192.168.50.100
 spec:
   type: LoadBalancer
   ports:
