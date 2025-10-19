@@ -235,8 +235,6 @@ spec:
         pod:
           restartPolicy: Never
           securityContext:
-            fsGroup: 1000
-            fsGroupChangePolicy: OnRootMismatch
             seccompProfile:
               type: RuntimeDefault
 
