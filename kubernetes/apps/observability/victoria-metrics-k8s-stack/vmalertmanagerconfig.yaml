@@ -32,11 +32,19 @@ spec:
       - severity = "none"
 
   inhibit_rules:
+  # Suppress critical alerts from overriding warnings
   - source_matchers:
     - severity = "critical"
     target_matchers:
     - severity = "warning"
     equal: [alertname, namespace]
+
+  # Hide alerts with hidden="true" label from UI (Watchdog dead man's switch)
+  # Alerts still route to receivers (Gatus heartbeat) but don't appear in VMAlertmanager UI
+  - source_matchers:
+    - hidden = "true"
+    target_matchers:
+    - hidden = "true"
 
   receivers:
   - name: blackhole
