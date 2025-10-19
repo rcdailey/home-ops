@@ -134,7 +134,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "label_replace(\n  max(\n    container_memory_working_set_bytes{namespace=\"$namespace\", image!=\"\", container!=\"\"}\n    * on(namespace, pod) group_left()\n    (kube_pod_status_phase{phase=\"Running\"} == 1)\n  ) by (pod, container),\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
+          "expr": "label_replace(\n  max(\n    container_memory_working_set_bytes{namespace=\"$namespace\", image!=\"\", container!=\"\", pod!~\"volsync-.*\", pod=~\"$pod\"}\n    * on(namespace, pod) group_left()\n    (kube_pod_status_phase{phase=\"Running\"} == 1)\n  ) by (pod, container),\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
           "interval": "",
           "legendFormat": "{{pod_short}} - {{container}}",
           "range": true,
@@ -284,7 +284,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "label_replace(\n  (\n    sum(\n      container_memory_working_set_bytes{namespace=\"$namespace\", image!=\"\", container!=\"\"}\n      * on(namespace, pod) group_left()\n      (kube_pod_status_phase{phase=\"Running\"} == 1)\n    ) by (pod, container)\n    /\n    sum(\n      kube_pod_container_resource_limits{namespace=\"$namespace\", resource=\"memory\"}\n      * on(namespace, pod) group_left()\n      (kube_pod_status_phase{phase=\"Running\"} == 1)\n    ) by (pod, container)\n  ) * 100,\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
+          "expr": "label_replace(\n  (\n    sum(\n      container_memory_working_set_bytes{namespace=\"$namespace\", image!=\"\", container!=\"\", pod!~\"volsync-.*\", pod=~\"$pod\"}\n      * on(namespace, pod) group_left()\n      (kube_pod_status_phase{phase=\"Running\"} == 1)\n    ) by (pod, container)\n    /\n    sum(\n      kube_pod_container_resource_limits{namespace=\"$namespace\", resource=\"memory\", pod!~\"volsync-.*\", pod=~\"$pod\"}\n      * on(namespace, pod) group_left()\n      (kube_pod_status_phase{phase=\"Running\"} == 1)\n    ) by (pod, container)\n  ) * 100,\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -298,7 +298,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "label_replace(\n  sum(\n    container_memory_working_set_bytes{namespace=\"$namespace\", image!=\"\", container!=\"\"}\n    * on(namespace, pod) group_left()\n    (kube_pod_status_phase{phase=\"Running\"} == 1)\n  ) by (pod, container),\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
+          "expr": "label_replace(\n  sum(\n    container_memory_working_set_bytes{namespace=\"$namespace\", image!=\"\", container!=\"\", pod!~\"volsync-.*\", pod=~\"$pod\"}\n    * on(namespace, pod) group_left()\n    (kube_pod_status_phase{phase=\"Running\"} == 1)\n  ) by (pod, container),\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -313,7 +313,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "label_replace(\n  sum(\n    kube_pod_container_resource_limits{namespace=\"$namespace\", resource=\"memory\"}\n    * on(namespace, pod) group_left()\n    (kube_pod_status_phase{phase=\"Running\"} == 1)\n  ) by (pod, container),\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
+          "expr": "label_replace(\n  sum(\n    kube_pod_container_resource_limits{namespace=\"$namespace\", resource=\"memory\", pod!~\"volsync-.*\", pod=~\"$pod\"}\n    * on(namespace, pod) group_left()\n    (kube_pod_status_phase{phase=\"Running\"} == 1)\n  ) by (pod, container),\n  \"pod_short\", \"$1\", \"pod\", \"(.*?)(-[0-9a-z]+){2}$\"\n)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -387,6 +387,33 @@
         "query": {
           "query": "label_values(kube_pod_info, namespace)",
           "refId": "VictoriaMetrics-namespace-Variable-Query"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "VictoriaMetrics"
+        },
+        "definition": "label_values(kube_pod_info{namespace=\"$namespace\"} * on(namespace, pod) group_left() (kube_pod_status_phase{phase=\"Running\"} == 1), pod)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "pod",
+        "options": [],
+        "query": {
+          "query": "label_values(kube_pod_info{namespace=\"$namespace\"} * on(namespace, pod) group_left() (kube_pod_status_phase{phase=\"Running\"} == 1), pod)",
+          "refId": "VictoriaMetrics-pod-Variable-Query"
         },
         "refresh": 1,
         "regex": "",
