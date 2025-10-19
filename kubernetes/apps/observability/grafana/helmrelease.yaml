@@ -148,7 +148,9 @@ spec:
           revision: 42
           datasource: VictoriaMetrics
         k8s-views-pods:
-          file: k8s-views-pods.json
+          # renovate: dashboardName="Kubernetes / Views / Pods"
+          gnetId: 15760
+          revision: 38
           datasource: VictoriaMetrics
         k8s-volumes:
           # renovate: dashboardName="K8s / Storage / Volumes / Cluster"
