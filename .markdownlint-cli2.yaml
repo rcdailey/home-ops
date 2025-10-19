@@ -1,6 +1,7 @@
 config:
   line-length:
     line_length: 100
+    code_blocks: false
   no-inline-html:
     allowed_elements: ["br"]
   no-trailing-spaces:
