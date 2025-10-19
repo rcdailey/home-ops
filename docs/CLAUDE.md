@@ -16,3 +16,17 @@ Most of these rules repeat general markdown lint rules.
   tickmarks)
 - Bullet point lists, headings, sections, and other non-contiguous or intentionally separate forms
   of text MUST be separated by a single blank line.
+
+## Docs Structure
+
+Below is an explanation of documentation subdirectories and their purpose.
+
+- `architecture`: Long-term documentation about system design, architectural decisions, and the
+  rationale behind technology choices.
+- `memory-bank`: Ephemeral documentation for temporary context and working memory. Used for ongoing
+  constraints, temporary workarounds, or work spanning multiple sessions. Content is expected to
+  become stale and should be removed once no longer relevant.
+- `runbooks`: Step-by-step operational procedures for routine maintenance, recovery, or remediation
+  tasks. Focused on "how to perform X" rather than "why X happened."
+- `troubleshooting`: Historical investigations of complex issues with root cause analysis and
+  resolution details. Documents past problems for reference, not necessarily reusable procedures.
