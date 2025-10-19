@@ -47,3 +47,19 @@ spec:
           System load per core at {{ $labels.instance }} has been above 2 for the last 15 minutes, is currently at {{ printf "%.2f" $value }}.
           CPU usage is also high, confirming genuine saturation (not VM scheduling artifacts).
           This might indicate this instance resources saturation and can cause it becoming unresponsive.
+
+    # Override Watchdog alert to add 'hidden' label for UI filtering
+    # WHY: Watchdog is a dead man's switch that must always fire to Gatus heartbeat
+    # WHAT: Keep functional for Gatus routing but hide from VMAlertmanager/Grafana UIs
+    # HOW: Add 'hidden: "true"' label for UI filtering while preserving routing
+    - alert: Watchdog
+      expr: vector(1)
+      labels:
+        severity: none
+        hidden: "true"
+      annotations:
+        summary: Alerting pipeline health check (always firing)
+        description: |
+          Dead man's switch for monitoring stack health verification.
+          Routes to Gatus heartbeat endpoint - if this stops firing, the monitoring stack is down.
+        runbook_url: https://runbooks.prometheus-operator.dev/runbooks/general/watchdog
