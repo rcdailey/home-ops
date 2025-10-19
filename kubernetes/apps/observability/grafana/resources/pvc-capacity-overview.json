@@ -229,7 +229,7 @@
             "type": "prometheus",
             "uid": "VictoriaMetrics"
           },
-          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_read_ops[5m]))",
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"csi-vol-$1\", \"csi_volume_handle\", \".*-([0-9a-f-]+)$\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_read_ops[5m]))",
           "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
           "refId": "A"
         }
@@ -266,7 +266,7 @@
             "type": "prometheus",
             "uid": "VictoriaMetrics"
           },
-          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_write_ops[5m]))",
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"csi-vol-$1\", \"csi_volume_handle\", \".*-([0-9a-f-]+)$\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_write_ops[5m]))",
           "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
           "refId": "A"
         }
@@ -303,7 +303,7 @@
             "type": "prometheus",
             "uid": "VictoriaMetrics"
           },
-          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_read_bytes[5m]))",
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"csi-vol-$1\", \"csi_volume_handle\", \".*-([0-9a-f-]+)$\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_read_bytes[5m]))",
           "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
           "refId": "A"
         }
@@ -340,7 +340,7 @@
             "type": "prometheus",
             "uid": "VictoriaMetrics"
           },
-          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_write_bytes[5m]))",
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"csi-vol-$1\", \"csi_volume_handle\", \".*-([0-9a-f-]+)$\") * on (image) group_right(namespace, persistentvolumeclaim) rate(ceph_rbd_write_bytes[5m]))",
           "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
           "refId": "A"
         }
@@ -377,7 +377,7 @@
             "type": "prometheus",
             "uid": "VictoriaMetrics"
           },
-          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) (rate(ceph_rbd_read_latency_sum[5m]) / on (image) rate(ceph_rbd_read_latency_count[5m]))) or max by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_info * 0)",
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"csi-vol-$1\", \"csi_volume_handle\", \".*-([0-9a-f-]+)$\") * on (image) group_right(namespace, persistentvolumeclaim) (rate(ceph_rbd_read_latency_sum[5m]) / on (image) rate(ceph_rbd_read_latency_count[5m]))) or max by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_info * 0)",
           "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
           "refId": "A"
         }
@@ -414,7 +414,7 @@
             "type": "prometheus",
             "uid": "VictoriaMetrics"
           },
-          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"$1\", \"csi_volume_handle\", \"(.*)\") * on (image) group_right(namespace, persistentvolumeclaim) (rate(ceph_rbd_write_latency_sum[5m]) / on (image) rate(ceph_rbd_write_latency_count[5m]))) or max by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_info * 0)",
+          "expr": "max by (namespace, persistentvolumeclaim) (label_replace(kube_persistentvolumeclaim_info, \"persistentvolume\", \"$1\", \"volumename\", \"(.*)\") * on (persistentvolume) group_left(image) label_replace(kube_persistentvolume_info{csi_driver=\"rook-ceph.rbd.csi.ceph.com\"}, \"image\", \"csi-vol-$1\", \"csi_volume_handle\", \".*-([0-9a-f-]+)$\") * on (image) group_right(namespace, persistentvolumeclaim) (rate(ceph_rbd_write_latency_sum[5m]) / on (image) rate(ceph_rbd_write_latency_count[5m]))) or max by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_info * 0)",
           "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}",
           "refId": "A"
         }
