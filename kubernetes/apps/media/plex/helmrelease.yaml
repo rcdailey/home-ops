@@ -28,9 +28,16 @@ spec:
               tag: 1.42.2.10156
             env:
               TZ: America/Chicago
-              PLEX_ADVERTISE_URL: https://plex.${SECRET_DOMAIN}:443,http://192.168.50.100:32400
-              PLEX_NO_AUTH_NETWORKS: 192.168.1.0/24
-              PLEX_PASS: "yes"
+              PLEX_ADVERTISE_URL: http://192.168.50.100:32400,https://plex.${SECRET_DOMAIN}:443
+
+              # Leave this out for now; I want to make sure this isn't functionally necessary.
+              # I prefer to not use it since it introduces a security issue.
+              # PLEX_NO_AUTH_NETWORKS: 192.168.1.0/24
+              PLEX_PREFERENCE_1: "secureConnections=1"
+
+              # Covers 192.168.0.0-31.255, excludes 192.168.50.0/24 (Kubernetes BGP/LoadBalancer
+              # subnet) to prevent plex.{SECRET_DOMAIN} from being treated as local network traffic
+              PLEX_PREFERENCE_2: "LanNetworks=192.168.0.0/19"
 
             probes:
               liveness: &probes
