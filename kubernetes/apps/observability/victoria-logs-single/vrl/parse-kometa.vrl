@@ -1,5 +1,5 @@
 # Kometa logs to stdout - extract from message field
-log_msg = string!(.message)
+log_msg = string!(._msg)
 
 # Parse structured log format: [LEVEL] | the message |
 level_match = parse_regex(log_msg, r'\[(?P<level>CRITICAL|ERROR|WARNING|INFO|DEBUG|TRACE)\]') ?? {}
@@ -17,25 +17,11 @@ if .message == "" {
   abort
 }
 
-# Set standard level field and severity from parsed level
+# Set standard level field from parsed level
 if exists(level_match.level) {
-  level_str = downcase(string!(level_match.level))
-  .level = level_str
-
-  if level_str == "critical" {
-    .severity = "critical"
-  } else if level_str == "error" {
-    .severity = "error"
-  } else if level_str == "warning" {
-    .severity = "warning"
-  } else if level_str == "debug" || level_str == "trace" {
-    .severity = "debug"
-  } else {
-    .severity = "info"
-  }
+  .level = downcase(string!(level_match.level))
 } else {
   .level = "info"
-  .severity = "info"
 }
 
 # Mark special sections for filtering

@@ -1,8 +1,5 @@
 # Default parser for all logs (fallback)
 
-# Try to parse JSON logs
-.log = parse_json(.message) ?? .message
-
 # Extract app name from pod labels BEFORE cleanup
 .app = .kubernetes.pod_labels.app
 if .app == null {
@@ -16,8 +13,34 @@ if .app == null && .kubernetes.pod_name != null {
 # Remove entire pod_labels object to eliminate 51+ feature.node.* labels
 .kubernetes = del(.kubernetes.pod_labels)
 
-# Set default level if not present
-if !exists(.level) {
+# Try to parse JSON logs and merge into root event
+parsed, err = parse_json(._msg)
+if err == null {
+  merged, merge_err = merge(., parsed)
+  if merge_err == null {
+    . = merged
+  }
+}
+
+# Normalize message field from common variants (parsed JSON fields override original)
+if exists(.msg) {
+  .message = del(.msg)
+} else if exists(."log.message") {
+  .message = del(."log.message")
+} else if !exists(.message) {
+  .message = ._msg
+}
+
+# Extract timestamp from parsed JSON if present
+if exists(.ts) && !exists(.timestamp) {
+  .timestamp = del(.ts)
+} else if exists(.time) && !exists(.timestamp) {
+  .timestamp = del(.time)
+}
+
+# Normalize level field to lowercase and remove severity duplicates
+if exists(.level) {
+  .level = downcase(string!(.level))
+} else {
   .level = "info"
-  .severity = "info"
 }

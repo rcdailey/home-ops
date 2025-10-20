@@ -3,9 +3,9 @@ sources:
   plex_logs:
     type: file
     include:
+    # Include ALL log files: active (*.log) AND rotated (*.1.log, *.2.log, etc.)
     - "/config/Library/Application Support/Plex Media Server/Logs/*.log"
-    exclude:
-    - "/config/Library/Application Support/Plex Media Server/Logs/*.[2-9].log"
+    - "/config/Library/Application Support/Plex Media Server/Logs/*.[0-9].log"
     - "/config/Library/Application Support/Plex Media Server/Logs/*.[0-9][0-9].log"
     read_from: beginning
     # CRITICAL: Persistent data directory for checkpoints
