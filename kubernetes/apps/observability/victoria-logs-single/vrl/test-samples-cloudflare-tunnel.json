@@ -1,0 +1,78 @@
+[
+  {
+    "name": "cloudflare-tunnel-error",
+    "input": {
+      "_msg": "2025-10-20T23:31:48Z ERR error=\"unexpected EOF\" connIndex=0 event=1",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "cloudflare-tunnel"
+        },
+        "pod_namespace": "network",
+        "pod_name": "cloudflare-tunnel-abc123"
+      }
+    },
+    "expect": {
+      "message": "error=\"unexpected EOF\" connIndex=0 event=1",
+      "level": "error",
+      "app": "cloudflare-tunnel",
+      "namespace": "network"
+    }
+  },
+  {
+    "name": "cloudflare-tunnel-info",
+    "input": {
+      "_msg": "2025-10-20T23:31:50Z INF Connection established successfully connIndex=1",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "cloudflare-tunnel"
+        },
+        "pod_namespace": "network",
+        "pod_name": "cloudflare-tunnel-xyz789"
+      }
+    },
+    "expect": {
+      "message": "Connection established successfully connIndex=1",
+      "level": "info",
+      "app": "cloudflare-tunnel",
+      "namespace": "network"
+    }
+  },
+  {
+    "name": "cloudflare-tunnel-warning",
+    "input": {
+      "_msg": "2025-10-20T23:31:52Z WRN High latency detected latency=250ms",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "cloudflare-tunnel"
+        },
+        "pod_namespace": "network",
+        "pod_name": "cloudflare-tunnel-def456"
+      }
+    },
+    "expect": {
+      "message": "High latency detected latency=250ms",
+      "level": "warning",
+      "app": "cloudflare-tunnel",
+      "namespace": "network"
+    }
+  },
+  {
+    "name": "cloudflare-tunnel-debug",
+    "input": {
+      "_msg": "2025-10-20T23:31:54Z DBG Processing request path=/api/health",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "cloudflare-tunnel"
+        },
+        "pod_namespace": "network",
+        "pod_name": "cloudflare-tunnel-ghi789"
+      }
+    },
+    "expect": {
+      "message": "Processing request path=/api/health",
+      "level": "debug",
+      "app": "cloudflare-tunnel",
+      "namespace": "network"
+    }
+  }
+]

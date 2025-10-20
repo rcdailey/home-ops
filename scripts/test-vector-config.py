@@ -185,21 +185,40 @@ def main():
     else:
         tester = VectorTester(args.config, args.verbose)
 
-    # Auto-discover test samples following convention
+    # Auto-discover test samples following convention (same directory only)
     if not args.samples:
-        # Convention: test-samples.json in same directory as config/vrl file
-        auto_samples = args.config.parent / "test-samples.json"
-        if auto_samples.exists():
-            args.samples = auto_samples
-            print(f"Auto-discovered: {auto_samples}")
+        # Convention: test-samples-{parser-name}.json or test-samples.json
+        # Only check in same directory as config file to avoid cross-contamination
+        parser_name = args.config.stem.replace("parse-", "")
+        parser_specific = args.config.parent / f"test-samples-{parser_name}.json"
+        default_samples = args.config.parent / "test-samples.json"
 
-    # Load samples or use generic default
+        if parser_specific.exists():
+            args.samples = parser_specific
+            print(f"Auto-discovered: {parser_specific}")
+        elif default_samples.exists():
+            args.samples = default_samples
+            print(f"Auto-discovered: {default_samples}")
+
+    # Load samples or use minimal validation if none found
     if args.samples:
         with open(args.samples) as f:
             samples = json.load(f)
     else:
-        # Generic fallback - just shows structure
-        samples = [{"message": "Sample log line"}]
+        # No test samples - just validate VRL syntax compiles
+        print(f"No test samples for {args.config.name}, validating syntax only...")
+        samples = None
+
+    if samples is None:
+        # Syntax-only validation - run with empty input to check compilation
+        print(f"Testing {args.config.name}...")
+        try:
+            tester.test_sample({"message": "syntax check"}, None, "syntax-validation")
+            print("\n✓ VRL syntax valid")
+            sys.exit(0)
+        except Exception as e:
+            print(f"\n✗ VRL syntax error: {e}")
+            sys.exit(1)
 
     print(f"Testing {args.config.name}...")
     passed = 0

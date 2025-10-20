@@ -1,0 +1,73 @@
+[
+  {
+    "name": "kometa-error-log",
+    "input": {
+      "_msg": "[ERROR] | Database connection failed |",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "kometa"
+        },
+        "pod_namespace": "media",
+        "pod_name": "kometa-abc123"
+      }
+    },
+    "expect": {
+      "message": "Database connection failed",
+      "level": "error",
+      "app": "kometa",
+      "namespace": "media"
+    }
+  },
+  {
+    "name": "kometa-warning-log",
+    "input": {
+      "_msg": "[WARNING] | High memory usage detected |",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "kometa"
+        },
+        "pod_namespace": "media",
+        "pod_name": "kometa-xyz789"
+      }
+    },
+    "expect": {
+      "message": "High memory usage detected",
+      "level": "warning",
+      "app": "kometa",
+      "namespace": "media"
+    }
+  },
+  {
+    "name": "kometa-info-log",
+    "input": {
+      "_msg": "[INFO] | Starting library sync |",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "kometa"
+        },
+        "pod_namespace": "media",
+        "pod_name": "kometa-def456"
+      }
+    },
+    "expect": {
+      "message": "Starting library sync",
+      "level": "info",
+      "app": "kometa",
+      "namespace": "media"
+    }
+  },
+  {
+    "name": "kometa-blank-message-dropped",
+    "input": {
+      "_msg": "[INFO] |  |",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "kometa"
+        },
+        "pod_namespace": "media",
+        "pod_name": "kometa-ghi789"
+      }
+    },
+    "expect": null
+  }
+]

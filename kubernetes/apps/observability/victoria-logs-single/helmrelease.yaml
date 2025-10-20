@@ -24,6 +24,10 @@ spec:
       # Override the service name to match expected naming convention
       fullnameOverride: "victoria-logs-single"
       retentionPeriod: 14
+
+      # Reloader annotation to restart pod when ConfigMap changes
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
       extraArgs:
         envflag.enable: true
         envflag.prefix: VM_
@@ -73,6 +77,8 @@ spec:
       # See: charts/victoria-logs-single/templates/vector-config.yaml line 4
       existingConfigMaps:
       - vector-vl-config
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
       resources:
         limits:
           memory: 1Gi
@@ -132,7 +138,7 @@ spec:
             condition:
               type: vrl
               source: |
-                .kubernetes.pod_labels.app == "kometa" && .kubernetes.container_name == "app"
+                .kubernetes.pod_labels."app.kubernetes.io/name" == "kometa" && .kubernetes.container_name == "app"
 
           # Custom parser for kometa
           kometa_parser:
@@ -147,13 +153,28 @@ spec:
             condition:
               type: vrl
               source: |
-                .kubernetes.pod_labels.app == "qbittorrent"
+                .kubernetes.pod_labels."app.kubernetes.io/name" == "qbittorrent"
 
           # Custom parser for qbittorrent
           qbittorrent_parser:
             type: remap
             inputs: [qbittorrent_filter]
             file: /etc/vector/vrl/parse-qbittorrent.vrl
+
+          # Filter for cloudflare-tunnel logs
+          cloudflare_tunnel_filter:
+            type: filter
+            inputs: [k8s]
+            condition:
+              type: vrl
+              source: |
+                .kubernetes.pod_labels."app.kubernetes.io/name" == "cloudflare-tunnel"
+
+          # Custom parser for cloudflare-tunnel
+          cloudflare_tunnel_parser:
+            type: remap
+            inputs: [cloudflare_tunnel_filter]
+            file: /etc/vector/vrl/parse-cloudflare-tunnel.vrl
 
         sinks:
           exporter:
@@ -163,7 +184,11 @@ spec:
 
           vlogs:
             type: elasticsearch
-            inputs: [default_parser, kometa_parser, qbittorrent_parser]
+            inputs:
+            - default_parser
+            - kometa_parser
+            - qbittorrent_parser
+            - cloudflare_tunnel_parser
             mode: bulk
             api_version: v8
             compression: gzip

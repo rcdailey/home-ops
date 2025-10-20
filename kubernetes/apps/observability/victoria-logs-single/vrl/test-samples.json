@@ -1,0 +1,99 @@
+[
+  {
+    "name": "json-log-with-all-fields",
+    "input": {
+      "_msg": "{\"level\":\"error\",\"msg\":\"Database connection failed\",\"ts\":\"2025-10-20T12:00:00Z\",\"component\":\"auth\"}",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "test-app"
+        },
+        "pod_namespace": "default",
+        "pod_name": "test-app-abc123"
+      }
+    },
+    "expect": {
+      "message": "Database connection failed",
+      "level": "error",
+      "component": "auth",
+      "timestamp": "2025-10-20T12:00:00Z",
+      "app": "test-app",
+      "namespace": "default"
+    }
+  },
+  {
+    "name": "json-log-level-uppercase",
+    "input": {
+      "_msg": "{\"level\":\"WARNING\",\"message\":\"High memory usage\"}",
+      "kubernetes": {
+        "pod_labels": {
+          "app.kubernetes.io/name": "metrics"
+        },
+        "pod_namespace": "observability",
+        "pod_name": "metrics-xyz789"
+      }
+    },
+    "expect": {
+      "message": "High memory usage",
+      "level": "warning",
+      "app": "metrics",
+      "namespace": "observability"
+    }
+  },
+  {
+    "name": "plain-text-log",
+    "input": {
+      "_msg": "Starting service on port 8080",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "web-server"
+        },
+        "pod_namespace": "default",
+        "pod_name": "web-server-def456"
+      }
+    },
+    "expect": {
+      "message": "Starting service on port 8080",
+      "level": "info",
+      "app": "web-server",
+      "namespace": "default"
+    }
+  },
+  {
+    "name": "json-with-msg-field",
+    "input": {
+      "_msg": "{\"level\":\"debug\",\"msg\":\"Request processed\",\"duration_ms\":123}",
+      "kubernetes": {
+        "pod_labels": {},
+        "pod_namespace": "api",
+        "pod_name": "api-service-ghi789"
+      }
+    },
+    "expect": {
+      "message": "Request processed",
+      "level": "debug",
+      "duration_ms": 123,
+      "app": "api",
+      "namespace": "api"
+    }
+  },
+  {
+    "name": "json-with-time-field",
+    "input": {
+      "_msg": "{\"level\":\"info\",\"message\":\"Health check passed\",\"time\":\"2025-10-20T14:30:00Z\"}",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "healthcheck"
+        },
+        "pod_namespace": "system",
+        "pod_name": "healthcheck-jkl012"
+      }
+    },
+    "expect": {
+      "message": "Health check passed",
+      "level": "info",
+      "timestamp": "2025-10-20T14:30:00Z",
+      "app": "healthcheck",
+      "namespace": "system"
+    }
+  }
+]

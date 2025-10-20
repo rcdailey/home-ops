@@ -10,7 +10,10 @@ configMapGenerator:
 - name: victoria-logs-vector-vrl
   options:
     disableNameSuffixHash: true
+    annotations:
+      reloader.stakater.com/match: "true"
   files:
   - parse-default.vrl=./vrl/parse-default.vrl
   - parse-kometa.vrl=./vrl/parse-kometa.vrl
   - parse-qbittorrent.vrl=./vrl/parse-qbittorrent.vrl
+  - parse-cloudflare-tunnel.vrl=./vrl/parse-cloudflare-tunnel.vrl

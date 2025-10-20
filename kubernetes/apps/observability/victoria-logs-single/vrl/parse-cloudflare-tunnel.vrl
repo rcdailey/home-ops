@@ -1,0 +1,46 @@
+# Cloudflare Tunnel logs - extract level from message text
+# Format: 2025-10-20T23:31:48Z ERR error="unexpected EOF" ...
+#
+
+log_msg = string!(._msg)
+
+# Parse structured log format: TIMESTAMP LEVEL message
+log_match = parse_regex(log_msg, r'^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\s+(?P<level>ERR|INF|WRN|DBG)\s+(?P<content>.*)$') ?? {}
+
+# Drop blank messages
+if log_msg == "" {
+  abort
+}
+
+# Extract message content
+if exists(log_match.content) {
+  .message = log_match.content
+} else {
+  .message = log_msg
+}
+
+# Map cloudflare-tunnel log levels to standard levels
+if exists(log_match.level) {
+  level_code = string!(log_match.level)
+
+  if level_code == "ERR" {
+    .level = "error"
+  } else if level_code == "WRN" {
+    .level = "warning"
+  } else if level_code == "DBG" {
+    .level = "debug"
+  } else if level_code == "INF" {
+    .level = "info"
+  } else {
+    .level = "info"
+  }
+} else {
+  .level = "info"
+}
+
+# Add app metadata
+.app = "cloudflare-tunnel"
+.namespace = "network"
+
+# Remove entire pod_labels object to eliminate 51+ feature.node.* labels
+.kubernetes = del(.kubernetes.pod_labels)

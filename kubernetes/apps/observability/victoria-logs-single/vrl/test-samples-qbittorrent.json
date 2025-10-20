@@ -1,0 +1,83 @@
+[
+  {
+    "name": "qbittorrent-info-log",
+    "input": {
+      "_msg": "(I) 2025-10-14T10:06:32 - Successfully listening on IP. IP: \"::1\". Port: \"UTP/34655\"",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "qbittorrent"
+        },
+        "pod_namespace": "media",
+        "pod_name": "qbittorrent-abc123"
+      }
+    },
+    "expect": {
+      "message": "Successfully listening on IP. IP: \"::1\". Port: \"UTP/34655\"",
+      "level": "info",
+      "app": "qbittorrent",
+      "namespace": "media",
+      "source_type": "qbittorrent"
+    }
+  },
+  {
+    "name": "qbittorrent-warning-log",
+    "input": {
+      "_msg": "(W) 2025-10-14T10:06:32 - Failed to restore torrent. Files were probably moved",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "qbittorrent"
+        },
+        "pod_namespace": "media",
+        "pod_name": "qbittorrent-xyz789"
+      }
+    },
+    "expect": {
+      "message": "Failed to restore torrent. Files were probably moved",
+      "level": "warning",
+      "app": "qbittorrent",
+      "namespace": "media",
+      "source_type": "qbittorrent"
+    }
+  },
+  {
+    "name": "qbittorrent-critical-log",
+    "input": {
+      "_msg": "(C) 2025-10-14T10:06:32 - Critical error occurred",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "qbittorrent"
+        },
+        "pod_namespace": "media",
+        "pod_name": "qbittorrent-def456"
+      }
+    },
+    "expect": {
+      "message": "Critical error occurred",
+      "level": "critical",
+      "app": "qbittorrent",
+      "namespace": "media",
+      "source_type": "qbittorrent"
+    }
+  },
+  {
+    "name": "qbittorrent-with-torrent-name",
+    "input": {
+      "_msg": "(N) 2025-10-14T10:06:32 - Restored torrent. Torrent: \"Ubuntu 22.04 LTS\"",
+      "kubernetes": {
+        "pod_labels": {
+          "app": "qbittorrent"
+        },
+        "pod_namespace": "media",
+        "pod_name": "qbittorrent-ghi789"
+      }
+    },
+    "expect": {
+      "message": "Restored torrent. Torrent: \"Ubuntu 22.04 LTS\"",
+      "level": "info",
+      "torrent": "Ubuntu 22.04 LTS",
+      "app": "qbittorrent",
+      "namespace": "media",
+      "source_type": "qbittorrent"
+    }
+  }
+]
