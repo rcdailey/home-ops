@@ -52,11 +52,12 @@ spec:
               tag: v1.1.1@sha256:fbec331b36c1473f8a9c4214f55e5b097860476c8a5274eb61a2b85df89e56cc
             env:
               TZ: America/Chicago
+              PLEX_URL: http://plex.media:32400
               PLEX_PATH: /plex/Library/Application Support/Plex Media Server
               MODE: remove
               LOCAL_DB: "true"
               IGNORE_RUNNING: "true"
-              PHOTO_TRANSCODER: "true"
+              PHOTO_TRANSCODER: "false"
               OPTIMIZE_DB: "true"
               EMPTY_TRASH: "false"
               CLEAN_BUNDLES: "false"
