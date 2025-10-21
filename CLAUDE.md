@@ -890,6 +890,11 @@ scripts.
   - History: `history [duration]` shows alert firing frequency (default: 6h, e.g., 5m, 1h, 24h)
 - **ceph.sh**: Ceph command convenience wrapper via rook-ceph-tools pod
   - Usage: `./scripts/ceph.sh <ceph-command>` (e.g., `./scripts/ceph.sh status`)
+- **query-victorialogs.py**: Query VictoriaLogs using basic filters or LogSQL
+  - Usage: `./scripts/query-victorialogs.py --app <app> -n 10` (basic)
+  - Usage: `./scripts/query-victorialogs.py "error" --start 1h` (LogSQL)
+  - Options: `--detail` shows VRL-processed fields, `--level`, `--namespace`, `--pod`, `--container`
+  - Auto-detects HTTPRoute URL, falls back to cluster-internal
 - **update-gitignore/**: Modular gitignore generation system
   - Usage: `./scripts/update-gitignore/update.sh`
   - Combines custom patterns from `custom/` with gitignore.io templates
