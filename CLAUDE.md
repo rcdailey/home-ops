@@ -201,14 +201,13 @@ Claude MUST check FIRST before analysis:
 
 Claude MUST run ALL steps after changes:
 
-1. **Flux Testing**: `./scripts/flux-local-test.sh`
-2. **Pre-commit Checks**: `pre-commit run --all-files` (or `pre-commit run --files <files>`)
-3. **Additional Validation**: kustomize build → kubectl dry-run → flux check
+1. **Pre-commit Checks**: `pre-commit run --all-files` (or `pre-commit run --files <files>`)
+2. **Additional Validation**: kustomize build → kubectl dry-run → flux check
 
 ### Required Tools
 
 - **Helm**: `helm template`, `helm search repo <chart> --versions`, `helm show values` for secrets
-- **MUST NOT proceed to commit without completing flux-local-test.sh and pre-commit validation**
+- **MUST NOT proceed to commit without completing pre-commit validation**
 
 ## Container Image Standards
 
@@ -876,9 +875,6 @@ scripts.
     githubSearchCode, githubGetFileContent) to retrieve configuration files from discovered
     repositories
 - **bootstrap-apps.sh**: Application bootstrap for cluster initialization
-- **flux-local-test.sh**: **ESSENTIAL VALIDATION**
-  - Usage: `./scripts/flux-local-test.sh`
-  - **REQUIRED** in validation sequence (see "Quality Assurance & Validation" section)
 - **test-vector-config.py**: Vector VRL configuration testing
   - Usage: `./scripts/test-vector-config.py <config.yaml> [-v] [--samples <test.json>]`
   - **REQUIRED** for Vector config changes (fail-fast validation)
