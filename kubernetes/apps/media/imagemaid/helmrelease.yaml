@@ -65,6 +65,9 @@ spec:
               SLEEP: "60"
               TRACE: "false"
               LOG_REQUESTS: "false"
+            envFrom:
+            - secretRef:
+                name: imagemaid-secret
             resources:
               requests:
                 cpu: 10m
