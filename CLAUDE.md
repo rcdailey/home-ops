@@ -39,6 +39,8 @@ SECTION**
   SecurityPolicy's namespace. ReferenceGrant does NOT support wildcards - each namespace must be
   explicitly listed. Without this, the SecurityPolicy will fail with "backend ref not permitted by
   any ReferenceGrant" error.
+- **NEVER** use `kubectl port-forward` under ANY circumstances. Alternatives: `kubectl exec`, debug
+  pods, etc.
 
 ## Conventional Commit Rules
 
