@@ -8,4 +8,4 @@ resources:
 - helmrelease.yaml
 - mariadb.yaml
 - pvc.yaml
-- secret.sops.yaml
+- externalsecret.yaml

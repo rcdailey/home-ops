@@ -8,4 +8,4 @@ resources:
 - postgres-cluster.yaml
 - postgres-scheduled-backup.yaml
 - pvc.yaml
-- secret.sops.yaml
+- externalsecret.yaml
