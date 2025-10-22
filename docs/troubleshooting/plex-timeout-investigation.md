@@ -1,7 +1,6 @@
 # Plex Timeout and Connectivity Issues - Investigation Log
 
-**Last Updated:** 2025-10-20 (Updated with deadlock analysis and external validation) **Status:**
-ROOT CAUSE CONFIRMED
+**Last Updated:** 2025-10-22 (Deadlock recurrence + infrastructure failures) **Status:** UNRESOLVED
 
 ## Executive Summary
 
@@ -541,7 +540,27 @@ curl -s http://192.168.1.105:32500/logging | tail -100
 
 ## Related Incidents
 
-### 2025-10-20 17:20 CST (This Report)
+### 2025-10-22 17:35 CST - EAE Deadlock Recurrence
+
+- **Trigger:** Desktop Plex client playback attempt (Daredevil metadata request)
+- **Duration:** 7+ minutes (17:40:54 - incident ongoing when mitigation applied)
+- **Impact:** Metadata request hung with `checkFiles=1`, Plex unresponsive to new requests
+- **Root Cause:** Same EAE Service deadlock (PID 355, spawned Oct 20, still resident)
+- **Key Evidence:**
+  - Request `#11a5ae` started 17:40:54, never completed
+  - No server log activity after request initiation
+  - EAE Service still running from previous container lifecycle
+  - Pattern identical to 2025-10-20 incident
+- **Mitigation Applied:** Deleted EasyAudioEncoder codec folder, restarted Plex deployment
+- **Outcome:** Mitigation blocked by infrastructure issues (NFS mount timeout, Intel GPU device
+  plugin failure on node nami after kubelet restart)
+- **Status:** Unresolved - multiple cascading failures prevented verification of EAE fix
+- **Additional Findings:**
+  - EAE Service persists across library scan disable (not scan-dependent)
+  - Deadlock triggered by normal playback metadata requests (not just scans)
+  - Node nami showing systemic issues (NFS mount timeouts, device plugin failures)
+
+### 2025-10-20 17:20 CST (Initial Documentation)
 
 - **Trigger:** User playback failure during Daredevil S3E13
 - **Duration:** ~15 minutes (17:21-17:36)
@@ -624,11 +643,13 @@ already terminated. Only by examining container restart history (`exitCode: 137`
 
 ## Document History
 
-| Date       | Author | Changes                                                       |
-| ---------- | ------ | ------------------------------------------------------------- |
-| 2025-10-20 | Claude | Initial investigation document with hypothesis                |
-| 2025-10-20 | Claude | ROOT CAUSE CONFIRMED: EAE deadlock, external validation added |
+| Date       | Author | Changes                                                            |
+| ---------- | ------ | ------------------------------------------------------------------ |
+| 2025-10-20 | Claude | Initial investigation document with hypothesis                     |
+| 2025-10-20 | Claude | ROOT CAUSE CONFIRMED: EAE deadlock, external validation added      |
+| 2025-10-22 | Claude | Deadlock recurrence documented, infrastructure failures identified |
 
 ---
 
-**Status:** Root cause confirmed. Immediate action: Delete EasyAudioEncoder codec folder.
+**Status:** EAE deadlock confirmed recurring. Infrastructure issues (NFS mount, GPU device plugin)
+blocking mitigation verification. Node nami requires investigation.
