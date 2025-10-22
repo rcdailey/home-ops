@@ -7,3 +7,4 @@ resources:
 - httproute.yaml
 - receiver.yaml
 - secret.sops.yaml
+- vmpodscrape.yaml
