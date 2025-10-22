@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmpodscrape_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: flux-controllers
+spec:
+  namespaceSelector:
+    matchNames:
+    - flux-system
+  selector:
+    matchExpressions:
+    - key: app.kubernetes.io/component
+      operator: In
+      values:
+      - kustomize-controller
+      - helm-controller
+      - source-controller
+      - notification-controller
+  podMetricsEndpoints:
+  - port: http-prom
+    scheme: http
+    path: /metrics

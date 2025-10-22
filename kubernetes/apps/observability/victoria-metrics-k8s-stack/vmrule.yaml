@@ -3,6 +3,86 @@
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMRule
 metadata:
+  name: flux-alerts
+spec:
+  groups:
+  - name: flux-health
+    interval: 1m
+    rules:
+    # Alert on Kustomizations not ready for >30m
+    # WHY: Detects all Kustomization failures including dependency issues and reconciliation errors
+    # WHAT: Fires when Kustomization ready status is False/Unknown for >30m
+    # HOW: Uses gotk_resource_info metric from kube-state-metrics with ready label
+    - alert: FluxKustomizationNotReady
+      expr: |
+        gotk_resource_info{customresource_kind="Kustomization",ready=~"False|Unknown"} == 1
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Flux Kustomization {{ $labels.name }} not ready for >30m"
+        description: |
+          Kustomization {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has been unhealthy for over 30 minutes.
+          Current status: ready={{ $labels.ready }}
+          Check: kubectl describe kustomization {{ $labels.name }} -n {{ $labels.exported_namespace }}
+
+    # Alert on Kustomizations stuck for >24h
+    # WHY: Detects long-running failures like cascading dependency issues (NFD->intel-gpu-plugin->immich)
+    # WHAT: Fires when Kustomization has been not ready for over 24 hours
+    # HOW: Uses same metric with longer duration threshold
+    - alert: FluxKustomizationStuck
+      expr: |
+        gotk_resource_info{customresource_kind="Kustomization",ready=~"False|Unknown"} == 1
+      for: 24h
+      labels:
+        severity: critical
+      annotations:
+        summary: "Flux Kustomization {{ $labels.name }} stuck for >24h"
+        description: |
+          Kustomization {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has been unhealthy for over 24 hours.
+          This indicates a persistent failure requiring immediate investigation.
+          Source: {{ $labels.source_name }}
+          Check: kubectl describe kustomization {{ $labels.name }} -n {{ $labels.exported_namespace }}
+
+    # Alert on HelmRelease not ready for >15m
+    # WHY: Early detection of HelmRelease failures before they become critical
+    # WHAT: Fires when HelmRelease ready status is False/Unknown for >15m
+    # HOW: Uses gotk_resource_info metric from kube-state-metrics
+    - alert: FluxHelmReleaseNotReady
+      expr: |
+        gotk_resource_info{customresource_kind="HelmRelease",ready=~"False|Unknown"} == 1
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Flux HelmRelease {{ $labels.name }} not ready"
+        description: |
+          HelmRelease {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has been unhealthy for over 15 minutes.
+          Chart: {{ $labels.chart_name }}
+          Check: kubectl describe helmrelease {{ $labels.name }} -n {{ $labels.exported_namespace }}
+
+    # Alert on HelmRelease stalled/failed for >1h
+    # WHY: Detects permanent failures requiring manual intervention (retries exhausted)
+    # WHAT: Fires when HelmRelease remains unhealthy for over 1 hour
+    # HOW: Longer duration threshold indicates stalled state needing intervention
+    - alert: FluxHelmReleaseStalled
+      expr: |
+        gotk_resource_info{customresource_kind="HelmRelease",ready=~"False|Unknown"} == 1
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: "Flux HelmRelease {{ $labels.name }} stalled/failed"
+        description: |
+          HelmRelease {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has been unhealthy for over 1 hour.
+          Manual intervention likely required - release may have exhausted retries.
+          Chart: {{ $labels.chart_name }} ({{ $labels.revision }})
+          Check: kubectl describe helmrelease {{ $labels.name }} -n {{ $labels.exported_namespace }}
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
   name: vm-health-overrides
 spec:
   groups:

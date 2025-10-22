@@ -192,10 +192,66 @@ spec:
       - persistentvolumeclaims=[*]
       resources:
         limits:
-          memory: 256Mi
+          memory: 512Mi
         requests:
           cpu: 10m
-          memory: 64Mi
+          memory: 128Mi
+      rbac:
+        extraRules:
+        - apiGroups:
+          - kustomize.toolkit.fluxcd.io
+          - helm.toolkit.fluxcd.io
+          - source.toolkit.fluxcd.io
+          resources:
+          - kustomizations
+          - helmreleases
+          - gitrepositories
+          - helmrepositories
+          - ocirepositories
+          verbs: [list, watch]
+      customResourceState:
+        enabled: true
+        config:
+          spec:
+            resources:
+            - groupVersionKind:
+                group: kustomize.toolkit.fluxcd.io
+                version: v1
+                kind: Kustomization
+              metricNamePrefix: gotk
+              metrics:
+              - name: resource_info
+                help: The current state of a Flux Kustomization resource
+                each:
+                  type: Info
+                  info:
+                    labelsFromPath:
+                      name: [metadata, name]
+                labelsFromPath:
+                  exported_namespace: [metadata, namespace]
+                  ready: [status, conditions, "[type=Ready]", status]
+                  suspended: [spec, suspend]
+                  revision: [status, lastAppliedRevision]
+                  source_name: [spec, sourceRef, name]
+            - groupVersionKind:
+                group: helm.toolkit.fluxcd.io
+                version: v2
+                kind: HelmRelease
+              metricNamePrefix: gotk
+              metrics:
+              - name: resource_info
+                help: The current state of a Flux HelmRelease resource
+                each:
+                  type: Info
+                  info:
+                    labelsFromPath:
+                      name: [metadata, name]
+                labelsFromPath:
+                  exported_namespace: [metadata, namespace]
+                  ready: [status, conditions, "[type=Ready]", status]
+                  suspended: [spec, suspend]
+                  revision: [status, history, "0", chartVersion]
+                  chart_name: [status, history, "0", chartName]
 
     # Default rules and dashboards
     defaultRules:
