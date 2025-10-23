@@ -18,10 +18,17 @@ spec:
         summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
         description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is restarting {{ $value }} times / 5 minutes"
 
+    # Alert on pods not ready (excluding completed Jobs/CronJobs)
+    # WHY: Detects pods stuck in non-ready states that need intervention
+    # WHAT: Fires when pod ready condition is false for >15m, excluding Succeeded/Failed pods
+    # HOW: Uses 'unless' to exclude completed Job pods (kube-state-metrics reports
+    #      condition="false" for Succeeded pods, which is expected behavior)
     - alert: PodNotReady
       expr: |
         kube_pod_status_ready{condition="false"} == 1
-        and on (namespace, pod) kube_pod_status_phase{phase!~"Succeeded|Failed"} == 1
+        unless on (namespace, pod) (
+          kube_pod_status_phase{phase=~"Succeeded|Failed"} == 1
+        )
       for: 15m
       labels:
         severity: warning
