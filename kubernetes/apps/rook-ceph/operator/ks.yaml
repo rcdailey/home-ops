@@ -6,9 +6,12 @@ metadata:
   name: &app rook-ceph-operator
 spec:
   targetNamespace: rook-ceph
-  commonMetadata:
-    labels:
-      app.kubernetes.io/name: *app
+  # NOTE: commonMetadata removed to fix v1.18.5 upgrade issue
+  # The rook-ceph chart already defines app.kubernetes.io/name labels
+  # and commonMetadata creates duplicate YAML keys during post-render
+  # commonMetadata:
+  #   labels:
+  #     app.kubernetes.io/name: *app
   decryption:
     provider: sops
     secretRef:
