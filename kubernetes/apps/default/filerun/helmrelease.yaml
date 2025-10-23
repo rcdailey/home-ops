@@ -138,7 +138,7 @@ spec:
           app:
             image:
               repository: elasticsearch
-              tag: "8.19.5"
+              tag: "8.19.6"
             env:
               cluster.name: docker-cluster
               bootstrap.memory_lock: "true"
