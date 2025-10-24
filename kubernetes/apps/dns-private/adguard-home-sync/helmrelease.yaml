@@ -33,7 +33,7 @@ spec:
           app:
             image:
               repository: ghcr.io/bakito/adguardhome-sync
-              tag: v0.8.1
+              tag: v0.8.2
             args:
             - run
             - --config
