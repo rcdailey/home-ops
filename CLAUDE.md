@@ -2,148 +2,285 @@
 
 ## Critical Operational Rules
 
-**BEFORE ANY DEBUGGING OR ANALYSIS - CHECK THE MANDATORY DEBUGGING CHECKLIST IN QUALITY ASSURANCE
-SECTION**
+BEFORE ANY WORK: CHECK MANDATORY DEBUGGING CHECKLIST in Quality Assurance section.
 
-**IMPORTANT:** Claude MUST:
+### Git and GitOps Protocol
 
-- **GitOps Protocol**: This is a Flux GitOps repository. NEVER run `kubectl apply -f` commands. Flux
-  manages all deployments. NEVER attempt to reconcile, apply, or sync changes after making
-  modifications. STOP immediately after file changes and ASK user to commit/push changes.
-- **Git Protocol**: NEVER run `git commit`/`git push` without explicit user request. GitOps requires
-  user commits, not Claude. STOP after changes and wait for user to commit/push.
-- **No Direct Kubernetes Operations**: NEVER use `kubectl apply`, `kubectl create`, `kubectl patch`,
-  or any direct Kubernetes modification commands. All changes must go through GitOps workflow.
-- **Task Priority**: Use `task` commands over CLI. Check `Taskfile.yaml` first.
-- **Reference Format**: Use `file.yaml:123` format when referencing code.
-- **Configuration**: Favor YAML defaults over explicit values for cleaner manifests.
-- **Domain References**: NEVER reference real homelab domain names in documentation or config files.
-  Use `domain.com` for examples or `${SECRET_DOMAIN}` in YAML manifests.
-- **YAML Language Server**: ALWAYS include appropriate `# yaml-language-server:` directive at top of
-  YAML files using URLs consistent with existing repo patterns. Use Flux schemas for Flux resources,
-  Kubernetes JSON schemas for core K8s resources, and schemastore.org for standard files.
-- **MANDATORY Documentation for Special Configurations**: When implementing workarounds, patches, or
-  non-standard configurations, ALWAYS add comprehensive comments explaining:
-  - WHY the special approach was needed (chart limitations, upstream issues, etc.)
-  - WHAT alternatives were considered and why they were rejected
-  - HOW the solution works technically (postRenderers, patches, custom resources)
-  - WHEN to reconsider the approach (upstream fixes, better alternatives)
-  - Examples requiring documentation: postRenderers, kustomize patches, deviations from defaults,
-    custom resources instead of Helm values, workarounds for limitations
-  - Place comments directly above or within relevant configuration sections
-  - These comments are ESSENTIAL for future maintenance and decision-making
-- NEVER end cluster hostnames with `svc.cluster.local`; only use `<service>.<namespace>`.
-- **Authelia SecurityPolicy ReferenceGrant**: When creating SecurityPolicy resources that reference
-  Authelia's external auth service (`authelia` in `default` namespace), you MUST update the
-  ReferenceGrant at `kubernetes/apps/default/authelia/referencegrant.yaml` to include the
-  SecurityPolicy's namespace. ReferenceGrant does NOT support wildcards - each namespace must be
-  explicitly listed. Without this, the SecurityPolicy will fail with "backend ref not permitted by
-  any ReferenceGrant" error.
-- **NEVER** use `kubectl port-forward` under ANY circumstances. Alternatives: `kubectl exec`, debug
-  pods, etc.
+- NEVER run git commit or git push without explicit user request
+- GitOps requires user commits, not Claude
+- STOP after file changes and wait for user to commit/push
+- This is a Flux GitOps repository - NEVER run kubectl apply, kubectl create, kubectl patch, or any
+  direct Kubernetes modification commands
+- All changes MUST go through GitOps workflow
+- Flux manages all deployments automatically
+- NEVER attempt to reconcile, apply, or sync changes after making modifications
+- STOP immediately after file changes and ASK user to commit/push
 
-## Conventional Commit Rules
+### Manual Operations Decision Tree
 
-**MANDATORY path-based commit classification for this GitOps repository:**
+When considering manual cluster operations:
 
-**Direct path mapping:**
+1. GitOps solution exists → REQUIRED: Use GitOps workflow exclusively
+2. One-time diagnostic operation needed → REQUIRED: Explain proposal and ASK for approval before
+   execution
+3. NEVER ACCEPTABLE: kubectl apply, kubectl create, kubectl patch, kubectl port-forward
+4. Reconcile needed → Follow Flux reconcile strategy in Reference Sections
 
-- `ci:` → `.github/workflows/**`, `.taskfiles/**`, `Taskfile.yaml`
-- `build:` → `renovate.json5`, `.renovate/**`
-- `chore:` → `.editorconfig`, `.gitignore`, `.yamllint.yaml`, `.markdownlint-cli2.yaml`,
-  `.pre-commit-config.yaml`, tooling configs
-- `docs:` → `*.md`, `docs/**`, `LICENSE`, `SECURITY.md`, `CODEOWNERS`
+### kubectl Operation Restrictions
 
-**Kubernetes manifests - inspect git diff:**
+- NEVER use kubectl port-forward under ANY circumstances
+- Alternatives: kubectl exec, debug pods, service exposure via HTTPRoute
+- NEVER use kubectl apply, kubectl create, kubectl patch
+- Diagnostic operations: kubectl get, kubectl describe, kubectl logs (approval recommended)
 
-- `feat:` → New apps/services, new capabilities (new `kubernetes/apps/<ns>/<app>/` directories)
-- `fix:` → Bug fixes, crash loops, probe failures, resource issues, alert resolutions
-- `refactor:` → Resource reorganization, manifest restructuring, no behavior change
+### Quality Assurance
 
-**Scripts:**
+MANDATORY validation sequence after ALL changes:
 
-- `feat:` → New script capabilities in `scripts/`
-- `fix:` → Script bug fixes, validation corrections
-- `chore:` → Script reorganization without behavior change
+1. pre-commit run --all-files (or pre-commit run --files file1 file2...)
+2. MUST NOT proceed to commit without completing pre-commit validation
+3. Additional validation: kustomize build, kubectl dry-run, flux check
 
-**Breaking changes (!:):**
+### Task Command Priority
 
-- API/CRD version upgrades requiring manual intervention
-- Incompatible Helm chart major version upgrades
-- Storage class or PVC changes requiring data migration
+- ALWAYS check Taskfile.yaml before using raw CLI commands
+- Use task commands over direct CLI when available
+- Common tasks: task reconcile, task --list
 
-**Scopes from paths:**
+### Reference Format
 
-- `kubernetes/apps/<namespace>/<app>/**` → `(<app>)` (e.g., `fix(plex): resolve crash loop`)
-- `kubernetes/flux/**` → `(flux)`
-- `talos/**` → `(talos)`
-- `.github/**`, `.taskfiles/**` → `(ci)`
-- `scripts/**` → `(scripts)`
-- `.renovate/**`, `renovate.json5` → `(deps)` when modifying Renovate behavior (NOT for automated
-  dependency PRs)
+- Use file.yaml:123 format when referencing code locations
 
-## Namespace Management Strategy
+### Configuration Philosophy
 
-**CRITICAL NAMESPACE PATTERNS - MANDATORY ENFORCEMENT:**
+- PREFER YAML defaults by omission over explicit configuration
+- Minimal configuration improves maintainability and clarity
 
-This repository uses an **Explicit Namespace Declaration** pattern that differs from onedr0p's
-inheritance-based approach for enhanced reliability in GitOps operations.
+### Domain References
 
-### Core Philosophy Comparison
+- NEVER reference real homelab domain names in documentation or config examples
+- Use domain.com for documentation examples
+- Use ${SECRET_DOMAIN} in YAML manifests for actual domain references
 
-**onedr0p/home-ops Pattern** (dual namespace declaration):
+### YAML Standards
+
+- ALWAYS include appropriate # yaml-language-server: directive at top of YAML files
+- Use URLs consistent with existing repo patterns
+- Flux schemas for Flux resources
+- Kubernetes JSON schemas for core K8s resources
+- schemastore.org for standard files
+- NEVER unnecessarily quote YAML values unless required to disambiguate or force types
+
+### Documentation Requirements
+
+MANDATORY documentation for non-standard configurations:
+
+- WHY special approach was needed (chart limitations, upstream issues)
+- WHAT alternatives were considered and rejected
+- HOW solution works technically
+- WHEN to reconsider the approach
+- Place comments directly above or within relevant configuration sections
+- Required for: postRenderers, kustomize patches, workarounds, deviations from defaults, custom
+  resources
+
+### Cluster Hostname Standards
+
+- NEVER end cluster hostnames with svc.cluster.local
+- ALWAYS use shortest resolvable form: service.namespace
+
+### Authelia SecurityPolicy ReferenceGrant
+
+When creating SecurityPolicy resources referencing Authelia:
+
+- MUST update ReferenceGrant at kubernetes/apps/default/authelia/referencegrant.yaml
+- MUST add SecurityPolicy's namespace to ReferenceGrant
+- ReferenceGrant does NOT support wildcards
+- Each namespace MUST be explicitly listed
+- Without ReferenceGrant update: backend ref not permitted by any ReferenceGrant error
+
+## Repository Conventions
+
+CRITICAL: ALWAYS check existing applications before making changes. ALWAYS follow THIS repository's
+established patterns. NEVER invent new patterns. NEVER adopt conventions from other repositories.
+
+### Directory Structure
+
+- Pattern: kubernetes/apps/namespace/app/
+- Namespace directories MUST match actual namespace names exactly
+- Standard files in app directory:
+  - helmrelease.yaml
+  - ks.yaml
+  - kustomization.yaml
+  - pvc.yaml
+  - externalsecret.yaml
+  - httproute.yaml (for non-app-template charts or dedicated routing)
+  - securitypolicy.yaml (for Authelia-protected apps)
+- Asset subdirectories (only when needed):
+  - config/ (application configurations, may include vector configs)
+  - resources/ (additional resource manifests)
+  - icons/ (application icons for dashboards)
+- NEVER create unnecessary subdirectories
+- Co-locate all manifests in app directory unless assets require organization
+
+### Namespace Patterns
+
+App-to-namespace mapping (reference for Claude):
+
+- cert-manager: cert-manager
+- default: authelia, bookstack, filerun, homepage, immich, silverbullet
+- dns-private: adguard-home, adguard-home-sync, dns-gateway, external-dns, secret
+- external: opensprinkler
+- flux-system: flux-instance, flux-operator
+- home: esphome, home-assistant, zwave-js-ui
+- kube-system: cilium, cloudnative-pg, coredns, external-secrets, intel-gpu-plugin,
+  mariadb-operator, metrics-server, multus, node-feature-discovery, reloader, snapshot-controller,
+  spegel
+- media: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,
+  radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
+- network: cloudflare-dns, cloudflare-tunnel, envoy-gateway
+- observability: gatus, grafana, victoria-logs-single, victoria-metrics-k8s-stack, vmrules
+- rook-ceph: cluster, operator
+- storage: kopia, volsync
+
+### Kustomization Patterns
+
+App ks.yaml file (Flux Kustomization):
+
+- NEVER specify metadata.namespace (VIOLATION)
+- MUST have spec.targetNamespace: namespace (REQUIRED)
+- MUST include sourceRef with GitRepository flux-system in flux-system namespace
+- Pattern example (kubernetes/apps/default/silverbullet/ks.yaml:1):
 
 ```yaml
-# App ks.yaml example from onedr0p
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app home-assistant
-  namespace: &namespace default  # Declares metadata.namespace
+  name: &app silverbullet
 spec:
-  targetNamespace: *namespace     # Also declares targetNamespace
+  targetNamespace: default
+  path: ./kubernetes/apps/default/silverbullet
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
 ```
 
-- App ks.yaml files HAVE `metadata.namespace` with YAML anchors
-- Also uses `targetNamespace: *namespace` for consistency
-- Parent kustomization sets `namespace: <namespace>`
-- PVCs inherit namespace implicitly (no explicit declarations)
-- Relies on Kustomize namespace propagation for resources
+Parent kustomization.yaml file (Kustomize):
 
-**This Repository Pattern** (explicit-declaration):
-
-- Parent kustomization sets `namespace: <namespace>` for organization
-- App ks.yaml files NEVER have `metadata.namespace` (VIOLATION)
-- Each app Kustomization explicitly declares `spec.targetNamespace: <namespace>`
-- PVCs inherit namespace implicitly (no explicit declarations)
-- Self-contained apps with clear namespace declarations
-
-### Mandatory Namespace Requirements
-
-**CRITICAL VIOLATIONS - Claude MUST check FIRST before analysis:**
-
-- **App ks.yaml Files**: NEVER specify `metadata.namespace` (VIOLATION - remove immediately)
-- **App ks.yaml Files**: MUST have explicit `spec.targetNamespace: <namespace>` (REQUIRED)
-- **PVC Files**: Inherit namespace implicitly (no explicit namespace declarations)
-- **Parent Kustomization**: Sets `namespace: <namespace>` only (no patches needed)
-- **App Kustomization**: NEVER specify `namespace` field (inheritance conflicts)
-
-### Pattern Examples
-
-**CORRECT App Kustomization** (`kubernetes/apps/media/plex/ks.yaml`):
+- Sets namespace: namespace at top for organization
+- Lists all app ks.yaml files in resources
+- Includes components (common, drift-detection)
+- Pattern example (kubernetes/apps/default/kustomization.yaml:1):
 
 ```yaml
-apiVersion: kustomize.toolkit.fluxcd.io/v1
+apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: default
+components:
+- ../../components/common
+- ../../components/drift-detection
+resources:
+- ./authelia/ks.yaml
+- ./bookstack/ks.yaml
+- ./silverbullet/ks.yaml
+```
+
+App kustomization.yaml file:
+
+- NEVER specify namespace field (conflicts with inheritance)
+- Lists resources: helmrelease.yaml, pvc.yaml, externalsecret.yaml, etc
+- May include components (volsync)
+- May define configMapGenerator for app configurations
+- Pattern example (kubernetes/apps/default/bookstack/kustomization.yaml:1):
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+components:
+- ../../../components/volsync
+resources:
+- helmrelease.yaml
+- mariadb.yaml
+- pvc.yaml
+- externalsecret.yaml
+```
+
+Kustomization logic:
+
+- Single ks.yaml: Same namespace, timing, and lifecycle
+- Multiple ks.yaml: Different namespaces, timing, lifecycle, or operator+instance patterns
+
+### HelmRelease Patterns
+
+Chart reference:
+
+- ALWAYS use chartRef (NEVER chart.spec.sourceRef)
+- chartRef references OCIRepository by name
+- NO namespace needed in chartRef when OCIRepository is in same namespace
+- Pattern example (kubernetes/apps/media/plex/helmrelease.yaml:9):
+
+```yaml
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
 metadata:
   name: plex
 spec:
-  targetNamespace: media  # REQUIRED: Explicit declaration
-  interval: 1h
-  # ... rest of spec
+  chartRef:
+    kind: OCIRepository
+    name: app-template
 ```
 
-**CORRECT PVC Declaration** (`kubernetes/apps/default/bookstack/pvc.yaml`):
+OCIRepository pattern:
+
+- Each app owns its ocirepository.yaml file (NOT centralized)
+- Located in app directory alongside helmrelease.yaml
+- App-template OCIRepository is in components/common/repos/app-template/
+- Referenced by all app-template applications via common component
+- Non-app-template charts: Create app-specific OCIRepository
+- Pattern example (kubernetes/apps/observability/victoria-logs-single/ocirepository.yaml:1):
+
+```yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: victoria-logs-single
+spec:
+  interval: 15m
+  layerSelector:
+    mediaType: application.vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 0.11.16
+  url: oci://ghcr.io/victoriametrics/helm-charts/victoria-logs-single
+```
+
+App-template conventions:
+
+- HTTPRoute over Ingress for routing
+- Route priority: Use route: blocks in app-template values
+- Use standalone HTTPRoute only for non-app-template charts or when charts lack routing
+- Add postBuild.substituteFrom: cluster-secrets for cluster-wide variables
+- Service naming: Multiple services auto-prefixed with release name
+- Service naming pattern: ${.Release.Name}-${service-identifier}
+- Example: HelmRelease immich with service redis creates service immich-redis.default
+- Route backendRefs: Use full service name (e.g., authelia-app), not identifier (e.g., app)
+
+App naming convention:
+
+- NEVER use cluster-apps- prefix in service/app names
+- Use straightforward naming matching directory structure
+- Example: mariadb-operator (NOT cluster-apps-mariadb-operator)
+
+### Namespace Declaration Patterns
+
+CRITICAL VIOLATIONS - Check FIRST before analysis:
+
+- App ks.yaml: NEVER metadata.namespace (VIOLATION), MUST spec.targetNamespace: namespace (REQUIRED)
+- PVCs: Inherit namespace implicitly (NO explicit namespace field)
+- Parent kustomization.yaml: Sets namespace: namespace for organization only
+- App kustomization.yaml: NEVER specify namespace field (inheritance conflicts)
+
+PVC pattern example (kubernetes/apps/default/bookstack/pvc.yaml:1):
 
 ```yaml
 apiVersion: v1
@@ -154,179 +291,505 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  # ... rest of spec
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ceph-block
 ```
 
-**CORRECT Parent Kustomization** (`kubernetes/apps/default/kustomization.yaml`):
+### Secret Management Patterns
+
+ExternalSecret pattern (REQUIRED):
+
+- NO secret.sops.yaml files (obsolete pattern)
+- ALL secrets use ExternalSecret with Infisical ClusterSecretStore
+- Path structure: /namespace/app/secret-name
+- Naming: kebab-case for secret names and folders
+- Pattern example (kubernetes/apps/default/bookstack/externalsecret.yaml:1):
 
 ```yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: bookstack-secret
+spec:
+  refreshInterval: 5m
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: infisical
+  target:
+    name: bookstack-secret
+    creationPolicy: Owner
+  data:
+  - secretKey: APP_KEY
+    remoteRef:
+      key: /default/bookstack/app-key
+```
+
+Secret integration priority:
+
+1. envFrom at app level for application secrets
+2. env.valueFrom for individual values
+3. HelmRelease valuesFrom for chart values
+4. NEVER postBuild.substituteFrom for app secrets (timing issues with ExternalSecret)
+5. ONLY use postBuild.substituteFrom for: cluster-secrets, email-secrets (pre-existing)
+
+SOPS usage (cluster-wide secrets only):
+
+- Cluster secrets: kubernetes/components/common/sops/cluster-secrets.sops.yaml
+- Email secrets: kubernetes/components/common/sops/email-secrets.sops.yaml
+- SOPS commands:
+  - Set: `sops set file.sops.yaml '["stringData"]["KEY"]' '"value"' --idempotent`
+  - Remove: `sops unset file.sops.yaml '["stringData"]["KEY"]'`
+
+### Storage and Mounting Patterns
+
+CRITICAL: ReadWriteOnce (RWO) volumes REQUIRE strategy: Recreate
+
+Deployment strategy requirements:
+
+- RWO volumes: MUST use strategy: Recreate (RollingUpdate causes ContainerCreating failures)
+- RWX/emptyDir/configMap: RollingUpdate acceptable
+- Stateless apps: Prefer RollingUpdate (zero-downtime)
+- Stateful apps: Use Recreate (data consistency)
+
+Volume mounting strategy:
+
+- globalMounts: Mounts to ALL controllers and containers (use ONLY for RWX/ConfigMaps)
+- advancedMounts: Mounts to specific controller/container (REQUIRED for RWO volumes)
+- Single-controller apps: advancedMounts preferred for clarity
+- Multi-controller apps: NEVER globalMounts with RWO volumes
+
+Storage class selection:
+
+- ceph-block (RWO): Single pod exclusive, requires strategy: Recreate, use advancedMounts
+- ceph-filesystem (RWX): Multi-pod sharing, RollingUpdate compatible, use globalMounts
+- NFS (RWX): Multi-pod sharing for large media, RollingUpdate compatible, use globalMounts
+- emptyDir: Always multi-pod compatible, use globalMounts
+
+Pattern example (kubernetes/apps/default/authelia/helmrelease.yaml:26):
+
+```yaml
+controllers:
+  authelia:
+    strategy: Recreate  # Required for RWO volume
+
+persistence:
+  config:
+    existingClaim: authelia
+    advancedMounts:  # Required for RWO volume
+      authelia:
+        app:
+        - path: /config
+```
+
+PVC strategy:
+
+- volsync component: Handles backups only, does NOT create PVCs
+- Manual PVC: ALL apps require explicit PVC definitions in pvc.yaml
+- HelmRelease: Reference via existingClaim: appname
+- File organization: ALWAYS include ./pvc.yaml in kustomization.yaml resources
+- Naming: Primary PVC matches app name, additional PVCs use {app}-{purpose}
+
+### ConfigMap Patterns
+
+Stable naming (disableNameSuffixHash: true):
+
+- ONLY use for cross-resource name dependencies
+- Required for: Helm valuesFrom references, app-template persistence.name references
+- Examples requiring stable names:
+  - homepage: valuesFrom references configMap
+  - cloudflare-tunnel: persistence.name references configMap
+  - authelia: valuesFrom references configMap
+  - grafana: persistence.name references configMap
+- Pattern example (kubernetes/apps/default/homepage/kustomization.yaml:8):
+
+```yaml
+configMapGenerator:
+- name: homepage-config
+  files:
+  - ./config/settings.yaml
+  - ./config/services.yaml
+  options:
+    disableNameSuffixHash: true
+```
+
+Reloader annotation:
+
+- ALWAYS use reloader.stakater.com/auto: "true" for ALL apps
+- NEVER use specific secret/configmap reload annotations
+- Annotation placement: HelmRelease spec.values.controllers.{controller}.annotations
+- Pattern example:
+
+```yaml
+controllers:
+  app:
+    annotations:
+      reloader.stakater.com/auto: "true"
+```
+
+### Component Usage Patterns
+
+common component:
+
+- Included in ALL namespace parent kustomization.yaml files
+- Provides: app-template OCIRepository, SOPS secrets (cluster-secrets, email-secrets), namespace
+  resource
+- Located at: kubernetes/components/common/
+- Pattern: - ../../components/common in components list
+
+drift-detection component:
+
+- Included in ALL namespace parent kustomization.yaml files
+- Provides: Drift detection for Flux resources
+- Located at: kubernetes/components/drift-detection/
+- Pattern: - ../../components/drift-detection in components list
+
+volsync component:
+
+- Included in app kustomization.yaml when backup needed
+- Provides: Kopia-based backup with S3 backend to s3://volsync-backups/{APP}/
+- Located at: kubernetes/components/volsync/
+- REQUIRES postBuild.substitute.APP variable in app ks.yaml
+- Optional: postBuild.substitute.VOLSYNC_PVC to override PVC name (defaults to ${APP})
+- REQUIRES postBuild.substituteFrom: cluster-secrets for S3 credentials
+- Pattern example (kubernetes/apps/default/silverbullet/ks.yaml:22):
+
+```yaml
+postBuild:
+  substitute:
+    APP: silverbullet
+    VOLSYNC_PVC: silverbullet-data
+  substituteFrom:
+  - kind: Secret
+    name: cluster-secrets
+```
+
+### Security Patterns
+
+SecurityPolicy for Authelia:
+
+- MUST follow canonical example: kubernetes/apps/media/radarr/securitypolicy.yaml:1
+- CRITICAL headers requirements:
+  - headersToExtAuth: accept, cookie, authorization, x-forwarded-proto
+  - headersToBackend: remote-user, remote-groups, remote-email, remote-name, set-cookie
+- NEVER use wildcards for headers (ALWAYS explicit headers)
+- backendRef: authelia-app service in default namespace port 9091
+- Path: /api/authz/ext-authz/
+- backendSettings.retry.numRetries: 3
+- MUST update ReferenceGrant at kubernetes/apps/default/authelia/referencegrant.yaml
+- NO explicit namespace in metadata (inherits from parent kustomization)
+- Pattern example (kubernetes/apps/media/radarr/securitypolicy.yaml:1):
+
+```yaml
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: radarr-auth
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: radarr
+  extAuth:
+    headersToExtAuth:
+    - accept
+    - cookie
+    - authorization
+    - x-forwarded-proto
+    http:
+      backendRef:
+        name: authelia-app
+        namespace: default
+        port: 9091
+      path: /api/authz/ext-authz/
+      headersToBackend:
+      - remote-user
+      - remote-groups
+      - remote-email
+      - remote-name
+      - set-cookie
+      backendSettings:
+        retry:
+          numRetries: 3
+```
+
+Container security context:
+
+- ALWAYS use rootless containers
+- Standard security context:
+
+```yaml
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+```
+
+Pod security context:
+
+```yaml
+securityContext:
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
+```
+
+### Native Sidecar Pattern for Jobs
+
+CRITICAL for Jobs/CronJobs with RWO volumes:
+
+- Jobs/CronJobs using ReadWriteOnce PVCs MUST use native sidecar pattern
+- Pattern: initContainers with restartPolicy: Always
+- Purpose: Auto-terminates sidecar after main container completes
+- Without this: Sidecar keeps running, preventing RWO volume release, causing Multi-Attach errors on
+  next run
+- Pattern example (kubernetes/apps/media/kometa/helmrelease.yaml:1):
+
+```yaml
+controllers:
+  kometa:
+    type: cronjob
+    initContainers:
+      vector-sidecar:
+        image:
+          repository: timberio/vector
+          tag: 0.50.0-alpine
+        restartPolicy: Always  # Native sidecar - auto-terminates
+```
+
+Standard deployments:
+
+- Use regular sidecar containers (NOT initContainers)
+- No special restartPolicy needed
+
+## Namespace Management
+
+CRITICAL NAMESPACE RULES - MANDATORY ENFORCEMENT:
+
+App ks.yaml files:
+
+- NEVER specify metadata.namespace (VIOLATION)
+- MUST have explicit spec.targetNamespace: namespace (REQUIRED)
+
+PVC files:
+
+- Inherit namespace implicitly
+- NO explicit namespace field (VIOLATION if present)
+
+Parent kustomization.yaml:
+
+- Sets namespace: namespace only for organization
+- NO patches needed for namespace propagation
+
+App kustomization.yaml:
+
+- NEVER specify namespace field (inheritance conflicts)
+
+Pattern example (kubernetes/apps/default/silverbullet/ks.yaml:1):
+
+```yaml
+apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
-namespace: default  # Organization only
-resources:
-- ./bookstack/ks.yaml
-- ./silverbullet/ks.yaml
+metadata:
+  name: &app silverbullet
+spec:
+  targetNamespace: default
+  path: ./kubernetes/apps/default/silverbullet
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
 ```
 
-### Debugging Protocol for Namespace Issues
+Debugging protocol for namespace issues:
 
-When ANY namespace-related error occurs, Claude MUST immediately:
+1. Check ALL namespace violations above before other analysis
+2. Compare broken app against known working app (silverbullet, plex)
+3. Look for metadata.namespace violations in ks.yaml files
+4. Verify app has explicit spec.targetNamespace declaration
+5. Verify PVCs inherit namespace implicitly (no explicit namespace)
+6. NEVER suggest architectural changes until basic violations ruled out
 
-1. Check ALL namespace violations above before any other analysis
-2. Compare broken app against known working app (e.g., silverbullet)
-3. Look for `metadata.namespace` violations in ks.yaml files
-4. Verify app has explicit `spec.targetNamespace` declaration
-5. Verify PVCs inherit namespace implicitly (no explicit namespace fields)
-6. NEVER suggest architectural changes until basic violations are ruled out
+## Reference Sections
 
-### Why This Pattern
+### Deployment Standards
 
-- **Reliability**: Deterministic namespace resolution with explicit targetNamespace
-- **Clarity**: Self-contained apps with clear namespace targets
-- **Debugging**: Easier tracing of namespace-related issues
-- **Consistency**: Prevents timing issues during resource creation/backups
+GitRepository sourceRef pattern:
 
-## Quality Assurance & Validation
-
-### Mandatory Debugging Checklist
-
-Claude MUST check FIRST before analysis:
-
-- Apply complete namespace requirements from "Namespace Management Strategy"
-- Use debug pods for introspection (NOT `kubectl port-forward`)
-- All solutions MUST be GitOps/configuration-based (NO adhoc cluster fixes)
-- Start debugging with `kubectl get events -n <namespace>`
-
-### Essential Validation Sequence
-
-Claude MUST run ALL steps after changes:
-
-1. **Pre-commit Checks**: `pre-commit run --all-files` (or `pre-commit run --files <files>`)
-2. **Additional Validation**: kustomize build → kubectl dry-run → flux check
-
-### Required Tools
-
-- **Helm**: `helm template`, `helm search repo <chart> --versions`, `helm show values` for secrets
-- **MUST NOT proceed to commit without completing pre-commit validation**
-
-## Container Image Standards
-
-### Critical Container Image Priority
-
-- **Primary Choice**: `ghcr.io/home-operations/*` - ALWAYS prefer home-operations containers when
-  available
-  - Mission: Provide semantically versioned, rootless, multi-architecture containers
-  - Philosophy: KISS principle, one process per container, no s6-overlay, Alpine/Ubuntu base
-  - Run as non-root user (65534:65534 by default), fully Kubernetes security compatible
-  - Examples: `ghcr.io/home-operations/sabnzbd`, `ghcr.io/home-operations/qbittorrent`
-- **Secondary Choice**: `ghcr.io/onedr0p/*` - Use only if home-operations doesn't provide the
-  container
-  - Legacy containers that have moved to home-operations organization
-  - Still maintained but home-operations is preferred for new deployments
-- **Avoid**: `ghcr.io/hotio/*` and containers using s6-overlay, gosu, or unconventional
-  initialization
-  - These often have compatibility issues with Kubernetes security contexts
-  - Prefer home-operations containers which eschew such tools by design
-
-### Mandatory Image Standards & Verification
-
-1. **Image Selection Process:**
-   - **Always check** `https://github.com/home-operations/containers/tree/main/apps/` first
-   - Only contribute/use if: upstream actively maintained AND (no official image OR no multi-arch OR
-     uses s6-overlay/gosu)
-   - Check for deprecation notices (6-month removal timeline)
-
-2. **Tag Immutability Requirements:**
-   - **NEVER** use `latest` or `rolling` tags without SHA256 digests
-   - **PREFER** semantic versions with SHA256: `app:4.5.3@sha256:8053...`
-   - **ACCEPTABLE** semantic versions without SHA256: `app:4.5.3` (renovatebot will add digest)
-   - **REQUIRED** SHA256 pinning for production workloads ensures true immutability
-
-3. **Security Context Configuration:**
-
-   ```yaml
-   securityContext:
-     runAsUser: 1000          # Customizable
-     runAsGroup: 1000         # Customizable
-     fsGroup: 65534
-     fsGroupChangePolicy: OnRootMismatch
-     allowPrivilegeEscalation: false
-     readOnlyRootFilesystem: true  # Requires emptyDir mounts for /tmp
-     capabilities:
-       drop: [ALL]
-   ```
-
-4. **Volume Standards:**
-   - Config volume: ALWAYS `/config` (hardcoded)
-   - Temp storage: emptyDir to `/tmp` for readOnlyRootFilesystem
-   - CLI options: Use `args:` field
-
-5. **Signature Verification:** `gh attestation verify --repo home-operations/containers
-   oci://ghcr.io/home-operations/${APP}:${TAG}`
-
-## Deployment Standards
-
-### Critical Flux Patterns
-
-- **GitRepository**: ALWAYS use `flux-system` name, verify sourceRef matches existing Kustomizations
-- **CRITICAL**: GitRepository sourceRef MUST include `namespace: flux-system`
-- **CRITICAL**: SOPS decryption MUST include `secretRef: {name: sops-age}` - this is required for
-  encrypted secrets
-- **OCIRepository over HelmRepository**: ALWAYS prefer OCIRepository when available. Verify OCI
-  support via Context7/official docs before migration. HelmRepository is legacy - only use when
-  upstream lacks OCI. Reference: `docs/memory-bank/helmrepository-to-ocirepository-migration.md`
-- **OCIRepository Pattern**: Each app owns its `ocirepository.yaml` (NOT centralized). Use
-  `chartRef` (not `chart.spec.sourceRef`): `chartRef: {kind: OCIRepository, name: app-name}`. No
-  namespace needed in chartRef (same namespace). Structure: `ocirepository.yaml` with
-  `layerSelector`, `ref.tag`, `url: oci://registry/path/chart-name`. Example: rook-ceph,
-  victoria-metrics-k8s-stack
-- **App-Template**: HTTPRoute over Ingress, add `postBuild.substituteFrom: cluster-secrets`
-- **App-Template Service Naming**: Services auto-prefixed with release name when multiple services
-  exist. Pattern: `{{ .Release.Name }}-{{ service-identifier }}`. Example: HelmRelease `immich` with
-  service identifier `redis` creates service `immich-redis.default`. DNS references use full
-  prefixed name.
-- **Route backendRefs**: When using explicit `route.*.rules.backendRefs.name`, use full service name
-  (e.g., `authelia-app`), not identifier (e.g., `app`). Without explicit rules, app-template
-  auto-resolves service names.
-- **Directory Structure**: `kubernetes/apps/<namespace>/<app>/` - namespace dirs MUST match names
-  exactly
-- **File Organization**: All manifests co-located (helmrelease.yaml, ks.yaml, kustomization.yaml,
-  secrets, pvcs). Subdirectories only for assets (config/, resources/, icons/)
-- **Kustomization Logic**: Single ks.yaml for same namespace+timing+lifecycle. Multiple for
-  different namespaces/timing/lifecycle or operator+instance patterns
-- **Explicit Namespace Pattern**: See "Namespace Management Strategy" section for complete
-  requirements
-- **Naming Convention**: NEVER use `cluster-apps-` prefix in service/app names. Use straightforward
-  naming that matches the directory structure (e.g., `mariadb-operator`, not
-  `cluster-apps-mariadb-operator`)
-- **Validation**: See "Quality Assurance & Validation" section above
-- **Helm**: See "Quality Assurance & Validation" section above
-- **Timing**: Never specify explicit timeouts/intervals without specific issue justification
-
-## Storage & Secrets
-
-### Important Patterns
-
-- **NFS**: Static PVs for existing data, PVCs in app dirs, subPath mounting
-- **Database Isolation**: NEVER share databases between apps, deploy dedicated instances
-- **Secret Integration Priority**: 1) `envFrom` at app, 2) `env.valueFrom`, 3) HelmRelease
-  `valuesFrom`. NEVER `postBuild.substituteFrom` for app secrets (timing issues with ExternalSecret)
-- **ONLY use `postBuild.substituteFrom`**: cluster-secrets, email-secrets (pre-existing secrets)
-- **Secret Management**: App-isolated secrets, `sops --set` for changes, `sops unset` for removal
-- **Chart Analysis**: See "Quality Assurance & Validation" section above for verification methods
-
-### Infisical ESO Integration
-
-- **Provider**: Native ESO Infisical provider with Universal Auth (Machine Identity)
-- **Implementation**: Standard External Secrets Operator with Infisical backend
-- **Pattern**: Use ClusterSecretStore + ExternalSecret resources - no custom CRDs
-- **Organization**: Path-based secrets using `/namespace/app/secret-name` structure
-
-#### Infisical ClusterSecretStore
+- ALWAYS use flux-system as name
+- MUST include namespace: flux-system in sourceRef
+- Verify sourceRef matches existing Kustomizations
+- Pattern:
 
 ```yaml
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/external-secrets.io/clustersecretstore_v1.json
+sourceRef:
+  kind: GitRepository
+  name: flux-system
+  namespace: flux-system
+```
+
+SOPS decryption:
+
+- MUST include secretRef: {name: sops-age} for encrypted secrets
+- Required in Flux Kustomization spec for SOPS-encrypted files
+- Pattern:
+
+```yaml
+spec:
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+```
+
+HTTPRoute pattern:
+
+- HTTPRoute over Ingress for all routing
+- Route through existing gateways (internal, external)
+- Gateway references in parentRefs
+- Pattern:
+
+```yaml
+route:
+  app:
+    hostnames:
+    - app.${SECRET_DOMAIN}
+    parentRefs:
+    - name: external
+      namespace: network
+      sectionName: https
+```
+
+Health probes:
+
+- NEVER use executable commands in probes
+- Use httpGet, tcpSocket, or grpc probe types only
+
+Timing:
+
+- NEVER specify explicit timeouts/intervals without specific issue justification
+- Use Flux defaults unless problem documented
+
+Validation sequence:
+
+1. pre-commit run --all-files (or --files for specific files)
+2. kustomize build (optional validation)
+3. kubectl dry-run (optional validation)
+4. flux check (optional validation)
+
+Helm operations:
+
+- Template rendering: helm template releasename chartpath -f values.yaml
+- Chart search: helm search repo chartname --versions
+- Values inspection: helm show values chartrepo/chartname
+- NEVER proceed to commit without pre-commit validation
+
+### Container Image Standards
+
+Primary choice (ALWAYS prefer):
+
+- ghcr.io/home-operations/* containers
+- Mission: Semantically versioned, rootless, multi-architecture
+- Philosophy: KISS principle, one process per container, NO s6-overlay, Alpine/Ubuntu base
+- Run as non-root user (65534:65534 default)
+- Fully Kubernetes security compatible
+- Examples: ghcr.io/home-operations/sabnzbd, ghcr.io/home-operations/plex
+- Verification: <https://github.com/home-operations/containers/tree/main/apps/>
+
+Secondary choice (only if home-operations unavailable):
+
+- ghcr.io/onedr0p/* containers
+- Legacy containers moved to home-operations
+- Still maintained but home-operations preferred
+
+Avoid:
+
+- ghcr.io/hotio/* and containers using s6-overlay, gosu, unconventional initialization
+- Compatibility issues with Kubernetes security contexts
+
+Tag immutability:
+
+- NEVER use latest or rolling tags without SHA256 digests
+- PREFER semantic versions with SHA256: app:4.5.3@sha256:8053...
+- ACCEPTABLE semantic versions without SHA256: app:4.5.3 (renovatebot adds digest)
+- REQUIRED SHA256 pinning for production workloads
+
+Security context configuration:
+
+```yaml
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 65534
+  fsGroupChangePolicy: OnRootMismatch
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+```
+
+Volume standards:
+
+- Config volume: ALWAYS /config (hardcoded in home-operations containers)
+- Temp storage: emptyDir to /tmp when readOnlyRootFilesystem enabled
+- CLI options: Use args: field in container spec
+
+Signature verification:
+
+```bash
+gh attestation verify --repo home-operations/containers \
+  oci://ghcr.io/home-operations/${APP}:${TAG}
+```
+
+### Network Configuration
+
+HTTPRoute requirements:
+
+- HTTPRoute ONLY (never Ingress)
+- Route through existing gateways
+- Use app-template route: blocks for app-template applications
+- Standalone HTTPRoute for non-app-template charts or when charts lack routing
+
+LoadBalancer restrictions:
+
+- NEVER create LoadBalancer without explicit user discussion
+- Cilium IPAM for static assignment: lbipam.cilium.io/ips annotation
+- Internal gateway: 192.168.50.72
+- External gateway: 192.168.50.73
+- Application LoadBalancers: 192.168.50.100+ (direct pod access, bypassing gateways)
+
+External-DNS configuration:
+
+- Configure target annotations on Gateways ONLY
+- NEVER configure on HTTPRoutes
+- Use gateway-httproute source for CNAME inheritance
+- Pattern:
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
+```
+
+Health probes:
+
+- NEVER use executable commands
+- Use httpGet, tcpSocket, or grpc only
+
+Hostnames:
+
+- Use shortest resolvable form
+- Pattern: service.namespace (NOT service.namespace.svc.cluster.local)
+
+### Secret Management Reference
+
+Infisical ClusterSecretStore:
+
+```yaml
 apiVersion: external-secrets.io/v1
 kind: ClusterSecretStore
 metadata:
@@ -353,11 +816,9 @@ spec:
         expandSecretReferences: false
 ```
 
-#### ExternalSecret Usage
+ExternalSecret usage:
 
 ```yaml
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/external-secrets.io/externalsecret_v1.json
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
@@ -375,516 +836,151 @@ spec:
       key: /default/app/api-key
 ```
 
-#### Infisical CLI Usage
-
-**Common Operations:**
+Infisical CLI operations:
 
 ```bash
-infisical secrets --env=prod --path=/namespace/app              # List
-infisical secrets get <name> --env=prod --path=/namespace/app   # Get
-infisical secrets set <name>=<value> --env=prod --path=/ns/app  # Set (multi supported)
-infisical secrets delete <name> --env=prod --path=/ns/app       # Delete
-```
+# List secrets
+infisical secrets --env=prod --path=/namespace/app
 
-**Folder Management:**
+# Get secret
+infisical secrets get NAME --env=prod --path=/namespace/app
 
-```bash
+# Set secret (supports multiple)
+infisical secrets set NAME=value NAME2=value2 --env=prod --path=/namespace/app
+
+# Delete secret
+infisical secrets delete NAME --env=prod --path=/namespace/app
+
+# List folders
 infisical secrets folders get --env=prod --path=/namespace
+
+# Create folder
 infisical secrets folders create --name app-name --path=/namespace --env=prod
 ```
 
-**CRITICAL:** Create folders BEFORE setting secrets. Setting secrets in non-existent folders fails
+CRITICAL: Create folders BEFORE setting secrets. Setting secrets in non-existent folders fails
 silently (exit 0) without creating secrets.
 
-**Conventions:** kebab-case for names/folders, path structure: `/namespace/app/secret-name`
+Conventions:
 
-### PVC Strategy
+- kebab-case for names and folders
+- Path structure: /namespace/app/secret-name
 
-- **volsync component**: Handles backups only - does NOT create PVCs
-- **Manual PVC**: All apps require explicit PVC definitions in pvc.yaml
-- **HelmRelease**: `existingClaim: appname` (direct name reference)
-- **File organization**: Always include `./pvc.yaml` in kustomization.yaml
-- **Naming**: Primary PVC matches app name, additional PVCs use `{app}-{purpose}` pattern
+### Storage and Backup Reference
 
-## Storage & Deployment Strategy
+NFS patterns:
 
-### Critical Storage and Deployment Rules
+- Static PVs for existing data
+- PVCs in app directories
+- subPath mounting for directory isolation
 
-Claude MUST enforce these patterns:
+Database isolation:
 
-#### Deployment Strategy Requirements
+- NEVER share databases between apps
+- Deploy dedicated database instances per app
+- Use CloudNativePG for PostgreSQL
+- Use MariaDB Operator for MariaDB
 
-**MANDATORY: ReadWriteOnce (RWO) volumes require Recreate strategy:**
+PVC strategy:
 
-- RWO + RollingUpdate = INCOMPATIBLE (ContainerCreating failures)
-- RWO volumes: single pod exclusive access
-- RollingUpdate starts new pod before terminating old = volume conflict
-- **SOLUTION: `strategy: Recreate` with RWO volumes**
+- volsync component: Backups only, does NOT create PVCs
+- Manual PVC: ALL apps require explicit pvc.yaml
+- HelmRelease: existingClaim: appname
+- File organization: Include ./pvc.yaml in kustomization.yaml
+- Naming: Primary matches app name, additional use {app}-{purpose}
 
-**Strategy Selection:**
+S3 Object Storage (Garage):
 
-- RWO volumes → `strategy: Recreate` (REQUIRED)
-- RWX/emptyDir/configMap only → `strategy: RollingUpdate` (acceptable)
-- Stateless apps → prefer RollingUpdate (zero-downtime)
-- Stateful apps → use Recreate (data consistency)
+- Endpoint: <http://192.168.1.58:3900>
+- Region: garage
+- Credentials: kubernetes/components/common/sops/cluster-secrets.sops.yaml
+- Buckets: postgres-backups, volsync-backups, bookstack-backups
+- Access pattern: postBuild.substituteFrom: cluster-secrets for ${S3_ENDPOINT}, ${S3_ACCESS_KEY_ID},
+  ${S3_SECRET_ACCESS_KEY}
 
-#### Volume Mounting Strategy
-
-**Volume Mount Rules:**
-
-- **globalMounts**: Mounts to ALL controllers and containers - use only for RWX volumes/ConfigMaps
-- **advancedMounts**: Mounts to specific controller/container - REQUIRED for RWO volumes
-- **Single-controller apps**: `globalMounts` acceptable, `advancedMounts` preferred for clarity
-- **Multi-controller apps**: NEVER use `globalMounts` with RWO volumes
-
-##### Storage Class Guidelines
-
-- **ReadWriteOnce (RWO)**: `ceph-block` - Single pod exclusive, requires `strategy: Recreate`
-- **ReadWriteMany (RWX)**: `ceph-filesystem`, NFS - Multi-pod sharing, compatible with
-  `RollingUpdate`
-- **emptyDir/configMap**: Always multi-pod compatible
-
-##### Storage Selection Strategy
-
-- **App-specific data**: `ceph-block` (RWO) + `advancedMounts` + `Recreate`
-- **Shared config**: ConfigMaps + `globalMounts` + any strategy
-- **Multi-pod data**: `ceph-filesystem` (RWX) + `globalMounts` + `RollingUpdate`
-- **Large media**: NFS PVs (RWX) + `globalMounts` + `RollingUpdate`
-
-## ConfigMap & Reloader Strategy
-
-### Important Notes
-
-Use stable names (`disableNameSuffixHash: true`) ONLY for:
-
-- Helm `valuesFrom` references (external-dns, cloudflare-dns)
-- App-template `persistence.name` references (homepage, cloudflare-tunnel)
-- Cross-resource name dependencies
-
-**ALWAYS use** `reloader.stakater.com/auto: "true"` for ALL apps. NEVER use specific secret reload.
-
-**Critical**: App-template `persistence.name` requires literal string matching - cannot resolve
-Kustomize hashes.
-
-## Network Rules
-
-### Critical Network Patterns
-
-- **HTTPRoute ONLY**: HTTPRoute over Ingress, route through existing gateways
-- **LoadBalancer Ban**: NEVER create LoadBalancer without explicit user discussion
-- **Gateway IPs**: Use Cilium IPAM annotations (`lbipam.cilium.io/ips`) for static LoadBalancer
-  assignment (192.168.50.72 internal, 192.168.50.73 external)
-- **External-DNS**: Configure target annotations on Gateways ONLY, never HTTPRoutes. Use
-  gateway-httproute source for CNAME inheritance
-- **Route Priority**: Use app-template `route:` blocks for all app-template applications. Only use
-  standalone HTTPRoute for non-app-template charts or when dedicated Helm charts lack routing
-  capabilities
-- **Health Probes**: NEVER use executable commands
-- **Hostnames**: Use shortest resolvable form, avoid FQDNs when unnecessary
-
-## Authelia App Protection
-
-### SecurityPolicy Standards
-
-**CRITICAL: ALL SecurityPolicy resources MUST follow the exact pattern from the canonical example.**
-
-**Canonical Reference:** `kubernetes/apps/media/radarr/securitypolicy.yaml`
-
-**Required Configuration Elements:**
-
-1. **headersToExtAuth** - CRITICAL for session validation:
-   - `accept` - HTTP Accept header
-   - `cookie` - Sends session cookies to Authelia for validation
-   - `authorization` - Authorization header for bearer tokens
-   - `x-forwarded-proto` - Required for HTTPS validation
-   - **Without these**: Authentication validation fails
-
-2. **headersToBackend** - CRITICAL for session management:
-   - `set-cookie` - Passes Authelia session cookies back to client
-   - `remote-user`, `remote-groups`, `remote-email`, `remote-name` - User identity headers
-   - **Without set-cookie**: Authentication fails
-   - **NEVER use wildcards**: Always use explicit headers
-
-3. **backendRef** - Use singular (not array `backendRefs`)
-   - Backend: `authelia` service in `default` namespace, port `9091`
-   - Path: `/api/authz/ext-authz/`
-
-4. **backendSettings.retry.numRetries: 3** - Retry configuration
-
-5. **Namespace inheritance** - NEVER specify `namespace` in metadata (inherits from parent
-   kustomization)
-
-6. **Schema URL**:
-   `https://datreeio.github.io/CRDs-catalog/gateway.envoyproxy.io/securitypolicy_v1alpha1.json`
-
-**Validation Checklist:**
-
-- Compare against radarr/securitypolicy.yaml before committing
-- Verify namespace is listed in `kubernetes/apps/default/authelia/referencegrant.yaml`
-- Ensure all required headers are present (no wildcards)
-- Confirm NO explicit namespace in metadata (relies on kustomization inheritance)
-
-## Stack Overview
-
-Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfile, mise, talhelper.
-
-### Renovate
-
-- **Bot Name**: `renohate[bot]` (intentional name, not a typo)
-- **Config**: `renovate.json5` at repo root, modular configs in `.renovate/`
-
-## Essential Commands
-
-- **Setup**: `mise trust .mise.toml && mise install`
-- **Sync**: `task reconcile`
-- **Validate**: See "Quality Assurance & Validation" section above
-- **List Tasks**: `task --list`
-
-**Note**: Taskfile includes for `bootstrap` and `talos` exist at `.taskfiles/bootstrap/` and
-`.taskfiles/talos/`.
-
-## GitOps Flow
-
-1. Modify `kubernetes/` manifests
-2. **VALIDATION** (See "Quality Assurance & Validation" section above)
-3. **USER COMMITS/PUSHES** (not Claude)
-4. Flux auto-applies
-5. Optional: `task reconcile` for immediate sync
-
-### Flux Reconcile Strategy
-
-**MANDATORY: Two-stage approach for stuck reconciliations:**
-
-**Stage 1 (15s timeout):**
+AWS CLI usage:
 
 ```bash
-flux reconcile helmrelease <name> -n <ns> --timeout 15s
-```
-
-**Stage 2 (if timeout):**
-
-```bash
-flux reconcile helmrelease <name> -n <ns> --reset
-flux reconcile helmrelease <name> -n <ns> --with-source --force --timeout=30m
-```
-
-**Flags:** `--reset` clears retry exhaustion, `--with-source` refreshes source, `--force` bypasses
-retry limits
-
-## Cluster Info
-
-- **Network**: `192.168.1.0/24`, Gateway: `192.168.1.1`, API: `192.168.1.70`
-- **LoadBalancer IPs** (Cilium IPAM):
-  - `.71-.99`: Kubernetes infrastructure (gateways, DNS, system services)
-    - DNS: `192.168.50.71`
-    - Internal Gateway: `192.168.50.72`
-    - External Gateway: `192.168.50.73`
-  - `.100+`: Application LoadBalancers (direct pod access, bypassing gateways)
-    - Plex: `192.168.50.100`
-- **Tunnel**: `6b689c5b-81a9-468e-9019-5892b3390500` → `192.168.50.73`
-
-### Ceph Toolbox
-
-Permanent toolbox deployment enabled via Helm chart values in
-`kubernetes/apps/rook-ceph/cluster/helmrelease.yaml`.
-
-**Common Commands:**
-
-```bash
-# Interactive shell
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -it -- bash
-
-# Check cluster health
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status
-
-# RBD operations
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd ls ceph-block
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd status <image-name> -p ceph-block
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd info <image-name> -p ceph-block
-
-# Check RBD watchers (for debugging stuck volumes)
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd status <image-name> -p ceph-block
-
-# Force unmap RBD image (emergency use only - data loss risk)
-kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd unmap -o force /dev/rbd/<number>
-```
-
-### Nodes
-
-- **Control Plane**:
-  - lucy: `192.168.1.54` (physical)
-  - nami: `192.168.1.50` (NUC)
-  - marin: `192.168.1.59` (NUC)
-- **Workers**:
-  - sakura: `192.168.1.62` (NUC)
-  - hanekawa: `192.168.1.63` (NUC)
-
-- **Storage**: Rook Ceph (distributed), NFS from Nezuko `192.168.1.58` (Media 100Ti, Photos 10Ti,
-  FileRun 5Ti), Garage S3 `192.168.1.58:3900`
-
-## Directory Structure
-
-### Pattern
-
-`kubernetes/apps/<namespace>/<app>/`
-
-- **Standard Files**: helmrelease.yaml, ks.yaml, kustomization.yaml, secret.sops.yaml,
-  httproute.yaml, pvc.yaml
-- **Asset Subdirs**: config/, resources/, icons/ (only when needed)
-- **Namespace Kustomization**: Lists all app ks.yaml files
-- **Key Namespaces**: kube-system, flux-system, network, rook-ceph, storage, cert-manager, default,
-  dns-private
-
-### App-to-Namespace Mapping
-
-- **cert-manager**: cert-manager
-- **default**: authelia, bookstack, filerun, homepage, immich, silverbullet
-- **dns-private**: adguard-home, adguard-home-sync, dns-gateway, external-dns, secret
-- **external**: opensprinkler
-- **flux-system**: flux-instance, flux-operator
-- **home**: esphome, home-assistant, zwave-js-ui
-- **kube-system**: cilium, cloudnative-pg, coredns, external-secrets, intel-gpu-plugin,
-  mariadb-operator, metrics-server, multus, node-feature-discovery, reloader, snapshot-controller,
-  spegel
-- **media**: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,
-  radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
-- **network**: cloudflare-dns, cloudflare-tunnel, envoy-gateway
-- **observability**: gatus, grafana, victoria-logs-single, victoria-metrics-k8s-stack, vmrules
-- **rook-ceph**: cluster, operator
-- **storage**: kopia, volsync
-
-## Intel GPU for Applications
-
-### Important GPU Patterns
-
-- **Resource Request**: `gpu.intel.com/i915: 1` for Intel GPU allocation via Device Plugin Operator
-- **Device Plugin**: Intel Device Plugin Operator manages GPU access automatically (no
-  supplementalGroups needed)
-- **Dependencies**: Apps requiring GPU must depend on `intel-gpu-plugin` in `kube-system` namespace
-- **OpenVINO**: Set `OPENVINO_DEVICE: GPU` for hardware ML acceleration
-- **Media**: Use render device script for multi-GPU VA-API/QSV workloads
-
-## Critical Security
-
-- **SOPS**: Encrypted files MUST NEVER be committed unencrypted
-- **External-DNS**: Auto-manages DNS for new services
-
-## DNS Architecture
-
-### AdGuard Home
-
-Subnet-based filtering with VLAN client overrides for network segmentation.
-
-#### Filtering Rules
-
-- **Main LAN** (192.168.1.0/24): Global baseline (590k+ rules)
-- **Privacy VLANs** (IoT/Work): Social media blocking
-- **Kids VLAN**: Comprehensive content restrictions
-- **Guest VLAN**: Adult content blocking
-- **Cameras VLAN**: Minimal filtering for compatibility
-
-#### API Access
-
-`https://dns.${SECRET_DOMAIN}/control` (credentials in `dns-private-secret`)
-
-## S3 Object Storage (Garage)
-
-### Configuration
-
-- **Endpoint**: `http://192.168.1.58:3900` (Nezuko server)
-- **Region**: `garage` (custom Garage region name)
-- **Access**: Cluster-level credentials stored in `cluster-secrets.sops.yaml`
-
-### Credentials Access
-
-Credentials are stored in
-`/home/robert/code/home-ops/kubernetes/components/common/sops/cluster-secrets.sops.yaml`:
-
-- `S3_ENDPOINT`: `http://192.168.1.58:3900`
-- `S3_REGION`: `garage`
-- `S3_ACCESS_KEY_ID`: Encrypted in cluster secrets
-- `S3_SECRET_ACCESS_KEY`: Encrypted in cluster secrets
-
-### AWS CLI Usage
-
-```bash
-# Extract credentials from cluster-secrets
-eval $(
-  sops -d kubernetes/components/common/sops/cluster-secrets.sops.yaml \
-    | yq eval '.stringData | to_entries | .[]
-        | select(.key | startswith("S3_"))
-        | "export " + .key + "=" + .value' -
-)
-
+eval $(sops -d kubernetes/components/common/sops/cluster-secrets.sops.yaml \
+  | yq eval '.stringData | to_entries | .[] | select(.key | startswith("S3_")) \
+  | "export " + .key + "=" + .value' -)
 aws --endpoint-url=$S3_ENDPOINT --region=$S3_REGION s3 ls
 ```
 
-### Current S3 Buckets
+VolSync backup:
 
-- **postgres-backups**: CloudNativePG database backups (immich, etc.)
-- **volsync-backups**: Kopia-based application data backups via volsync
-- **bookstack-backups**: Application backups
-- S3-compatible API for application integration
+- Component location: kubernetes/components/volsync/
+- Data mover: Kopia with S3 backend
+- Destination: s3://volsync-backups/{APP}/
+- Features: Hourly backups, 24h/7d retention, zstd-fastest, non-root (1000:1000), 5Gi cache
+- Validation: kubectl get replicationsources -A, rclone ls garage:volsync-backups/
 
-### Application Integration
+CloudNativePG backup:
 
-Apps can reference S3 credentials via `postBuild.substituteFrom: cluster-secrets` pattern:
+- PostgreSQL only
+- Barman with WAL archiving to s3://postgres-backups/{cluster}/
+- PITR support, automated retention, compression
+- Status: kubectl get scheduledbackup -A, kubectl describe cluster name | rg -i backup
 
-```yaml
-postBuild:
-  substituteFrom:
-  - kind: Secret
-    name: cluster-secrets
-```
+### Vector Logging Standards
 
-Then use `${S3_ENDPOINT}`, `${S3_ACCESS_KEY_ID}`, etc. in manifests.
+Standard fields (ALWAYS use):
 
-### SOPS Commands
+- message: Log content (required)
+- timestamp: Event time (required)
+- level: Log level (debug, info, warning, error, critical)
+- severity: Severity class (optional)
+- host, source_type: Standard metadata
+- NEVER create custom equivalents
 
-```bash
-# Set value
-sops set secret.sops.yaml '["stringData"]["KEY_NAME"]' '"value"'
+Vector sidecar pattern:
 
-# Remove value
-sops unset secret.sops.yaml '["stringData"]["KEY_NAME"]'
-```
-
-**Notes:** Index format `'["section"]["key"]'`, values JSON-encoded, use `--idempotent` flag
-
-## Backup & Data Protection
-
-### VolSync (Application Data Backups)
-
-- **Component Location**: `kubernetes/components/volsync/`
-- **Data Mover**: Kopia with S3 backend (modern, replaces rsync/rclone)
-- **Destination**: `s3://volsync-backups/{APP}/` (per-app isolation)
-
-#### Usage Pattern
-
-```yaml
-components: [../../../components/volsync]
-postBuild:
-  substitute:
-    APP: appname  # REQUIRED
-    VOLSYNC_PVC: custom-name  # Override if PVC name != app name
-```
-
-**Features:** Hourly backups, 24h/7d retention, zstd-fastest compression, non-root (1000:1000), 5Gi
-cache PVC
-
-**Validation:** `kubectl get replicationsources -A`, `rclone ls garage:volsync-backups/`
-
-### CloudNativePG (Database Backups)
-
-PostgreSQL only. Barman with WAL archiving to `s3://postgres-backups/{cluster}/`. PITR, automated
-retention, compression.
-
-**Status:** `kubectl get scheduledbackup -A`, `kubectl describe cluster <name> | rg -i backup`
-
-### Component Integration Requirements
-
-#### Critical
-
-Apps using volsync component must provide:
-
-1. `APP` variable via `postBuild.substitute`
-2. Correct PVC name (defaults to `${APP}`, override with `VOLSYNC_PVC`)
-3. S3 credentials via `postBuild.substituteFrom: cluster-secrets`
-
-#### Common Issues
-
-- Missing `APP` substitution → `variable not set (strict mode): "APP"`
-- Wrong PVC name → `PersistentVolumeClaim "appname" not found`
-- Check PVC names: `kubectl get pvc -n <namespace>`
-
-## Log Collection Standards
-
-### Vector Standard Fields
-
-**ALWAYS use standard fields** (NEVER create custom equivalents):
-
-- `message` - Log content (required)
-- `timestamp` - Event time (required)
-- `level` - Log level: debug, info, warning, error, critical
-- `severity` - Severity class (optional)
-- `host`, `source_type` - Standard metadata
-
-### Vector Sidecar Pattern (MANDATORY)
-
-**REQUIRED: Sidecar per app** (separation of concerns, app-owned config, isolated parsing):
-
-**Standard Deployments/StatefulSets:**
+Standard deployments/statefulsets:
 
 ```yaml
 containers:
   app: {}
   vector-sidecar:
-    image: {repository: timberio/vector, tag: 0.50.0-alpine}
+    image:
+      repository: timberio/vector
+      tag: 0.50.0-alpine
 ```
 
-**Jobs/CronJobs with RWO volumes:**
+Jobs/CronJobs with RWO volumes (REQUIRED native sidecar):
 
 ```yaml
 initContainers:
   vector-sidecar:
-    image: {repository: timberio/vector, tag: 0.50.0-alpine}
-    restartPolicy: Always  # Native sidecar - auto-terminates after main container
+    image:
+      repository: timberio/vector
+      tag: 0.50.0-alpine
+    restartPolicy: Always  # Auto-terminates after main container
 ```
 
-**CRITICAL**: Jobs/CronJobs using ReadWriteOnce (RWO) PVCs MUST use native sidecar pattern
-(`initContainers` + `restartPolicy: Always`). Without this, sidecar keeps running after job
-completes, preventing RWO volume release and causing Multi-Attach errors on next run. See kometa
-example.
+Vector configuration:
 
-### Vector Directory Convention (STRICT)
-
-**MANDATORY structure**: `kubernetes/apps/<namespace>/<app>/vector/`
-
-```txt
-<app>/
-├── vector/
-│   ├── vector.yaml        # REQUIRED: Vector config (sources, transforms, sinks)
-│   ├── parse-<app>.vrl    # REQUIRED: VRL transform program (separate file)
-│   └── test-samples.json  # REQUIRED: Test data for validation
-```
-
-**Critical requirements**:
-
-1. **Separate VRL file**: NEVER use inline `source:` in vector.yaml. ALWAYS use `file:` parameter
-2. **Naming convention**: VRL file MUST be named `parse-<appname>.vrl`
-3. **Test data**: ALWAYS include `test-samples.json` with representative log samples
-4. **Transform reference**: Use `file: /etc/vector/parse-<app>.vrl` in vector.yaml
-
-**Example vector.yaml**:
+- Separate VRL file: NEVER inline source in vector.yaml
+- ALWAYS use file: parameter for VRL programs
+- VRL files typically in config/ subdirectory (e.g., config/vector.yaml)
+- Test samples: ALWAYS include test data for validation
+- Transform reference pattern:
 
 ```yaml
 transforms:
   parse_app:
     type: remap
     inputs: [app_logs]
-    file: /etc/vector/parse-app.vrl  # NOT inline source
+    file: /etc/vector/parse-app.vrl
 ```
 
-**Example kustomization.yaml**:
-
-```yaml
-configMapGenerator:
-- name: app-vector-configmap
-  files:
-  - vector.yaml=./vector/vector.yaml
-  - parse-app.vrl=./vector/parse-app.vrl
-```
-
-### Vector Configuration Testing (MANDATORY)
-
-**REQUIRED: Test before deployment:**
+Vector testing (MANDATORY before deployment):
 
 ```bash
-./scripts/test-vector-config.py kubernetes/apps/<ns>/<app>/vector/parse-<app>.vrl
-./scripts/test-vector-config.py <vrl-file> --samples <test.json>  # Explicit samples
+./scripts/test-vector-config.py kubernetes/apps/namespace/app/config/parse-app.vrl
+./scripts/test-vector-config.py VRL_FILE --samples test.json
 ```
 
-**Test sample format** (`test-samples.json`):
+Test sample format:
 
 ```json
 [
@@ -893,43 +989,233 @@ configMapGenerator:
 ]
 ```
 
-Script auto-discovers `test-samples.json` in VRL directory. **ALWAYS run before committing Vector
-changes.**
+VRL regex best practices:
 
-### VRL Regex Best Practices
+- Prefer non-greedy .*? over greedy .* for general best practice
+- Performance impact negligible for typical log message sizes (less than 500 chars)
 
-**Regex quantifiers**: Prefer non-greedy `.*?` over greedy `.*` for general best practice, though
-performance impact is negligible with typical log message sizes (< 500 chars). IDE warnings about
-`.*` performance are technically valid but overly cautious for log parsing use cases.
+### Flux Operations Reference
 
-## Available Scripts
+Reconcile strategy (MANDATORY two-stage):
 
-Only scripts relevant for AI usage is below; do not use the `annotate-yaml.py` or `validate-yaml.py`
-scripts.
+Stage 1 (15s timeout):
 
-- **app-scout.sh**: Kubernetes migration discovery tool
-  - Usage: `./scripts/app-scout.sh discover <app-name>` for deployment pattern discovery
-  - Usage: `./scripts/app-scout.sh correlate <app1> <app2>` for multi-app pattern analysis
-  - **File Inspection**: After discovery, use octocode MCP tools (githubViewRepoStructure,
-    githubSearchCode, githubGetFileContent) to retrieve configuration files from discovered
-    repositories
-- **bootstrap-apps.sh**: Application bootstrap for cluster initialization
-- **test-vector-config.py**: Vector VRL configuration testing
-  - Usage: `./scripts/test-vector-config.py <config.yaml> [-v] [--samples <test.json>]`
-  - **REQUIRED** for Vector config changes (fail-fast validation)
-- **validate-vmrules.sh**: VMRule CRD syntax validation using vmalert dry-run
-  - Usage: `./scripts/validate-vmrules.sh [path-to-vmrules-directory]`
-- **vmalert-query.py**: Query vmalert API for alert/rule inspection via ephemeral kubectl pods
-  - Usage: `./scripts/vmalert-query.py [firing|pending|inactive|detail <name>|rules|json|history
-    [duration]]`
-  - History: `history [duration]` shows alert firing frequency (default: 6h, e.g., 5m, 1h, 24h)
-- **ceph.sh**: Ceph command convenience wrapper via rook-ceph-tools pod
-  - Usage: `./scripts/ceph.sh <ceph-command>` (e.g., `./scripts/ceph.sh status`)
-- **query-victorialogs.py**: Query VictoriaLogs using basic filters or LogSQL
-  - Usage: `./scripts/query-victorialogs.py --app <app> -n 10` (basic)
-  - Usage: `./scripts/query-victorialogs.py "error" --start 1h` (LogSQL)
-  - Options: `--detail` shows VRL-processed fields, `--level`, `--namespace`, `--pod`, `--container`
-  - Auto-detects HTTPRoute URL, falls back to cluster-internal
-- **update-gitignore/**: Modular gitignore generation system
-  - Usage: `./scripts/update-gitignore/update.sh`
-  - Combines custom patterns from `custom/` with gitignore.io templates
+```bash
+flux reconcile helmrelease NAME -n NAMESPACE --timeout 15s
+```
+
+Stage 2 (if timeout):
+
+```bash
+flux reconcile helmrelease NAME -n NAMESPACE --reset
+flux reconcile helmrelease NAME -n NAMESPACE --with-source --force --timeout=5m
+```
+
+Flags explained:
+
+- --reset: Clears retry exhaustion
+- --with-source: Refreshes source
+- --force: Bypasses retry limits
+
+### Conventional Commits
+
+MANDATORY path-based commit classification:
+
+Direct path mapping:
+
+- ci: .github/workflows/**, .taskfiles/**, Taskfile.yaml
+- build: renovate.json5, .renovate/**
+- chore: .editorconfig, .gitignore, .yamllint.yaml, .markdownlint-cli2.yaml,
+  .pre-commit-config.yaml, tooling configs
+- docs: *.md, docs/**, LICENSE, SECURITY.md, CODEOWNERS
+
+Kubernetes manifests (inspect git diff):
+
+- feat: New apps/services, new capabilities (new kubernetes/apps/namespace/app/ directories)
+- fix: Bug fixes, crash loops, probe failures, resource issues, alert resolutions
+- refactor: Resource reorganization, manifest restructuring, no behavior change
+
+Scripts:
+
+- feat: New script capabilities in scripts/
+- fix: Script bug fixes, validation corrections
+- chore: Script reorganization without behavior change
+
+Breaking changes (type!:):
+
+- API/CRD version upgrades requiring manual intervention
+- Incompatible Helm chart major version upgrades
+- Storage class or PVC changes requiring data migration
+
+Scopes from paths:
+
+- kubernetes/apps/namespace/app/** → (app)
+- kubernetes/flux/** → (flux)
+- talos/** → (talos)
+- .github/**, .taskfiles/** → (ci)
+- scripts/** → (scripts)
+- .renovate/**, renovate.json5 → (deps) when modifying Renovate behavior (NOT automated dependency
+  PRs)
+
+Examples:
+
+- fix(plex): resolve crash loop due to missing volume mount
+- feat(silverbullet): add new note-taking application
+- refactor(media): reorganize namespace structure
+- ci: update pre-commit hooks
+
+## Cluster and Environment Reference
+
+### Stack Overview
+
+- Operating System: Talos Linux
+- Orchestration: Kubernetes with Flux v2 GitOps
+- Secrets: SOPS with Age encryption, External Secrets Operator with Infisical
+- Storage: Rook Ceph (distributed), NFS from Nezuko, Garage S3
+- Automation: Taskfile, mise, talhelper
+- Renovate: renohate[bot] (intentional name), config at renovate.json5, modular configs in
+  .renovate/
+
+### Essential Commands
+
+Setup:
+
+```bash
+mise trust .mise.toml && mise install
+```
+
+Sync cluster:
+
+```bash
+task reconcile
+```
+
+Validation (see Quality Assurance section):
+
+```bash
+pre-commit run --all-files
+```
+
+List tasks:
+
+```bash
+task --list
+```
+
+GitOps flow:
+
+1. Modify kubernetes/ manifests
+2. Run validation (pre-commit)
+3. User commits and pushes (NOT Claude)
+4. Flux auto-applies changes
+5. Optional: task reconcile for immediate sync
+
+### Network Details
+
+Network configuration:
+
+- Subnet: 192.168.1.0/24
+- Gateway: 192.168.1.1
+- API: 192.168.1.70
+- LoadBalancer IPs (Cilium IPAM):
+  - .71-.99: Kubernetes infrastructure (gateways, DNS, system services)
+    - DNS: 192.168.50.71
+    - Internal Gateway: 192.168.50.72
+    - External Gateway: 192.168.50.73
+  - .100+: Application LoadBalancers (direct pod access)
+    - Plex: 192.168.50.100
+- Cloudflare Tunnel: 6b689c5b-81a9-468e-9019-5892b3390500 → 192.168.50.73
+
+### Node Details
+
+Control plane:
+
+- lucy: 192.168.1.54 (physical)
+- nami: 192.168.1.50 (NUC)
+- marin: 192.168.1.59 (NUC)
+
+Workers:
+
+- sakura: 192.168.1.62 (NUC)
+- hanekawa: 192.168.1.63 (NUC)
+
+Storage:
+
+- Rook Ceph: Distributed across nodes
+- NFS: Nezuko 192.168.1.58 (Media 100Ti, Photos 10Ti, FileRun 5Ti)
+- Garage S3: 192.168.1.58:3900
+
+### Ceph Toolbox
+
+Permanent toolbox deployment enabled via Helm chart values in
+kubernetes/apps/rook-ceph/cluster/helmrelease.yaml.
+
+Common commands:
+
+```bash
+# Interactive shell
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -it -- bash
+
+# Cluster health
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status
+
+# RBD operations
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd ls ceph-block
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd status IMAGE -p ceph-block
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd info IMAGE -p ceph-block
+
+# RBD watchers (debugging stuck volumes)
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd status IMAGE -p ceph-block
+
+# Force unmap (emergency only - data loss risk)
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd unmap -o force /dev/rbd/NUMBER
+```
+
+### DNS Architecture
+
+AdGuard Home:
+
+- Subnet-based filtering with VLAN client overrides
+- Filtering rules:
+  - Main LAN (192.168.1.0/24): Global baseline (590k+ rules)
+  - Privacy VLANs (IoT/Work): Social media blocking
+  - Kids VLAN: Comprehensive content restrictions
+  - Guest VLAN: Adult content blocking
+  - Cameras VLAN: Minimal filtering
+- API: `https://dns.${SECRET_DOMAIN}/control` (credentials in dns-private-secret)
+
+### Intel GPU for Applications
+
+Intel GPU allocation:
+
+- Resource request: gpu.intel.com/i915: 1
+- Device Plugin: Intel Device Plugin Operator manages GPU access
+- Dependencies: Apps requiring GPU must depend on intel-gpu-plugin in kube-system
+- OpenVINO: Set OPENVINO_DEVICE: GPU for hardware ML acceleration
+- Media: Use render device script for multi-GPU VA-API/QSV workloads
+
+### Available Scripts
+
+Claude-relevant scripts only:
+
+- app-scout.sh: Kubernetes migration discovery
+  - Usage: ./scripts/app-scout.sh discover APP
+  - Usage: ./scripts/app-scout.sh correlate APP1 APP2
+  - File inspection: Use octocode MCP tools after discovery
+- bootstrap-apps.sh: Application bootstrap for cluster initialization
+- test-vector-config.py: Vector VRL configuration testing
+  - Usage: ./scripts/test-vector-config.py CONFIG.yaml [-v] [--samples test.json]
+  - REQUIRED for Vector config changes
+- validate-vmrules.sh: VMRule CRD syntax validation
+  - Usage: ./scripts/validate-vmrules.sh [PATH]
+- vmalert-query.py: Query vmalert API via ephemeral kubectl pods
+  - Usage: ./scripts/vmalert-query.py [firing|pending|inactive|detail NAME|rules|json|history
+    [DURATION]]
+- ceph.sh: Ceph command wrapper via rook-ceph-tools
+  - Usage: ./scripts/ceph.sh CEPH-COMMAND
+- query-victorialogs.py: Query VictoriaLogs
+  - Usage: ./scripts/query-victorialogs.py --app APP -n 10
+  - Usage: ./scripts/query-victorialogs.py "error" --start 1h
+  - Options: --detail, --level, --namespace, --pod, --container
+- update-gitignore/: Modular gitignore generation
+  - Usage: ./scripts/update-gitignore/update.sh
