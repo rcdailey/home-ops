@@ -6,21 +6,22 @@
       groupName: "Flux Operator",
       matchPackageNames: ["/flux-operator/", "/flux-instance/"],
       matchDatasources: ["docker"],
-      minimumGroupSize: 2
+      minimumGroupSize: 2,
     },
     {
       description: "Immich Group",
       groupName: "Immich",
       matchDatasources: ["docker"],
       matchPackageNames: ["ghcr.io/immich-app/**"],
-      minimumGroupSize: 2
+      minimumGroupSize: 2,
     },
     {
       description: "Rook Ceph Group",
       groupName: "Rook Ceph",
-      matchDatasources: ["helm"],
+      matchDatasources: ["docker"],
       matchPackageNames: ["rook-ceph", "rook-ceph-cluster"],
-      minimumGroupSize: 2
+      minimumReleaseAge: "10 days",
+      minimumGroupSize: 2,
     },
     {
       description: "Kubernetes Tools Group",
@@ -29,20 +30,16 @@
       matchPackageNames: [
         "kubernetes/kubernetes",
         "kubernetes-sigs/external-dns",
-        "kubernetes-sigs/gateway-api"
+        "kubernetes-sigs/gateway-api",
       ],
-      minimumGroupSize: 2
+      minimumGroupSize: 2,
     },
     {
       description: "Monitoring Stack Group",
       groupName: "Monitoring Stack",
       matchDatasources: ["helm"],
-      matchPackageNames: [
-        "grafana",
-        "prometheus",
-        "alertmanager"
-      ],
-      minimumGroupSize: 1
-    }
-  ]
+      matchPackageNames: ["grafana", "prometheus", "alertmanager"],
+      minimumGroupSize: 1,
+    },
+  ],
 }
