@@ -8,7 +8,6 @@
       automergeType: "pr",
       matchUpdateTypes: ["minor", "patch", "digest"],
       minimumReleaseAge: "3 days",
-      ignoreTests: true
     },
     {
       description: "Auto-merge Mise Tools (except Python)",
@@ -16,35 +15,27 @@
       automerge: true,
       automergeType: "pr",
       matchUpdateTypes: ["minor", "patch"],
-      ignoreTests: true
+      ignoreTests: true,
     },
     {
       // Python minor version updates frequently introduce breaking changes to stdlib APIs
       // Example: Python 3.14's BooleanOptionalAction no longer accepts 'type' parameter,
       // breaking flux-local and other tools. Only auto-merge patch versions (security fixes).
-      description: "Disable auto-merge for Mise Python minor/major updates",
+      description: "Disable auto-merge for Mise Python",
       matchManagers: ["mise"],
       matchPackageNames: ["python"],
       automerge: false,
       automergeType: "pr",
-      matchUpdateTypes: ["minor", "major"]
+      matchUpdateTypes: ["minor", "major"],
     },
     {
-      description: "Auto-merge container patch and digest updates",
+      description: "Auto-merge OCI charts and containers",
       matchDatasources: ["docker"],
+      excludePackageNames: ["cilium", "rook-ceph", "rook-ceph-cluster"],
       automerge: true,
       automergeType: "pr",
       matchUpdateTypes: ["patch", "digest"],
-      ignoreTests: false
-    },
-    {
-      description: "Auto-merge OCI Charts",
-      matchDatasources: ["docker"],
-      automerge: true,
-      automergeType: "pr",
-      matchUpdateTypes: ["minor", "patch"],
-      matchPackageNames: ["/victoria-metrics-k8s-stack/", "/grafana/"],
-      ignoreTests: false
+      minimumReleaseAge: "5 days",
     },
     {
       description: "Auto-merge app-template chart updates",
@@ -52,25 +43,8 @@
       matchPackageNames: ["/app-template/"],
       automerge: true,
       automergeType: "pr",
-      matchUpdateTypes: ["minor", "patch"],
-      ignoreTests: false
+      matchUpdateTypes: ["patch"],
+      minimumReleaseAge: "5 days",
     },
-    {
-      description: "Auto-merge trusted GitHub Actions",
-      matchManagers: ["github-actions"],
-      matchPackageNames: [
-        "/^actions\\//",
-        "/^renovatebot\\//",
-        "/^tj-actions\\//",
-        "/^peter-evans\\//",
-        "/^mshick\\//",
-        "/^docker:\\//"
-      ],
-      automerge: true,
-      automergeType: "pr",
-      matchUpdateTypes: ["minor", "patch", "digest"],
-      minimumReleaseAge: "1 minute",
-      ignoreTests: true
-    }
-  ]
+  ],
 }
