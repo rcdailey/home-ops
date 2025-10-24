@@ -1,0 +1,17 @@
+---
+sources:
+  k8s:
+    type: kubernetes_logs
+    # Memory optimization: Use API server cache instead of etcd
+    use_apiserver_cache: true
+    # Exclude high-volume, low-value namespaces
+    exclude_paths_glob_patterns:
+    - /var/log/pods/rook-ceph_*/**
+    - /var/log/pods/kube-system_*/**
+    - /var/log/pods/flux-system_*/**
+    - /var/log/pods/cert-manager_*/**
+    # Exclude rotated/compressed log files (only watch current logs)
+    - "**/*.gz"
+    - "**/*.log.[0-9]*"
+  internal_metrics:
+    type: internal_metrics

@@ -1,0 +1,61 @@
+---
+data_dir: /vector-data-dir
+api:
+  enabled: false
+  address: 0.0.0.0:8686
+  playground: true
+
+# Global configuration for memory optimization
+expire_metrics_secs: 600
+
+transforms:
+  # Default parser for all apps (fallback)
+  default_parser:
+    type: remap
+    inputs: [k8s]
+    file: /etc/vector/vrl/parse-default.vrl
+
+  # Filter for kometa logs
+  kometa_filter:
+    type: filter
+    inputs: [k8s]
+    condition:
+      type: vrl
+      source: |
+        .kubernetes.pod_labels."app.kubernetes.io/name" == "kometa" && .kubernetes.container_name == "app"
+
+  # Custom parser for kometa
+  kometa_parser:
+    type: remap
+    inputs: [kometa_filter]
+    file: /etc/vector/vrl/parse-kometa.vrl
+
+  # Filter for qbittorrent logs
+  qbittorrent_filter:
+    type: filter
+    inputs: [k8s]
+    condition:
+      type: vrl
+      source: |
+        .kubernetes.pod_labels."app.kubernetes.io/name" == "qbittorrent"
+
+  # Custom parser for qbittorrent
+  qbittorrent_parser:
+    type: remap
+    inputs: [qbittorrent_filter]
+    file: /etc/vector/vrl/parse-qbittorrent.vrl
+
+  # Filter for cloudflare-tunnel logs
+  cloudflare_tunnel_filter:
+    type: filter
+    inputs: [k8s]
+    condition:
+      type: vrl
+      source: |
+        .kubernetes.pod_labels."app.kubernetes.io/name" == "cloudflare-tunnel"
+
+  # Custom parser for cloudflare-tunnel
+  cloudflare_tunnel_parser:
+    type: remap
+    inputs: [cloudflare_tunnel_filter]
+    file: /etc/vector/vrl/parse-cloudflare-tunnel.vrl

@@ -7,6 +7,15 @@ resources:
 - ./helmrelease.yaml
 - ./httproute.yaml
 configMapGenerator:
+- name: victoria-logs-vector-config
+  options:
+    disableNameSuffixHash: true
+    annotations:
+      reloader.stakater.com/match: "true"
+  files:
+  - vector-sources.yaml=./vector/vector-sources.yaml
+  - vector-transforms.yaml=./vector/vector-transforms.yaml
+  - vector-sinks.yaml=./vector/vector-sinks.yaml
 - name: victoria-logs-vector-vrl
   options:
     disableNameSuffixHash: true

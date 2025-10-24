@@ -1,0 +1,22 @@
+services:
+  vector:
+    image: timberio/vector:0.50.0-alpine
+    container_name: vector-test
+    stdin_open: true
+    tty: false
+    volumes:
+    # Production config files (read-only)
+    - ../../kubernetes/apps/observability/victoria-logs-single/vector/vector-transforms.yaml:/etc/vector/vector-transforms.yaml:ro
+    - ../../kubernetes/apps/observability/victoria-logs-single/vrl:/etc/vector/vrl:ro
+    # Test config files (read-only)
+    - ./vector-sources.yaml:/etc/vector/vector-sources.yaml:ro
+    - ./vector-sinks.yaml:/etc/vector/vector-sinks.yaml:ro
+    # Data directory (read-write)
+    - ./vector-data:/vector-data-dir
+    command:
+    - --config
+    - /etc/vector/vector-transforms.yaml
+    - --config
+    - /etc/vector/vector-sources.yaml
+    - --config
+    - /etc/vector/vector-sinks.yaml
