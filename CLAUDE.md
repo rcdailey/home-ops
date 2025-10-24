@@ -472,7 +472,8 @@ Kustomize hashes.
 
 - **HTTPRoute ONLY**: HTTPRoute over Ingress, route through existing gateways
 - **LoadBalancer Ban**: NEVER create LoadBalancer without explicit user discussion
-- **Gateway IPs**: Use externalIPs (192.168.50.72 internal, 192.168.50.73 external) not LoadBalancer
+- **Gateway IPs**: Use Cilium IPAM annotations (`lbipam.cilium.io/ips`) for static LoadBalancer
+  assignment (192.168.50.72 internal, 192.168.50.73 external)
 - **External-DNS**: Configure target annotations on Gateways ONLY, never HTTPRoutes. Use
   gateway-httproute source for CNAME inheritance
 - **Route Priority**: Use app-template `route:` blocks for all app-template applications. Only use
@@ -584,8 +585,8 @@ retry limits
 
 ### Ceph Toolbox
 
-Permanent toolbox deployment for Ceph operations and troubleshooting at
-`kubernetes/apps/rook-ceph/toolbox/`.
+Permanent toolbox deployment enabled via Helm chart values in
+`kubernetes/apps/rook-ceph/cluster/helmrelease.yaml`.
 
 **Common Commands:**
 
@@ -648,7 +649,7 @@ kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd unmap -o force /dev/rbd/
 - **media**: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,
   radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
 - **network**: cloudflare-dns, cloudflare-tunnel, envoy-gateway
-- **observability**: gatus, grafana, victoria-logs-single, victoria-metrics-k8s-stack
+- **observability**: gatus, grafana, victoria-logs-single, victoria-metrics-k8s-stack, vmrules
 - **rook-ceph**: cluster, operator
 - **storage**: kopia, volsync
 
