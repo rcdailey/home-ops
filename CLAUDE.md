@@ -122,9 +122,9 @@ established patterns. NEVER invent new patterns. NEVER adopt conventions from ot
 - NEVER create unnecessary subdirectories
 - Co-locate all manifests in app directory unless assets require organization
 
-### Namespace Patterns
+### Namespace Mapping
 
-App-to-namespace mapping (reference for Claude):
+Namespace-to-apps mapping (reference for Claude):
 
 - cert-manager: cert-manager
 - default: authelia, bookstack, filerun, homepage, immich, silverbullet
