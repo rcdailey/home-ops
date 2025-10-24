@@ -550,6 +550,26 @@ Talos K8s + Flux GitOps: Talos Linux, Flux v2, SOPS/Age, Rook Ceph + NFS, Taskfi
 4. Flux auto-applies
 5. Optional: `task reconcile` for immediate sync
 
+### Flux Reconcile Strategy
+
+**MANDATORY: Two-stage approach for stuck reconciliations:**
+
+**Stage 1 (15s timeout):**
+
+```bash
+flux reconcile helmrelease <name> -n <ns> --timeout 15s
+```
+
+**Stage 2 (if timeout):**
+
+```bash
+flux reconcile helmrelease <name> -n <ns> --reset
+flux reconcile helmrelease <name> -n <ns> --with-source --force --timeout=30m
+```
+
+**Flags:** `--reset` clears retry exhaustion, `--with-source` refreshes source, `--force` bypasses
+retry limits
+
 ## Cluster Info
 
 - **Network**: `192.168.1.0/24`, Gateway: `192.168.1.1`, API: `192.168.1.70`
@@ -613,6 +633,24 @@ kubectl exec -n rook-ceph deploy/rook-ceph-tools -- rbd unmap -o force /dev/rbd/
 - **Namespace Kustomization**: Lists all app ks.yaml files
 - **Key Namespaces**: kube-system, flux-system, network, rook-ceph, storage, cert-manager, default,
   dns-private
+
+### App-to-Namespace Mapping
+
+- **cert-manager**: cert-manager
+- **default**: authelia, bookstack, filerun, homepage, immich, silverbullet
+- **dns-private**: adguard-home, adguard-home-sync, dns-gateway, external-dns, secret
+- **external**: opensprinkler
+- **flux-system**: flux-instance, flux-operator
+- **home**: esphome, home-assistant, zwave-js-ui
+- **kube-system**: cilium, cloudnative-pg, coredns, external-secrets, intel-gpu-plugin,
+  mariadb-operator, metrics-server, multus, node-feature-discovery, reloader, snapshot-controller,
+  spegel
+- **media**: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,
+  radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
+- **network**: cloudflare-dns, cloudflare-tunnel, envoy-gateway
+- **observability**: gatus, grafana, victoria-logs-single, victoria-metrics-k8s-stack
+- **rook-ceph**: cluster, operator
+- **storage**: kopia, volsync
 
 ## Intel GPU for Applications
 
