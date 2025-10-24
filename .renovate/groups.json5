@@ -41,5 +41,12 @@
       matchPackageNames: ["grafana", "prometheus", "alertmanager"],
       minimumGroupSize: 1,
     },
+    {
+      description: "MariaDB Operator",
+      groupName: "MariaDB",
+      matchDatasources: ["helm"],
+      matchPackageNames: ["mariadb-operator*"],
+      minimumGroupSize: 2,
+    },
   ],
 }
