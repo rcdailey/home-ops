@@ -31,7 +31,7 @@
     {
       description: "Auto-merge OCI charts and containers",
       matchDatasources: ["docker"],
-      excludePackageNames: ["cilium", "rook-ceph", "rook-ceph-cluster"],
+      excludePackageNames: ["cilium", "ghcr.io/rook/**"],
       automerge: true,
       automergeType: "pr",
       matchUpdateTypes: ["patch", "digest"],
