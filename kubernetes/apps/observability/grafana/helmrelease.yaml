@@ -180,6 +180,7 @@ spec:
           url: http://victoria-logs-single.observability:9428
           jsonData:
             maxLines: 1000
+            vmuiUrl: https://victoria-logs.${SECRET_DOMAIN}
         - name: VMAlertmanager
           type: alertmanager
           access: proxy
