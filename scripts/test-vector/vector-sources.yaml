@@ -1,0 +1,7 @@
+sources:
+  k8s:
+    type: stdin
+    decoding:
+      codec: json
+  internal_metrics:
+    type: internal_metrics

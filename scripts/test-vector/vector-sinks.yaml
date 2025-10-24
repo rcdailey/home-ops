@@ -1,0 +1,10 @@
+sinks:
+  test_console:
+    type: console
+    inputs:
+    - default_parser
+    - kometa_parser
+    - qbittorrent_parser
+    - cloudflare_tunnel_parser
+    encoding:
+      codec: json

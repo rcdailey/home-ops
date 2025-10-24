@@ -2,7 +2,7 @@
 # Format: 2025-10-20T23:31:48Z ERR error="unexpected EOF" ...
 #
 
-log_msg = string!(._msg)
+log_msg = string!(.message)
 
 # Parse structured log format: TIMESTAMP LEVEL message
 log_match = parse_regex(log_msg, r'^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\s+(?P<level>ERR|INF|WRN|DBG)\s+(?P<content>.*)$') ?? {}
@@ -14,8 +14,10 @@ if log_msg == "" {
 
 # Extract message content
 if exists(log_match.content) {
+  ._msg = log_match.content
   .message = log_match.content
 } else {
+  ._msg = log_msg
   .message = log_msg
 }
 
