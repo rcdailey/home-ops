@@ -56,9 +56,10 @@ spec:
               SABNZBD__HOST_WHITELIST_ENTRIES: >-
                 sabnzbd, sabnzbd.media, sabnzbd.media.svc, sabnzbd.media.svc.cluster, sabnzbd.media,
                 nzb.${SECRET_DOMAIN}
-            envFrom:
-            - secretRef:
-                name: sabnzbd-secret
+              TZ: America/Chicago
+              PUID: "1000"
+              PGID: "1000"
+              TP_THEME: plex
             probes:
               liveness: &probes
                 enabled: true
