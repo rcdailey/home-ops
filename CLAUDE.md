@@ -149,8 +149,8 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 
 **Secrets:**
 
-- ExternalSecret: Path /namespace/app/secret-name, kebab-case, ClusterSecretStore infisical,
-  creationPolicy Owner
+- ExternalSecret: Infisical key /namespace/app/secret-name (kebab-case), secretKey maps to env var
+  name, ClusterSecretStore infisical, creationPolicy Owner
 - Priority: 1) envFrom, 2) env.valueFrom, 3) HelmRelease valuesFrom, 4) NEVER
   postBuild.substituteFrom for app secrets
 - SOPS (cluster-wide only): cluster-secrets.sops.yaml, email-secrets.sops.yaml; commands: sops set /
@@ -195,6 +195,8 @@ Optional task reconcile
 - CLI: infisical secrets [list|get NAME|set NAME=value|delete NAME] --env=prod
   --path=/namespace/app
 - CRITICAL: Create folders BEFORE setting secrets (fails silently otherwise)
+- Folder creation: infisical secrets folders create --name=folder-name --path=/parent/path
+  --env=prod
 - Path structure: /namespace/app/secret-name, kebab-case naming
 
 **Conventional commits (MANDATORY path-based):**
