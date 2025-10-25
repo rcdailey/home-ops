@@ -5,7 +5,7 @@ kind: Kustomization
 resources:
 - ./crd.yaml
 - ./httproute.yaml
-- ./secret.sops.yaml
+- ./externalsecret.yaml
 configMapGenerator:
 - name: cloudflare-dns-shared-values
   files:
