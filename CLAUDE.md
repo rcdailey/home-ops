@@ -282,3 +282,4 @@ Namespace followed by a list of apps in that namespace:
 - ceph.sh: Ceph command wrapper via rook-ceph-tools
 - query-victorialogs.py: Query VictoriaLogs
 - update-gitignore/: Modular gitignore generation
+- query-container-metrics.py: Get historical VictoriaMetrics data for containers
