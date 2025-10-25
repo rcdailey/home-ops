@@ -1,6 +1,10 @@
 [env]
 SOPS_AGE_KEY_FILE = "{{config_root}}/age.key"
 TALOSCONFIG = "{{config_root}}/talos/clusterconfig/talosconfig"
+_.file = ".env.json"
+
+[settings]
+sops.age_key_file = "{{config_root}}/age.key"
 
 [tools]
 "aqua:budimanjojo/talhelper" = "3.0.38"
