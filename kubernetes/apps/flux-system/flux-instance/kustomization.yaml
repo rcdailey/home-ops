@@ -6,5 +6,5 @@ resources:
 - helmrelease.yaml
 - httproute.yaml
 - receiver.yaml
-- secret.sops.yaml
+- externalsecret.yaml
 - vmpodscrape.yaml
