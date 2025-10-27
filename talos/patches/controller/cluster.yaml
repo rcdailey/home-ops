@@ -11,6 +11,9 @@ cluster:
   controllerManager:
     extraArgs:
       bind-address: 0.0.0.0
+      # Lower threshold for terminated pod garbage collection (default: 12500)
+      # Cleans up Error/Completed pods more frequently to prevent accumulation
+      terminated-pod-gc-threshold: "100"
   coreDNS:
     disabled: true
   etcd:
