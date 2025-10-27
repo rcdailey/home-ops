@@ -37,6 +37,8 @@ nodes:
           - network: "0.0.0.0/0"
             gateway: "192.168.1.1"
         mtu: 1500
+    patches:
+      - "@./patches/lucy/zwave-udev.yaml"
   - hostname: "nami"
     ipAddress: "192.168.1.50"
     installDiskSelector:
