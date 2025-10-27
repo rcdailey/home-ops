@@ -3,6 +3,6 @@
 machine:
   udev:
     rules:
-      # Match Silicon Labs CP210x USB-to-UART bridge (common Z-Wave controller)
-      # Create stable /dev/zwave symlink for ttyUSB* devices using cp210x driver
-      - SUBSYSTEM=="tty", ATTRS{driver}=="cp210x", SYMLINK+="zwave"
+      # Match Silicon Labs CP210x USB-to-UART bridge (Z-Wave controller on ttyUSB0)
+      # Create stable /dev/zwave symlink and set 0666 permissions for container access
+      - SUBSYSTEM=="tty", ATTRS{driver}=="cp210x", MODE="0666", SYMLINK+="zwave"

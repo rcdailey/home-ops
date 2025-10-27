@@ -54,6 +54,7 @@ spec:
             env:
               TZ: America/Chicago
               PORT: &port 80
+              TRUST_PROXY: "loopback,linklocal,uniquelocal"
             probes:
               liveness: &probes
                 enabled: true
