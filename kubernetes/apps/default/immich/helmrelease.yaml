@@ -165,12 +165,11 @@ spec:
       photos:
         type: nfs
         server: 192.168.1.58
-        path: /mnt/user/photos
+        path: /mnt/user/photos/immich
         advancedMounts:
           server:
             main:
             - path: /data
-              subPath: immich
 
       thumbnails:
         type: persistentVolumeClaim
