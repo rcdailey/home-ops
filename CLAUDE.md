@@ -267,7 +267,7 @@ Namespace followed by a list of apps in that namespace:
 - home: esphome, home-assistant, zwave-js-ui
 - kube-system: cilium, cloudnative-pg, coredns, external-secrets, intel-gpu-plugin,
   mariadb-operator, metrics-server, multus, node-feature-discovery, reloader, snapshot-controller,
-  spegel
+  spegel, descheduler
 - media: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,
   radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
 - network: cloudflare-dns, cloudflare-tunnel, envoy-gateway
