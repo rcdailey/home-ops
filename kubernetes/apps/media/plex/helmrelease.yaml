@@ -128,9 +128,11 @@ spec:
         type: nfs
         server: 192.168.1.58
         path: /mnt/user/media
-        globalMounts:
-        - path: /media
-          readOnly: true
+        advancedMounts:
+          plex:
+            app:
+            - path: /media
+              readOnly: true
 
       logs:
         existingClaim: plex-logs
