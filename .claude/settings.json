@@ -67,7 +67,6 @@
       "Bash(talosctl get:*)",
       "Bash(talosctl list:*)",
       "Bash(talosctl read:*)",
-      "Bash(talosctl:*)",
       "Bash(task reconcile)",
       "Bash(task talos:generate-config:*)",
       "Bash(task:*)",
