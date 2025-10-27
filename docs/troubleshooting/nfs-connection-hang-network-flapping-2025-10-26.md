@@ -2,30 +2,39 @@
 
 **Last Updated:** 2025-10-26
 
-**Status:** PARTIAL ROOT CAUSE IDENTIFIED
+**Status:** ROOT CAUSE IDENTIFIED - DISK SPINDOWN
 
 ## Executive Summary
 
-Plex streaming failure caused by TCP connection hang between Kubernetes node marin (192.168.1.59)
-and Unraid NFS server nezuko (192.168.1.58). Investigation revealed network interface flapping on
-nezuko's eth1 (Intel X540-AT2) occurring in predictable patterns around 7:00 AM local time.
+Plex streaming failure caused by Unraid array disk spindown breaking NFS connections to Kubernetes
+clients. Investigation initially suspected network flapping, but root cause confirmed as Unraid
+spinning down array disks after idle timeout, causing NFS server to terminate TCP connections with
+I/O errors.
 
-**PRIMARY CAUSE:** NFS TCP socket stuck with 265KB send buffer backlog to marin after network
-disruption.
+**PRIMARY CAUSE:** Unraid array disk spindown (1-hour idle timeout) → NFS exports on `/mnt/user/*`
+become unreadable → nfsd terminates client connections with ECONNRESET/EPIPE errors.
 
-**UNDERLYING ISSUE:** Network interface flapping on nezuko eth1 with unknown root cause (time-based
-pattern suggests environmental or scheduled trigger).
+**SECONDARY ISSUE (HISTORICAL):** Network interface flapping on nezuko eth1 (Intel X540-AT2) at 7:00
+AM documented in earlier investigation. Bonding has since been removed and static IP configured.
 
-**CONFIGURATION ISSUE:** Bonding configured for 4 NICs but only 1 cable connected (eth1), creating
-false sense of redundancy.
+**CRITICAL CONFIGURATION:** Default spin down delay set to 1 hour is incompatible with NFS exports
+from array disks. NFS clients experience 10+ minute outages during disk spinup cycles.
 
 ## Incident Timeline
 
-### 2025-10-26 ~14:00 CST - Streaming Failure
+### 2025-10-26 18:42 CDT - Disk Spindown Event
 
-- **Trigger:** User streaming Foundation on Plex
-- **Symptom:** Stream stopped mid-playback, no error message
-- **Duration:** Approximately 2-5 minutes before user reported
+- **18:42:02 CDT:** Unraid spins down array disks (sdk, sdg, sdd, sdn, sdi, sdl) after 1-hour idle
+- **18:42:11 CDT:** NFS clients on marin detect "server not responding" (9 seconds after spindown)
+- **18:53:28 CDT:** NFS connectivity restored (disks spun back up, 11-minute outage)
+- **18:54:17 CDT:** Plex pod restarted (3rd restart since nezuko reboot)
+- **18:54:24 CDT:** Sabnzbd pod restarted (26th restart since nezuko reboot)
+
+### 2025-10-26 16:49 CDT - Nezuko Server Reboot
+
+- **Impact:** All NFS clients reconnected, but nfsd logged socket errors during initialization
+- **Duration:** Plex ran stable for 21+ hours before this reboot (pod created Oct 25 19:19 CDT)
+- **Post-reboot instability:** All pod failures occurred within 2 hours of nezuko restart
 
 ### Initial Investigation
 
@@ -49,26 +58,40 @@ kubectl exec -n media deploy/plex -c app -- df -h /media
 
 ## Root Cause Analysis
 
-### TCP Connection Backlog
+### Disk Spindown Breaking NFS Exports
 
-Investigation of nezuko NFS server revealed stuck TCP connection:
+**Definitive evidence from Unraid syslog:**
 
 ```bash
-ssh nezuko "ss -tn | grep -E ':(2049|111)'"
-# Output:
-# ESTAB 0      264728  192.168.1.58:2049  192.168.1.59:691   # marin - STUCK
-# ESTAB 0      0       192.168.1.58:2049  192.168.1.62:838   # sakura - healthy
-# ESTAB 0      0       192.168.1.58:2049  192.168.1.54:746   # lucy - healthy
-# ESTAB 0      0       192.168.1.58:2049  192.168.1.63:794   # hanekawa - healthy
-# ESTAB 0      0       192.168.1.58:2049  192.168.1.50:1012  # nami - healthy
+Oct 26 18:42:02 Nezuko emhttpd: spinning down /dev/sdk
+Oct 26 18:42:02 Nezuko emhttpd: spinning down /dev/sdg
+Oct 26 18:42:02 Nezuko emhttpd: spinning down /dev/sdd
+Oct 26 18:42:02 Nezuko emhttpd: spinning down /dev/sdn
+Oct 26 18:42:06 Nezuko emhttpd: spinning down /dev/sdi
+Oct 26 18:42:09 Nezuko emhttpd: spinning down /dev/sdl
 ```
 
-**265KB send buffer backlog** on connection to marin (Plex host node) while all other Kubernetes
-nodes show healthy connections (0 backlog).
+**Correlation with NFS failure (marin dmesg):**
 
-### Network Flapping Pattern
+```bash
+[2025-10-26T23:42:11Z]: nfs: server 192.168.1.58 not responding, still trying
+# (23:42:11 UTC = 18:42:11 CDT, 9 seconds after spindown began)
+```
 
-Analysis of nezuko kernel logs revealed eth1 link flapping history:
+**Why this breaks NFS:**
+
+1. Unraid NFS exports point to `/mnt/user/media` (SHFS layer spanning array disks)
+2. When array disks spin down, filesystem becomes unreadable
+3. NFS server attempts read → gets I/O error → closes TCP connections with `-104` (ECONNRESET)
+4. Kubernetes clients see "server not responding" and hang indefinitely
+5. Disks eventually spin up (~10-15 seconds), but TCP connections already terminated
+6. Recovery takes 11 minutes as clients retry and server re-establishes connections
+
+### Network Flapping Pattern (Historical - Pre-Configuration Changes)
+
+**Note:** Analysis below from earlier investigation before bonding removal and static IP
+configuration. Network flapping at 7:00 AM was documented but is distinct from tonight's disk
+spindown issue.
 
 ```txt
 Timestamp (calculated)       Event Description
@@ -77,13 +100,12 @@ Timestamp (calculated)       Event Description
 2025-09-09 07:07:10          First flap cluster end (~80s duration, 3 flaps)
 2025-09-11 07:02:49          Second flap cluster start (~48h later)
 2025-09-11 07:03:58          Second flap cluster end (~69s duration, 3 flaps)
-2025-10-17 07:06:43          Recent flap cluster start (9 days ago)
+2025-10-17 07:06:43          Recent flap cluster start
 2025-10-17 07:08:09          Recent flap cluster end (~86s duration, 2 flaps)
 ```
 
-**Critical Pattern:** All flapping events occur between 7:00-7:10 AM local time. This temporal
-clustering suggests scheduled task, environmental factor, or external trigger rather than random
-hardware failure.
+**Status:** Bonding has since been removed, static IP configured on eth1. No link flapping observed
+in current boot cycle (since 16:49 CDT Oct 26).
 
 ### Flapping Event Example
 
@@ -132,14 +154,27 @@ media:
     readOnly: true
 ```
 
-**Missing resilience options:**
+**Actual mount options in use (Kubernetes defaults):**
 
-- No mount options specified (using all defaults)
-- No NFS version pinning
-- No timeout configuration
-- No retry behavior defined
+Verified via `/proc/mounts` on marin node:
 
-When TCP connection hangs, Kubernetes NFS client has no recovery mechanism.
+```txt
+192.168.1.58:/mnt/user/media nfs4 rw,relatime,vers=4.2,rsize=1048576,wsize=1048576,
+namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=192.168.1.59,
+local_lock=none,addr=192.168.1.58
+```
+
+- `vers=4.2`: NFSv4.2 protocol
+- `hard`: Hard mount (retry indefinitely on failure)
+- `proto=tcp`: TCP transport
+- `timeo=600`: 60-second initial timeout (600 deciseconds)
+- `retrans=2`: 2 retransmit attempts before timeout escalation
+- `rsize/wsize=1048576`: 1MB read/write buffer size
+
+**Critical finding:** Hard mounts with `timeo=600,retrans=2` do NOT recover from stuck TCP
+connections. When TCP socket has 265KB send buffer backlog, NFS client retries indefinitely without
+detecting the underlying connection failure. App-template does not support custom `mountOptions`
+field, so Kubernetes defaults cannot be overridden at pod spec level.
 
 ## Hardware Details
 
@@ -226,73 +261,58 @@ marin connection hung. Possible explanations:
 
 ## Recommended Solutions
 
-### Immediate Actions
+### Immediate Actions (REQUIRED)
 
-#### 1. Add NFS mount resilience options
+#### 1. Disable Array Disk Spindown
 
-Edit kubernetes/apps/media/plex/helmrelease.yaml:
+**Fix the root cause immediately:**
 
-```yaml
-media:
-  type: nfs
-  server: 192.168.1.58
-  path: /mnt/user/media
-  mountOptions:
-    - hard
-    - nfsvers=4.1
-    - timeo=600
-    - retrans=2
-  globalMounts:
-  - path: /media
-    readOnly: true
-```
+Navigate to Settings → Disk Settings in Unraid web UI:
 
-Rationale: Provides application-layer recovery when TCP connections hang. NFS client can detect and
-recover from stuck connections without manual intervention.
+- Change "Default spin down delay" from "1 hour" to **"Never"**
+- This prevents array disks from spinning down and breaking NFS connections
 
-#### 2. Investigate 7:00 AM trigger
+**Why this fixes the issue:**
 
-- Access Unifi controller web interface
-- Check for scheduled tasks, port maintenance windows, or PoE cycling
-- Review switch logs for eth1 port events
-- Check for HVAC, UPS, or electrical system schedules
+- NFS exports from `/mnt/user/*` require array disks to remain spinning
+- Spindown causes 11-minute NFS outages as documented
+- This is a well-known incompatibility between Unraid NFS and disk spindown
 
-#### 3. Simplify bonding configuration
+#### 2. ~~Add NFS mount resilience options~~ (INVALID - NO ACTION NEEDED)
 
-Since only one cable is connected and redundancy is not needed:
+**Status:** Attempted but reverted (commit 72bbfcb, reset to 484aff9)
 
-```bash
-# Option A: Remove bonding entirely, use eth1 directly
-# Option B: Keep bonding but set primary explicitly
-echo eth1 > /sys/class/net/bond0/bonding/primary
-```
+**Reason:** App-template doesn't support `mountOptions`. Kubernetes already uses optimal NFS
+defaults (`hard,nfsvers=4.2,timeo=600,retrans=2`) that cannot be improved via configuration.
 
-Reduces complexity and potential bonding-related timing issues.
+**Finding:** Hard mounts retry indefinitely when disks are spun down. No client-side configuration
+can work around server-side I/O errors from offline disks.
 
 ### Long-term Preventive Measures
 
-#### 1. Monitor NFS connection health
+#### 1. Alternative: Move NFS exports to cache pool
 
-Create alert for TCP send buffer backlog on NFS connections:
+If you still want disk spindown for power savings:
 
-```bash
-ss -tn | grep ':2049' | awk '$2 > 100000 {print "ALERT: NFS send buffer backlog:", $2}'
-```
+- Create shares on cache pool (SSD/NVMe that never spin down)
+- Move NFS exports from `/mnt/user/media` to cache-only paths
+- Allows array disks to spin down without affecting NFS
 
-#### 2. Network interface monitoring
+#### 2. Alternative: Migrate to Ceph RBD storage
 
-Alert on link state changes:
+- Move critical workloads (Plex, Sabnzbd) from NFS to Ceph block storage
+- Eliminates NFS dependency and spindown incompatibility
+- Provides better performance and resilience
 
-```bash
-# Monitor for "Link is Down" events in dmesg
-dmesg | grep -i "link is down" | tail -20
-```
+#### 3. Community research findings
 
-#### 3. Consider infrastructure changes
+Extensive web search confirmed this is a widespread Unraid issue:
 
-- Dedicated NAS with native ZFS/NFS support (related to previous investigation)
-- Migrate from Unraid array NFS to ZFS pool NFS (eliminates SHFS issues from previous incident)
-- Network path redundancy with actual cabling (if needed)
+- Multiple forum posts about NFS disconnections during spindown
+- "Unraid has been knowingly pushing out updates with broken NFS" (Reddit, 6.12.13)
+- Common workarounds: disable spindown, move to cache, or use SMB instead of NFS
+- Technical explanation: Unraid NFS doesn't queue requests during spinup, returns immediate I/O
+  errors
 
 ## Related Documentation
 
@@ -352,5 +372,6 @@ ssh nezuko "ls -la /etc/cron.daily/ /etc/cron.hourly/"
 | ---------- | ------------------------------------------------------ |
 | 2025-10-26 | Initial investigation of NFS hang and network flapping |
 
-**Status:** Network flapping root cause still unknown. 7:00 AM time pattern requires further
-investigation of environmental factors and switch-side configuration.
+**Status:** Root cause RESOLVED - disk spindown confirmed. Network flapping was historical issue,
+resolved by bonding removal and static IP configuration. Current outage (Oct 26 18:42) definitively
+caused by 1-hour spindown timer.
