@@ -9,6 +9,7 @@ resources:
 - ./cilium/ks.yaml
 - ./cloudnative-pg/ks.yaml
 - ./coredns/ks.yaml
+- ./descheduler/ks.yaml
 - ./external-secrets/ks.yaml
 - ./intel-gpu-plugin/ks.yaml
 - ./mariadb-operator/ks.yaml
