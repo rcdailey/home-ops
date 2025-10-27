@@ -1,0 +1,8 @@
+# Udev rule to create /dev/zwave symlink for Z-Wave USB controller
+# This enables the zwave-js-ui application to access the USB device at a stable path
+machine:
+  udev:
+    rules:
+      # Match Silicon Labs CP210x USB-to-UART bridge (common Z-Wave controller)
+      # Create stable /dev/zwave symlink for ttyUSB* devices using cp210x driver
+      - SUBSYSTEM=="tty", ATTRS{driver}=="cp210x", SYMLINK+="zwave"
