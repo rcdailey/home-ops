@@ -33,7 +33,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.client_payload.source || github.event_name }}-${{ github.event.number || github.head_ref || github.ref_name }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
