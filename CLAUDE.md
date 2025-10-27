@@ -184,8 +184,8 @@ Optional task reconcile
 - Setup: mise trust .mise.toml && mise install
 - Sync cluster: task reconcile
 - Validation: pre-commit run --all-files (or --files for specific files)
-- Flux reconcile: flux reconcile helmrelease NAME -n NAMESPACE --force (--reset clears retry,
-  --with-source refreshes source)
+- Flux reconcile helmrelease: `flux reconcile hr NAME -n NAMESPACE --force` (`--reset` clears retry,
+  `--with-source` refreshes source)
 - Helm: helm template releasename chartpath -f values.yaml
 
 **Secret management (Infisical):**
