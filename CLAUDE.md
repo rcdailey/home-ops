@@ -196,8 +196,10 @@ Optional task reconcile
 - Flux reconcile helmrelease: `flux reconcile hr NAME -n NAMESPACE --force` (`--reset` clears retry,
   `--with-source` refreshes source)
 - Helm: helm template releasename chartpath -f values.yaml
-- Talos: `task talos:apply-node IP=192.168.1.X` to apply configuration. Only do this one node at a
-  time!
+- Talos:
+  1. After talos configuration changes, run `task talos:generate-config` only once
+  1. Then `task talos:apply-node IP=192.168.1.X` once for each node to apply configuration. Only do
+     this one node at a time!
 
 **Secret management (Infisical):**
 
