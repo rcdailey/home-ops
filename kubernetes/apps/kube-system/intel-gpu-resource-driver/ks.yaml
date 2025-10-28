@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app intel-gpu-plugin
+  name: &app intel-gpu-resource-driver
 spec:
   targetNamespace: kube-system
   commonMetadata:
@@ -13,13 +13,12 @@ spec:
   - name: node-feature-discovery
     namespace: kube-system
   interval: 1h
-  path: ./kubernetes/apps/kube-system/intel-gpu-plugin
+  path: ./kubernetes/apps/kube-system/intel-gpu-resource-driver
   prune: true
   retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-
   timeout: 5m
   wait: true
