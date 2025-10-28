@@ -19,7 +19,7 @@ spec:
   dependsOn:
   - name: cloudnative-pg
     namespace: kube-system
-  - name: intel-gpu-plugin
+  - name: intel-gpu-resource-driver
     namespace: kube-system
   postBuild:
     substituteFrom:

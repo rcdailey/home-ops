@@ -8,4 +8,5 @@ resources:
 - postgres-cluster.yaml
 - postgres-scheduled-backup.yaml
 - pvc.yaml
+- resourceclaimtemplate.yaml
 - externalsecret.yaml

@@ -69,7 +69,6 @@
       "Bash(talosctl read:*)",
       "Bash(task reconcile)",
       "Bash(task talos:generate-config:*)",
-      "Bash(task:*)",
       "Bash(uvx flux-local:*)"
     ],
     "deny": ["Bash(kubectl port-forward:*)"]

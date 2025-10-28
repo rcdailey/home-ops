@@ -6,6 +6,7 @@ resources:
 - ./helmrelease.yaml
 - ./ks.yaml
 - ./pvc.yaml
+- ./resourceclaimtemplate.yaml
 - ./loadbalancer-service.yaml
 configMapGenerator:
 - name: plex-victorialogs-rules

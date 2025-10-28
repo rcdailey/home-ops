@@ -259,9 +259,10 @@ Optional task reconcile
 
 **Intel GPU support:**
 
-- Resource request: gpu.intel.com/i915: 1
-- Management: Intel Device Plugin Operator
-- Dependencies: Apps requiring GPU must depend on intel-gpu-plugin in kube-system
+- Resource allocation: DRA via ResourceClaimTemplate with deviceClassName: gpu.intel.com
+- Management: Intel GPU Resource Driver (replaces deprecated Device Plugin)
+- Dependencies: Apps requiring GPU must depend on intel-gpu-resource-driver in kube-system
+- Pod pattern: spec.resourceClaims references ResourceClaimTemplate, container uses resources.claims
 - OpenVINO: Set OPENVINO_DEVICE: GPU for hardware acceleration
 
 **Available namespaces:**
@@ -274,7 +275,7 @@ Namespace followed by a list of apps in that namespace:
 - external: opensprinkler
 - flux-system: flux-instance, flux-operator
 - home: esphome, home-assistant, zwave-js-ui
-- kube-system: cilium, cloudnative-pg, coredns, external-secrets, intel-gpu-plugin,
+- kube-system: cilium, cloudnative-pg, coredns, external-secrets, intel-gpu-resource-driver,
   mariadb-operator, metrics-server, multus, node-feature-discovery, reloader, snapshot-controller,
   spegel, descheduler
 - media: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,

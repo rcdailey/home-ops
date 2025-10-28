@@ -6,6 +6,9 @@ metadata:
   name: plex
 spec:
   targetNamespace: media
+  dependsOn:
+  - name: intel-gpu-resource-driver
+    namespace: kube-system
   interval: 1h
   retryInterval: 1m
   timeout: 5m
