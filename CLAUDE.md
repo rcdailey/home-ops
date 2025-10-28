@@ -99,6 +99,15 @@ Consistency patterns for maintainability and clarity.
 
 Implementation patterns, operational workflows, and environment details.
 
+### Reference Repositories
+
+Popular repositories to use as reliable reference implementations. You MUST reference these
+repositories often as documentation.
+
+- onedr0p/home-ops
+- bjw-s-labs/home-ops
+- buroa/k8s-gitops
+
 ### Repository and File Organization
 
 Pattern: `kubernetes/apps/namespace/app/`
