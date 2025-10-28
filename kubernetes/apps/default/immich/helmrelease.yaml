@@ -68,6 +68,9 @@ spec:
             runAsGroup: 1000
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
+          resourceClaims:
+          - name: gpu
+            resourceClaimTemplateName: immich
         containers:
           main:
             image:
@@ -97,11 +100,11 @@ spec:
               requests:
                 cpu: 750m
                 memory: 2Gi
-                gpu.intel.com/i915: "1"
               limits:
                 cpu: 2
                 memory: 8Gi
-                gpu.intel.com/i915: "1"
+              claims:
+              - name: gpu
             # Extended probes for model loading
             probes:
               liveness:

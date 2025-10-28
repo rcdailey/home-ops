@@ -1,0 +1,28 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: intel-gpu-resource-driver
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: intel-gpu-resource-driver
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    # Container Device Interface (CDI) paths for device exposure
+    # DRA uses CDI to expose GPU devices to containers
+    cdi:
+      staticPath: /var/cdi/static
+      dynamicPath: /var/cdi/dynamic
+    # Only deploy driver to nodes with Intel GPUs
+    kubeletPlugin:
+      nodeSelector:
+        feature.node.kubernetes.io/custom-intel-gpu: "true"

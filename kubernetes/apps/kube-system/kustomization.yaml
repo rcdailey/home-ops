@@ -11,7 +11,7 @@ resources:
 - ./coredns/ks.yaml
 - ./descheduler/ks.yaml
 - ./external-secrets/ks.yaml
-- ./intel-gpu-plugin/ks.yaml
+- ./intel-gpu-resource-driver/ks.yaml
 - ./mariadb-operator/ks.yaml
 - ./metrics-server/ks.yaml
 - ./multus/ks.yaml
