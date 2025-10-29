@@ -9,3 +9,9 @@ resources:
 - ./mariadb.yaml
 - ./pvc.yaml
 - ./externalsecret.yaml
+configMapGenerator:
+- name: filerun-php-config
+  files:
+  - config/filerun-optimization.ini
+  options:
+    disableNameSuffixHash: true
