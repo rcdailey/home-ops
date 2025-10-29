@@ -346,3 +346,13 @@ spec:
           elasticsearch:
             app:
             - path: /usr/share/elasticsearch/data
+
+      php-config:
+        type: configMap
+        name: filerun-php-config
+        advancedMounts:
+          filerun:
+            app:
+            - path: /usr/local/etc/php/conf.d/filerun-optimization.ini
+              subPath: filerun-optimization.ini
+              readOnly: true
