@@ -98,6 +98,23 @@ spec:
       limits:
         memory: 2Gi
 
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 2
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+
     extraVolumes:
     - name: db
       persistentVolumeClaim:
