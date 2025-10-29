@@ -26,8 +26,8 @@ drift.
   kustomization.yaml
 - **App ks.yaml (Flux Kustomization) uses spec.targetNamespace** - Exception to inheritance rule,
   NOT metadata.namespace
-- **NEVER use chart.spec.sourceRef** - Deprecated Flux pattern. Always use chartRef (references
-  OCIRepository by name).
+- **NEVER use chart.spec.sourceRef for app-template** - Use chartRef (references OCIRepository).
+  Exception: External HelmRepository charts may use chart.spec.sourceRef.
 - **chartRef requires NO namespace** - When OCIRepository is in same namespace as HelmRelease
 - **NEVER use executable commands in health probes** - Use httpGet, tcpSocket, or grpc only
   (security and reliability)
