@@ -3,6 +3,12 @@ machine:
     extraConfig:
       serializeImagePulls: false
       volumeStatsAggPeriod: 1m
+      # Image garbage collection configuration
+      # Addresses imagefs detection failure by using time-based GC (imageMaximumGCAge)
+      # combined with aggressive disk-based thresholds as backup
+      imageMaximumGCAge: 168h # Delete images unused for >7 days
+      imageGCHighThresholdPercent: 50 # Trigger GC at 50% disk usage
+      imageGCLowThresholdPercent: 20 # Clear down to 20% disk usage
     nodeIP:
       validSubnets:
         - 192.168.1.0/24
