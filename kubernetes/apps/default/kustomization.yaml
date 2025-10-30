@@ -12,5 +12,6 @@ resources:
 - ./filerun/ks.yaml
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
+- ./opencloud/ks.yaml
 - ./renovate-ce/ks.yaml
 - ./silverbullet/ks.yaml
