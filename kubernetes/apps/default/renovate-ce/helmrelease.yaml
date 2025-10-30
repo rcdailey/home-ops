@@ -41,7 +41,8 @@ spec:
       mendRnvAcceptTos: y
       mendRnvPlatform: github
       mendRnvEndpoint: https://api.github.com/
-      mendRnvAdminApiEnabled: true
+      mendRnvApiEnabled: true
+      mendRnvApiEnableReporting: true
       mendRnvWebhookSkipDisabledRepoJobs: true
       mendRnvSqliteFilePath: /db/renovate-ce.sqlite
       mendRnvLogHistoryDir: /db/logs
