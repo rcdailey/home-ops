@@ -10,7 +10,7 @@ server:
   address: tcp://0.0.0.0:9091
 
 log:
-  level: info
+  level: trace
 
 identity_validation:
   reset_password:

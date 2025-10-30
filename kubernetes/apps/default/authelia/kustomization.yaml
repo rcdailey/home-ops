@@ -6,6 +6,7 @@ components:
 resources:
 - ./externalsecret.yaml
 - ./helmrelease.yaml
+# - ./oauth-scope-injection.yaml  # Disabled for testing fixed Android app
 - ./pvc.yaml
 - ./referencegrant.yaml
 configMapGenerator:
@@ -13,5 +14,7 @@ configMapGenerator:
   files:
   - ./config/configuration.yaml
   - ./config/users.yaml
+  - ./config/oidc-base.yaml
+  - ./config/oidc-clients.yaml
   options:
     disableNameSuffixHash: true

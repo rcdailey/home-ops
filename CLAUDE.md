@@ -137,6 +137,10 @@ repositories often as documentation.
 - buroa/k8s-gitops
 - m00nwtchr/homelab-cluster
 
+### API Versions
+
+- ExternalSecret: `external-secrets.io/v1`
+
 ### Repository and File Organization
 
 Pattern: `kubernetes/apps/namespace/app/`
