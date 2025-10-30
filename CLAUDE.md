@@ -108,6 +108,10 @@ repositories often as documentation.
 - bjw-s-labs/home-ops
 - buroa/k8s-gitops
 
+### API Versions
+
+- ExternalSecret: `external-secrets.io/v1`
+
 ### Repository and File Organization
 
 Pattern: `kubernetes/apps/namespace/app/`

@@ -1,0 +1,95 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: opencloud
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      app:
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        pod:
+          securityContext:
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+        containers:
+          app:
+            image:
+              repository: docker.io/opencloudeu/opencloud-rolling
+              tag: 3.6.0@sha256:6732f01b1411fe9ba6efca6a7e72e98f1801f75b533eb34a96e48c0fefb1afaa
+            command:
+            - /bin/sh
+            - -c
+            - opencloud init || true; opencloud server
+            envFrom:
+            - secretRef:
+                name: opencloud-secret
+            env:
+              IDM_CREATE_DEMO_USERS: false
+              OC_INSECURE: false
+              OC_OIDC_ISSUER: https://localhost:9200
+              OC_URL: https://opencloud.${SECRET_DOMAIN}
+              PROXY_TLS: false
+              # This is REQUIRED to avoid xattrs error due to NFS mount
+              STORAGE_USERS_DRIVER: decomposed
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+    service:
+      app:
+        controller: app
+        ports:
+          http:
+            port: 9200
+    route:
+      app:
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+        hostnames:
+        - opencloud.${SECRET_DOMAIN}
+        rules:
+        - backendRefs:
+          - name: opencloud
+            port: 9200
+    persistence:
+      data:
+        type: nfs
+        server: 192.168.1.58
+        path: /mnt/user/opencloud
+        advancedMounts:
+          app:
+            app:
+            - path: /var/lib/opencloud
+      config:
+        type: persistentVolumeClaim
+        existingClaim: opencloud
+        advancedMounts:
+          app:
+            app:
+            - path: /etc/opencloud
+      tmpfs:
+        type: emptyDir
+        globalMounts:
+        - path: /tmp
