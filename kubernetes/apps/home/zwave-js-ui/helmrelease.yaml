@@ -26,20 +26,8 @@ spec:
           reloader.stakater.com/auto: "true"
 
         pod:
-          # TODO-ZWAVE-NETWORK-CONTROLLER: TEMPORARY node affinity for USB Z-Wave controller
-          # Remove this affinity section when network-enabled Z-Wave controller arrives
-          affinity:
-            nodeAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                nodeSelectorTerms:
-                - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                    - lucy
-          # TODO-ZWAVE-NETWORK-CONTROLLER: TEMPORARY pod security context for USB access
-          # Remove these settings when network-enabled Z-Wave controller arrives
           securityContext:
+            runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
             fsGroup: 1000
@@ -68,10 +56,12 @@ spec:
                   timeoutSeconds: 1
                   failureThreshold: 3
               readiness: *probes
-            # TODO-ZWAVE-NETWORK-CONTROLLER: TEMPORARY privileged mode for USB access
-            # Remove this securityContext when network-enabled Z-Wave controller arrives
             securityContext:
-              privileged: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
             resources:
               requests:
                 cpu: 10m
@@ -110,17 +100,6 @@ spec:
             app:
             - path: /usr/src/app/store
             - path: /data
-
-      # TODO-ZWAVE-NETWORK-CONTROLLER: TEMPORARY USB device passthrough
-      # Remove this entire usb volume when network-enabled Z-Wave controller arrives
-      usb:
-        type: hostPath
-        hostPath: /dev/zwave
-        hostPathType: CharDevice
-        advancedMounts:
-          zwave-js-ui:
-            app:
-            - path: /dev/ttyACM0
 
       tmp:
         type: emptyDir
