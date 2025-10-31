@@ -34,10 +34,10 @@ spec:
                 name: opencloud-secret
             env:
               IDM_CREATE_DEMO_USERS: false
-              OC_DOMAIN: opencloud.${SECRET_DOMAIN}
               OC_ENABLE_OCM: false
               OC_INSECURE: false
               OC_LOG_LEVEL: info
+              OC_URL: https://opencloud.${SECRET_DOMAIN}
               PROXY_OIDC_REWRITE_WELLKNOWN: true
               PROXY_TLS: false
             resources:
