@@ -25,13 +25,11 @@ spec:
             image:
               repository: docker.io/opencloudeu/opencloud-rolling
               tag: 3.6.0@sha256:6732f01b1411fe9ba6efca6a7e72e98f1801f75b533eb34a96e48c0fefb1afaa
+            envFrom:
+            - secretRef:
+                name: opencloud-secret
             env:
               IDM_CREATE_DEMO_USERS: false
-              IDM_ADMIN_PASSWORD:
-                valueFrom:
-                  secretKeyRef:
-                    name: opencloud-secret
-                    key: idm-admin-password
               OC_ENABLE_OCM: false
               OC_INSECURE: false
               OC_LOG_LEVEL: info
