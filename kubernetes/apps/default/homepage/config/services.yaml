@@ -107,6 +107,12 @@
       description: Z-Wave Device Manager
       siteMonitor: http://zwave-js-ui.home:80
 
+  - Zigbee/Z-Wave/Thread Hub:
+      icon: mdi-zigbee
+      href: http://192.168.1.64
+      description: Network Controller Device
+      ping: 192.168.1.64
+
   - Open Sprinkler:
       icon: mdi-sprinkler-variant
       href: https://sprinkler.${SECRET_DOMAIN}/
