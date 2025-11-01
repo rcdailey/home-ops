@@ -33,6 +33,7 @@ spec:
             - secretRef:
                 name: opencloud-secret
             env:
+              OC_INSECURE: false
               OC_URL: https://opencloud.${SECRET_DOMAIN}
               # This is REQUIRED to avoid xattrs error due to NFS mount
               STORAGE_USERS_DRIVER: decomposed
