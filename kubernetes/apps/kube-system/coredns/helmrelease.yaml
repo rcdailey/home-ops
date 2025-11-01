@@ -57,6 +57,9 @@ spec:
         configBlock: |
           pods verified
           fallthrough in-addr.arpa ip6.arpa
+      - name: rewrite
+        configBlock: |
+          name opencloud.dailey.app opencloud.default.svc.cluster.local
       - name: autopath
         parameters: "@kubernetes"
       - name: forward
