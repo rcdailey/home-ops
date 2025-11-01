@@ -34,8 +34,6 @@ spec:
                 name: opencloud-secret
             env:
               OC_URL: https://opencloud.${SECRET_DOMAIN}
-              PROXY_OIDC_ISSUER: http://opencloud.default:9200
-              PROXY_HTTP_ADDR: 0.0.0.0:9200
               # This is REQUIRED to avoid xattrs error due to NFS mount
               STORAGE_USERS_DRIVER: decomposed
             resources:
@@ -62,7 +60,7 @@ spec:
     route:
       app:
         parentRefs:
-        - name: internal
+        - name: external
           namespace: network
           sectionName: https
         hostnames:
