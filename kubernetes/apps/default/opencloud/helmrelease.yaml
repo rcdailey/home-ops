@@ -35,6 +35,7 @@ spec:
             env:
               OC_INSECURE: false
               OC_URL: https://opencloud.${SECRET_DOMAIN}
+              PROXY_TLS: false
               # This is REQUIRED to avoid xattrs error due to NFS mount
               STORAGE_USERS_DRIVER: decomposed
             resources:
