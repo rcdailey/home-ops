@@ -79,36 +79,38 @@ spec:
               capabilities:
                 drop: ["ALL"]
 
-          vector-sidecar:
-            image:
-              repository: timberio/vector
-              tag: 0.50.0-alpine
-            env:
-              TZ: America/Chicago
-              VECTOR_CONFIG_PATH: /etc/vector/vector.yaml
-              POD_NAME:
-                valueFrom:
-                  fieldRef:
-                    fieldPath: metadata.name
-              NODE_NAME:
-                valueFrom:
-                  fieldRef:
-                    fieldPath: spec.nodeName
-            resources:
-              requests:
-                cpu: 10m
-                memory: 32Mi
-              limits:
-                cpu: 200m
-                memory: 256Mi
-            securityContext:
-              runAsUser: 1000
-              runAsGroup: 1000
-              runAsNonRoot: true
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities:
-                drop: ["ALL"]
+          # TEMPORARY: Testing if Vector sidecar contributes to Ceph write
+          # amplification and stuck terminating pods. Disabled for baseline testing.
+          # vector-sidecar:
+          #   image:
+          #     repository: timberio/vector
+          #     tag: 0.50.0-alpine
+          #   env:
+          #     TZ: America/Chicago
+          #     VECTOR_CONFIG_PATH: /etc/vector/vector.yaml
+          #     POD_NAME:
+          #       valueFrom:
+          #         fieldRef:
+          #           fieldPath: metadata.name
+          #     NODE_NAME:
+          #       valueFrom:
+          #         fieldRef:
+          #           fieldPath: spec.nodeName
+          #   resources:
+          #     requests:
+          #       cpu: 10m
+          #       memory: 32Mi
+          #     limits:
+          #       cpu: 200m
+          #       memory: 256Mi
+          #   securityContext:
+          #     runAsUser: 1000
+          #     runAsGroup: 1000
+          #     runAsNonRoot: true
+          #     allowPrivilegeEscalation: false
+          #     readOnlyRootFilesystem: true
+          #     capabilities:
+          #       drop: ["ALL"]
 
     persistence:
       config:
@@ -117,9 +119,9 @@ spec:
           plex:
             app:
             - path: /config
-            vector-sidecar:
-            - path: /config
-              readOnly: true
+              # vector-sidecar:
+              # - path: /config
+              #   readOnly: true
 
       config-cache:
         existingClaim: plex-cache
@@ -144,9 +146,9 @@ spec:
           plex:
             app:
             - path: /config/Library/Application Support/Plex Media Server/Logs
-            vector-sidecar:
-            - path: /config/Library/Application Support/Plex Media Server/Logs
-              readOnly: true
+              # vector-sidecar:
+              # - path: /config/Library/Application Support/Plex Media Server/Logs
+              #   readOnly: true
 
       tmp:
         type: emptyDir
@@ -162,21 +164,21 @@ spec:
             app:
             - path: /transcode
 
-      vector-config:
-        type: configMap
-        name: plex-vector-config
-        advancedMounts:
-          plex:
-            vector-sidecar:
-            - path: /etc/vector
-              readOnly: true
+      # vector-config:
+      #   type: configMap
+      #   name: plex-vector-config
+      #   advancedMounts:
+      #     plex:
+      #       vector-sidecar:
+      #       - path: /etc/vector
+      #         readOnly: true
 
-      vector-data:
-        existingClaim: plex-vector-data
-        advancedMounts:
-          plex:
-            vector-sidecar:
-            - path: /var/lib/vector
+      # vector-data:
+      #   existingClaim: plex-vector-data
+      #   advancedMounts:
+      #     plex:
+      #       vector-sidecar:
+      #       - path: /var/lib/vector
 
     route:
       app:

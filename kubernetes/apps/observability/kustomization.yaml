@@ -7,8 +7,14 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
-- ./victoria-metrics-k8s-stack/ks.yaml
-- ./victoria-logs-single/ks.yaml
+# TEMPORARY: Testing if Victoria Metrics/Logs writing to Ceph causes write amplification that
+# contributes to stuck terminating pods. Disabled to establish baseline cluster behavior.
+#
+# Recommended action when this is reenabled: Put metrics and logs storage on hostpath with node
+# selector for worker nodes.
+#
+# - ./victoria-metrics-k8s-stack/ks.yaml
+# - ./victoria-logs-single/ks.yaml
 - ./grafana/ks.yaml
 - ./gatus/ks.yaml
 - ./vmrules
