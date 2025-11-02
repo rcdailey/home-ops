@@ -35,7 +35,6 @@ spec:
             env:
               IDM_CREATE_DEMO_USERS: false
               OC_INSECURE: false
-              OC_OIDC_ISSUER: https://localhost:9200
               OC_URL: https://opencloud.${SECRET_DOMAIN}
               PROXY_TLS: false
               # This is REQUIRED to avoid xattrs error due to NFS mount
