@@ -30,7 +30,10 @@
   // I frequently rewrite commits on main, and as a result, orphaned commits on main are treated as
   // custom commits on renovate branches. This ignored authors setting prevents Renovate from
   // thinking I've made intentional, custom modifications to branches it manages.
-  gitIgnoredAuthors: ["git@rdailey.me"],
+  gitIgnoredAuthors: [
+    "git@rdailey.me",
+    "227055450+renohate[bot]@users.noreply.github.com",
+  ],
   ignorePaths: ["**/*.sops.*", "**/resources/**"],
   flux: {
     managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
