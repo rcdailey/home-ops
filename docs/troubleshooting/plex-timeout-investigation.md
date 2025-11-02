@@ -226,6 +226,139 @@ kubectl run test-vlogs --rm -i --restart=Never --image=curlimages/curl:latest --
   curl -s 'http://victoria-logs-single.observability:9428/select/logsql/query?query=namespace:media app:plex _time:1h&limit=100'
 ```
 
+## Intel GPU Driver Failure - Pod Stuck Terminating (2025-11-02)
+
+### Incident Overview
+
+Plex pod stuck in Terminating status for 101+ minutes due to Intel GPU Level Zero initialization
+failure causing application decoder hang, preventing graceful termination and volume cleanup.
+
+**Duration:** 2025-11-02 19:33:55Z to ~21:15Z (101+ minutes)
+
+**Resolution:** Kubelet restart on node hanekawa
+
+### Root Cause: Intel GPU Driver Initialization Failure
+
+**GPU Driver Errors (hanekawa node):**
+
+```txt
+[error] zeInit error: 78000001
+[error] xpumInit LevelZeroInitializationException
+[error] Failed to init xpum core: zeInit error
+[error] Failed reading /sysfs/bus/pci/drivers/i915/0000:00:02.0/physfn
+```
+
+**GPU ResourceClaim:** `allocated,reserved` (appeared healthy but underlying driver broken)
+
+**Intel GPU Device:** `0000-00-02-0-0x3ea5` allocated to pod
+
+### Failure Sequence
+
+1. Pod started 2025-10-31T18:54:59Z with GPU ResourceClaim successfully allocated
+2. GPU driver initialization failed (Level Zero API error 0x78000001 - ZE_RESULT_ERROR_UNINITIALIZED)
+3. Plex decoder attempted GPU access, hung in infinite loop outputting `decoder information: 249`
+4. Application became unresponsive (not crashed, but hung waiting on broken GPU driver)
+5. Readiness probe failed 48 hours later (2025-11-02T19:33:52Z) - HTTP GET to `/identity` timeout
+6. Kubernetes initiated deletion 3 seconds after probe failure
+7. SIGTERM sent to containers - containers remained Running, no shutdown signal logged
+8. Containers could not terminate - application likely in uninterruptible sleep (D state) waiting
+   on GPU I/O
+9. RWO volumes could not unmount while container held file handles
+10. Pod stuck indefinitely - exceeded grace period but process wouldn't die
+
+### Key Evidence
+
+**Application Hang:** Logs showed only `decoder information: 249` repeating infinitely (no other
+output in 1000+ lines)
+
+**Container State:** Both `app` and `vector-sidecar` containers reported Running since
+2025-10-31T19:01:22Z despite `deletionTimestamp` set
+
+**Volume Mounts:** All RWO volumes (`plex-config`, `plex-cache`, `plex-vector-data`) still mounted
+at `/var/lib/kubelet/pods/56a9f355-0176-49eb-98cf-6cac62911850/`
+
+**Ceph Watcher:** Active watcher `192.168.1.63:0/3699459092` on plex-config volume
+
+**No VolumeAttachment Issues:** Unlike the documented RBAC pattern from 2025-10-31, no kubelet
+WaitForAttach loops or RBAC errors present
+
+### Comparison to VolumeAttachment RBAC Issue (2025-10-31)
+
+| Documented RBAC Issue (2025-10-31) | Intel GPU Issue (2025-11-02) |
+| ---------------------------------- | ---------------------------- |
+| VolumeAttachment RBAC timing failures | Intel GPU driver zeInit failure |
+| WaitForAttach loops in kubelet logs | No volume attachment issues |
+| Occurs during pod startup | Occurs 48 hours after successful startup |
+| Requires kubelet restart | Requires kubelet restart + GPU driver investigation |
+
+This is a **distinct failure mode** - GPU-induced application hang preventing graceful termination,
+not infrastructure volume attachment timing issues.
+
+### Resolution
+
+**Immediate:** Kubelet restart on hanekawa (`talosctl -n 192.168.1.63 service kubelet restart`)
+successfully allowed pod termination and new pod startup.
+
+**Long-term Prevention:**
+
+1. Investigate Intel GPU driver stability on hanekawa - zeInit failures indicate broken i915/Level
+   Zero stack
+2. Check kernel driver versions - may need driver update or downgrade
+3. Verify GPU hardware health - PCI device may be in failed state
+4. Consider disabling hardware transcoding temporarily - remove GPU ResourceClaim until driver
+   stable
+5. Add GPU health probe to Plex deployment to detect GPU failures early instead of after 48 hours
+
+### Investigation Commands Used
+
+```bash
+# Check GPU driver status
+kubectl logs -n kube-system intel-gpu-resource-driver-kubelet-plugin-c2989 --tail 200
+
+# Verify ResourceClaim state
+kubectl get resourceclaim -n media plex-744c8d8d96-d8znv-gpu-qcwxv -o yaml
+
+# Check pod termination status
+kubectl get pod -n media plex-744c8d8d96-d8znv -o jsonpath='{.metadata.deletionTimestamp}'
+kubectl get pod -n media plex-744c8d8d96-d8znv -o jsonpath='{.status.containerStatuses}'
+
+# Verify volume mounts on node
+talosctl -n 192.168.1.63 read /proc/mounts | rg pvc-7a1b75f9
+
+# Check Ceph RBD status
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- \
+  rbd status ceph-blockpool/csi-vol-4364fa9d-e5cc-4123-8b6b-1d2159b1676a
+```
+
+### Related Web Research
+
+**Plex decoder hang pattern** from Plex Forums: `decoder information: 249` repeating lines
+precede Plex Media Server crashes related to hardware transcoding failures, GPU driver issues,
+and corrupted media files.
+
+**Intel GPU driver issues** with Level Zero API commonly caused by:
+
+- GPU driver version incompatibilities (need driver 535 vs 550 in some cases)
+- Intel GPU Resource Driver timing issues during pod startup
+- Device claim attachment failures
+- GPU hung state requiring driver reset
+
+**RWO volume terminating pattern** confirmed across multiple storage systems (Ceph, Longhorn):
+When application crashes/hangs BEFORE receiving SIGTERM, Kubernetes cannot complete graceful
+termination because process may be in uninterruptible sleep (D state) waiting on I/O, preventing
+volume unmount.
+
+### Recommendations
+
+**Monitor Intel GPU driver errors:** Alert on zeInit failures in
+`intel-gpu-resource-driver-kubelet-plugin` pods
+
+**Add GPU health checks:** Implement startup probe that validates GPU accessibility before marking
+pod ready
+
+**Document GPU-specific termination pattern:** This is distinct from volume attachment RBAC issues
+and requires different troubleshooting approach
+
 ## Document History
 
 | Date       | Changes                                                               |
@@ -234,7 +367,8 @@ kubectl run test-vlogs --rm -i --restart=Never --image=curlimages/curl:latest --
 | 2025-10-20 | ROOT CAUSE CONFIRMED: EAE deadlock, external validation added         |
 | 2025-10-22 | Deadlock recurrence documented, infrastructure failures identified    |
 | 2025-10-22 | ROOT CAUSE REVISED: Unraid NFS primary, EAE secondary, community data |
+| 2025-11-02 | Intel GPU driver failure causing pod terminating hang documented      |
 
-**Status:** Unraid array NFS incompatibility confirmed as primary root cause. Node marin
-consistently affected. Recommended solution: migrate `/mnt/user/media` to ZFS pool or switch to
-SMB/CIFS protocol.
+**Status:** Multiple Plex failure modes documented: (1) Unraid NFS incompatibility, (2) EAE
+Service deadlocks, (3) Intel GPU driver initialization failures. Each requires distinct
+troubleshooting and resolution approach.
