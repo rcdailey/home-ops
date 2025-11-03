@@ -40,6 +40,8 @@ drift.
   creation causes failures
 - **ONLY use postBuild.substituteFrom for**: cluster-secrets, email-secrets (pre-existing SOPS
   secrets managed centrally)
+- **NEVER use raw ConfigMap resources** - ALWAYS use configMapGenerator in kustomization.yaml with
+  files from config/ subdirectory
 - **NEVER inline VRL source in vector.yaml** - Separate VRL file required for testing and validation
 - **ALWAYS include test data for VRL validation** - Use ./scripts/test-vector-config.py for
   validation
