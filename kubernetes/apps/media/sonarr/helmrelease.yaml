@@ -28,7 +28,7 @@ spec:
             nameOverride: sonarr
             image:
               repository: ghcr.io/home-operations/sonarr
-              tag: 4.0.16.2942
+              tag: 4.0.16.2943
             env:
               UMASK: "022"
               SONARR__APP__INSTANCENAME: Sonarr
