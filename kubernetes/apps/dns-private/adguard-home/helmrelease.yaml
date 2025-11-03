@@ -127,7 +127,7 @@ spec:
                 cpu: 10m
                 memory: 256Mi
               limits:
-                memory: 1Gi
+                memory: 1536Mi
 
     defaultPodOptions:
       automountServiceAccountToken: false
