@@ -6,5 +6,6 @@ namespace: storage
 components:
 - ../../components/common
 resources:
+- ./garage/ks.yaml
 - ./kopia/ks.yaml
 - ./volsync/ks.yaml
