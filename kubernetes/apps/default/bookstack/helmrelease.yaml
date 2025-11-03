@@ -95,7 +95,7 @@ spec:
           redis:
             image:
               repository: public.ecr.aws/docker/library/redis
-              tag: 8.2.2-alpine
+              tag: 8.2.3-alpine
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
