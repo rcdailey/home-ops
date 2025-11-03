@@ -48,5 +48,12 @@
       matchPackageNames: ["mariadb-operator*"],
       minimumGroupSize: 2,
     },
+    {
+      description: "Mend Renovate CE Group",
+      groupName: "Mend Renovate CE",
+      matchDatasources: ["docker", "helm"],
+      matchPackageNames: ["ghcr.io/mend/renovate-ce", "mend-renovate-ce"],
+      minimumGroupSize: 2,
+    },
   ],
 }
