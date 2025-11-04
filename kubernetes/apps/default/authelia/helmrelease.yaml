@@ -75,9 +75,9 @@ spec:
             resources:
               requests:
                 cpu: 10m
-                memory: 128Mi
+                memory: 64Mi
               limits:
-                memory: 256Mi
+                memory: 128Mi
 
       redis:
         containers:
@@ -89,9 +89,9 @@ spec:
             resources:
               requests:
                 cpu: 50m
-                memory: 128Mi
+                memory: 25Mi
               limits:
-                memory: 256Mi
+                memory: 128Mi
 
     service:
       app:
