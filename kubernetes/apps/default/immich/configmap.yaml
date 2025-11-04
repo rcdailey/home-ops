@@ -36,5 +36,6 @@ data:
   MACHINE_LEARNING_MODEL_TTL: "300"
   MACHINE_LEARNING_MODEL_TTL_POLL_S: "10"
 
-  # Media Location
-  IMMICH_MEDIA_LOCATION: /data
+  # Storage Locations (see https://immich.app/docs/guides/custom-locations)
+  # Main media library location (NFS)
+  UPLOAD_LOCATION: /data
