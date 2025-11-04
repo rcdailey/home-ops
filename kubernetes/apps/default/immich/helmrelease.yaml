@@ -174,9 +174,7 @@ spec:
             main:
             - path: /data
 
-      # Override thumbnail/profile storage to use faster Ceph block storage
-      # instead of NFS. Mounted as subdirectories under /data to avoid
-      # requiring database path migration.
+      # Thumbnails on Ceph block storage for performance
       thumbnails:
         type: persistentVolumeClaim
         existingClaim: immich-thumbnails
@@ -185,8 +183,15 @@ spec:
             main:
             - path: /data/thumbs
               subPath: thumbs
+
+      # User profile pictures on separate PVC for backup
+      profile:
+        type: persistentVolumeClaim
+        existingClaim: immich-profile
+        advancedMounts:
+          server:
+            main:
             - path: /data/profile
-              subPath: profile
 
       ml-cache:
         type: emptyDir

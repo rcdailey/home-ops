@@ -11,3 +11,16 @@ spec:
   resources:
     requests:
       storage: 20Gi
+---
+# yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/persistentvolumeclaim-v1.json
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-profile
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ceph-block
+  resources:
+    requests:
+      storage: 1Gi
