@@ -22,6 +22,9 @@ spec:
   - name: intel-gpu-resource-driver
     namespace: kube-system
   postBuild:
+    substitute:
+      APP: immich
+      VOLSYNC_PVC: immich-profile
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
