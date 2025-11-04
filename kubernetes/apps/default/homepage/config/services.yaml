@@ -15,256 +15,213 @@
 # Use ${SECRET_DOMAIN} for domain substitution via Flux.
 # Icons can be service names (e.g., 'plex', 'sonarr') or Material Design icons ('mdi-*').
 ---
-- Media:
+- Media Management:
   - Jellyseerr:
       icon: jellyseerr
       href: https://request.${SECRET_DOMAIN}/
-      description: Request Movies & Shows
       siteMonitor: http://jellyseerr.media:80
 
   - Prowlarr:
       icon: prowlarr
       href: https://prowlarr.${SECRET_DOMAIN}/
-      description: Indexer Management
       siteMonitor: http://prowlarr.media:9696
 
   - Sonarr:
       icon: sonarr
       href: https://sonarr.${SECRET_DOMAIN}/
-      description: TV Series Management
       siteMonitor: http://sonarr.media:8989
 
   - Sonarr (Anime):
       icon: sonarr
       href: https://sonarr-anime.${SECRET_DOMAIN}/
-      description: Anime Series Management
       siteMonitor: http://sonarr-anime.media:8989
 
   - Radarr:
       icon: radarr
       href: https://radarr.${SECRET_DOMAIN}/
-      description: Movie Management
       siteMonitor: http://radarr.media:7878
 
   - Radarr (4K):
       icon: radarr
       href: https://radarr-4k.${SECRET_DOMAIN}/
-      description: 4K Movie Management
       siteMonitor: http://radarr-4k.media:7878
 
   - Radarr (Anime):
       icon: radarr
       href: https://radarr-anime.${SECRET_DOMAIN}/
-      description: Anime Movie Management
       siteMonitor: http://radarr-anime.media:7878
+
+  - Bazarr:
+      icon: bazarr
+      href: https://bazarr.${SECRET_DOMAIN}/
+      siteMonitor: http://bazarr.media:6767
+
+- Media Delivery:
+  - Plex:
+      icon: plex
+      href: https://plex.${SECRET_DOMAIN}/
+      siteMonitor: http://plex.media:32400
+
+  - Tautulli:
+      icon: tautulli
+      href: https://tautulli.${SECRET_DOMAIN}/
+      siteMonitor: http://tautulli.media:8181
 
   - Sabnzbd:
       icon: sabnzbd
       href: https://nzb.${SECRET_DOMAIN}/
-      description: Usenet Downloader
       siteMonitor: http://sabnzbd.media:8080
 
   - qBittorrent:
       icon: qbittorrent
       href: https://torrent.${SECRET_DOMAIN}/
-      description: Torrent Client
       siteMonitor: http://qbittorrent.media:8080
 
-  - Plex:
-      icon: plex
-      href: https://plex.${SECRET_DOMAIN}/
-      description: Media Server
-      siteMonitor: http://plex.media:32400
-
-  - Bazarr:
-      icon: bazarr
-      href: https://bazarr.${SECRET_DOMAIN}/
-      description: Subtitle Management
-      siteMonitor: http://bazarr.media:6767
-
-  - Tautulli:
-      icon: tautulli
-      href: https://tautulli.${SECRET_DOMAIN}/
-      description: Plex Statistics
-      siteMonitor: http://tautulli.media:8181
-
-- Home & IoT:
-  - Home Assistant:
-      icon: home-assistant
-      href: https://ha.${SECRET_DOMAIN}/
-      description: Home Automation
-      siteMonitor: http://home-assistant.home:8123
-
-  - ESPHome:
-      icon: esphome
-      href: https://esphome.${SECRET_DOMAIN}/
-      description: ESP Device Manager
-      siteMonitor: http://esphome.home:6052
-
-  - Z-Wave JS UI:
-      icon: mdi-z-wave
-      href: https://zwave.${SECRET_DOMAIN}/
-      description: Z-Wave Device Manager
-      siteMonitor: http://zwave-js-ui.home:80
-
-  - Zigbee/Z-Wave/Thread Hub:
-      icon: mdi-zigbee
-      href: http://192.168.1.64
-      description: Network Controller Device
-      ping: 192.168.1.64
-
-  - Open Sprinkler:
-      icon: mdi-sprinkler-variant
-      href: https://sprinkler.${SECRET_DOMAIN}/
-      description: Irrigation Control
-      siteMonitor: http://opensprinkler.external:80
-
-- Storage & Productivity:
+- Applications:
   - Filerun:
       icon: filerun
       href: https://cloud.${SECRET_DOMAIN}/
-      description: File Manager
       siteMonitor: http://filerun-app.default:80
 
   - Immich:
       icon: immich
       href: https://photos.${SECRET_DOMAIN}/
-      description: Photo Management
       siteMonitor: http://immich-server.default:2283
 
   - BookStack:
       icon: bookstack
       href: https://wiki.${SECRET_DOMAIN}/
-      description: Documentation Wiki
       siteMonitor: http://bookstack.default:8080/status
 
   - SilverBullet:
       icon: silverbullet
       href: https://notes.${SECRET_DOMAIN}/
-      description: Note-Taking & Knowledge Base
       siteMonitor: http://silverbullet.default:3000
 
-  - Kopia:
-      icon: mdi-backup-restore
-      href: https://kopia.${SECRET_DOMAIN}/
-      description: Backup Server
-      siteMonitor: http://kopia.storage:80
+  - Home Assistant:
+      icon: home-assistant
+      href: https://ha.${SECRET_DOMAIN}/
+      siteMonitor: http://home-assistant.home:8123
+
+  - ESPHome:
+      icon: esphome
+      href: https://esphome.${SECRET_DOMAIN}/
+      siteMonitor: http://esphome.home:6052
+
+  - Z-Wave JS UI:
+      icon: mdi-z-wave
+      href: https://zwave.${SECRET_DOMAIN}/
+      siteMonitor: http://zwave-js-ui.home:80
+
+  - Zigbee/Z-Wave/Thread Hub:
+      icon: mdi-zigbee
+      href: http://192.168.1.64
+      ping: 192.168.1.64
+
+  - Open Sprinkler:
+      icon: mdi-sprinkler-variant
+      href: https://sprinkler.${SECRET_DOMAIN}/
+      siteMonitor: http://opensprinkler.external:80
 
 - Infrastructure:
   - AdGuard Home:
       icon: adguard-home
       href: https://dns.${SECRET_DOMAIN}/
-      description: DNS Filtering
       siteMonitor: http://adguard-home-primary.dns-private:3000
 
   - AdGuard Sync:
       icon: adguard-home
       href: https://dns-sync.${SECRET_DOMAIN}/
-      description: DNS Sync Dashboard
       siteMonitor: http://adguard-home-sync.dns-private:8080
 
   - Authelia:
       icon: authelia
       href: https://auth.${SECRET_DOMAIN}/
-      description: Authentication Gateway
       siteMonitor: http://authelia-app.default:9091
 
-- Observability:
-  - Grafana:
-      icon: grafana
-      href: https://grafana.${SECRET_DOMAIN}/
-      description: Monitoring Dashboards
-      siteMonitor: http://grafana.observability:80
-
-  - VictoriaMetrics:
-      icon: victoriametrics
-      href: https://victoria-metrics.${SECRET_DOMAIN}/
-      description: Metrics Database
-      siteMonitor: http://vmsingle-victoria-metrics-k8s-stack.observability:8428/health
-
-  - VictoriaLogs:
-      icon: mdi-text-box-search
-      href: https://victoria-logs.${SECRET_DOMAIN}/
-      description: Logs Database
-      siteMonitor: http://victoria-logs-single.observability:9428/health
-
-  - VM AlertManager:
-      icon: mdi-bell-alert
-      href: https://vmalertmanager.${SECRET_DOMAIN}/
-      description: Alert Management
-      siteMonitor: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093/health
-
-  - VM Alert:
-      icon: mdi-alert-octagon
-      href: https://vmalert.${SECRET_DOMAIN}/
-      description: Alert Rules
-      siteMonitor: http://vmalert-victoria-metrics-k8s-stack.observability:8080/health
-
-  - Ceph Dashboard:
-      icon: ceph
-      href: https://ceph.${SECRET_DOMAIN}/
-      description: Storage Cluster
-      siteMonitor: http://rook-ceph-mgr-dashboard.rook-ceph:7000
-
-- Local:
   - Unraid:
       icon: unraid
       href: http://192.168.1.58/Dashboard
-      description: NAS Server
       ping: 192.168.1.58
 
   - Unifi (local):
       icon: ubiquiti-unifi
       href: https://192.168.1.1/
-      description: Network Controller
       ping: 192.168.1.1
 
   - Proxmox:
       icon: proxmox
       href: https://192.168.1.54:8006/
-      description: Virtualization
       ping: 192.168.1.54
 
   - AT&T Gateway:
       icon: mdi-router-wireless
       href: http://192.168.99.254/cgi-bin/home.ha
-      description: Internet Gateway
       ping: 192.168.99.254
 
   - HDHomeRun:
       icon: hdhomerun
       href: http://192.168.1.53/
-      description: TV Tuner
       ping: 192.168.1.53
 
-  - CUPS Print Server:
-      icon: mdi-printer
-      href: http://192.168.1.52:631/
-      description: Print Server
-      ping: 192.168.1.52
+- Monitoring:
+  - Grafana:
+      icon: grafana
+      href: https://grafana.${SECRET_DOMAIN}/
+      siteMonitor: http://grafana.observability:80
 
-- External:
+  - VictoriaMetrics:
+      icon: victoriametrics
+      href: https://victoria-metrics.${SECRET_DOMAIN}/
+      siteMonitor: http://vmsingle-victoria-metrics-k8s-stack.observability:8428/health
+
+  - VictoriaLogs:
+      icon: mdi-text-box-search
+      href: https://victoria-logs.${SECRET_DOMAIN}/
+      siteMonitor: http://victoria-logs-single.observability:9428/health
+
+  - VM AlertManager:
+      icon: mdi-bell-alert
+      href: https://vmalertmanager.${SECRET_DOMAIN}/
+      siteMonitor: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093/health
+
+  - VM Alert:
+      icon: mdi-alert-octagon
+      href: https://vmalert.${SECRET_DOMAIN}/
+      siteMonitor: http://vmalert-victoria-metrics-k8s-stack.observability:8080/health
+
+  - Ceph Dashboard:
+      icon: ceph
+      href: https://ceph.${SECRET_DOMAIN}/
+      siteMonitor: http://rook-ceph-mgr-dashboard.rook-ceph:7000
+
+  - Kopia:
+      icon: mdi-backup-restore
+      href: https://kopia.${SECRET_DOMAIN}/
+      siteMonitor: http://kopia.storage:80
+
+- External Services:
   - Bitwarden:
       icon: bitwarden
       href: https://vault.bitwarden.com/
-      description: Password Manager
 
   - Unifi Portal:
       icon: ubiquiti-unifi
       href: https://unifi.ui.com/dashboard
-      description: Cloud Management
 
   - Cloudflare:
       icon: cloudflare
       href: https://dash.cloudflare.com
-      description: DNS & CDN
 
   - BorgBase:
       icon: mdi-backup-restore
       href: https://www.borgbase.com/repositories
-      description: Backup Storage
 
   - APC SmartConnect:
       icon: mdi-battery-charging-100
       href: https://smartconnect.apc.com/
-      description: UPS Management
+
+  - CUPS Print Server:
+      icon: mdi-printer
+      href: http://192.168.1.52:631/
+      ping: 192.168.1.52
