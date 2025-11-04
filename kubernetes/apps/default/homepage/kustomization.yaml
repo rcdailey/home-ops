@@ -11,8 +11,6 @@ configMapGenerator:
   - ./config/services.yaml
   - ./config/widgets.yaml
   - ./config/bookmarks.yaml
-  - ./config/kubernetes.yaml
-  - ./config/docker.yaml
   options:
     disableNameSuffixHash: true
 commonLabels:
