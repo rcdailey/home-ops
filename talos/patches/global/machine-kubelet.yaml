@@ -1,6 +1,14 @@
 machine:
   kubelet:
     extraConfig:
+      # DRA (Dynamic Resource Allocation) feature gates
+      # ResourceHealthStatus: Enables DRA drivers to report device health status
+      # and prevents kubelet from losing gRPC connection to DRA drivers after
+      # 30 minutes of inactivity (known issue in K8s v1.34.0-v1.34.1).
+      # Required for Intel GPU Resource Driver stability.
+      # Ref: https://github.com/intel/intel-resource-drivers-for-kubernetes/blob/main/doc/gpu/USAGE.md#known-issues
+      featureGates:
+        ResourceHealthStatus: true
       serializeImagePulls: false
       volumeStatsAggPeriod: 1m
       # Image garbage collection configuration
