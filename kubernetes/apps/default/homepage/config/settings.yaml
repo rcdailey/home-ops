@@ -21,20 +21,24 @@ iconStyle: theme
 
 # Layout configuration for vertical design
 layout:
-  Media:
+  Media Management:
     style: column
-    useEqualHeights: true
-  Services:
+    columns: 6
+  Media Delivery:
     style: column
-    useEqualHeights: true
-  Observability:
+    columns: 6
+  Applications:
     style: column
-    useEqualHeights: true
-  Local:
+    columns: 6
+  Infrastructure:
     style: column
-    useEqualHeights: true
-  External:
+    columns: 6
+  Monitoring:
+    style: column
+    columns: 6
+  External Services:
     iconsOnly: true
+    columns: 6
 
 # Global settings for compactness
 useEqualHeights: true
