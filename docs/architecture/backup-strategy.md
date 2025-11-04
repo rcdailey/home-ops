@@ -9,7 +9,7 @@ architecture, implementation details, and critical learnings from deployment.
 
 - [Architecture Overview](#architecture-overview)
 - [VolSync with Kopia Backend](#volsync-with-kopia-backend)
-- [Storage Backend (Garage S3)](#storage-backend-garage-s3)
+- [Storage Backend (NFS)](#storage-backend-nfs)
 - [Shared Repository Pattern](#shared-repository-pattern)
 - [Configuration](#configuration)
 - [Critical Learnings](#critical-learnings)
@@ -21,18 +21,17 @@ architecture, implementation details, and critical learnings from deployment.
 
 1. **VolSync** - Kubernetes operator for volume replication and backup
    - Fork: `perfectra1n/volsync` (adds Kopia support)
-   - Version: `0.16.8` (container image)
-   - Chart: `0.17.11` (from home-operations/charts-mirror)
+   - Chart: from home-operations/charts-mirror
 
 2. **Kopia** - Content-addressable backup system
-   - Version: `v0.21.1`
-   - Backend: S3-compatible (Garage)
+   - Backend: NFS filesystem (Nezuko server)
    - Repository mode: Shared multi-tenant
+   - GUI Server: Web UI for repository management (kubernetes/apps/storage/kopia)
 
-3. **Garage S3** - Self-hosted S3-compatible object storage
-   - Endpoint: `http://192.168.1.58:3900` (Nezuko server)
-   - Region: `garage`
-   - Bucket: `volsync-backups`
+3. **NFS Storage** - Network filesystem backup destination
+   - Server: `192.168.1.58` (Nezuko server)
+   - Path: `/mnt/user/volsync`
+   - Mount Point: `/repository` (auto-injected by MutatingAdmissionPolicy)
 
 ### Data Flow
 
@@ -49,17 +48,17 @@ flowchart TB
 
     apps --> volsync
 
-    garage["Garage S3<br/>192.168.1.58"]
-    volsync -->|S3 Protocol| garage
+    nfs["NFS Storage<br/>192.168.1.58:/mnt/user/volsync"]
+    volsync -->|NFS Mount| nfs
 
-    subgraph repo["s3://volsync-backups/"]
+    subgraph repo["filesystem:///repository"]
         direction TB
         metadata["Single Kopia Repository"]
         snapshots["Snapshots:<br/>- prowlarr@media:/data<br/>- radarr@media:/data<br/>- sabnzbd@media:/data<br/>- (deduplicated content)"]
         metadata --- snapshots
     end
 
-    garage --> repo
+    nfs --> repo
 
     style cluster fill:#1a1a1a,stroke:#4a9eff,stroke-width:2px,color:#e0e0e0
     style apps fill:#2a2a2a,stroke:#666,stroke-width:1px,color:#e0e0e0
@@ -68,7 +67,7 @@ flowchart TB
     style radarr fill:#3a3a3a,stroke:#4a9eff,color:#e0e0e0
     style sabnzbd fill:#3a3a3a,stroke:#4a9eff,color:#e0e0e0
     style volsync fill:#3a3a3a,stroke:#4a9eff,color:#e0e0e0
-    style garage fill:#3a3a3a,stroke:#4a9eff,color:#e0e0e0
+    style nfs fill:#3a3a3a,stroke:#4a9eff,color:#e0e0e0
     style metadata fill:#3a3a3a,stroke:#666,color:#e0e0e0
     style snapshots fill:#3a3a3a,stroke:#666,color:#e0e0e0
 ```
@@ -94,8 +93,8 @@ Kopia has two isolation levels that are critical to understand:
 Multiple physical repositories, each completely separate:
 
 ```txt
-s3://bucket/app1/  → Separate Kopia repository
-s3://bucket/app2/  → Separate Kopia repository
+filesystem:///repository/app1/  → Separate Kopia repository
+filesystem:///repository/app2/  → Separate Kopia repository
 ```
 
 **Pros:**
@@ -107,15 +106,15 @@ s3://bucket/app2/  → Separate Kopia repository
 **Cons:**
 
 - No deduplication across apps
-- Management overhead (one bucket per app or complex prefixing)
-- **Does not work with VolSync's entry.sh** (strips trailing slashes)
+- Management overhead (separate directories per app)
+- Increased complexity
 
 #### 2. Snapshot-Level Isolation (USED)
 
 Single repository with multiple identities:
 
 ```txt
-s3://bucket/  → One Kopia repository
+filesystem:///repository  → One Kopia repository
   ├── prowlarr@media:/data  → Snapshot identity
   ├── radarr@media:/data    → Snapshot identity
   └── sabnzbd@media:/data   → Snapshot identity
@@ -124,14 +123,14 @@ s3://bucket/  → One Kopia repository
 **Pros:**
 
 - Deduplication across all apps
-- Single bucket management
+- Single NFS mount management
 - Shared repository password
 - Works perfectly with VolSync
 
 **Cons:**
 
 - All apps must share same repository password
-- Cannot have different S3 backends per app
+- Cannot have different storage backends per app
 
 ### How VolSync Sets Identity
 
@@ -147,21 +146,21 @@ hostname: media
 
 This provides isolation without requiring app-specific S3 prefixes or buckets.
 
-## Storage Backend (Garage S3)
+## Storage Backend (NFS)
 
-### Garage Configuration
+### NFS Configuration
 
-- **Endpoint**: `http://192.168.1.58:3900`
-- **Region**: `garage` (custom region name)
-- **Bucket**: `volsync-backups`
-- **Credentials**: Stored in `cluster-secrets.sops.yaml`
+- **Server**: `192.168.1.58` (Nezuko server)
+- **Path**: `/mnt/user/volsync`
+- **Mount Point**: `/repository` (auto-injected into VolSync mover pods)
+- **Access**: Read/Write
 
-### Bucket Structure
+### Repository Structure
 
-The bucket contains a **single flat Kopia repository** (NOT per-app directories):
+The NFS mount contains a **single flat Kopia repository** (NOT per-app directories):
 
 ```txt
-volsync-backups/
+/mnt/user/volsync/
 ├── kopia.repository          # Repository metadata
 ├── kopia.blobcfg             # Blob configuration
 ├── _log_*                    # Kopia log files
@@ -171,15 +170,34 @@ volsync-backups/
 
 **Important**: There are NO app-specific directories. All apps write to the same repository root.
 
+### MutatingAdmissionPolicy
+
+A Kubernetes MutatingAdmissionPolicy (`volsync-mover-nfs`) automatically injects the NFS volume
+mount into all VolSync mover pods:
+
+```yaml
+# Matches: Jobs named "volsync-*" with label app.kubernetes.io/created-by=volsync
+# Injects: NFS volume mount at /repository
+volumes:
+- name: repository
+  nfs:
+    server: 192.168.1.58
+    path: /mnt/user/volsync
+    readOnly: false
+```
+
+This eliminates the need to configure NFS mounts in each app's ReplicationSource.
+
 ## Shared Repository Pattern
 
 ### Configuration Requirements
 
 For the shared repository approach to work, all apps must:
 
-1. **Use identical `KOPIA_REPOSITORY` URL** (no app-specific prefixes)
+1. **Use identical `KOPIA_REPOSITORY` URL** (filesystem path)
 2. **Use identical `KOPIA_PASSWORD`** (repository-level authentication)
 3. **Let VolSync set username/hostname** (automatic from namespace/app name)
+4. **Rely on MutatingAdmissionPolicy** (NFS mount auto-injected)
 
 ### Secret Configuration
 
@@ -189,19 +207,15 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: ${APP}-volsync-secret
+type: Opaque
 stringData:
   # CRITICAL: Same password for ALL apps
+  # Also used by Kopia GUI server (must match /storage/kopia/kopia-password in Infisical)
   KOPIA_PASSWORD: volsync-shared-kopia-password
 
-  # S3 credentials
-  AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
-  AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
-  AWS_DEFAULT_REGION: ${S3_REGION}
-
-  # CRITICAL: No app-specific prefix - shared repository
-  KOPIA_REPOSITORY: s3://volsync-backups/
-  KOPIA_S3_ENDPOINT: ${S3_ENDPOINT}
-  KOPIA_S3_DISABLE_TLS: "true"
+  # NFS filesystem configuration - shared repository on NFS
+  # MutatingAdmissionPolicy automatically injects NFS volume mount at /repository
+  KOPIA_REPOSITORY: filesystem:///repository
 ```
 
 ### ReplicationSource Configuration
@@ -259,41 +273,36 @@ retain:
 **Default namespace:**
 
 - bookstack
+- filerun
+- silverbullet
+
+**Home namespace:**
+
+- esphome
+- home-assistant
 
 ## Critical Learnings
 
-### The Trailing Slash Issue
+### Migration from S3 to NFS
 
-**Problem**: VolSync's Kopia mover entry.sh script strips trailing slashes from S3 prefixes.
+**Original Implementation (Sept-Oct 2024)**: Garage S3 backend at `192.168.1.58:3900` using bucket
+`volsync-backups`
 
-**Code in entry.sh (commit 09ef3a7, Aug 8, 2025):**
+**Current Implementation**: NFS filesystem backend at `192.168.1.58:/mnt/user/volsync`
 
-```bash
-# Remove trailing slash from S3 prefix for consistency
-# Kopia handles S3 paths correctly without trailing slashes
-if [[ -n "${S3_PREFIX}" ]] && [[ "${S3_PREFIX}" =~ /$ ]]; then
-    S3_PREFIX="${S3_PREFIX%/}"
-    echo "Removed trailing slash from S3 prefix for consistency"
-fi
-```
+**Migration Rationale:**
 
-**Official Kopia documentation states:**
+- Simplified configuration (no S3 credentials or endpoint management)
+- Native filesystem performance for local network storage
+- Eliminated S3-specific complexity (regions, buckets, TLS configuration)
+- MutatingAdmissionPolicy handles all mount injection automatically
 
-> `--prefix` | Prefix to use for objects in the bucket. **Put trailing slash (/) if you want to use
-> prefix as directory.** e.g my-backup-dir/ would put repository contents inside my-backup-dir
-> directory
+**Key Changes:**
 
-**Impact:**
-
-- **WITH trailing slash**: `s3://bucket/app/` → directory prefix → `app/kopia.repository`
-- **WITHOUT trailing slash**: `s3://bucket/app` → object name prefix → `appkopia.repository`
-
-**Why this bug exists**: The commit message claims "Kopia handles S3 paths correctly without
-trailing slashes" but this **contradicts official Kopia documentation**. The original code was
-correct.
-
-**Why it doesn't affect us**: We use the shared repository pattern with NO prefix, so the bug is
-irrelevant. Only affects users trying repository-level isolation with S3 prefixes.
+1. Repository URL: `s3://volsync-backups/` → `filesystem:///repository`
+2. Mount injection: Manual volume configuration → MutatingAdmissionPolicy automation
+3. Credentials: S3 access keys removed from secrets
+4. Storage backend: Garage S3 → NFS mount to same Nezuko server
 
 ### The Password Confusion
 
@@ -311,65 +320,29 @@ fails
 
 **Fix**: Changed to shared password `volsync-shared-kopia-password` for all apps
 
-### Failed Approaches (Sept-Oct 2024)
+### Kopia GUI Server Integration
 
-#### Attempt 1: KOPIA_S3_BUCKET + KOPIA_S3_PREFIX
+A Kopia GUI server runs in the `storage` namespace providing web-based repository management:
 
-```yaml
-KOPIA_REPOSITORY: s3://volsync-backups/
-KOPIA_S3_BUCKET: volsync-backups
-KOPIA_S3_PREFIX: ${APP}/
-```
+- **Web UI**: Accessible via HTTPRoute at `kopia.${SECRET_DOMAIN}`
+- **Repository**: Same NFS mount (`192.168.1.58:/mnt/user/volsync`) at `/repository`
+- **Authentication**: Uses same `KOPIA_PASSWORD` from Infisical (`/storage/kopia/kopia-password`)
+- **Purpose**: Browse snapshots, verify backups, perform manual restores
 
-**Result**: entry.sh ignores `KOPIA_S3_PREFIX` when `KOPIA_REPOSITORY` is present
+**Critical**: The Kopia server password MUST match the VolSync shared password, or backups will fail
+to authenticate when browsing the repository.
 
-#### Attempt 2: Embedded prefix with trailing slash
+### MutatingAdmissionPolicy Benefits
 
-```yaml
-KOPIA_REPOSITORY: s3://volsync-backups/${APP}/
-```
+The `volsync-mover-nfs` policy provides several operational benefits:
 
-**Result**: entry.sh strips trailing slash → object name prefix instead of directory
+1. **Eliminates per-app NFS configuration**: No volume definitions needed in ReplicationSource specs
+2. **Centralized mount management**: Single source of truth for NFS server/path
+3. **Consistent behavior**: All VolSync jobs get identical mount configuration
+4. **Easier migrations**: Changing NFS server requires updating only the policy, not every app
 
-#### Attempt 3: Separate buckets per app
-
-```yaml
-KOPIA_REPOSITORY: s3://volsync-${APP}/
-```
-
-**Result**: Works but requires managing multiple buckets, loses deduplication
-
-#### Attempt 4: Dual config with bucket hint
-
-```yaml
-KOPIA_REPOSITORY: s3://volsync-backups/${APP}/
-KOPIA_S3_BUCKET: volsync-backups
-```
-
-**Result**: entry.sh still strips trailing slash
-
-#### Attempt 5: Shared repository (SUCCESS)
-
-```yaml
-KOPIA_REPOSITORY: s3://volsync-backups/
-KOPIA_PASSWORD: volsync-shared-kopia-password  # Same for all apps
-```
-
-**Result**: Works perfectly with snapshot-level isolation
-
-### Discord Clarification
-
-perfectra1n's guidance (Sept 12, 2025) was **correct**:
-
-> "You don't need to manage a bucket prefix per app. You just have everything flow to the same
-> 'path', Kopia manages/deduplicates, and PVC/namespace is managed by username/hostname combination
-> within Kopia"
-
-We initially misunderstood this as conceptual confusion on his part. In reality:
-
-- He understood Kopia's multi-tenancy correctly
-- The shared repository pattern is the **intended design** for VolSync's Kopia mover
-- Snapshot-level isolation (username@hostname) is the recommended approach
+Additionally, the `volsync-mover-jitter` policy adds random 0-30 second delays to prevent thundering
+herd problems when multiple backup jobs trigger simultaneously.
 
 ## Troubleshooting
 
@@ -424,7 +397,7 @@ kubectl delete job -n media volsync-src-<app>
 
 #### Backup pod fails immediately
 
-**Cause**: Usually S3 connection issues
+**Cause**: Usually NFS mount or repository connection issues
 
 **Debug**:
 
@@ -434,13 +407,19 @@ kubectl logs -n media -l volsync.backube/cleanup=volsync-<app>-src
 
 # Verify secret contents
 kubectl get secret <app>-volsync-secret -n media -o yaml
+
+# Check NFS mount in pod
+kubectl exec -n media <volsync-pod> -- df -h /repository
+kubectl exec -n media <volsync-pod> -- ls -la /repository
 ```
 
-### Verify Bucket Contents
+### Verify Repository Contents
+
+**Via NFS mount**:
 
 ```bash
-# List bucket contents
-rclone tree garage:volsync-backups --max-depth 2
+# From a system with NFS access to Nezuko
+ls -la /mnt/user/volsync/
 
 # Expected structure (single repository):
 # /
@@ -449,6 +428,10 @@ rclone tree garage:volsync-backups --max-depth 2
 # ├── _log_* (log files)
 # └── p*, q*, x* (data blobs)
 ```
+
+**Via Kopia GUI**:
+
+Access the web UI at `kopia.${SECRET_DOMAIN}` to browse snapshots and verify backup integrity.
 
 ### Clean Up Failed Pods
 
@@ -464,27 +447,26 @@ kubectl get pods -n media --no-headers | \
 
 ### Documentation
 
-- [Kopia Official Docs - S3
-  Repository](https://kopia.io/docs/reference/command-line/common/repository-create-s3/)
-- [VolSync perfectra1n fork](https://github.com/perfectra1n/volsync) (appears private/deleted)
-- [VolSync upstream PR #1723](https://github.com/backube/volsync/pull/1723) - Kopia implementation
+- [Kopia Official Docs - Filesystem Repository][kopia-filesystem]
+- [Kopia Official Docs - Repository Overview][kopia-repo]
+- [VolSync perfectra1n fork][volsync-fork] (adds Kopia support)
+- [VolSync upstream PR #1723][volsync-pr] - Kopia implementation
+
+[kopia-filesystem]:
+    https://kopia.io/docs/reference/command-line/common/repository-create-filesystem/
+[kopia-repo]: https://kopia.io/docs/repositories/
+[volsync-fork]: https://github.com/perfectra1n/volsync
+[volsync-pr]: https://github.com/backube/volsync/pull/1723
 
 ### Related Files
 
-- `kubernetes/components/volsync/secret.yaml` - Secret template with full history
-- `kubernetes/components/volsync/replicationsource.yaml` - ReplicationSource template
+- `kubernetes/components/volsync/secret.yaml` - Secret template defining KOPIA_REPOSITORY and
+  password
+- `kubernetes/components/volsync/replicationsource.yaml` - ReplicationSource template with retention
+  settings
+- `kubernetes/apps/storage/volsync/mutatingadmissionpolicy.yaml` - NFS mount injection policies
+- `kubernetes/apps/storage/kopia/helmrelease.yaml` - Kopia GUI server configuration
 - `kubernetes/apps/{namespace}/{app}/ks.yaml` - App kustomizations using volsync component
-
-### Key Commits
-
-- `09ef3a7` (Aug 8, 2025) - **Bug introduction**: Trailing slash removal in entry.sh
-- Prior commit - **Original correct code**: Added trailing slashes for proper path separation
-
-### Discord Context
-
-- Thread: September 12, 2025
-- Participants: wavefront (jfroy), onedr0p, perfectra1n
-- Key insight: Shared repository pattern is the intended design
 
 ## Future Considerations
 
@@ -492,18 +474,19 @@ kubectl get pods -n media --no-headers | \
 
 If you need separate repositories per app in the future:
 
-1. **Report the trailing slash bug** to perfectra1n/volsync
-2. **Revert commit 09ef3a7** or patch entry.sh locally
+1. **Create per-app directories** on NFS mount (e.g., `/mnt/user/volsync/prowlarr/`)
+2. **Modify MutatingAdmissionPolicy** to inject app-specific mount paths
 3. **Use per-app passwords** for true isolation
 4. **Accept loss of deduplication** across apps
 
-### If Switching S3 Backends
+### If Switching Storage Backends
 
-The shared repository pattern requires all apps use the same S3 backend. For multi-backend:
+The shared repository pattern requires all apps use the same storage backend. For multi-backend:
 
 1. **Group apps by backend** into different repositories
 2. **Use separate passwords** per repository
-3. **Consider upstream fix** for trailing slash bug to enable prefixes
+3. **Create additional MutatingAdmissionPolicies** for each backend with different match conditions
+4. **Consider S3 backend** if remote/cloud storage is needed (requires S3 credentials in secrets)
 
 ### Monitoring Recommendations
 
