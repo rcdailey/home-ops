@@ -25,7 +25,7 @@ spec:
   values:
     controllers:
       server:
-        replicas: 1
+        replicas: 0
         strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
@@ -187,6 +187,15 @@ spec:
               subPath: thumbs
             - path: /data/profile
               subPath: profile
+
+      # Temporary mount for profile migration - will be moved to separate PVC
+      profile-new:
+        type: persistentVolumeClaim
+        existingClaim: immich-profile
+        advancedMounts:
+          server:
+            main:
+            - path: /data/profile-new
 
       ml-cache:
         type: emptyDir
