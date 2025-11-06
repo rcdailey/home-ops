@@ -52,7 +52,7 @@ spec:
                     port: 32400
                   initialDelaySeconds: 0
                   periodSeconds: 10
-                  timeoutSeconds: 10
+                  timeoutSeconds: 1
                   failureThreshold: 3
               readiness: *probes
               startup:
@@ -150,19 +150,15 @@ spec:
               # - path: /config/Library/Application Support/Plex Media Server/Logs
               #   readOnly: true
 
-      tmp:
+      tmpfs:
         type: emptyDir
         advancedMounts:
           plex:
             app:
             - path: /tmp
-
-      transcode:
-        type: emptyDir
-        advancedMounts:
-          plex:
-            app:
+              subPath: tmp
             - path: /transcode
+              subPath: transcode
 
       # vector-config:
       #   type: configMap
@@ -188,6 +184,23 @@ spec:
         - name: external
           namespace: network
           sectionName: https
+        rules:
+        - # Ref: https://forums.plex.tv/t/external-srt-subtitles-are-not-working-w-reverse-proxy/886540
+          backendRefs:
+          - name: plex-app
+            port: 32400
+          filters:
+          - type: RequestHeaderModifier
+            requestHeaderModifier:
+              remove:
+              - Range
+          matches:
+          - path:
+              type: PathPrefix
+              value: /library/streams
+        - backendRefs:
+          - name: plex-app
+            port: 32400
 
     service:
       app:
