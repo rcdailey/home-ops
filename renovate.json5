@@ -14,6 +14,7 @@
     ":semanticCommits",
     ":timezone(America/Chicago)",
     "helpers:pinGitHubActionDigestsToSemver",
+    "mergeConfidence:all-badges",
     "github>rcdailey/home-ops//.renovate/autoMerge.json5",
     "github>rcdailey/home-ops//.renovate/changelogs.json5",
     "github>rcdailey/home-ops//.renovate/groups.json5",
@@ -26,7 +27,7 @@
   dependencyDashboardAutoclose: true,
   suppressNotifications: ["prEditedNotification", "prIgnoreNotification"],
   configMigration: true,
-  ignorePresets: ["mergeConfidence:all-badges"],
+  osvVulnerabilityAlerts: false,
   // I frequently rewrite commits on main, and as a result, orphaned commits on main are treated as
   // custom commits on renovate branches. This ignored authors setting prevents Renovate from
   // thinking I've made intentional, custom modifications to branches it manages.
