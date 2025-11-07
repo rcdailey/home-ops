@@ -46,5 +46,10 @@
       matchUpdateTypes: ["patch"],
       minimumReleaseAge: "5 days",
     },
+    {
+      description: "Disable auto-merge for all Talos-related packages",
+      matchPackageNames: ["*siderolabs*", "siderolabs/**", "*talos*", "*talosctl*"],
+      automerge: false,
+    },
   ],
 }
