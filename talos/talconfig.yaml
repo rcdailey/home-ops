@@ -144,3 +144,4 @@ controlPlane:
     - "@./patches/controller/admission-controller-patch.yaml"
     - "@./patches/controller/cluster.yaml"
     - "@./patches/controller/etcd-metrics.yaml"
+    - "@./patches/controller/machine-kubernetes-api-access.yaml"
