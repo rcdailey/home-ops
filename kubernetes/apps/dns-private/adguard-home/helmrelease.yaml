@@ -215,3 +215,7 @@ spec:
         - backendRefs:
           - name: adguard-home-primary
             port: 3000
+            weight: 100
+          - name: adguard-home-replica
+            port: 3000
+            weight: 0
