@@ -20,6 +20,9 @@ spec:
     substitute:
       APP: filerun
       VOLSYNC_PVC: filerun-html-pvc
+      VOLSYNC_SNAP_ACCESSMODES: ReadWriteMany
+      VOLSYNC_STORAGECLASS: ceph-filesystem
+      VOLSYNC_SNAPSHOTCLASS: csi-ceph-filesystem
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
