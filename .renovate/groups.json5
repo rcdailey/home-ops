@@ -55,5 +55,11 @@
       matchPackageNames: ["ghcr.io/mend/renovate-ce", "mend-renovate-ce"],
       minimumGroupSize: 2,
     },
+    {
+      description: "Talos Tools Group",
+      groupName: "Talos",
+      matchPackageNames: ["*siderolabs*", "siderolabs/**", "*talos*", "*talosctl*"],
+      minimumGroupSize: 2,
+    },
   ],
 }
