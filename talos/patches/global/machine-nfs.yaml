@@ -1,0 +1,32 @@
+---
+# NFS client mount options configuration
+#
+# Problem: Default nconnect=16 overwhelms Intel I219-V NICs (e1000e driver) on some nodes,
+# causing rx_dropped packets and NFS timeouts ("server not responding" kernel messages).
+#
+# Solution: Reduce nconnect to 4 connections to prevent NIC saturation while maintaining
+# performance improvements over single connection (nconnect=1).
+#
+# References:
+# - https://github.com/siderolabs/talos/issues/6582
+# - https://github.com/siderolabs/talos/issues/8862
+# - Research shows nconnect=4-8 optimal for 1Gbps NICs with limited receive buffers
+machine:
+  files:
+    - content: |
+        # Global NFS mount options applied to all NFS mounts
+        [NFSMount_Global_Options]
+        # Reduce TCP connections from default 16 to 4
+        # Prevents Intel I219-V NIC rx_dropped packet issues
+        Nconnect=4
+        # Timeout settings
+        Timeo=600
+        Retrans=2
+        Hard=True
+        # Use TCP protocol
+        Proto=tcp
+        # Performance: disable access time updates
+        Noatime=True
+      permissions: 0o644
+      path: /etc/nfsmount.conf
+      op: overwrite
