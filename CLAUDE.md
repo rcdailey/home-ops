@@ -28,7 +28,8 @@ drift.
   NOT metadata.namespace
 - **NEVER use chart.spec.sourceRef for app-template** - Use chartRef (references OCIRepository).
   Exception: External HelmRepository charts may use chart.spec.sourceRef.
-- **chartRef requires NO namespace** - When OCIRepository is in same namespace as HelmRelease
+- **chartRef REQUIRES namespace for cross-namespace OCIRepository references** - App-template
+  OCIRepository is in flux-system namespace; all HelmReleases MUST specify namespace: flux-system
 - **NEVER use executable commands in health probes** - Use httpGet, tcpSocket, or grpc only
   (security and reliability)
 
@@ -147,7 +148,9 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 
 **Chart and storage patterns:**
 
-- OCIRepository/HelmRepository: Shared repos (2+ apps) centralized in flux/meta/repos with namespace: flux-system; single-use repos local to app
+- OCIRepository/HelmRepository: Shared repos (2+ apps) centralized in flux/meta/repos with
+  namespace: flux-system; single-use repos local to app using dedicated
+  ocirepository.yaml/helmrepository.yaml files.
 - App-template: Add postBuild.substituteFrom: cluster-secrets; service naming auto-prefixed with
   release name
 - PVC: Namespace inherited, volsync handles backups only, ALL apps require explicit pvc.yaml,
