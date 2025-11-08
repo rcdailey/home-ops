@@ -7,4 +7,3 @@ components:
 resources:
 - ./helmrelease.yaml
 - ./pvc.yaml
-- ./securitypolicy.yaml

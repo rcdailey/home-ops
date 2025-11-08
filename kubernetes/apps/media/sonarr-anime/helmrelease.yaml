@@ -122,6 +122,6 @@ spec:
       app:
         hostnames: ["sonarr-anime.${SECRET_DOMAIN}"]
         parentRefs:
-        - name: external
+        - name: internal
           namespace: network
           sectionName: https

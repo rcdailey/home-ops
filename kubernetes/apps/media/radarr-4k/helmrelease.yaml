@@ -123,6 +123,6 @@ spec:
       app:
         hostnames: ["radarr-4k.${SECRET_DOMAIN}"]
         parentRefs:
-        - name: external
+        - name: internal
           namespace: network
           sectionName: https
