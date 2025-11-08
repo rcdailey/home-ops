@@ -1,5 +1,10 @@
 ---
 # yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/namespace-v1.json
+# This namespace resource serves as a template included via kustomize component.
+# When namespaces include components/common, this resource applies the prune protection
+# annotation to prevent Flux from accidentally deleting namespaces during garbage collection.
+# The "not-used" name is replaced by the parent kustomization.yaml's namespace field.
+# DO NOT DELETE - critical for namespace safety in GitOps workflow.
 apiVersion: v1
 kind: Namespace
 metadata:
