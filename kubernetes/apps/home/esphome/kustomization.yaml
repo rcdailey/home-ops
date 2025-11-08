@@ -5,7 +5,6 @@ kind: Kustomization
 components:
 - ../../../components/volsync
 resources:
-- ../../../components/common/repos/app-template
 - ./helmrelease.yaml
 - ./pvc.yaml
 configMapGenerator:
