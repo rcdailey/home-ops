@@ -147,8 +147,7 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 
 **Chart and storage patterns:**
 
-- OCIRepository: Each app owns its ocirepository.yaml (exception: app-template in
-  components/common/repos/)
+- OCIRepository/HelmRepository: Shared repos (2+ apps) centralized in flux/meta/repos with namespace: flux-system; single-use repos local to app
 - App-template: Add postBuild.substituteFrom: cluster-secrets; service naming auto-prefixed with
   release name
 - PVC: Namespace inherited, volsync handles backups only, ALL apps require explicit pvc.yaml,
@@ -164,15 +163,13 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
   secretKey uses app's required format, ClusterSecretStore infisical, creationPolicy Owner
 - Priority: 1) envFrom, 2) env.valueFrom, 3) HelmRelease valuesFrom, 4) NEVER
   postBuild.substituteFrom for app secrets
-- SOPS (cluster-wide only): cluster-secrets.sops.yaml, email-secrets.sops.yaml; commands: sops set /
-  sops unset
+- SOPS (cluster-wide only): cluster-secrets.sops.yaml; commands: sops set / sops unset
 
 **ConfigMaps and components:**
 
 - Stable naming (disableNameSuffixHash: true): ONLY for cross-resource dependencies (Helm
   valuesFrom, persistence.name)
-- Components: common (app-template OCIRepository, SOPS secrets, namespace), drift-detection (all
-  namespaces)
+- Components: common (namespace prune protection, cluster-secrets), drift-detection (all namespaces)
 - Volsync: Include when PVC backup needed; postBuild.substitute.APP, postBuild.substituteFrom:
   cluster-secrets; s3://volsync-backups/{APP}/
 
