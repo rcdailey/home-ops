@@ -124,6 +124,11 @@
       siteMonitor: http://opensprinkler.external:80
 
 - Infrastructure:
+  - Headlamp:
+      icon: mdi-kubernetes
+      href: https://cluster.${SECRET_DOMAIN}/
+      siteMonitor: http://headlamp.kube-system:80
+
   - AdGuard Home:
       icon: adguard-home
       href: https://dns.${SECRET_DOMAIN}/
