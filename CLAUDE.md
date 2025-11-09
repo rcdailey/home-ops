@@ -278,20 +278,21 @@ Optional task reconcile
 Namespace followed by a list of apps in that namespace:
 
 - cert-manager: cert-manager
-- default: authelia, bookstack, filerun, homepage, immich, silverbullet
+- default: authelia, bookstack, filerun, homepage, immich, opencloud, renovate-ce, silverbullet
 - dns-private: adguard-home, adguard-home-sync, dns-gateway, external-dns
 - external: opensprinkler
 - flux-system: flux-instance, flux-operator
-- home: esphome, home-assistant, zwave-js-ui
-- kube-system: cilium, cloudnative-pg, coredns, external-secrets, intel-gpu-resource-driver,
-  mariadb-operator, metrics-server, multus, node-feature-discovery, reloader, snapshot-controller,
-  spegel, descheduler
+- home: esphome, home-assistant, otbr, zwave-js-ui
+- kube-system: cilium, cloudnative-pg, coredns, descheduler, external-secrets, headlamp,
+  intel-gpu-resource-driver, mariadb-operator, metrics-server, multus, node-feature-discovery,
+  reloader, snapshot-controller, spegel
 - media: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,
   radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
 - network: cloudflare-dns, cloudflare-tunnel, envoy-gateway
 - observability: gatus, grafana, victoria-logs-single, victoria-metrics-k8s-stack, vmrules
 - rook-ceph: cluster, operator
-- storage: kopia, volsync
+- storage: garage, kopia, volsync
+- system-upgrade: tuppr
 
 **Utility scripts:**
 
