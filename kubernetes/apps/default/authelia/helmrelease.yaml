@@ -29,7 +29,7 @@ spec:
           main:
             image:
               repository: ghcr.io/authelia/authelia
-              tag: 4.39.13
+              tag: 4.39.14
             env:
               TZ: America/New_York
             envFrom:
