@@ -6,7 +6,6 @@
   extends: [
     "config:recommended",
     "docker:enableMajor",
-    "security:openssf-scorecard",
     ":automergeBranch",
     ":automergeDigest",
     ":dependencyDashboard",
