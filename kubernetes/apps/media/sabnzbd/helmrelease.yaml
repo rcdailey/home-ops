@@ -135,9 +135,17 @@ spec:
             app:
             - path: /media
 
+      incomplete:
+        type: emptyDir
+        advancedMounts:
+          sabnzbd:
+            app:
+            - path: /incomplete
       tmp:
         type: emptyDir
       logs:
         type: emptyDir
-        globalMounts:
-        - path: /config/logs
+        advancedMounts:
+          sabnzbd:
+            app:
+            - path: /config/logs
