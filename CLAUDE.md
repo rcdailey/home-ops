@@ -157,8 +157,8 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
   reference via existingClaim
 - Volume types: ceph-block (RWO/Recreate/advancedMounts), ceph-filesystem (RWX/RollingUpdate), NFS
   (RWX), emptyDir
-- Mount config: RWO requires advancedMounts; RWX/emptyDir use globalMounts (multi-controller) or
-  advancedMounts (single-controller)
+- Mount config: RWO requires advancedMounts; RWX/emptyDir PREFER advancedMounts for consistency
+  (globalMounts acceptable for multi-controller only when needed)
 
 **Secrets:**
 
