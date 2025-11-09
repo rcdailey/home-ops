@@ -49,13 +49,6 @@
       minimumGroupSize: 2,
     },
     {
-      description: "Mend Renovate CE Group",
-      groupName: "Mend Renovate CE",
-      matchDatasources: ["docker", "helm"],
-      matchPackageNames: ["ghcr.io/mend/renovate-ce", "mend-renovate-ce"],
-      minimumGroupSize: 2,
-    },
-    {
       description: "Talos Tools Group",
       groupName: "Talos",
       matchPackageNames: ["*siderolabs*", "siderolabs/**", "*talos*", "*talosctl*"],
