@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://gateway.envoyproxy.io/v1alpha1/backendtrafficpolicy.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: plex-streaming
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: plex
+  timeout:
+    http:
+      # Disable request timeout to support long-lived SSE streaming connections
+      # for Plex event streams to Apple TV clients. Set to 0s per Envoy Gateway
+      # documentation to allow indefinite streaming while idle timeout protects
+      # against dead connections.
+      requestTimeout: 0s
