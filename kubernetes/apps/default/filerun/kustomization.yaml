@@ -7,6 +7,7 @@ components:
 resources:
 - ./helmrelease.yaml
 - ./mariadb.yaml
+- ./user.yaml
 - ./pvc.yaml
 - ./externalsecret.yaml
 - ./backendtrafficpolicy.yaml
