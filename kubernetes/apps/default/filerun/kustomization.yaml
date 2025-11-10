@@ -9,6 +9,7 @@ resources:
 - ./mariadb.yaml
 - ./pvc.yaml
 - ./externalsecret.yaml
+- ./backendtrafficpolicy.yaml
 configMapGenerator:
 - name: filerun-php-config
   files:
