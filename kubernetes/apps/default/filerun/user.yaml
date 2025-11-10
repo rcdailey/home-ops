@@ -1,0 +1,19 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/k8s.mariadb.com/user_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: filerun-user
+spec:
+  mariaDbRef:
+    name: filerun-mariadb
+
+  name: filerun
+  passwordSecretKeyRef:
+    name: filerun-secret
+    key: MARIADB_PASSWORD
+
+  maxUserConnections: 100
+  host: "%"
+
+  retryInterval: 30s
