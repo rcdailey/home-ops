@@ -152,9 +152,9 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 
 **Chart and storage patterns:**
 
-- OCIRepository/HelmRepository: Shared repos (2+ apps) centralized in flux/meta/repos with
-  namespace: flux-system; single-use repos local to app using dedicated
-  ocirepository.yaml/helmrepository.yaml files.
+- OCIRepository/HelmRepository: Shared (2+ apps) in flux/meta/repos with `namespace: flux-system`,
+  chartRef needs `namespace: flux-system`; single-use local to app, omit `namespace:` (inherits),
+  chartRef omits namespace; exception: volsync `namespace: kube-system` for Renovate
 - App-template: Add postBuild.substituteFrom: cluster-secrets; service naming auto-prefixed with
   release name
 - PVC: Namespace inherited, volsync handles backups only, ALL apps require explicit pvc.yaml,
