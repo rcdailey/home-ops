@@ -188,12 +188,12 @@
   - VM AlertManager:
       icon: mdi-bell-alert
       href: https://vmalertmanager.${SECRET_DOMAIN}/
-      siteMonitor: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093/health
+      siteMonitor: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093/-/healthy
 
   - VM Alert:
       icon: mdi-alert-octagon
       href: https://vmalert.${SECRET_DOMAIN}/
-      siteMonitor: http://vmalert-victoria-metrics-k8s-stack.observability:8080/health
+      siteMonitor: http://vmalert-victoria-metrics-k8s-stack.observability:8080/-/healthy
 
   - Ceph Dashboard:
       icon: ceph

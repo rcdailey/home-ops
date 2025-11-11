@@ -7,14 +7,12 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
-# TEMPORARY: Testing if Victoria Metrics/Logs writing to Ceph causes write amplification that
-# contributes to stuck terminating pods. Disabled to establish baseline cluster behavior.
-#
-# Recommended action when this is reenabled: Put metrics and logs storage on hostpath with node
-# selector for worker nodes.
-#
-# - ./victoria-metrics-k8s-stack/ks.yaml
-# - ./victoria-logs-single/ks.yaml
+# Observability stack re-enabled with Ceph write amplification mitigation:
+# - Storage: hostPath on worker nodes (not Ceph) for metrics/logs
+# - Metrics: Opt-in collection (infrastructure + media/default/home namespaces only)
+# - Logs: Disabled centralized Vector; using sidecar pattern (Plex example)
+- ./victoria-metrics-k8s-stack/ks.yaml
+- ./victoria-logs-single/ks.yaml
 - ./grafana/ks.yaml
 - ./gatus/ks.yaml
 # - ./silence-operator/ks.yaml

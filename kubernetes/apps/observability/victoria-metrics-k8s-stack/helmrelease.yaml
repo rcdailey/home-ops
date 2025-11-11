@@ -73,7 +73,17 @@ spec:
           resources:
             requests:
               storage: 30Gi
-          storageClassName: ceph-block
+          # OpenEBS hostPath provisioner for ephemeral metrics storage
+          # WHY: Avoid Ceph write amplification from frequent metric writes
+          storageClassName: openebs-hostpath
+        # Pin to non-controlplane nodes only (avoid controlplane etcd contention)
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
         resources:
           limits:
             memory: 4Gi
@@ -102,12 +112,22 @@ spec:
         storage:
           volumeClaimTemplate:
             spec:
-              storageClassName: ceph-block
+              # OpenEBS hostPath provisioner for ephemeral alert state storage
+              # WHY: Avoid Ceph write amplification from frequent alert state writes
+              storageClassName: openebs-hostpath
               accessModes:
               - ReadWriteOnce
               resources:
                 requests:
                   storage: 1Gi
+        # Pin to non-controlplane nodes only (avoid controlplane etcd contention)
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
         resources:
           limits:
             memory: 128Mi
@@ -156,7 +176,29 @@ spec:
       enabled: true
       spec:
         scrapeInterval: 20s
-        selectAllByDefault: true
+        # Opt-in metrics: Scrape infrastructure by default, application metrics require explicit labels
+        # Infrastructure (node-exporter, kube-state-metrics, kubelet) always scraped via chart VMNodeScrape objects
+        # Application metrics only from specific namespaces (media, default, home)
+        selectAllByDefault: false
+        # Scrape VMServiceScrape/VMPodScrape only from target namespaces
+        serviceScrapeNamespaceSelector:
+          matchExpressions:
+          - key: kubernetes.io/metadata.name
+            operator: In
+            values: [media, default, home, observability]
+        podScrapeNamespaceSelector:
+          matchExpressions:
+          - key: kubernetes.io/metadata.name
+            operator: In
+            values: [media, default, home, observability]
+        # Node scrapes always enabled (infrastructure metrics)
+        nodeScrapeSelector: {}
+        nodeScrapeNamespaceSelector: {}
+        # Enable chart-created scrape configs (infrastructure components)
+        serviceScrapeSelector: {}
+        podScrapeSelector: {}
+        probeScrapeSelector: {}
+        staticScrapeSelector: {}
         resources:
           limits:
             memory: 512Mi
