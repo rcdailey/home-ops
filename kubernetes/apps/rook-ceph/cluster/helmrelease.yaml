@@ -48,6 +48,10 @@ spec:
         # See: Intel I219/I225 NICs commonly drop packets with checksum offload enabled
         CephNodeNetworkPacketDrops:
           disabled: true
+        # Disable PrometheusJobMissing alert - rook-ceph namespace excluded from VMAgent scraping
+        # Metrics collection intentionally disabled to avoid overwhelming observability stack
+        PrometheusJobMissing:
+          disabled: true
 
     ingress:
       dashboard:
