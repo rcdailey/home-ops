@@ -1,0 +1,78 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openebs
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: openebs
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    # Disable pre-upgrade hook (not needed for new install)
+    preUpgradeHook:
+      enabled: false
+
+    # LocalPV Provisioner configuration
+    # Provides dynamic hostPath PV provisioning for non-replicated local storage
+    localpv-provisioner:
+      analytics:
+        enabled: false
+      localpv:
+        image:
+          registry: quay.io/
+        # BasePath for hostPath volumes - stored on node local disk
+        # WHY: Avoid Ceph write amplification for ephemeral observability data
+        # Uses /var/mnt (Talos writable path) instead of /mnt (read-only root)
+        basePath: &hostPath /var/mnt/openebs-hostpath
+      # StorageClass configuration
+      hostpathClass:
+        enabled: true
+        name: openebs-hostpath
+        isDefaultClass: false
+        basePath: *hostPath
+      helperPod:
+        image:
+          registry: quay.io/
+
+    # Disable volume snapshots (not needed for ephemeral storage)
+    openebs-crds:
+      csi:
+        volumeSnapshots:
+          enabled: false
+          keep: false
+
+    # Disable storage engines not in use
+    zfs-localpv:
+      enabled: false
+    lvm-localpv:
+      enabled: false
+    mayastor:
+      enabled: false
+    engines:
+      local:
+        lvm:
+          enabled: false
+        zfs:
+          enabled: false
+      replicated:
+        mayastor:
+          enabled: false
+
+    # Disable observability components (using existing victoria-metrics stack)
+    loki:
+      enabled: false
+    alloy:
+      enabled: false
+    minio:
+      enabled: false
