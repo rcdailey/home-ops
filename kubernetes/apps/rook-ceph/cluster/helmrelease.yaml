@@ -61,19 +61,12 @@ spec:
       enabled: true
 
     cephClusterSpec:
-      # Enable per-RBD image metrics for PVC monitoring dashboards
-      # Required for ceph_rbd_* metrics (read/write IOPS, throughput, latency)
-      # to populate Grafana dashboard panels. Without this, only cluster-level
-      # metrics are available and per-PVC RBD performance panels show no data.
-      #
       # Recovery/backfill tuning for NVMe OSDs (Samsung 990 PRO/970 EVO Plus)
       # Aggressive settings to prevent backfill_wait queue buildup and slow ops
       # Default osd_recovery_max_active=1 causes cascading delays with client I/O
       # Reference: https://docs.ceph.com/en/latest/rados/configuration/osd-config-ref/
       cephConfig:
         global:
-          mgr/prometheus/rbd_stats_pools: "ceph-blockpool"
-          mgr/prometheus/rbd_stats_pools_refresh_interval: "60"
           # Enable mClock override to allow custom recovery tuning for NVMe OSDs
           # Required because mClock scheduler gates osd_max_backfills/osd_recovery_max_active
           # Without this, aggressive recovery settings are ignored, causing queue buildup
