@@ -8,6 +8,8 @@ resources:
 - ./httproute.yaml
 - ./externalsecret.yaml
 configMapGenerator:
+# Minimal dashboard set for homelab observability
+# Focus: Node metrics and per-pod CPU/memory analysis
 - name: cluster-resource-overview-dashboard
   files:
   - k8s-views-global.json=resources/k8s-views-global.json
@@ -16,22 +18,6 @@ configMapGenerator:
       grafana_dashboard: "1"
     annotations:
       grafana_folder: "Custom"
-- name: pvc-capacity-overview-dashboard
-  files:
-  - pvc-capacity-overview.json=resources/pvc-capacity-overview.json
-  options:
-    labels:
-      grafana_dashboard: "1"
-    annotations:
-      grafana_folder: "Custom"
-- name: victoria-logs-volume-dashboard
-  files:
-  - victoria-logs-volume.json=resources/victoria-logs-volume.json
-  options:
-    labels:
-      grafana_dashboard: "1"
-    annotations:
-      grafana_folder: "Observability"
 - name: container-memory-usage-dashboard
   files:
   - container-memory-usage.json=resources/container-memory-usage.json
@@ -42,3 +28,6 @@ configMapGenerator:
     annotations:
       grafana_folder: "Kubernetes"
       kustomize.toolkit.fluxcd.io/substitute: disabled
+# Removed dashboards:
+# - pvc-capacity-overview: Using alerts only (pvc-alerts.yaml) for Ceph PV capacity monitoring
+# - victoria-logs-volume: Not needed with opt-in logging approach
