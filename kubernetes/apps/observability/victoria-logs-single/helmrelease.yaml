@@ -44,11 +44,22 @@ spec:
 
       persistentVolume:
         enabled: true
-        storageClassName: ceph-block
+        # OpenEBS hostPath provisioner for ephemeral log storage
+        # WHY: Avoid Ceph write amplification from continuous log writes
+        storageClassName: openebs-hostpath
         accessModes:
         - ReadWriteOnce
         size: 25Gi
         mountPath: /storage
+
+      # Pin to non-controlplane nodes only (avoid controlplane etcd contention)
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: DoesNotExist
 
       resources:
         limits:
@@ -77,39 +88,11 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
 
-    # Enable Vector log collection
+    # Disable centralized Vector DaemonSet log collection
+    # WHY: Opt-in approach - use sidecar pattern for application-specific logs (e.g., Plex)
+    # This eliminates continuous writes to VictoriaLogs from cluster-wide log collection
     vector:
-      enabled: true
-      # Mount external Vector config from ConfigMap
-      # Chart creates ConfigMap if vector-vl-config is in existingConfigMaps
-      # We provide our own victoria-logs-vector-config instead
-      existingConfigMaps:
-      - victoria-logs-vector-config
-      podAnnotations:
-        reloader.stakater.com/auto: "true"
-      resources:
-        limits:
-          memory: 1Gi
-        requests:
-          cpu: 20m
-          memory: 256Mi
-
-      # Mount both Vector config and VRL files from ConfigMaps
-      extraVolumes:
-      - name: vector-config
-        configMap:
-          name: victoria-logs-vector-config
-      - name: vector-vrl
-        configMap:
-          name: victoria-logs-vector-vrl
-
-      extraVolumeMounts:
-      - name: vector-config
-        mountPath: /etc/vector
-        readOnly: true
-      - name: vector-vrl
-        mountPath: /etc/vector/vrl
-        readOnly: true
+      enabled: false
 
     # Service monitor for metrics
     serviceMonitor:
