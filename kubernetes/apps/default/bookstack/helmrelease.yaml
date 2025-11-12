@@ -33,11 +33,8 @@ spec:
               TZ: America/Chicago
               APP_URL: https://wiki.${SECRET_DOMAIN}
 
-              # Session & Cache drivers using Redis for performance and reliability
-              # Redis eliminates database table lock contention during cache operations
-              SESSION_DRIVER: redis
-              CACHE_DRIVER: redis
-              REDIS_SERVERS: localhost:6379:0
+              # Use filesystem-based cache/session (Laravel defaults)
+              # Adequate performance for home lab scale, eliminates Redis operational overhead
               SESSION_LIFETIME: 360
               QUEUE_CONNECTION: database
 
@@ -63,7 +60,7 @@ spec:
                 path: /status
                 spec:
                   initialDelaySeconds: 10
-                  timeoutSeconds: 5
+                  timeoutSeconds: 10
               readiness: *probe
               startup:
                 enabled: true
@@ -72,7 +69,7 @@ spec:
                 spec:
                   failureThreshold: 30
                   periodSeconds: 5
-                  timeoutSeconds: 5
+                  timeoutSeconds: 10
 
             resources:
               requests:
@@ -91,27 +88,6 @@ spec:
               capabilities:
                 drop:
                 - ALL
-
-          redis:
-            image:
-              repository: public.ecr.aws/docker/library/redis
-              tag: 8.2.3-alpine
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              runAsNonRoot: true
-              runAsUser: 999
-              runAsGroup: 999
-              capabilities:
-                drop:
-                - ALL
-            resources:
-              requests:
-                cpu: 10m
-                memory: 64Mi
-              limits:
-                cpu: 100m
-                memory: 128Mi
 
         pod:
           securityContext:
@@ -145,9 +121,3 @@ spec:
           subPath: public-uploads
         - path: /var/www/bookstack/storage/uploads
           subPath: storage-uploads
-      redis-data:
-        type: emptyDir
-        advancedMounts:
-          bookstack:
-            redis:
-            - path: /data
