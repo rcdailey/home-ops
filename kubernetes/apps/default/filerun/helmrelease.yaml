@@ -366,3 +366,12 @@ spec:
             - path: /usr/local/etc/php/conf.d/filerun-optimization.ini
               subPath: filerun-optimization.ini
               readOnly: true
+
+      temp-uploads:
+        type: emptyDir
+        medium: Memory
+        sizeLimit: 8Gi
+        advancedMounts:
+          filerun:
+            app:
+            - path: /var/www/html/system/data/temp
