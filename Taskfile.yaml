@@ -19,6 +19,7 @@ env:
 
 includes:
   bootstrap: .taskfiles/bootstrap
+  infisical: .taskfiles/infisical
   talos: .taskfiles/talos
 
 tasks:
