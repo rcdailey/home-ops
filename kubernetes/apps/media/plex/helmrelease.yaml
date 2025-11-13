@@ -35,9 +35,9 @@ spec:
               PLEX_ADVERTISE_URL: http://192.168.50.100:32400,https://plex.${SECRET_DOMAIN}:443
               PLEX_PREFERENCE_1: "secureConnections=1"
 
-              # Leave this out for now; I want to make sure this isn't functionally necessary.
-              # I prefer to not use it since it introduces a security issue.
-              # PLEX_NO_AUTH_NETWORKS: 192.168.1.0/24
+              # Bypasses authentication for LAN traffic to prevent session permission errors
+              # while maintaining secure connections for remote access
+              PLEX_NO_AUTH_NETWORKS: 192.168.0.0/19
 
               # Covers 192.168.0.0-31.255, excludes 192.168.50.0/24 (Kubernetes BGP/LoadBalancer
               # subnet) to prevent plex.{SECRET_DOMAIN} from being treated as local network traffic
