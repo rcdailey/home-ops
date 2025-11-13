@@ -10,6 +10,7 @@ resources:
 - ./cloudnative-pg/ks.yaml
 - ./coredns/ks.yaml
 - ./descheduler/ks.yaml
+- ./etcd-defrag/ks.yaml
 - ./external-secrets/ks.yaml
 - ./headlamp/ks.yaml
 - ./intel-gpu-resource-driver/ks.yaml
