@@ -21,11 +21,24 @@ spec:
     # BGP replaces L2 announcements, so issue #27800 no longer applies
     # Native routing provides better performance and proper DSR support with BGP
     autoDirectNodeRoutes: true
+    bandwidthManager:
+      enabled: true
+      bbr: true
     bgpControlPlane:
       enabled: true
     bpf:
       masquerade: true
-      hostLegacyRouting: true
+      # Enabling BPF host routing for Bandwidth Manager BBR support
+      # Historical context:
+      # - 05343d7 (Aug 2025): Set to false for Geneve tunneling workaround (Cilium #27800)
+      # - 691bf49 (Oct 2025): Reverted to true during BGP migration (removed tunneling)
+      # - Now: Setting to false again to enable bandwidthManager.bbr
+      #
+      # Known risk: Talos issue #10002 documents DNS resolution bug with:
+      #   forwardKubeDNSToHost=true + bpf.masquerade=true + hostLegacyRouting=false
+      # Monitor CoreDNS logs for "i/o timeout" errors to link-local addresses (169.254.x.x)
+      # If DNS breaks, revert this change and disable bandwidthManager.bbr
+      hostLegacyRouting: false
     cni:
       # Required for pairing with Multus CNI
       exclusive: false
