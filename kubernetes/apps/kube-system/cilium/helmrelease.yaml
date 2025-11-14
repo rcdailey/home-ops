@@ -48,6 +48,7 @@ spec:
     # devices: eno+ eth+
     dashboards:
       enabled: true
+    enableIPv4BIGTCP: true
     endpointRoutes:
       enabled: true
     envoy:
@@ -100,6 +101,8 @@ spec:
       # 2. BGP Control Plane: If enabling BGP in the future and experiencing bootstrap issues,
       #    may need to revert to empty array: tolerations: []
       #    See: https://github.com/cilium/cilium/issues/29371
+    pmtuDiscovery:
+      enabled: true
     prometheus:
       enabled: true
       serviceMonitor:
@@ -127,5 +130,3 @@ spec:
         - NET_ADMIN
         - SYS_ADMIN
         - SYS_RESOURCE
-    socketLB:
-      hostNamespaceOnly: true
