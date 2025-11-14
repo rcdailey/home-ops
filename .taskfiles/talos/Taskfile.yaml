@@ -23,6 +23,7 @@ tasks:
   apply-node:
     desc: Apply Talos config to a node [NODE=hostname or interactive]
     dir: '{{.TALOS_DIR}}'
+    silent: true
     cmd: |
       if [ -z "{{.NODE}}" ]; then
         SELECTION=$(yq '.nodes[] | .hostname + " (" + .ipAddress + ") [" + (.controlPlane | tostring | sub("true"; "control-plane") | sub("false"; "worker")) + "]"' {{.TALOS_DIR}}/talconfig.yaml | fzf --prompt="Select node: ")
