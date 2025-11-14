@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/giantswarm/silence-operator/v0.20.0/config/crd/bases/observability.giantswarm.io_silences.yaml
+---
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: ceph-node-var-diskspace-warning
+spec:
+  matchers:
+  - name: alertname
+    value: CephNodeDiskspaceWarning
+  - name: mountpoint
+    value: /var
