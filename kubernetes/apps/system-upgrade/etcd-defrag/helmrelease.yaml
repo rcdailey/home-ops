@@ -1,0 +1,124 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: etcd-defrag
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    serviceAccount:
+      etcd-defrag: {}
+
+    controllers:
+      etcd-defrag:
+        type: cronjob
+        serviceAccount:
+          identifier: etcd-defrag
+        cronjob:
+          # Run daily at 2 AM
+          schedule: "0 2 * * *"
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 3
+          failedJobsHistory: 3
+          ttlSecondsAfterFinished: 86400
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          restartPolicy: Never
+          # Run on control plane nodes where etcd is located
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
+          # Use host network to access etcd on localhost
+          hostNetwork: true
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            fsGroup: 0
+            runAsNonRoot: false
+
+        initContainers:
+          fetch-certs:
+            image:
+              repository: alpine
+              tag: latest
+            command:
+            - sh
+            - -c
+            - |
+              set -ex
+              # Copy certs from host mount
+              cp /host-etcd-secrets/ca.crt /certs/ca.crt
+              cp /host-etcd-secrets/admin.crt /certs/admin.crt
+              cp /host-etcd-secrets/admin.key /certs/admin.key
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/ahrtr/etcd-defrag
+              tag: v0.36.0
+            args:
+            - --endpoints=https://127.0.0.1:2379
+            - --cluster
+            - --cacert=/certs/ca.crt
+            - --cert=/certs/admin.crt
+            - --key=/certs/admin.key
+            - --defrag-rule=dbQuotaUsage > 0.5 || dbSizeFree > 100*1024*1024
+            - --move-leader
+            - --wait-between-defrags=30s
+            - --etcd-storage-quota-bytes=2147483648
+            - --auto-disalarm
+            - --disalarm-threshold=0.8
+            env:
+              TZ: America/Chicago
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 64Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+
+    persistence:
+      host-etcd-secrets:
+        type: hostPath
+        hostPath: /system/secrets/etcd
+        advancedMounts:
+          etcd-defrag:
+            fetch-certs:
+            - path: /host-etcd-secrets
+              readOnly: true
+
+      certs:
+        type: emptyDir
+        advancedMounts:
+          etcd-defrag:
+            fetch-certs:
+            - path: /certs
+            app:
+            - path: /certs
+              readOnly: true
+
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          etcd-defrag:
+            app:
+            - path: /tmp
