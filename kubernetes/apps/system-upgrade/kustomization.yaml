@@ -7,4 +7,5 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
+- ./etcd-defrag/ks.yaml
 - ./tuppr/ks.yaml
