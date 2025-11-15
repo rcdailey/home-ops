@@ -249,8 +249,8 @@ Optional task reconcile
 
 **Cluster nodes:**
 
-- Control plane: lucy (192.168.1.54), nami (192.168.1.50), marin (192.168.1.59)
-- Workers: sakura (192.168.1.62), hanekawa (192.168.1.63)
+- Control plane: hanekawa (192.168.1.63), marin (192.168.1.59), sakura (192.168.1.62)
+- Workers: lucy (192.168.1.54), nami (192.168.1.50)
 
 **Storage backends:**
 
