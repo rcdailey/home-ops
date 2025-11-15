@@ -16,19 +16,12 @@
 # - Red Hat KB 6998955 (nconnect performance issues)
 machine:
   files:
-    - content: |
-        # Global NFS mount options applied to all NFS mounts
-        [NFSMount_Global_Options]
-        # Use 4 TCP connections for optimal throughput/stability balance
-        Nconnect=4
-        # Timeout settings
-        Timeo=600
-        Retrans=2
-        Hard=True
-        # Use TCP protocol
-        Proto=tcp
-        # Performance: disable access time updates
-        Noatime=True
-      permissions: 0o644
-      path: /etc/nfsmount.conf
-      op: overwrite
+  # - Noatime doesn't do anything for NFS mounts.
+  #   See: https://www.man7.org/linux/man-pages/man5/nfs.5.html
+  # - timeo, retrans, hard, proto are redundant: defaults are reasonable
+  - content: |
+      [NFSMount_Global_Options]
+      Nconnect=4
+    permissions: 0o644
+    path: /etc/nfsmount.conf
+    op: overwrite
