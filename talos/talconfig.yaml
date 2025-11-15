@@ -132,7 +132,8 @@ patches:
   - "@./patches/global/machine-intel-gpu.yaml"
   - "@./patches/global/machine-kubelet.yaml"
   - "@./patches/global/machine-network.yaml"
-  - "@./patches/global/machine-nfs.yaml"
+  # disable nconnect=4 for now; causes plex stuttering/hanging during streams
+  # - "@./patches/global/machine-nfs.yaml"
   - "@./patches/global/machine-sysctls.yaml"
   - "@./patches/global/machine-time.yaml"
 
