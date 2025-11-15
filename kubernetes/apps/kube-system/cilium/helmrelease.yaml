@@ -23,6 +23,11 @@ spec:
     autoDirectNodeRoutes: true
     bgpControlPlane:
       enabled: true
+    # Bandwidth Manager: Enables FQ queueing and optimal sysctl settings
+    # Improves latency/jitter for interactive traffic when bulk transfers running
+    # Does NOT enable BBR (keeping CUBIC after BBR timeout issues)
+    bandwidthManager:
+      enabled: true
     bpf:
       masquerade: true
       hostLegacyRouting: true
