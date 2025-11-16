@@ -8,8 +8,8 @@ identity_providers:
     # Use env (not secret) since ExternalSecret creates env vars, not files
     jwks:
       - key: {{ env `IDENTITY_PROVIDERS_OIDC_JWKS` | mindent 10 "|" | msquote }}
-    # Claims policies: include groups in ID token AND access token for OpenCloud role mapping
-    # Native apps perform server-side validation using Access Tokens, not ID Tokens
+    # Claims policies: include groups in ID token, access token, AND userinfo for OpenCloud role mapping
+    # Native apps don't request groups scope but need it in UserInfo response
     claims_policies:
       opencloud:
         id_token:
@@ -17,6 +17,10 @@ identity_providers:
           - preferred_username
           - email
         access_token:
+          - groups
+          - preferred_username
+          - email
+        userinfo:
           - groups
           - preferred_username
           - email
