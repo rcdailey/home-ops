@@ -1,0 +1,14 @@
+# OpenCloud proxy OIDC role assignment configuration
+# Reference: https://docs.opencloud.eu/docs/admin/configuration/authentication-and-user-management/external-idp#automatic-role-assignments
+---
+role_assignment:
+  driver: oidc
+  oidc_role_mapper:
+    role_claim: opencloud_groups
+    role_mapping:
+    - role_name: admin
+      claim_value: admins
+    - role_name: user
+      claim_value: users
+    - role_name: guest
+      claim_value: guest

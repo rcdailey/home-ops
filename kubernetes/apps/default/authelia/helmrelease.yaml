@@ -32,12 +32,15 @@ spec:
               tag: 4.39.14
             env:
               TZ: America/New_York
+              X_AUTHELIA_CONFIG_FILTERS: template
             envFrom:
             - secretRef:
                 name: authelia-secret
             command:
             - authelia
             - --config=/etc/authelia/configuration.yaml
+            - --config=/etc/authelia/oidc-base.yaml
+            - --config=/etc/authelia/oidc-clients.yaml
             probes:
               liveness:
                 enabled: true
