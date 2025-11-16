@@ -12,7 +12,7 @@ identity_providers:
     # Native apps (desktop/Android/iOS) only request "profile" scope (hardcoded)
     # Solution: custom claim opencloud_groups returned with claims_policy, groups scope for web
     scopes:
-      groups:
+      opencloud_groups:
         claims:
           - groups
     claims_policies:
