@@ -8,18 +8,19 @@ identity_providers:
     # Use env (not secret) since ExternalSecret creates env vars, not files
     jwks:
       - key: {{ env `IDENTITY_PROVIDERS_OIDC_JWKS` | mindent 10 "|" | msquote }}
-    # Custom claims: create opencloud_groups claim from user's groups attribute
-    # Native apps request profile scope which includes this custom claim
-    # Reference: MASTERBLASTER's solution from OpenCloud/Authelia community
+    # Custom groups scope for web client (requests "groups" scope explicitly)
+    # Native apps (desktop/Android/iOS) only request "profile" scope (hardcoded)
+    # Solution: custom claim opencloud_groups returned with claims_policy, groups scope for web
     scopes:
-      profile:
+      groups:
         claims:
-          - name
-          - preferred_username
-          - email
-          - opencloud_groups
+          - groups
     claims_policies:
       opencloud:
+        # Custom claim mapping: opencloud_groups <- user's groups attribute
+        # Ensures 'opencloud_groups' claim is returned even if client doesn't request 'groups' scope
+        # Native apps may only request profile scope, but still need groups for role assignment
+        # Reference: MASTERBLASTER's PocketID solution + Authelia custom claims docs
         custom_claims:
           opencloud_groups:
             attribute: 'groups'
