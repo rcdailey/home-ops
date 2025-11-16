@@ -73,6 +73,8 @@ Consistency patterns for maintainability and clarity.
 - Avoid: `ghcr.io/hotio/*` and containers using s6-overlay, gosu
 - NEVER use latest, rolling, or non-semantic tags (semantic versioning required)
 - SHA256 digests: Automatically added by renovatebot
+- Container command/args: Use bracket notation `command: ["cmd", "arg"]` instead of multi-line dash
+  format for consistency
 
 ### Security and Networking
 
@@ -172,6 +174,11 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 - Priority: 1) envFrom, 2) env.valueFrom, 3) HelmRelease valuesFrom, 4) NEVER
   postBuild.substituteFrom for app secrets
 - SOPS (cluster-wide only): cluster-secrets.sops.yaml; commands: sops set / sops unset
+- ClusterSecretStore: hostAPI <https://app.infisical.com>, auth: universalAuthCredentials, scope:
+  projectSlug home-ops, environmentSlug prod
+- NEVER use infisical CLI directly (use Taskfile)
+- Add secrets: task infisical:add-secret -- /namespace/app-name/secret-name "value"
+- Path: /namespace/app-name/, names: kebab-case
 
 **ConfigMaps and components:**
 
@@ -207,17 +214,6 @@ Optional task reconcile
   1. After talos configuration changes, run `task talos:generate-config` only once
   1. Then `task talos:apply-node IP=192.168.1.X` once for each node to apply configuration. Only do
      this one node at a time!
-
-**Secret management (Infisical):**
-
-- ClusterSecretStore: hostAPI <https://app.infisical.com>, auth: universalAuthCredentials, scope:
-  projectSlug home-ops, environmentSlug prod
-- CLI: infisical secrets [list|get NAME|set NAME=value|delete NAME] --env=prod
-  --path=/namespace/app-name
-- CRITICAL: Create folders BEFORE setting secrets (fails silently otherwise)
-- Folder creation: infisical secrets folders create --name=folder-name --path=/parent/path
-  --env=prod
-- Path structure: /namespace/app-name/, secret names kebab-case
 
 **Conventional commits (MANDATORY path-based):**
 
