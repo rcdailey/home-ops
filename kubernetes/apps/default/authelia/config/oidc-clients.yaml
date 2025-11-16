@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://www.authelia.com/schemas/v4.39/json-schema/configuration.json
+---
+identity_providers:
+  oidc:
+    clients:
+      # OpenCloud Web Client
+      # Reference: https://docs.opencloud.eu/docs/admin/configuration/authentication-and-user-management/external-idp
+      # OpenCloud requires Authorization Code Flow with PKCE for all clients
+      - client_id: web
+        client_name: OpenCloud Web
+        public: true
+        authorization_policy: one_factor
+        claims_policy: opencloud
+        # PKCE required by OpenCloud specification and recommended for security
+        require_pkce: true
+        # Reduce consent prompts for better UX (90 days)
+        pre_configured_consent_duration: 90d
+        redirect_uris:
+          - https://opencloud.${SECRET_DOMAIN}/
+          - https://opencloud.${SECRET_DOMAIN}/oidc-callback.html
+          - https://opencloud.${SECRET_DOMAIN}/oidc-silent-redirect.html
+        scopes:
+          - openid
+          - profile
+          - email
+          # groups scope provides user group membership claims
+          # OpenCloud uses this for automatic role assignment via groups claim
+          # Reference: https://docs.opencloud.eu/docs/admin/configuration/authentication-and-user-management/external-idp#automatic-role-assignments
+          - groups
+          # offline_access required when using refresh_token grant type
+          - offline_access
+        grant_types:
+          - authorization_code
+          - refresh_token
+        response_types:
+          - code
+        response_modes:
+          - query
+          - form_post
+        userinfo_signed_response_alg: none
+        # Public clients must explicitly set endpoint auth methods to 'none'
+        token_endpoint_auth_method: none
+        revocation_endpoint_auth_method: none
+        introspection_endpoint_auth_method: none
+        pushed_authorization_request_endpoint_auth_method: none
+
+      # OpenCloud Desktop Client
+      # Reference: https://docs.opencloud.eu/docs/admin/configuration/authentication-and-user-management/external-idp
+      - client_id: OpenCloudDesktop
+        client_name: OpenCloud Desktop
+        public: true
+        authorization_policy: one_factor
+        claims_policy: opencloud
+        require_pkce: true
+        pre_configured_consent_duration: 90d
+        redirect_uris:
+          - http://127.0.0.1
+          - http://localhost
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+          - offline_access
+        grant_types:
+          - authorization_code
+          - refresh_token
+        response_types:
+          - code
+        response_modes:
+          - query
+        userinfo_signed_response_alg: none
+        token_endpoint_auth_method: none
+        revocation_endpoint_auth_method: none
+        introspection_endpoint_auth_method: none
+        pushed_authorization_request_endpoint_auth_method: none
+
+      # OpenCloud Android Client
+      # Reference: https://docs.opencloud.eu/docs/admin/configuration/authentication-and-user-management/external-idp
+      - client_id: OpenCloudAndroid
+        client_name: OpenCloud Android
+        public: true
+        authorization_policy: one_factor
+        claims_policy: opencloud
+        require_pkce: true
+        pre_configured_consent_duration: 90d
+        redirect_uris:
+          - oc://android.opencloud.eu
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+          - offline_access
+        grant_types:
+          - authorization_code
+          - refresh_token
+        response_types:
+          - code
+        response_modes:
+          - query
+        userinfo_signed_response_alg: none
+        token_endpoint_auth_method: none
+        revocation_endpoint_auth_method: none
+        introspection_endpoint_auth_method: none
+        pushed_authorization_request_endpoint_auth_method: none
+
+      # OpenCloud iOS Client
+      # Reference: https://docs.opencloud.eu/docs/admin/configuration/authentication-and-user-management/external-idp
+      - client_id: OpenCloudIOS
+        client_name: OpenCloud iOS
+        public: true
+        authorization_policy: one_factor
+        claims_policy: opencloud
+        require_pkce: true
+        pre_configured_consent_duration: 90d
+        redirect_uris:
+          - oc://ios.opencloud.eu
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+          - offline_access
+        grant_types:
+          - authorization_code
+          - refresh_token
+        response_types:
+          - code
+        response_modes:
+          - query
+        userinfo_signed_response_alg: none
+        token_endpoint_auth_method: none
+        revocation_endpoint_auth_method: none
+        introspection_endpoint_auth_method: none
+        pushed_authorization_request_endpoint_auth_method: none
