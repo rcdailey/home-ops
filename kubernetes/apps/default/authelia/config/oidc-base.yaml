@@ -14,10 +14,15 @@ identity_providers:
       groups:
         claims:
           - groups
-    # Claims policies: include groups in ID token for OpenCloud role mapping
+    # Claims policies: include groups in ID token AND access token for OpenCloud role mapping
+    # Native apps perform server-side validation using Access Tokens, not ID Tokens
     claims_policies:
       opencloud:
         id_token:
+          - groups
+          - preferred_username
+          - email
+        access_token:
           - groups
           - preferred_username
           - email
