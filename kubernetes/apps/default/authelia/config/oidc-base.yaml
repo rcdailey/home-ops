@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://www.authelia.com/schemas/v4.39/json-schema/configuration.json
+---
+identity_providers:
+  oidc:
+    # HMAC secret for opaque access token hashing
+    hmac_secret: "{{ env `IDENTITY_PROVIDERS_OIDC_HMAC_SECRET` }}"
+    # Using v4.38+ jwks format (issuer_private_keys deprecated)
+    # Use env (not secret) since ExternalSecret creates env vars, not files
+    jwks:
+      - key: {{ env `IDENTITY_PROVIDERS_OIDC_JWKS` | mindent 10 "|" | msquote }}
+    # Claims policies: include groups in ID token for OpenCloud role mapping
+    # By default groups are only in UserInfo endpoint, not ID token
+    claims_policies:
+      opencloud:
+        id_token:
+          - groups
+          - preferred_username
+          - email
+    # Token lifespans: 720h (30 days) is reasonable for homelab use
+    lifespans:
+      access_token: 720h
+      authorize_code: 5m
+      id_token: 720h
+      refresh_token: 720h
+    # CORS configuration for OIDC endpoints
+    # Automatically allows origins matching client redirect_uris
+    cors:
+      endpoints:
+        - authorization
+        - token
+        - revocation
+        - introspection
+        - userinfo
+      allowed_origins_from_client_redirect_uris: true
