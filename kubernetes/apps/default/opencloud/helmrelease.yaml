@@ -49,8 +49,12 @@ spec:
               PROXY_USER_OIDC_CLAIM: sub
               PROXY_AUTOPROVISION_CLAIM_USERNAME: preferred_username
               PROXY_USER_CS3_CLAIM: username
+              # Sync OIDC group memberships for Space assignments and collaboration
+              PROXY_AUTOPROVISION_CLAIM_GROUPS: groups
               GRAPH_ASSIGN_DEFAULT_USER_ROLE: "false"
               GRAPH_USERNAME_MATCH: none
+              # Enable write operations for autoprovisioned OIDC users to appear in admin UI
+              GRAPH_LDAP_SERVER_WRITE_ENABLED: "true"
               # General settings
               OC_INSECURE: true
               OC_URL: https://opencloud.${SECRET_DOMAIN}

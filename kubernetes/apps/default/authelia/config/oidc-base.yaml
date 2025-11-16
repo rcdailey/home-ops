@@ -8,8 +8,26 @@ identity_providers:
     # Use env (not secret) since ExternalSecret creates env vars, not files
     jwks:
       - key: {{ env `IDENTITY_PROVIDERS_OIDC_JWKS` | mindent 10 "|" | msquote }}
+    # Scope definitions: Include groups in profile scope for native clients
+    # Native apps (Android/iOS/Desktop) hardcode scopes and don't request 'groups' scope
+    # OpenCloud requirement: IDP must provide claims even when client doesn't request via scopes
+    # Reference: https://docs.opencloud.eu/docs/admin/configuration/authentication-and-user-management/external-idp
+    scopes:
+      profile:
+        claims:
+          - preferred_username
+          - name
+          - display_name
+          - groups
+      email:
+        claims:
+          - email
+          - email_verified
+          - alt_emails
+      groups:
+        claims:
+          - groups
     # Claims policies: include groups in ID token for OpenCloud role mapping
-    # groups scope is standard in Authelia - automatically included in UserInfo when requested
     claims_policies:
       opencloud:
         id_token:
