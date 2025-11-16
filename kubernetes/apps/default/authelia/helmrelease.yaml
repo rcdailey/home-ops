@@ -32,12 +32,15 @@ spec:
               tag: 4.39.14
             env:
               TZ: America/New_York
+              X_AUTHELIA_CONFIG_FILTERS: template
             envFrom:
             - secretRef:
                 name: authelia-secret
             command:
             - authelia
             - --config=/etc/authelia/configuration.yaml
+            - --config=/etc/authelia/oidc-base.yaml
+            - --config=/etc/authelia/oidc-clients.yaml
             probes:
               liveness:
                 enabled: true
@@ -93,6 +96,40 @@ spec:
               limits:
                 memory: 128Mi
 
+      oauth-proxy:
+        containers:
+          main:
+            image:
+              repository: ghcr.io/rcdailey/authelia-oauth-proxy
+              tag: latest
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+            resources:
+              requests:
+                cpu: 10m
+                memory: 16Mi
+              limits:
+                memory: 32Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+
     service:
       app:
         controller: authelia
@@ -104,11 +141,19 @@ spec:
         ports:
           http:
             port: 6379
+      oauth-proxy:
+        controller: oauth-proxy
+        ports:
+          http:
+            port: 8080
 
     route:
       app:
         parentRefs:
         - name: external
+          namespace: network
+          sectionName: https
+        - name: internal
           namespace: network
           sectionName: https
         hostnames:
