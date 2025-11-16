@@ -5,4 +5,10 @@ kind: Kustomization
 resources:
 - helmrelease.yaml
 - pvc.yaml
-- externalsecret.yaml
+configMapGenerator:
+- name: opencloud-config
+  files:
+  - config/proxy.yaml
+  - config/csp.yaml
+  options:
+    disableNameSuffixHash: true
