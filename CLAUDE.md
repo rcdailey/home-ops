@@ -110,6 +110,7 @@ repositories often as documentation.
 - onedr0p/home-ops
 - bjw-s-labs/home-ops
 - buroa/k8s-gitops
+- m00nwtchr/homelab-cluster
 
 ### API Versions
 
