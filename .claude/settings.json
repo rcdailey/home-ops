@@ -28,6 +28,7 @@
       "Bash(markdownlint-cli2:*)",
       "Bash(mise env:*)",
       "Bash(mise ls:*)",
+      "Bash(openssl rand:*)",
       "Bash(renovate:*)",
       "Bash(sops:*)",
       "Bash(ssh:*)",
@@ -35,8 +36,9 @@
       "Bash(talosctl dmesg:*)",
       "Bash(talosctl get:*)",
       "Bash(talosctl list:*)",
-      "Bash(talosctl read:*)"
+      "Bash(talosctl read:*)",
+      "Bash(xargs:*)"
     ],
-    "deny": ["Bash(kubectl port-forward:*)"]
+    "deny": ["Bash(kubectl port-forward:*)", "Bash(infisical:*)"]
   }
 }
