@@ -8,12 +8,6 @@ identity_providers:
     # Use env (not secret) since ExternalSecret creates env vars, not files
     jwks:
       - key: {{ env `IDENTITY_PROVIDERS_OIDC_JWKS` | mindent 10 "|" | msquote }}
-    # Scope definition: Define groups scope to include groups claim
-    # Required for native apps that don't request groups scope explicitly
-    scopes:
-      groups:
-        claims:
-          - groups
     # Claims policies: include groups in ID token AND access token for OpenCloud role mapping
     # Native apps perform server-side validation using Access Tokens, not ID Tokens
     claims_policies:
