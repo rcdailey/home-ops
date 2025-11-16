@@ -8,20 +8,27 @@ identity_providers:
     # Use env (not secret) since ExternalSecret creates env vars, not files
     jwks:
       - key: {{ env `IDENTITY_PROVIDERS_OIDC_JWKS` | mindent 10 "|" | msquote }}
-    # Claims policies: include groups in ID token, access token, AND userinfo for OpenCloud role mapping
-    # Native apps don't request groups scope but need it in UserInfo response
+    # Custom claims: create opencloud_groups claim from user's groups attribute
+    # Native apps request profile scope which includes this custom claim
+    # Reference: MASTERBLASTER's solution from OpenCloud/Authelia community
+    scopes:
+      profile:
+        claims:
+          - name
+          - preferred_username
+          - email
+          - opencloud_groups
     claims_policies:
       opencloud:
+        custom_claims:
+          opencloud_groups:
+            attribute: 'groups'
         id_token:
-          - groups
+          - opencloud_groups
           - preferred_username
           - email
         access_token:
-          - groups
-          - preferred_username
-          - email
-        userinfo:
-          - groups
+          - opencloud_groups
           - preferred_username
           - email
     # Token lifespans: 720h (30 days) is reasonable for homelab use
