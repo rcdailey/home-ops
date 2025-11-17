@@ -98,6 +98,17 @@ spec:
           periodSeconds: 15
           failureThreshold: 5
           initialDelaySeconds: 30
+        # Liveness probe detects deadlocks where process accepts connections but doesn't process them
+        # Observed: vmsingle deadlocked after ~31h uptime, accepting TCP connections but timing out on all requests
+        # Symptoms: No merges for 30+ hours, vmagent write timeouts, established connections stuck
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8428
+          timeoutSeconds: 30
+          periodSeconds: 60
+          failureThreshold: 3
+          initialDelaySeconds: 60
 
     # Disable VMCluster for single-node deployment
     vmcluster:
