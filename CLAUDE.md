@@ -30,8 +30,6 @@ drift.
   Exception: External HelmRepository charts may use chart.spec.sourceRef.
 - **chartRef REQUIRES namespace for cross-namespace OCIRepository references** - App-template
   OCIRepository is in flux-system namespace; all HelmReleases MUST specify namespace: flux-system
-- **NEVER use executable commands in health probes** - Use httpGet, tcpSocket, or grpc only
-  (security and reliability)
 
 ### Secrets and Configuration
 
@@ -75,6 +73,27 @@ Consistency patterns for maintainability and clarity.
 - SHA256 digests: Automatically added by renovatebot
 - Container command/args: Use bracket notation `command: ["cmd", "arg"]` instead of multi-line dash
   format for consistency
+
+### Health Probes
+
+**App-template defaults (reference only, NEVER override):**
+
+- initialDelaySeconds: 0, periodSeconds: 10, timeoutSeconds: 1, failureThreshold: 3, type: TCP
+
+**Standard pattern:**
+
+- ALWAYS enable liveness and readiness probes
+- Use YAML anchor: liveness is source of truth, readiness references it (`readiness: *probes`)
+- OMIT startup probe (disabled by default)
+- NEVER specify timing/threshold properties if defaults are acceptable
+- Probe types: httpGet (preferred), tcpSocket (databases), grpc (when appropriate)
+- httpGet: ONLY specify path and port
+- Adjust defaults ONLY when receiving false alerts
+
+**Examples:**
+
+- HTTP: `liveness: &probes` with `enabled: true`, `custom: true`, `spec.httpGet` (path, port)
+- TCP: `spec.tcpSocket: port: 3306`
 
 ### Security and Networking
 
