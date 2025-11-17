@@ -11,6 +11,27 @@ Query current alerts in vmalert and fix specified alert(s) or pick one to invest
 - With arguments: `/fix-alert AlertName1 AlertName2` - Fix specific alerts
 - Without arguments: `/fix-alert` - List firing and pending alerts and pick one to fix
 
+## CRITICAL RULES - PROHIBITED SOLUTIONS
+
+**NEVER adjust health probes as a solution to alerts.** This includes:
+- Adding new probe configurations
+- Modifying probe timing/thresholds/parameters
+- Restoring previously removed probe configurations
+- Reverting commits that simplified/removed probes
+
+Probes detect failures - they don't fix root causes. Adjusting probes masks problems.
+
+**ONLY use GitOps/configuration-based solutions:**
+- Fix resource limits/requests
+- Adjust application configuration
+- Fix networking/service configuration
+- Disable/silence useless alerts
+- Fix upstream infrastructure issues
+- Scale resources appropriately
+
+**If you find yourself wanting to adjust probes OR restore probe config from git history, STOP.**
+Investigate why the underlying failure is occurring instead of adding detection/recovery mechanisms.
+
 ## Steps
 
 1. **Query alerts**:
@@ -40,10 +61,11 @@ Query current alerts in vmalert and fix specified alert(s) or pick one to invest
 
 5. **Determine root cause** from alert expression, labels, and troubleshooting hints
 
-6. **Apply appropriate fix**:
+6. **Apply appropriate GitOps/configuration fix**:
    - **Silence**: Remove useless alerts or disable for known false positives
-   - **Adjust**: Fix misconfigured alert rules (thresholds, expressions, conditions)
-   - **Resolve**: Fix the underlying infrastructure or application issue
+   - **Adjust alert rules**: Fix misconfigured thresholds, expressions, conditions
+   - **Fix configuration**: Resource limits, networking, application settings
+   - **Fix infrastructure**: Storage, networking, scaling issues
 
 7. **Validate changes** with `./scripts/flux-local-test.sh` and `pre-commit run --files <files>`
 
