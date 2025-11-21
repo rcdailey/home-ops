@@ -9,31 +9,6 @@ identity_providers:
     jwks:
     - key: {{ env `IDENTITY_PROVIDERS_OIDC_JWKS` | mindent 10 "|" | msquote }}
 
-    # Native apps (desktop/Android/iOS) only request "profile" scope (hardcoded)
-    # Solution: custom claim opencloud_groups returned with claims_policy, groups scope for web
-    scopes:
-      opencloud_groups:
-        claims:
-        - groups
-
-    claims_policies:
-      opencloud:
-        # Custom claim mapping: opencloud_groups <- user's groups attribute
-        # Ensures 'opencloud_groups' claim is returned even if client doesn't request 'groups' scope
-        # Native apps may only request profile scope, but still need groups for role assignment
-        # Reference: MASTERBLASTER's PocketID solution + Authelia custom claims docs
-        custom_claims:
-          opencloud_groups:
-            attribute: 'groups'
-        id_token:
-        - opencloud_groups
-        - preferred_username
-        - email
-        access_token:
-        - opencloud_groups
-        - preferred_username
-        - email
-
     # Token lifespans: 720h (30 days) is reasonable for homelab use
     lifespans:
       access_token: 720h

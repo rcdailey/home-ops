@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/envoyextensionpolicy_v1alpha1.json
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyExtensionPolicy
+metadata:
+  name: authelia-oauth-scope-injection
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: authelia-app
+  lua:
+  - type: Inline
+    inline: |
+      function envoy_on_request(request_handle)
+        local path = request_handle:headers():get(":path")
+
+        -- Only intercept OAuth authorization endpoint
+        if not path or not path:match("^/api/oidc/authorization") then
+          return
+        end
+
+        local user_agent = request_handle:headers():get("user-agent") or ""
+
+        -- Check if request is from OpenCloud native app (Desktop, iOS, or Android)
+        local is_native_app = user_agent:match("mirall/") or
+                              user_agent:match("OpenCloudApp/") or
+                              user_agent:match("OpenCloud%-android/")
+
+        if not is_native_app then
+          return
+        end
+
+        -- Parse existing query string
+        local query_start = path:find("?", 1, true)
+        if not query_start then
+          return
+        end
+
+        local base_path = path:sub(1, query_start - 1)
+        local query_string = path:sub(query_start + 1)
+
+        -- Check if scope parameter exists and add 'groups' if not already present
+        local scope_found = false
+        local new_query_string = query_string:gsub("([&]?)scope=([^&]*)", function(prefix, current_scope)
+          scope_found = true
+          -- Check if 'groups' already in scope (URL-encoded or not)
+          if current_scope:match("groups") then
+            return prefix .. "scope=" .. current_scope
+          else
+            -- Append 'groups' to existing scope (URL-encoded space is %20)
+            return prefix .. "scope=" .. current_scope .. "%20groups"
+          end
+        end)
+
+        -- If scope parameter wasn't found, this shouldn't happen for OAuth requests
+        -- but handle it gracefully by not modifying the request
+        if not scope_found then
+          return
+        end
+
+        -- Reconstruct path with modified query string
+        local new_path = base_path .. "?" .. new_query_string
+        request_handle:headers():replace(":path", new_path)
+      end

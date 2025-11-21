@@ -6,6 +6,7 @@ components:
 resources:
 - ./externalsecret.yaml
 - ./helmrelease.yaml
+- ./oauth-scope-injection.yaml
 - ./pvc.yaml
 - ./referencegrant.yaml
 configMapGenerator:

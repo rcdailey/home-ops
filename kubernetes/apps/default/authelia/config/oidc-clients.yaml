@@ -10,7 +10,6 @@ identity_providers:
       client_name: OpenCloud Web
       public: true
       authorization_policy: one_factor
-      claims_policy: opencloud
       # PKCE required by OpenCloud specification and recommended for security
       require_pkce: true
       # Reduce consent prompts for better UX (90 days)
