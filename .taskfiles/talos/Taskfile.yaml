@@ -2,13 +2,14 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: '3'
 
+silent: true
+
 tasks:
 
   list-nodes:
     desc: List available Talos nodes with IPs
     dir: '{{.TALOS_DIR}}'
     cmd: yq '.nodes[] | .hostname + " (" + .ipAddress + ") [" + (.controlPlane | tostring | sub("true"; "control-plane") | sub("false"; "worker")) + "]"' {{.TALOS_DIR}}/talconfig.yaml
-    silent: true
 
   generate-config:
     desc: Generate Talos configuration
@@ -23,18 +24,18 @@ tasks:
   apply-node:
     desc: Apply Talos config to a node [NODE=hostname or interactive]
     dir: '{{.TALOS_DIR}}'
-    silent: true
-    cmd: |
-      if [ -z "{{.NODE}}" ]; then
-        SELECTION=$(yq '.nodes[] | .hostname + " (" + .ipAddress + ") [" + (.controlPlane | tostring | sub("true"; "control-plane") | sub("false"; "worker")) + "]"' {{.TALOS_DIR}}/talconfig.yaml | fzf --prompt="Select node: ")
-        NODE=$(echo "$SELECTION" | cut -d' ' -f1)
-      else
-        NODE="{{.NODE}}"
-      fi
-      IP=$(yq ".nodes[] | select(.hostname == \"$NODE\") | .ipAddress" {{.TALOS_DIR}}/talconfig.yaml)
-      talhelper gencommand apply --node $IP --extra-flags '--mode={{.MODE}}' | bash
     vars:
       MODE: '{{.MODE | default "auto"}}'
+      RESOLVED:
+        sh: |
+          if [ -z "{{.NODE}}" ]; then
+            yq '.nodes[] | .hostname + " " + .ipAddress' {{.TALOS_DIR}}/talconfig.yaml | fzf --prompt="Select node: "
+          else
+            IP=$(yq ".nodes[] | select(.hostname == \"{{.NODE}}\") | .ipAddress" {{.TALOS_DIR}}/talconfig.yaml)
+            echo "{{.NODE}} $IP"
+          fi
+      IP: '{{.RESOLVED | splitList " " | last}}'
+    cmd: talhelper gencommand apply --node {{.IP}} --extra-flags '--mode={{.MODE}}' | bash
     preconditions:
       - talosctl config info
       - test -f {{.TALOSCONFIG}}
@@ -43,21 +44,26 @@ tasks:
   upgrade-node:
     desc: Upgrade Talos on a single node [NODE=hostname or interactive]
     dir: '{{.TALOS_DIR}}'
-    cmd: |
-      if [ -z "{{.NODE}}" ]; then
-        SELECTION=$(yq '.nodes[] | .hostname + " (" + .ipAddress + ") [" + (.controlPlane | tostring | sub("true"; "control-plane") | sub("false"; "worker")) + "]"' {{.TALOS_DIR}}/talconfig.yaml | fzf --prompt="Select node: ")
-        NODE=$(echo "$SELECTION" | cut -d' ' -f1)
-      else
-        NODE="{{.NODE}}"
-      fi
-      IP=$(yq ".nodes[] | select(.hostname == \"$NODE\") | .ipAddress" {{.TALOS_DIR}}/talconfig.yaml)
-      TALOS_IMAGE=$(yq ".nodes[] | select(.hostname == \"$NODE\") | .talosImageURL" {{.TALOS_DIR}}/talconfig.yaml)
-      TALOS_VERSION=$(yq '.talosVersion' {{.TALOS_DIR}}/talenv.yaml)
-      talhelper gencommand upgrade --node $IP --extra-flags "--image='$TALOS_IMAGE:$TALOS_VERSION' --timeout=10m" | bash
+    vars:
+      RESOLVED:
+        sh: |
+          if [ -z "{{.NODE}}" ]; then
+            yq '.nodes[] | .hostname + " " + .ipAddress' {{.TALOS_DIR}}/talconfig.yaml | fzf --prompt="Select node: "
+          else
+            IP=$(yq ".nodes[] | select(.hostname == \"{{.NODE}}\") | .ipAddress" {{.TALOS_DIR}}/talconfig.yaml)
+            echo "{{.NODE}} $IP"
+          fi
+      RESOLVED_NODE: '{{.RESOLVED | splitList " " | first}}'
+      IP: '{{.RESOLVED | splitList " " | last}}'
+      CLUSTER:
+        sh: yq '.clusterName' {{.TALOS_DIR}}/talconfig.yaml
+      TALOS_IMAGE:
+        sh: yq '.machine.install.image' {{.TALOS_DIR}}/clusterconfig/{{.CLUSTER}}-{{.RESOLVED_NODE}}.yaml
+    cmd: talhelper gencommand upgrade --node {{.IP}} --extra-flags "--image='{{.TALOS_IMAGE}}' --timeout=10m" | bash
     preconditions:
       - talosctl config info
       - test -f {{.TALOSCONFIG}}
-      - which kubectl talhelper talosctl yq fzf
+      - which talhelper talosctl yq fzf
 
   upgrade-k8s:
     desc: Upgrade Kubernetes

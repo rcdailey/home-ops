@@ -25,60 +25,47 @@ nodes:
       model: "SanDisk SDSSDH32"
     machineSpec:
       secureboot: false
-    talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
     controlPlane: false
     networkInterfaces:
-      - deviceSelector:
-          hardwareAddr: "bc:24:11:a7:98:2d"
+      - &workerNicDefaults
         dhcp: false
-        addresses:
-          - "192.168.1.54/24"
+        mtu: 1500
         routes:
           - network: "0.0.0.0/0"
             gateway: "192.168.1.1"
-        mtu: 1500
+        deviceSelector:
+          hardwareAddr: "6c:1f:f7:28:71:b4"
+        addresses:
+          - "192.168.1.54/24"
   - hostname: "nami"
     ipAddress: "192.168.1.50"
     installDiskSelector:
       model: "CT2000BX500SSD1"
     machineSpec:
       secureboot: false
-    talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
     controlPlane: false
     networkInterfaces:
-      - deviceSelector:
-          hardwareAddr: "94:c6:91:a1:e5:e8"
-        dhcp: false
+      - <<: *workerNicDefaults
+        deviceSelector:
+          hardwareAddr: "6c:1f:f7:28:71:b8"
         addresses:
           - "192.168.1.50/24"
-        routes:
-          - network: "0.0.0.0/0"
-            gateway: "192.168.1.1"
-        mtu: 1500
-    patches:
-      - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
   - hostname: "marin"
     ipAddress: "192.168.1.59"
     installDiskSelector:
       model: "Samsung SSD 870"
     machineSpec:
       secureboot: false
-    talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
     controlPlane: true
     networkInterfaces:
-      - deviceSelector:
-          hardwareAddr: "1c:69:7a:0d:8d:99"
-        dhcp: false
-        addresses:
-          - "192.168.1.59/24"
-        routes:
-          - network: "0.0.0.0/0"
-            gateway: "192.168.1.1"
-        mtu: 1500
+      - &controlPlaneNicDefaults
+        <<: *workerNicDefaults
         vip:
           ip: "192.168.1.70"
-    patches:
-      - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
+        deviceSelector:
+          hardwareAddr: "6c:1f:f7:28:66:bf"
+        addresses:
+          - "192.168.1.59/24"
   - hostname: "sakura"
     ipAddress: "192.168.1.62"
     installDiskSelector:
@@ -86,22 +73,13 @@ nodes:
       size: "<= 300GB"
     machineSpec:
       secureboot: false
-    talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
     controlPlane: true
     networkInterfaces:
-      - deviceSelector:
-          hardwareAddr: "1c:69:7a:0e:f7:ed"
-        dhcp: false
+      - <<: *controlPlaneNicDefaults
+        deviceSelector:
+          hardwareAddr: "6c:1f:f7:28:71:82"
         addresses:
           - "192.168.1.62/24"
-        routes:
-          - network: "0.0.0.0/0"
-            gateway: "192.168.1.1"
-        mtu: 1500
-        vip:
-          ip: "192.168.1.70"
-    patches:
-      - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
   - hostname: "hanekawa"
     ipAddress: "192.168.1.63"
     installDiskSelector:
@@ -109,22 +87,13 @@ nodes:
       size: "<= 300GB"
     machineSpec:
       secureboot: false
-    talosImageURL: factory.talos.dev/installer/039535a70c3bd1667c355eca78571267704e55c8a24785033d183b8f26e39d82
     controlPlane: true
     networkInterfaces:
-      - deviceSelector:
-          hardwareAddr: "1c:69:7a:0d:62:d4"
-        dhcp: false
+      - <<: *controlPlaneNicDefaults
+        deviceSelector:
+          hardwareAddr: "6c:1f:f7:28:71:08"
         addresses:
           - "192.168.1.63/24"
-        routes:
-          - network: "0.0.0.0/0"
-            gateway: "192.168.1.1"
-        mtu: 1500
-        vip:
-          ip: "192.168.1.70"
-    patches:
-      - '@./patches/intel-nuc-e1000e/ethernet-tuning.yaml'
 
 # Global patches
 patches:
@@ -137,8 +106,27 @@ patches:
   - "@./patches/global/machine-sysctls.yaml"
   - "@./patches/global/machine-time.yaml"
 
+# Worker config
+worker:
+  schematic:
+    customization:
+      systemExtensions:
+        officialExtensions:
+          - siderolabs/i915
+          - siderolabs/intel-ucode
+          - siderolabs/mei
+          - siderolabs/realtek-firmware
+
 # Controller patches
 controlPlane:
+  schematic:
+    customization:
+      systemExtensions:
+        officialExtensions:
+          - siderolabs/i915
+          - siderolabs/intel-ucode
+          - siderolabs/mei
+          - siderolabs/realtek-firmware
   patches:
     - "@./patches/controller/admission-controller-patch.yaml"
     - "@./patches/controller/cluster.yaml"
