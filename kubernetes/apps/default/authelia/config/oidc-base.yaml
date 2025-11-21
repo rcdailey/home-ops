@@ -9,6 +9,16 @@ identity_providers:
     jwks:
     - key: {{ env `IDENTITY_PROVIDERS_OIDC_JWKS` | mindent 10 "|" | msquote }}
 
+    # Include groups claim in tokens when groups scope is granted
+    id_token:
+    - groups
+    - preferred_username
+    - email
+    access_token:
+    - groups
+    - preferred_username
+    - email
+
     # Token lifespans: 720h (30 days) is reasonable for homelab use
     lifespans:
       access_token: 720h
