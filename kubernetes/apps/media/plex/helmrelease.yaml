@@ -21,18 +21,6 @@ spec:
           securityContext:
             fsGroup: 1000
             fsGroupChangePolicy: "OnRootMismatch"
-          # TEMPORARY: Avoid marin due to recurring NFS/network reliability issues
-          # (zombie TCP connections, nconnect stream failures). Remove after network
-          # hardware/cable replacement.
-          affinity:
-            nodeAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                nodeSelectorTerms:
-                - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: NotIn
-                    values:
-                    - marin
           resourceClaims:
           - name: gpu
             resourceClaimTemplateName: plex
