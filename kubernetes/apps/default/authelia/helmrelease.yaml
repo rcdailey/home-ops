@@ -114,6 +114,9 @@ spec:
         - name: external
           namespace: network
           sectionName: https
+        - name: internal
+          namespace: network
+          sectionName: https
         hostnames:
         - auth.${SECRET_DOMAIN}
         rules:
