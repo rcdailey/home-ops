@@ -49,7 +49,6 @@ identity_providers:
       client_name: OpenCloud Desktop
       public: true
       authorization_policy: one_factor
-      claims_policy: opencloud
       require_pkce: true
       pre_configured_consent_duration: 90d
       redirect_uris:
@@ -80,7 +79,6 @@ identity_providers:
       client_name: OpenCloud Android
       public: true
       authorization_policy: one_factor
-      claims_policy: opencloud
       require_pkce: true
       pre_configured_consent_duration: 90d
       redirect_uris:
@@ -110,7 +108,6 @@ identity_providers:
       client_name: OpenCloud iOS
       public: true
       authorization_policy: one_factor
-      claims_policy: opencloud
       require_pkce: true
       pre_configured_consent_duration: 90d
       redirect_uris:
