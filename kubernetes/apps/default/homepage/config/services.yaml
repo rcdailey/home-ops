@@ -98,6 +98,11 @@
       href: https://notes.${SECRET_DOMAIN}/
       siteMonitor: http://silverbullet.default:3000
 
+  - OpenCloud:
+      icon: mdi-cloud
+      href: https://opencloud.${SECRET_DOMAIN}/
+      siteMonitor: http://opencloud-app.default:9200
+
   - Home Assistant:
       icon: home-assistant
       href: https://ha.${SECRET_DOMAIN}/
@@ -112,6 +117,11 @@
       icon: mdi-z-wave
       href: https://zwave.${SECRET_DOMAIN}/
       siteMonitor: http://zwave-js-ui.home:80
+
+  - OTBR:
+      icon: mdi-router-wireless
+      href: http://otbr.home:80
+      siteMonitor: http://otbr.home:80
 
   - Zigbee/Z-Wave/Thread Hub:
       icon: mdi-zigbee
@@ -170,6 +180,11 @@
       ping: 192.168.1.53
 
 - Monitoring:
+  - Gatus:
+      icon: gatus
+      href: https://status.${SECRET_DOMAIN}/
+      siteMonitor: http://gatus.observability:80
+
   - Grafana:
       icon: grafana
       href: https://grafana.${SECRET_DOMAIN}/
@@ -204,6 +219,11 @@
       icon: mdi-backup-restore
       href: https://kopia.${SECRET_DOMAIN}/
       siteMonitor: http://kopia.storage:80
+
+  - Garage:
+      icon: mdi-garage
+      href: http://garage.storage:3903
+      siteMonitor: http://garage.storage:3903
 
 - External Services:
   - Bitwarden:
