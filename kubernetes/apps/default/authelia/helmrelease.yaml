@@ -96,6 +96,40 @@ spec:
               limits:
                 memory: 128Mi
 
+      oauth-proxy:
+        containers:
+          main:
+            image:
+              repository: ghcr.io/rdailey/authelia-oauth-proxy
+              tag: latest
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+            resources:
+              requests:
+                cpu: 10m
+                memory: 16Mi
+              limits:
+                memory: 32Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+
     service:
       app:
         controller: authelia
@@ -107,6 +141,11 @@ spec:
         ports:
           http:
             port: 6379
+      oauth-proxy:
+        controller: oauth-proxy
+        ports:
+          http:
+            port: 8080
 
     route:
       app:

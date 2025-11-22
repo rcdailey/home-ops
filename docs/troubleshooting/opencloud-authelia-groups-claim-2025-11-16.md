@@ -1,8 +1,10 @@
 # OpenCloud Authelia Groups Claim Integration Issue
 
-**Date:** 2025-11-16 **Status:** PARTIALLY RESOLVED **Components:** OpenCloud 3.7.0, Authelia 4.39.14
+**Date:** 2025-11-16 **Status:** PARTIALLY RESOLVED **Components:** OpenCloud 3.7.0, Authelia
+4.39.14
 
 **Resolution:**
+
 - ✅ Web client: Fixed via `WEB_OIDC_SCOPE: "openid profile email groups"`
 - ⚠️ Native apps (Desktop/Android/iOS): UNRESOLVED - hardcoded scopes, no `groups` scope requested
 
@@ -355,9 +357,8 @@ rat:1763335498 sub:28025fe3-56e4-4322-9327-7c081554cdf1 updated_at:1763335575]
 
 ### Fix #6: Attempt to Redefine Standard `profile` Scope (FAILED - CRITICAL ERROR)
 
-**Reasoning:** MASTERBLASTER (Discord) mentioned "custom claims get returned with the profile
-scope" in PocketID. Attempted to add `opencloud_groups` to `profile` scope since native apps
-request it.
+**Reasoning:** MASTERBLASTER (Discord) mentioned "custom claims get returned with the profile scope"
+in PocketID. Attempted to add `opencloud_groups` to `profile` scope since native apps request it.
 
 **Change attempted:**
 
@@ -379,8 +380,8 @@ scopes: scope with name 'profile' can't be used as a custom scope because it's a
 ```
 
 **Why it failed:** Standard OIDC scopes (`profile`, `email`, `openid`, `address`, `phone`) are
-protected and cannot be redefined in the `scopes:` section. The `scopes:` section is ONLY for
-custom scopes.
+protected and cannot be redefined in the `scopes:` section. The `scopes:` section is ONLY for custom
+scopes.
 
 **Key learning:** Cannot add custom claims to standard scopes via `scopes:` configuration.
 
@@ -515,3 +516,300 @@ After successful validation:
 3. Verify client requests scope
 4. Check if app reads from ID token vs UserInfo
 5. Test UserInfo endpoint directly if possible
+
+## Native App Fix Investigation - 2025-11-21
+
+**Objective:** Enable native app (Android/Desktop/iOS) authentication by injecting `groups` scope at
+gateway level since apps hardcode scopes.
+
+### Fix #8: Envoy Gateway Lua Filter Scope Injection (FAILED)
+
+**Approach:** Use EnvoyExtensionPolicy with Lua script to intercept OAuth authorization requests and
+inject `groups` into scope parameter before reaching Authelia.
+
+**Implementation:**
+
+```yaml
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyExtensionPolicy
+metadata:
+  name: authelia-oauth-scope-injection
+spec:
+  targetRefs:
+  - kind: HTTPRoute
+    name: authelia
+  lua:
+  - type: Inline
+    inline: |
+      function envoy_on_request(request_handle)
+        local path = request_handle:headers():get(":path")
+        if path and path:match("^/api/oidc/authorization") then
+          local user_agent = request_handle:headers():get("user-agent") or ""
+          if user_agent:match("mirall/") or user_agent:match("OpenCloudApp/") then
+            -- Attempt to modify scope query parameter
+            local query_start = path:find("?", 1, true)
+            if query_start then
+              local base_path = path:sub(1, query_start - 1)
+              local query_string = path:sub(query_start + 1)
+              query_string = query_string:gsub("scope=([^&]*)", "scope=%1%%20groups")
+              request_handle:headers():replace(":path", base_path .. "?" .. query_string)
+            end
+          end
+        end
+      end
+```
+
+**Result:** Policy accepted by Envoy Gateway but filter never executed. Logs showed no scope
+modification.
+
+**Root cause:** Envoy Lua filter cannot reliably modify `:path` pseudo-header for query parameter
+manipulation. This is a known limitation - see Envoy issue #2098 (2017, still open).
+
+**Evidence:**
+
+- curl tests with native app User-Agents showed no scope modification
+- Authelia logs confirmed requests still received `scope=[openid offline_access email profile]`
+- No Lua execution errors in Envoy Gateway logs
+
+**Conclusion:** Query parameter modification is not supported natively in Envoy. Lua can read but
+not modify request paths effectively.
+
+### Research: Alternative Gateway Solutions
+
+**Findings from web and GitHub code search:**
+
+1.
+
+**Envoy Lua limitations:**
+
+- Can modify headers but not query parameters
+- `:path` header modification unreliable
+- No native filter for query string manipulation
+
+2.
+
+**oauth2-proxy:**
+
+- Acts as OAuth client/RP, not transparent proxy
+- Cannot inject scopes into other clients' requests
+- Not suitable for this use case
+
+3.
+
+**Nginx native solution (viable alternative):**
+
+- Can modify `$args` variable without Lua
+- Uses official `nginx:alpine` image
+- Simple 3-line configuration:
+
+     ```nginx
+     set $token "";
+     if ($is_args) { set $token "&"; }
+     set $args "${args}${token}scope=openid%20profile%20email%20groups";
+     proxy_pass http://authelia:9091;
+     ```
+
+- **Limitation:** Appends scope without checking if already exists (potential duplicate parameters)
+
+4.
+
+**Custom Go reverse proxy (recommended):**
+
+- ~60 lines of Go using `httputil.NewSingleHostReverseProxy`
+- Properly parses and modifies query parameters
+- Checks for existing scope parameter before modification
+- Requires custom container image
+
+### Root Cause Analysis: Why Mobile Apps Don't Request `groups` Scope
+
+**Source code investigation** (opencloud-eu/android, opencloud-eu/desktop, opencloud-eu/ios):
+
+**Android:** `opencloudApp/src/main/res/values/setup.xml`
+
+```xml
+<string name="oauth2_openid_scope">openid offline_access email profile</string>
+```
+
+**Desktop:** `src/libsync/theme.cpp`
+
+```cpp
+QString Theme::openIdConnectScopes() const {
+    return QStringLiteral("openid offline_access email profile");
+}
+```
+
+**iOS:** Similar pattern in ios-sdk (exact location not confirmed)
+
+**Why `groups` excluded:**
+
+- Apps designed for generic OIDC providers
+- `groups` is NOT in OIDC core specification (RFC 6749, OpenID Connect Core 1.0)
+- Standard scopes: `openid`, `profile`, `email`, `address`, `phone`, `offline_access`
+- `groups` is provider-specific extension
+
+**Why `groups` scope exists:**
+
+- De facto standard across major providers (Keycloak, Authentik, Azure AD, Okta, Authelia)
+- Applications need group membership for RBAC/authorization
+- OIDC allows custom scopes beyond specification
+- Became common enough to be quasi-standard despite not being formally specified
+
+**Mobile app override options:**
+
+- **MDM configuration:** Android app supports MDM-based scope override (enterprise only)
+- **Source modification:** Rebuild apps with custom scopes (maintenance burden)
+- **Gateway injection:** Modify requests before reaching OIDC provider (this investigation)
+
+### Fix #9: Standardize on `groups` Claim Configuration (PARTIAL)
+
+**Changes made:**
+
+1.
+
+Removed custom `opencloud_groups` scope 2. Configured standard `groups` claim in `claims_policy:
+default` 3. All clients assigned to `default` policy
+
+**Configuration:**
+
+```yaml
+claims_policies:
+  default:
+    id_token:
+    - groups
+    - preferred_username
+    - email
+    access_token:
+    - groups
+    - preferred_username
+    - email
+```
+
+**Result:** Web client works, native apps still fail.
+
+**Why it didn't solve native apps:**
+
+- `claims_policy` defines what claims to include when scope is granted
+- Native apps still don't REQUEST `groups` scope
+- Authelia correctly doesn't return claims for un-requested scopes (follows OIDC spec)
+
+### Architectural Mismatch
+
+**OpenCloud documentation states:**
+
+> "The IDP needs to be able to provide additional claims in the Access Token or UserInfo response
+> even if the client does not explicitly request them via scopes."
+
+**Reality:**
+
+- This is non-standard OIDC behavior
+- Most providers (Authelia included) follow spec: requested scopes → returned claims
+- OpenCloud's expectation doesn't align with standard OIDC implementations
+
+**Result:** Architectural impedance mismatch requiring gateway-level workaround.
+
+### Recommended Solution: Custom Go HTTP Proxy
+
+**Architecture:**
+
+```txt
+Mobile App → Envoy Gateway → [Go Proxy] → Authelia → OpenCloud
+```
+
+**Implementation:**
+
+- Intercepts `/api/oidc/authorization` requests
+- Parses scope query parameter
+- Adds `groups` if not present
+- Proxies to Authelia with modified scope
+
+**Advantages:**
+
+- Properly handles query parameter parsing/encoding
+- Checks for existing scope parameter (no duplicates)
+- Transparent to mobile apps and Authelia
+- Stateless, minimal resource usage (~16MB memory)
+
+**Disadvantages:**
+
+- Requires custom container image
+- Additional maintenance (CI/CD pipeline needed for updates)
+
+**Alternative:** Pure Nginx solution (no CI/CD) but risk of duplicate scope parameters.
+
+**Status:** Go proxy implemented but not deployed (infrastructure decision pending).
+
+**Deployment approach (to be implemented):**
+
+Use GitHub Actions + GHCR to avoid in-cluster registry complexity:
+
+1. Add GitHub Actions workflow to home-ops repository
+2. Build Dockerfile on push to main branch
+3. Publish to `ghcr.io/rdailey/authelia-oauth-proxy:latest`
+4. Reference in Authelia HelmRelease
+5. Flux pulls from GHCR like other images
+
+**Workflow example:**
+
+```yaml
+name: Build OAuth Proxy
+on:
+  push:
+    paths: ['kubernetes/apps/default/authelia/oauth-proxy/**']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v6
+        with:
+          context: kubernetes/apps/default/authelia/oauth-proxy
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/authelia-oauth-proxy:latest
+```
+
+This avoids maintaining in-cluster Docker Registry while keeping CI/CD minimal (~10 lines).
+
+## Key Learnings - 2025-11-21
+
+### OIDC Scope Standards
+
+**Standard scopes (RFC-defined):**
+
+- `openid`, `profile`, `email`, `address`, `phone`, `offline_access`
+
+**De facto standard (not in spec):**
+
+- `groups` - Widely supported but provider-specific
+
+**Custom scopes:**
+
+- Applications can define any scope
+- Providers must explicitly support them
+
+### Gateway Limitations
+
+**Envoy Gateway:**
+
+- Lua filters: headers yes, query params no
+- Native filters: no query parameter modification
+- External Processing (ExtProc): possible but complex
+
+**Nginx:**
+
+- Native `$args` modification works
+- Manual URL encoding required
+- Risk of duplicate parameters without Lua
+
+### Provider Behavior
+
+**Authelia follows OIDC spec strictly:**
+
+- Only returns claims for requested scopes
+- Won't auto-inject claims unless scope granted
+- `claims_policy` controls claim inclusion, not scope enforcement
+
+**Non-compliant providers:**
+
+- Some return extra claims regardless of scopes
+- OpenCloud documentation assumes this behavior
+- Creates portability issues
