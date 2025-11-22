@@ -127,6 +127,97 @@ endpoints:
   conditions:
   - "[STATUS] == 200"
 
+- name: OTBR
+  group: home
+  url: http://otbr.home:80
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Authelia
+  group: default
+  url: http://authelia-app.default:9091
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: BookStack
+  group: default
+  url: http://bookstack-app.default:8080
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: FileRun
+  group: default
+  url: http://filerun-app.default:80
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Immich
+  group: default
+  url: http://immich-app.default:2283/api/server/ping
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: OpenCloud
+  group: default
+  url: http://opencloud-app.default:9200
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: SilverBullet
+  group: default
+  url: http://silverbullet-main.default:3000
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: AdGuard Home
+  group: dns-private
+  url: http://adguard-home.dns-private:3000
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Grafana
+  group: observability
+  url: http://grafana.observability:80/api/health
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: VictoriaLogs
+  group: observability
+  url: http://victoria-logs-single.observability:9428/health
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: VictoriaMetrics
+  group: observability
+  url: http://vmsingle-victoria-metrics-k8s-stack.observability:8428/health
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Headlamp
+  group: kube-system
+  url: http://headlamp.kube-system:80
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
+- name: Garage
+  group: storage
+  url: http://garage.storage:3903
+  interval: 1m
+  conditions:
+  - "[STATUS] == 200"
+
 external-endpoints:
 - name: Heartbeat
   token: ${GATUS_HEARTBEAT_TOKEN}
