@@ -1,0 +1,16 @@
+# Gitleaks configuration
+# Extends default rules with project-specific allowlists
+
+[extend]
+useDefault = true
+
+# Override generic-api-key rule to exclude documentation
+[[rules]]
+id = "generic-api-key"
+
+[rules.allowlist]
+description = "Documentation contains example tokens"
+paths = [
+    '''docs/reference/.*''',
+    '''reference/.*'''
+]

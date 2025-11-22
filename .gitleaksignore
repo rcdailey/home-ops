@@ -1,8 +1,0 @@
-# Kometa config.yml contains placeholder tokens in <<TOKEN>> format for environment variable substitution
-# These are not actual secrets but templates that get replaced at runtime
-apps/media/kometa/config/config.yml:generic-api-key:132
-apps/media/kometa/config/config.yml:generic-api-key:141
-apps/media/kometa/config/config.yml:generic-api-key:147
-apps/media/kometa/config/config.yml:generic-api-key:152
-apps/media/kometa/config/config.yml:generic-api-key:155
-apps/media/kometa/config/config.yml:generic-api-key:158
