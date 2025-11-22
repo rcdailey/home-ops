@@ -78,13 +78,15 @@ Consistency patterns for maintainability and clarity.
 
 **App-template defaults (reference only, NEVER override):**
 
-- initialDelaySeconds: 0, periodSeconds: 10, timeoutSeconds: 1, failureThreshold: 3, type: TCP
+- Defaults (for all 3 probe types): initialDelaySeconds: 0, periodSeconds: 10, timeoutSeconds: 1,
+  failureThreshold: 3, type: TCP
 
 **Standard pattern:**
 
 - ALWAYS enable liveness and readiness probes
 - Use YAML anchor: liveness is source of truth, readiness references it (`readiness: *probes`)
-- OMIT startup probe (disabled by default)
+- OMIT startup probe (disabled by default), if present or requested, favor defaults instead of
+  explicit values matching defaults.
 - NEVER specify timing/threshold properties if defaults are acceptable
 - Probe types: httpGet (preferred), tcpSocket (databases), grpc (when appropriate)
 - httpGet: ONLY specify path and port
