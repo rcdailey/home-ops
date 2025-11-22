@@ -301,14 +301,15 @@ Namespace followed by a list of apps in that namespace:
 - home: esphome, home-assistant, otbr, zwave-js-ui
 - kube-system: cilium, cloudnative-pg, coredns, descheduler, external-secrets, headlamp,
   intel-gpu-resource-driver, mariadb-operator, metrics-server, multus, node-feature-discovery,
-  reloader, snapshot-controller, spegel
+  openebs, reloader, snapshot-controller, spegel
 - media: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,
   radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
 - network: cloudflare-dns, cloudflare-tunnel, envoy-gateway
-- observability: gatus, grafana, victoria-logs-single, victoria-metrics-k8s-stack, vmrules
+- observability: gatus, grafana, silence-operator, victoria-logs-single, victoria-metrics-k8s-stack,
+  vmrules
 - rook-ceph: cluster, operator
 - storage: garage, kopia, volsync
-- system-upgrade: tuppr
+- system-upgrade: etcd-defrag, tuppr
 
 **Utility scripts:**
 
