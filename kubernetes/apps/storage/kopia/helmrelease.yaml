@@ -38,10 +38,8 @@ spec:
                   httpGet:
                     path: /
                     port: *port
-                  initialDelaySeconds: 5
-                  periodSeconds: 10
-                  timeoutSeconds: 5
-                  failureThreshold: 3
+                  # Large repository (31k+ index blobs) over NFS requires extended startup time
+                  initialDelaySeconds: 30
               readiness: *probes
             securityContext:
               allowPrivilegeEscalation: false
