@@ -123,6 +123,8 @@ Consistency patterns for maintainability and clarity.
 
 Implementation patterns, operational workflows, and environment details.
 
+This repository is at `rcdailey/home-ops` in github.
+
 ### Reference Repositories
 
 Popular repositories to use as reliable reference implementations. You MUST reference these
