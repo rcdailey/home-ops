@@ -4,6 +4,6 @@ config:
     code_blocks: false
     tables: false
   no-inline-html:
-    allowed_elements: ["br"]
+    allowed_elements: ["br", "details", "summary"]
   no-trailing-spaces:
     br_spaces: 0
