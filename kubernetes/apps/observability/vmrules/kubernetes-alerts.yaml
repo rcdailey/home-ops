@@ -10,7 +10,7 @@ spec:
     interval: 30s
     rules:
     - alert: PodCrashLooping
-      expr: rate(kube_pod_container_status_restarts_total[5m]) > 0
+      expr: rate(kube_pod_container_status_restarts_total[5m]) > 0.02
       for: 5m
       labels:
         severity: warning
