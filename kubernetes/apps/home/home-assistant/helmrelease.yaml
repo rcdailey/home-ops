@@ -37,15 +37,13 @@ spec:
               HASS_HTTP_TRUSTED_PROXY_2: 192.168.50.0/24
               HASS_HTTP_TRUSTED_PROXY_3: 10.42.0.0/16
             probes:
-              liveness:
+              liveness: &probes
                 enabled: true
-              readiness:
-                enabled: true
+              readiness: *probes
               startup:
                 enabled: true
                 spec:
                   failureThreshold: 30
-                  periodSeconds: 5
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
