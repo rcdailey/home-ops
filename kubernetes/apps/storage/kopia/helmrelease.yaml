@@ -30,6 +30,7 @@ spec:
                 name: kopia-secret
             args:
             - --without-password
+            - --ui-preferences-file=/config/ui-preferences.json
             probes:
               liveness: &probes
                 enabled: true
@@ -84,6 +85,8 @@ spec:
         globalMounts:
         - path: /config/repository.config
           subPath: repository.config
+        - path: /config/ui-preferences.json
+          subPath: ui-preferences.json
       repository:
         type: nfs
         server: 192.168.1.58

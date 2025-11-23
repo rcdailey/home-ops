@@ -8,6 +8,7 @@ resources:
 configMapGenerator:
 - name: kopia-config
   files:
-  - repository.config=repository.config
+  - repository.config=config/repository.config
+  - ui-preferences.json=config/ui-preferences.json
   options:
     disableNameSuffixHash: true
