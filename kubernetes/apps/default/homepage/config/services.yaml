@@ -108,6 +108,11 @@
       href: https://ha.${SECRET_DOMAIN}/
       siteMonitor: http://home-assistant.home:8123
 
+  - VS Code:
+      icon: vscode
+      href: https://code.${SECRET_DOMAIN}/
+      siteMonitor: http://code-server.home:8080
+
   - ESPHome:
       icon: esphome
       href: https://esphome.${SECRET_DOMAIN}/
