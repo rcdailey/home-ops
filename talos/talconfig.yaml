@@ -28,13 +28,16 @@ nodes:
     controlPlane: false
     networkInterfaces:
       - &workerNicDefaults
+        interface: bond0
         dhcp: false
         mtu: 1500
         routes:
           - network: "0.0.0.0/0"
             gateway: "192.168.1.1"
-        deviceSelector:
-          hardwareAddr: "6c:1f:f7:28:71:b4"
+        bond:
+          mode: active-backup
+          deviceSelectors:
+            - hardwareAddr: "6c:1f:f7:28:71:b4"
         addresses:
           - "192.168.1.54/24"
   - hostname: "nami"
@@ -46,8 +49,10 @@ nodes:
     controlPlane: false
     networkInterfaces:
       - <<: *workerNicDefaults
-        deviceSelector:
-          hardwareAddr: "6c:1f:f7:28:71:b8"
+        bond:
+          mode: active-backup
+          deviceSelectors:
+            - hardwareAddr: "6c:1f:f7:28:71:b8"
         addresses:
           - "192.168.1.50/24"
   - hostname: "marin"
@@ -62,8 +67,10 @@ nodes:
         <<: *workerNicDefaults
         vip:
           ip: "192.168.1.70"
-        deviceSelector:
-          hardwareAddr: "6c:1f:f7:28:66:bf"
+        bond:
+          mode: active-backup
+          deviceSelectors:
+            - hardwareAddr: "6c:1f:f7:28:66:bf"
         addresses:
           - "192.168.1.59/24"
   - hostname: "sakura"
@@ -76,8 +83,10 @@ nodes:
     controlPlane: true
     networkInterfaces:
       - <<: *controlPlaneNicDefaults
-        deviceSelector:
-          hardwareAddr: "6c:1f:f7:28:71:82"
+        bond:
+          mode: active-backup
+          deviceSelectors:
+            - hardwareAddr: "6c:1f:f7:28:71:82"
         addresses:
           - "192.168.1.62/24"
   - hostname: "hanekawa"
@@ -90,8 +99,10 @@ nodes:
     controlPlane: true
     networkInterfaces:
       - <<: *controlPlaneNicDefaults
-        deviceSelector:
-          hardwareAddr: "6c:1f:f7:28:71:08"
+        bond:
+          mode: active-backup
+          deviceSelectors:
+            - hardwareAddr: "6c:1f:f7:28:71:08"
         addresses:
           - "192.168.1.63/24"
 
