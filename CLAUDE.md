@@ -229,6 +229,9 @@ Optional task reconcile
 - Flux reconcile helmrelease: `flux reconcile hr NAME -n NAMESPACE --force` (`--reset` clears retry,
   `--with-source` refreshes source)
 - Helm: helm template releasename chartpath -f values.yaml
+- PV migration: Install `kubectl krew install pv-migrate`; workflow: `kubectl apply -f new-pvc.yaml`
+  (imperative), `kubectl pv-migrate --source=old --source-namespace=ns --dest=new
+  --dest-namespace=ns --ignore-mounted`, update Git manifests, Flux adopts existing PVC
 - Talos:
   1. After talos configuration changes, run `task talos:generate-config` only once
   1. Then `task talos:apply-node IP=192.168.1.X` once for each node to apply configuration. Only do
