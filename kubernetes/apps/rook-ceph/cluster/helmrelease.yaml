@@ -28,7 +28,7 @@ spec:
       createPrometheusRules: true
       prometheusRuleOverrides:
         # CRITICAL: Disable CephNodeNetworkPacketDrops alert for Intel NIC false positives
-        # Intel NUCs (nami, marin) with eno1 interfaces show benign receive packet drops
+        # Intel NUCs (nami, marin) with bond0 interfaces show benign receive packet drops
         # due to hardware checksum offloading dropping invalid packets (multicast/broadcast noise)
         # Ceph cluster remains HEALTH_OK, indicating no operational impact
         # See: Intel I219/I225 NICs commonly drop packets with checksum offload enabled
