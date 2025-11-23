@@ -68,7 +68,7 @@ spec:
       send_resolved: true
       html: true
       priority: |-
-        {{ if eq .Status "firing" }}1{{ else }}0{{ end }}
+        {{ if eq .Status "firing" }}1{{ else }}-1{{ end }}
       sound: gamelan
       url_title: View in Alertmanager
       title: >-
