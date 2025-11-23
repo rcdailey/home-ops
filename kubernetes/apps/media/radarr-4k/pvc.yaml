@@ -11,3 +11,15 @@ spec:
     requests:
       storage: 5Gi
   storageClassName: ceph-block
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: radarr-4k-cache
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi
+  storageClassName: ceph-block
