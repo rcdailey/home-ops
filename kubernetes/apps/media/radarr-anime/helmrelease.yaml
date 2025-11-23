@@ -104,6 +104,14 @@ spec:
             radarr-anime:
             - path: /config
 
+      config-cache:
+        type: persistentVolumeClaim
+        existingClaim: radarr-anime-cache
+        advancedMounts:
+          radarr-anime:
+            radarr-anime:
+            - path: /config/MediaCover
+
       media:
         type: nfs
         server: 192.168.1.58
@@ -113,12 +121,15 @@ spec:
             radarr-anime:
             - path: /media
 
-      tmp:
+      tmpfs:
         type: emptyDir
         advancedMounts:
           radarr-anime:
             radarr-anime:
+            - path: /config/logs
+              subPath: logs
             - path: /tmp
+              subPath: tmp
 
     route:
       app:
