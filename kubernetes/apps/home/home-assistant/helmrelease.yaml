@@ -22,7 +22,7 @@ spec:
     controllers:
       home-assistant:
         replicas: 1
-        strategy: Recreate
+        strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
 
@@ -100,15 +100,14 @@ spec:
     persistence:
       config:
         type: persistentVolumeClaim
-        existingClaim: home-assistant
+        existingClaim: home-assistant-rwx
         advancedMounts:
           home-assistant:
             app:
             - path: /config
 
       config-cache:
-        type: persistentVolumeClaim
-        existingClaim: home-assistant-cache
+        type: emptyDir
         advancedMounts:
           home-assistant:
             app:
