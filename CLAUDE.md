@@ -208,8 +208,9 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 - Stable naming (disableNameSuffixHash: true): ONLY for cross-resource dependencies (Helm
   valuesFrom, persistence.name)
 - Components: common (namespace prune protection, cluster-secrets), drift-detection (all namespaces)
-- Volsync: Include when PVC backup needed; postBuild.substitute.APP, postBuild.substituteFrom:
-  cluster-secrets; s3://volsync-backups/{APP}/
+- Volsync: Add component to app `kustomization.yaml`; in `ks.yaml` add `postBuild.substitute.APP`
+  (required, names ReplicationSource), `VOLSYNC_PVC` (optional, defaults to APP value, specifies
+  which PVC to backup); `postBuild.substituteFrom: cluster-secrets`; `s3://volsync-backups/{APP}/`
 
 **Security and container patterns:**
 
