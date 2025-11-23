@@ -31,4 +31,4 @@ spec:
       name: cluster-secrets
     substitute:
       APP: home-assistant
-      VOLSYNC_PVC: home-assistant
+      VOLSYNC_PVC: home-assistant-rwx
