@@ -305,7 +305,7 @@ spec:
           create: false # Using custom VMRule (vmrule.yaml) requiring both high load AND high CPU
       groups:
         etcd:
-          create: true
+          create: false
         # general recording rules patched via postRenderers (see above) to prevent RecordingRulesNoData alerts
         # Chart creates VMRule even when create: false, so we patch the expression instead
         general:
@@ -394,24 +394,7 @@ spec:
               caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
     kubeEtcd:
-      enabled: true
-      endpoints: []
-      service:
-        enabled: true
-        port: 2381
-        targetPort: 2381
-        selector:
-          component: kube-apiserver
-      vmScrape:
-        enabled: true
-        spec:
-          jobLabel: jobLabel
-          namespaceSelector:
-            matchNames:
-            - kube-system
-          endpoints:
-          - port: http-metrics
-            scheme: http
+      enabled: false
 
     coreDns:
       enabled: true
