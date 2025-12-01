@@ -111,9 +111,13 @@ spec:
             deviceClass: "ssd"
             metadataDevice: ""
             osdsPerDevice: "1"
-      # OSD resource limits - prevent memory pressure during recovery
-      # OSD.2 observed using 1.7GB during backfill operations
+      # Resource limits - prevent memory pressure
+      # MGR: peaked at 928Mi with 1Gi limit (90% alert threshold)
+      # OSD: observed using 1.7GB during backfill operations
       resources:
+        mgr:
+          limits:
+            memory: 2Gi
         osd:
           limits:
             memory: 8Gi
