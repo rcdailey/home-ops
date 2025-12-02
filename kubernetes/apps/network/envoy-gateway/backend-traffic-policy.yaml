@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: disable-request-timeout
+  namespace: network
+spec:
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+  timeout:
+    http:
+      # Disable default timeout - allows long-running requests (e.g., Sonarr/Radarr indexer searches)
+      requestTimeout: 0s
