@@ -66,7 +66,7 @@ sonarr:
     # SDR - block ALL SDR releases
     # SDR (no WEBDL) - block UHD/4k Remux and Bluray encode SDR releases, but allow SDR WEB
     - trash_ids:
-      - 2016d1676f5ee13a5b7257ff86ac9a93 # SDR
+      # - 2016d1676f5ee13a5b7257ff86ac9a93 # SDR
       # - 83304f261cf516bb208c18c54c0adf97 # SDR (no WEBDL)
       assign_scores_to:
       - name: WEB-2160p
