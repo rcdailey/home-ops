@@ -100,7 +100,7 @@ spec:
           app:
             image:
               repository: filerun/filerun
-              tag: "8.1"
+              tag: "8.4"
             env:
               FR_DB_HOST: filerun-mariadb
               FR_DB_PORT: "3306"
@@ -252,7 +252,7 @@ spec:
           app:
             image:
               repository: filerun/filerun
-              tag: "8.1"
+              tag: "8.4"
             command:
             - php
             args:
