@@ -224,6 +224,14 @@ spec:
       enabled: true
 
     sidecar:
+      # Chart only supports top-level sidecar.resources, not per-sidecar (dashboards/datasources).
+      # Per-sidecar resources are silently ignored. This applies to all k8s-sidecar containers.
+      resources:
+        limits:
+          memory: 384Mi
+        requests:
+          cpu: 10m
+          memory: 128Mi
       dashboards:
         enabled: true
         searchNamespace: ALL
@@ -233,23 +241,11 @@ spec:
           disableDelete: true
           foldersFromFilesStructure: true
         resource: both
-        resources:
-          limits:
-            memory: 256Mi
-          requests:
-            cpu: 10m
-            memory: 64Mi
       datasources:
         enabled: true
         searchNamespace: ALL
         labelValue: ""
         resource: both
-        resources:
-          limits:
-            memory: 128Mi
-          requests:
-            cpu: 10m
-            memory: 64Mi
         RESTfulSidecarsPort: 8081
 
     testFramework:
