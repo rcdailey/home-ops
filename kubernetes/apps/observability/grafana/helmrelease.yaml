@@ -224,12 +224,6 @@ spec:
       enabled: true
 
     sidecar:
-      resources:
-        limits:
-          memory: 128Mi
-        requests:
-          cpu: 10m
-          memory: 64Mi
       dashboards:
         enabled: true
         searchNamespace: ALL
@@ -238,10 +232,25 @@ spec:
         provider:
           disableDelete: true
           foldersFromFilesStructure: true
+        resource: both
+        resources:
+          limits:
+            memory: 256Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
       datasources:
         enabled: true
         searchNamespace: ALL
         labelValue: ""
+        resource: both
+        resources:
+          limits:
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        RESTfulSidecarsPort: 8081
 
     testFramework:
       enabled: false
