@@ -241,6 +241,9 @@ Optional task reconcile
   1. After talos configuration changes, run `task talos:generate-config` only once
   1. Then `task talos:apply-node IP=192.168.1.X` once for each node to apply configuration. Only do
      this one node at a time!
+- When running `talosctl` commands, use the format `talosctl <subcommand> <otheroptions> -n
+  <nodeip>`, e.g. `talosctl usage /var/lib/containerd -n 192.168.1.62`. The `-n` option must be
+  toward the end.
 
 **Conventional commits (MANDATORY path-based):**
 
