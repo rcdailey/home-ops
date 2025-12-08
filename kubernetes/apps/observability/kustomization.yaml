@@ -15,5 +15,5 @@ resources:
 - ./victoria-logs-single/ks.yaml
 - ./grafana/ks.yaml
 - ./gatus/ks.yaml
-# - ./silence-operator/ks.yaml
+- ./silence-operator/ks.yaml
 - ./vmrules
