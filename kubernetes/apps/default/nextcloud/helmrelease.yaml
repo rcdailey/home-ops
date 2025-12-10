@@ -152,6 +152,12 @@ spec:
 
     redis:
       enabled: true
+      architecture: standalone
+      master:
+        persistence:
+          enabled: false
+        readinessProbe:
+          initialDelaySeconds: 5
 
     cronjob:
       enabled: true
