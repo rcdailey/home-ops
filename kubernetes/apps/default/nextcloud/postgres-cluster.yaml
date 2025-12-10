@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/postgresql.cnpg.io/cluster_v1.json
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: nextcloud-postgres
+spec:
+  instances: 1
+
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+
+  postgresql:
+    parameters:
+      max_connections: "100"
+      max_slot_wal_keep_size: 10GB
+      shared_buffers: 128MB
+      effective_cache_size: 512MB
+      maintenance_work_mem: 32MB
+      checkpoint_completion_target: "0.9"
+      wal_buffers: 8MB
+      default_statistics_target: "100"
+      random_page_cost: "1.1"
+      effective_io_concurrency: "200"
+      work_mem: 4MB
+      min_wal_size: 512MB
+      max_wal_size: 2GB
+
+  bootstrap:
+    initdb:
+      database: nextcloud
+      owner: nextcloud
+      secret:
+        name: nextcloud-postgres-secret
+
+  storage:
+    size: 10Gi
+    storageClass: ceph-block
+
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 1Gi
+
+  backup:
+    retentionPolicy: 30d
+    target: prefer-standby
+    barmanObjectStore:
+      destinationPath: s3://postgres-backups/nextcloud
+      endpointURL: http://garage-app.storage:3900
+      s3Credentials:
+        accessKeyId:
+          name: garage-secret
+          key: S3_ACCESS_KEY_ID
+        secretAccessKey:
+          name: garage-secret
+          key: S3_SECRET_ACCESS_KEY
+        region:
+          name: garage-secret
+          key: S3_REGION
+      wal:
+        compression: gzip
+        maxParallel: 2
+      data:
+        compression: gzip

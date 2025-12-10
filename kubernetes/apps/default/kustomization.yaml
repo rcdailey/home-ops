@@ -9,7 +9,9 @@ components:
 resources:
 - ./authelia/ks.yaml
 - ./bookstack/ks.yaml
-- ./filerun/ks.yaml
+# - ./filerun/ks.yaml  # Temporarily disabled - replaced by nextcloud
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
+- ./lldap/ks.yaml
+- ./nextcloud/ks.yaml
 - ./silverbullet/ks.yaml

@@ -21,19 +21,14 @@ totp:
   period: 30
   skew: 1
 
-# File-based authentication - no database required
+# LDAP authentication via LLDAP
+# Password provided via AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD environment variable
 authentication_backend:
-  file:
-    path: /etc/authelia/users.yaml
-    password:
-      algorithm: argon2
-      argon2:
-        variant: argon2id
-        iterations: 3
-        memory: 65536
-        parallelism: 4
-        key_length: 32
-        salt_length: 16
+  ldap:
+    implementation: lldap
+    address: ldap://lldap.default:3890
+    base_dn: dc=dailey,dc=app
+    user: uid=admin,ou=people,dc=dailey,dc=app
 
 # Domain-level access control - single login for all apps
 access_control:

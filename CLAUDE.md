@@ -305,7 +305,7 @@ Optional task reconcile
 Namespace followed by a list of apps in that namespace:
 
 - cert-manager: cert-manager
-- default: authelia, bookstack, filerun, homepage, immich, opencloud, silverbullet
+- default: authelia, bookstack, filerun, homepage, immich, lldap, nextcloud, silverbullet
 - dns-private: adguard-home, adguard-home-sync, dns-gateway, external-dns
 - external: opensprinkler
 - flux-system: flux-instance, flux-operator

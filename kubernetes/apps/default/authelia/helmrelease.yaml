@@ -35,9 +35,12 @@ spec:
             envFrom:
             - secretRef:
                 name: authelia-secret
-            command:
-            - authelia
+            command: ["authelia"]
+            args:
             - --config=/etc/authelia/configuration.yaml
+            - --config=/etc/authelia/oidc-base.yaml.tmpl
+            - --config=/etc/authelia/oidc-clients.yaml.tmpl
+            - --config.experimental.filters=template
             probes:
               liveness:
                 enabled: true

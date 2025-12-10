@@ -1,0 +1,204 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nextcloud
+spec:
+  interval: 1h
+  timeout: 10m
+  chartRef:
+    kind: OCIRepository
+    name: nextcloud
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    deploymentAnnotations:
+      reloader.stakater.com/auto: "true"
+
+    image:
+      flavor: fpm-alpine
+
+    nextcloud:
+      host: cloud.${SECRET_DOMAIN}
+      existingSecret:
+        enabled: true
+        secretName: nextcloud-secret
+        usernameKey: nextcloud-username
+        passwordKey: nextcloud-password
+        smtpHostKey: smtp-host
+        smtpUsernameKey: smtp-username
+        smtpPasswordKey: smtp-password
+      mail:
+        enabled: true
+        fromAddress: nextcloud
+        domain: ${SECRET_DOMAIN}
+        smtp:
+          secure: ssl
+          port: 465
+          authtype: LOGIN
+      datadir: /var/www/html/data
+      configs:
+        local.config.php: |-
+          <?php
+          $CONFIG = array (
+            'trusted_domains' =>
+            array (
+              0 => 'cloud.${SECRET_DOMAIN}',
+            ),
+            'forwarded_for_headers' => array('HTTP_X_FORWARDED_FOR'),
+            'overwrite.cli.url' => 'https://cloud.${SECRET_DOMAIN}',
+            'overwriteprotocol' => 'https',
+            'default_phone_region' => 'US',
+            'maintenance_window_start' => 4,
+          );
+      hooks:
+        post-installation: |
+          php occ app:install user_oidc || true
+        post-upgrade: |
+          # Install and configure notify_push for real-time updates
+          php occ app:install notify_push || true
+          php occ app:enable notify_push || true
+          php occ notify_push:setup https://cloud.${SECRET_DOMAIN}/push
+          # Configure OIDC provider
+          php occ user_oidc:provider authelia \
+            --clientid=nextcloud \
+            --clientsecret="$OIDC_CLIENT_SECRET" \
+            --discoveryuri="https://auth.${SECRET_DOMAIN}/.well-known/openid-configuration" \
+            --scope="openid email profile groups" \
+            --mapping-uid="preferred_username" \
+            --mapping-display-name="name" \
+            --mapping-email="email" \
+            --mapping-groups="groups" \
+            --group-provisioning=1 \
+            --unique-uid=0
+          php occ config:app:set --type=string --value=0 user_oidc allow_multiple_user_backends
+          # Disable bloat apps
+          php occ app:disable firstrunwizard || true
+          php occ app:disable nextcloud_announcements || true
+          php occ app:disable survey_client || true
+          php occ app:disable support || true
+          php occ app:disable recommendations || true
+          php occ app:disable weather_status || true
+          php occ app:disable related_resources || true
+          php occ app:disable circles || true
+          php occ app:disable dashboard || true
+          php occ app:disable photos || true
+          php occ app:disable user_status || true
+          php occ app:disable activity || true
+      extraEnv:
+      - name: OIDC_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: nextcloud-secret
+            key: oidc-client-secret
+      - name: TRUSTED_PROXIES
+        value: "127.0.0.1 10.96.0.0/12 10.42.0.0/16"
+      - name: PHP_MAX_CHILDREN
+        value: "20"
+      extraSidecarContainers:
+      - name: notify-push
+        image: mwalbeck/nextcloud-notify-push:1.2.1
+        command: ["/notify_push"]
+        args: ["/var/www/html/config/config.php"]
+        env:
+        - name: NEXTCLOUD_URL
+          value: "http://localhost:80"
+        ports:
+        - name: notify-push
+          containerPort: 7867
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
+        securityContext:
+          runAsUser: 33
+          runAsGroup: 33
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: nextcloud-main
+          mountPath: /var/www/html/config
+          subPath: config
+          readOnly: true
+
+    nginx:
+      enabled: true
+
+    internalDatabase:
+      enabled: false
+
+    externalDatabase:
+      enabled: true
+      type: postgresql
+      host: nextcloud-postgres-rw:5432
+      database: nextcloud
+      existingSecret:
+        enabled: true
+        secretName: nextcloud-postgres-secret
+        usernameKey: username
+        passwordKey: password
+
+    redis:
+      enabled: true
+      architecture: standalone
+      master:
+        persistence:
+          enabled: false
+        readinessProbe:
+          initialDelaySeconds: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+
+    cronjob:
+      enabled: true
+
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      failureThreshold: 30
+
+    livenessProbe:
+      enabled: true
+      periodSeconds: 30
+
+    readinessProbe:
+      enabled: true
+      periodSeconds: 30
+      timeoutSeconds: 10
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+
+    securityContext:
+      fsGroupChangePolicy: OnRootMismatch
+
+    ingress:
+      enabled: false
+
+    persistence:
+      enabled: true
+      existingClaim: nextcloud-config
+      nextcloudData:
+        enabled: true
+        existingClaim: nextcloud-data
