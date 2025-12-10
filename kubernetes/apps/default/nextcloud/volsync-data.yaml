@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/volsync.backube/replicationsource_v1alpha1.json
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: nextcloud-data
+spec:
+  sourcePVC: nextcloud-data
+  trigger:
+    schedule: 0 */8 * * *
+  kopia:
+    accessModes:
+    - ReadWriteMany
+    cacheAccessModes:
+    - ReadWriteOnce
+    cacheCapacity: 5Gi
+    cacheStorageClassName: ceph-block
+    compression: zstd-fastest
+    copyMethod: Snapshot
+    moverSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    parallelism: 2
+    repository: nextcloud-data-volsync-secret
+    retain:
+      hourly: 24
+      daily: 7
+    storageClassName: ceph-filesystem
+    volumeSnapshotClassName: csi-ceph-filesystem
