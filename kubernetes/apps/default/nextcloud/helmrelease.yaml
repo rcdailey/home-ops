@@ -48,12 +48,6 @@ spec:
         local.config.php: |-
           <?php
           $CONFIG = array (
-            'trusted_proxies' =>
-            array (
-              0 => '127.0.0.1',
-              1 => '10.96.0.0/12',
-              2 => '10.244.0.0/16',
-            ),
             'trusted_domains' =>
             array (
               0 => 'cloud.${SECRET_DOMAIN}',
@@ -68,6 +62,10 @@ spec:
         post-installation: |
           php occ app:install user_oidc || true
         post-upgrade: |
+          # Install and configure notify_push for real-time updates
+          php occ app:install notify_push || true
+          php occ app:enable notify_push || true
+          php occ notify_push:setup https://cloud.${SECRET_DOMAIN}/push
           # Configure OIDC provider
           php occ user_oidc:provider authelia \
             --clientid=nextcloud \
@@ -100,6 +98,38 @@ spec:
           secretKeyRef:
             name: nextcloud-secret
             key: oidc-client-secret
+      - name: TRUSTED_PROXIES
+        value: "127.0.0.1 10.96.0.0/12 10.42.0.0/16"
+      extraSidecarContainers:
+      - name: notify-push
+        image: mwalbeck/nextcloud-notify-push:1.2.1
+        command: ["/notify_push"]
+        args: ["/var/www/html/config/config.php"]
+        env:
+        - name: NEXTCLOUD_URL
+          value: "http://localhost:80"
+        ports:
+        - name: notify-push
+          containerPort: 7867
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
+        securityContext:
+          runAsUser: 33
+          runAsGroup: 33
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: nextcloud-main
+          mountPath: /var/www/html/config
+          subPath: config
+          readOnly: true
 
     nginx:
       enabled: true

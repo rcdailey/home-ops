@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/v1/service.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud-notify-push
+spec:
+  selector:
+    app.kubernetes.io/name: nextcloud
+  ports:
+  - name: notify-push
+    port: 7867
+    targetPort: notify-push
+    protocol: TCP

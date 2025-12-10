@@ -12,6 +12,15 @@ spec:
     namespace: network
     sectionName: https
   rules:
+  # notify_push websocket endpoint for real-time file updates
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /push
+    backendRefs:
+    - name: nextcloud-notify-push
+      port: 7867
+  # Main Nextcloud application
   - backendRefs:
     - name: nextcloud
       port: 8080

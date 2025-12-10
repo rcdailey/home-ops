@@ -8,6 +8,7 @@ resources:
 - externalsecret.yaml
 - helmrelease.yaml
 - httproute.yaml
+- notify-push-service.yaml
 - ocirepository.yaml
 - postgres-cluster.yaml
 - postgres-scheduled-backup.yaml
