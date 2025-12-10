@@ -164,6 +164,11 @@
       href: https://auth.${SECRET_DOMAIN}/
       siteMonitor: http://authelia-app.default:9091
 
+  - LLDAP:
+      icon: mdi-account-multiple
+      href: https://lldap.${SECRET_DOMAIN}/
+      siteMonitor: http://lldap.default:17170
+
   - Unraid:
       icon: unraid
       href: http://192.168.1.58/Dashboard

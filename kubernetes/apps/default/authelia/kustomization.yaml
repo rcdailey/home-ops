@@ -13,7 +13,6 @@ configMapGenerator:
 - name: authelia-config
   files:
   - ./config/configuration.yaml
-  - ./config/users.yaml
   - ./config/oidc-base.yaml.tmpl
   - ./config/oidc-clients.yaml.tmpl
   options:

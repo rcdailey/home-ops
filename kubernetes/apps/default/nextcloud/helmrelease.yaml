@@ -100,6 +100,8 @@ spec:
             key: oidc-client-secret
       - name: TRUSTED_PROXIES
         value: "127.0.0.1 10.96.0.0/12 10.42.0.0/16"
+      - name: PHP_MAX_CHILDREN
+        value: "20"
       extraSidecarContainers:
       - name: notify-push
         image: mwalbeck/nextcloud-notify-push:1.2.1
