@@ -53,16 +53,16 @@ tasks:
 
         # Check if folder exists by querying parent and looking for this segment
         # (folders get returns subfolders, not the folder itself)
-        PARENT_FOLDERS=$(infisical secrets folders get --path "$PARENT_PATH" --silent 2>/dev/null)
+        PARENT_FOLDERS=$(infisical secrets folders get --path "$PARENT_PATH" --env prod --silent 2>/dev/null)
         FOLDER_EXISTS=$(echo "$PARENT_FOLDERS" | rg -q "│ $SEGMENT " && echo "yes" || echo "no")
 
         if [ "$FOLDER_EXISTS" = "no" ]; then
-          echo "Creating folder: $CURRENT_PATH (parent: $PARENT_PATH, name: $SEGMENT)"
+          echo "Creating folder: $CURRENT_PATH"
           # Omit --path for root-level folders
           if [ -z "$PARENT_PATH" ]; then
-            CREATE_CMD="infisical secrets folders create --name \"$SEGMENT\""
+            CREATE_CMD="infisical secrets folders create --name \"$SEGMENT\" --env prod"
           else
-            CREATE_CMD="infisical secrets folders create --name \"$SEGMENT\" --path \"$PARENT_PATH\""
+            CREATE_CMD="infisical secrets folders create --name \"$SEGMENT\" --path \"$PARENT_PATH\" --env prod"
           fi
           if ! CREATE_OUTPUT=$(eval "$CREATE_CMD" 2>&1); then
             echo "Failed to create folder: $CURRENT_PATH" >&2
@@ -79,7 +79,7 @@ tasks:
 
       # Set the secret (secret operations need leading slash)
       echo "Setting secret: $SECRET_NAME at path: $SECRET_PATH"
-      if ! infisical secrets set "$SECRET_NAME=$SECRET_VALUE" --path "$SECRET_PATH"; then
+      if ! infisical secrets set "$SECRET_NAME=$SECRET_VALUE" --path "$SECRET_PATH" --env prod; then
         echo "Failed to set secret: $SECRET_NAME"
         exit 1
       fi
