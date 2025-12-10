@@ -9,7 +9,7 @@ components:
 resources:
 - ./authelia/ks.yaml
 - ./bookstack/ks.yaml
-- ./filerun/ks.yaml
+# - ./filerun/ks.yaml
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
 - ./silverbullet/ks.yaml
