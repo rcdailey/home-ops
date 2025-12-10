@@ -167,6 +167,7 @@ spec:
     readinessProbe:
       enabled: true
       periodSeconds: 30
+      timeoutSeconds: 10
 
     resources:
       requests:
@@ -184,12 +185,6 @@ spec:
     persistence:
       enabled: true
       existingClaim: nextcloud-config
-
-    extraVolumes:
-    - name: nextcloud-data
-      persistentVolumeClaim:
-        claimName: nextcloud-data
-
-    extraVolumeMounts:
-    - name: nextcloud-data
-      mountPath: /var/www/html/data
+      nextcloudData:
+        enabled: true
+        existingClaim: nextcloud-data
