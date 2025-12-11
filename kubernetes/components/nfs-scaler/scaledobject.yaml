@@ -5,6 +5,7 @@ kind: ScaledObject
 metadata:
   name: ${APP}
 spec:
+  pollingInterval: 15
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
