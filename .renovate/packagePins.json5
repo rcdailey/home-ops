@@ -17,13 +17,5 @@
   // - You want control without blocking future compatibility
   //
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  packageRules: [
-    {
-      description: "FileRun Elasticsearch - require manual approval for major version upgrades",
-      matchPackageNames: ["elasticsearch"],
-      matchFileNames: ["kubernetes/apps/default/filerun/**"],
-      matchUpdateTypes: ["major"],
-      dependencyDashboardApproval: true,
-    }
-  ]
+  packageRules: []
 }
