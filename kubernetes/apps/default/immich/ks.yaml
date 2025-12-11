@@ -23,7 +23,7 @@ spec:
     namespace: kube-system
   postBuild:
     substitute:
-      APP: immich
+      APP: immich-server
       VOLSYNC_PVC: immich-profile
     substituteFrom:
     - kind: Secret
