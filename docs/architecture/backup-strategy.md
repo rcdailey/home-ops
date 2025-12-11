@@ -273,7 +273,6 @@ retain:
 **Default namespace:**
 
 - bookstack
-- filerun
 - silverbullet
 
 **Home namespace:**
