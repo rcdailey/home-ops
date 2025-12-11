@@ -287,7 +287,7 @@ Optional task reconcile
 **Storage backends:**
 
 - Rook Ceph: Distributed block/filesystem storage across cluster nodes
-- NFS (Nezuko 192.168.1.58): Media (100Ti), Photos (10Ti), FileRun (5Ti)
+- NFS (Nezuko 192.168.1.58): Media (100Ti), Photos (10Ti)
 - Garage S3 (192.168.1.58:3900): Region garage, buckets: postgres-backups, volsync-backups,
   bookstack-backups
 - CloudNativePG: Barman WAL archiving to s3://postgres-backups/{cluster}/

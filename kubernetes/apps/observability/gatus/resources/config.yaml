@@ -141,13 +141,6 @@ endpoints:
   conditions:
   - "[STATUS] == 200"
 
-- name: FileRun
-  group: default
-  url: http://filerun-app.default:80
-  interval: 1m
-  conditions:
-  - "[STATUS] == 200"
-
 - name: Immich
   group: default
   url: http://immich-app.default:2283/api/server/ping
