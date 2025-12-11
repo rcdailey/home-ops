@@ -7,9 +7,9 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
-- ./authelia/ks.yaml
 - ./bookstack/ks.yaml
 # - ./filerun/ks.yaml
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
+- ./pocket-id/ks.yaml
 - ./silverbullet/ks.yaml
