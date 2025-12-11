@@ -65,7 +65,8 @@ Consistency patterns for maintainability and clarity.
 - NEVER reference real homelab domain names in documentation or config examples (use
   `${SECRET_DOMAIN}` in YAML manifests)
 - Internal cluster hostnames: ONLY use `service.namespace`, without ending with `svc.cluster.local`
-- Service naming pattern: `${.Release.Name}-${service-identifier}`
+- Service naming: Single `service:` entry uses HelmRelease name only; multiple entries append the
+  service key (e.g., `plex` vs `plex-main`, `plex-api`)
 - Primary: `ghcr.io/home-operations/*` containers (semantically versioned, rootless, multi-arch)
 - Secondary: `ghcr.io/onedr0p/*` containers (if home-operations unavailable)
 - Avoid: `ghcr.io/hotio/*` and containers using s6-overlay, gosu
