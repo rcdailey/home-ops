@@ -310,7 +310,7 @@ Namespace followed by a list of apps in that namespace:
 - dns-private: adguard-home, adguard-home-sync, dns-gateway, external-dns
 - external: opensprinkler
 - flux-system: flux-instance, flux-operator
-- home: esphome, home-assistant, otbr, zwave-js-ui
+- home: esphome, home-assistant, zwave-js-ui
 - kube-system: cilium, cloudnative-pg, coredns, descheduler, external-secrets, headlamp,
   intel-gpu-resource-driver, mariadb-operator, metrics-server, multus, node-feature-discovery,
   openebs, reloader, snapshot-controller, spegel
