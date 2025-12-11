@@ -123,11 +123,6 @@
       href: https://zwave.${SECRET_DOMAIN}/
       siteMonitor: http://zwave-js-ui.home:80
 
-  - OTBR:
-      icon: mdi-router-wireless
-      href: http://otbr-app.home:80
-      siteMonitor: http://otbr-app.home:80
-
   - Zigbee/Z-Wave/Thread Hub:
       icon: mdi-zigbee
       href: http://192.168.1.64
