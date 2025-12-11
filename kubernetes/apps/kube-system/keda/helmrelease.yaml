@@ -1,0 +1,47 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/ocirepository-source-v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: keda
+spec:
+  interval: 5m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 2.18.2
+  url: oci://ghcr.io/home-operations/charts-mirror/keda
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keda
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: keda
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    # ServiceMonitors auto-converted to VMServiceScrape by victoria-metrics-operator
+    prometheus:
+      metricServer:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+      operator:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+      webhooks:
+        enabled: true
+        serviceMonitor:
+          enabled: true

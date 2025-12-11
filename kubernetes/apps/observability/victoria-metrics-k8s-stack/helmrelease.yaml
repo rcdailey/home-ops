@@ -191,7 +191,12 @@ spec:
         # Enable chart-created scrape configs (infrastructure components)
         serviceScrapeSelector: {}
         podScrapeSelector: {}
-        probeScrapeSelector: {}
+        probeSelector: {}
+        probeNamespaceSelector:
+          matchExpressions:
+          - key: kubernetes.io/metadata.name
+            operator: In
+            values: [observability]
         staticScrapeSelector: {}
         resources:
           limits:

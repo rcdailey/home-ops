@@ -17,3 +17,4 @@ resources:
 - ./gatus/ks.yaml
 - ./silence-operator/ks.yaml
 - ./vmrules
+- ./blackbox-exporter/ks.yaml

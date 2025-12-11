@@ -1,0 +1,22 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/keda.sh/scaledobject_v1alpha1.json
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ${APP}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ${APP}
+  minReplicaCount: 0
+  maxReplicaCount: 1
+  cooldownPeriod: 0
+  advanced:
+    restoreToOriginalReplicaCount: true
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: http://vmsingle-victoria-metrics-k8s-stack.observability:8428
+      query: probe_success{instance="192.168.1.58:2049"}
+      threshold: "1"
