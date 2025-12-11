@@ -73,6 +73,7 @@ Consistency patterns for maintainability and clarity.
 - SHA256 digests: Automatically added by renovatebot
 - Container command/args: Use bracket notation `command: ["cmd", "arg"]` instead of multi-line dash
   format for consistency
+- ALWAYS use America/Chicago (or equivalent representation) for timezone if needed.
 
 ### Health Probes
 
