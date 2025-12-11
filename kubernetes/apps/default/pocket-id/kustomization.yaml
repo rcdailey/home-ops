@@ -6,12 +6,5 @@ components:
 resources:
 - ./externalsecret.yaml
 - ./helmrelease.yaml
+- ./httproutefilter.yaml
 - ./pvc.yaml
-- ./referencegrant.yaml
-configMapGenerator:
-- name: authelia-config
-  files:
-  - ./config/configuration.yaml
-  - ./config/users.yaml
-  options:
-    disableNameSuffixHash: true
