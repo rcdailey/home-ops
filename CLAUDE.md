@@ -307,19 +307,19 @@ Optional task reconcile
 Namespace followed by a list of apps in that namespace:
 
 - cert-manager: cert-manager
-- default: bookstack, homepage, immich, pocket-id, silverbullet
+- default: bookstack, homepage, immich, opencloud, pocket-id, silverbullet
 - dns-private: adguard-home, adguard-home-sync, dns-gateway, external-dns
 - external: opensprinkler
 - flux-system: flux-instance, flux-operator
 - home: esphome, home-assistant, zwave-js-ui
 - kube-system: cilium, cloudnative-pg, coredns, descheduler, external-secrets, headlamp,
-  intel-gpu-resource-driver, mariadb-operator, metrics-server, multus, node-feature-discovery,
+  intel-gpu-resource-driver, keda, mariadb-operator, metrics-server, multus, node-feature-discovery,
   openebs, reloader, snapshot-controller, spegel
 - media: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,
   radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
 - network: cloudflare-dns, cloudflare-tunnel, envoy-gateway
-- observability: gatus, grafana, silence-operator, victoria-logs-single, victoria-metrics-k8s-stack,
-  vmrules
+- observability: blackbox-exporter, gatus, grafana, silence-operator, victoria-logs-single,
+  victoria-metrics-k8s-stack, vmrules
 - rook-ceph: cluster, operator
 - storage: garage, kopia, volsync
 - system-upgrade: etcd-defrag, tuppr

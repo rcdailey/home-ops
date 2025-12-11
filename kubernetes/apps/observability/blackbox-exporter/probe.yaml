@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/monitoring.coreos.com/probe_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: nfs-tcp
+spec:
+  module: tcp_connect
+  prober:
+    url: blackbox-exporter.observability:9115
+  targets:
+    staticConfig:
+      static:
+      - 192.168.1.58:2049
+  metricRelabelings:
+  - targetLabel: service
+    replacement: blackbox-exporter
+    action: replace
