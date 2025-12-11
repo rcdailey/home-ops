@@ -5,6 +5,7 @@ kind: Probe
 metadata:
   name: nfs-tcp
 spec:
+  interval: 15s
   module: tcp_connect
   prober:
     url: blackbox-exporter.observability:9115
