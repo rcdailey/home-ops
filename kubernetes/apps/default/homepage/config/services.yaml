@@ -68,9 +68,9 @@
       siteMonitor: http://tautulli.media:8181
 
   - PlexAniBridge:
-      icon: anilist
+      icon: plex
       href: https://plexanibridge.${SECRET_DOMAIN}/
-      siteMonitor: http://plexanibridge-app.media:4848
+      siteMonitor: http://plexanibridge.media:4848
 
   - Sabnzbd:
       icon: sabnzbd
@@ -83,11 +83,6 @@
       siteMonitor: http://qbittorrent.media:8080
 
 - Applications:
-  - Filerun:
-      icon: filerun
-      href: https://cloud.${SECRET_DOMAIN}/
-      siteMonitor: http://filerun-app.default:80
-
   - Immich:
       icon: immich
       href: https://photos.${SECRET_DOMAIN}/
@@ -106,7 +101,7 @@
   - OpenCloud:
       icon: mdi-cloud
       href: https://opencloud.${SECRET_DOMAIN}/
-      siteMonitor: http://opencloud-app.default:9200
+      siteMonitor: http://opencloud.default:9200
 
   - Home Assistant:
       icon: home-assistant
@@ -130,8 +125,8 @@
 
   - OTBR:
       icon: mdi-router-wireless
-      href: http://otbr.home:80
-      siteMonitor: http://otbr.home:80
+      href: http://otbr-app.home:80
+      siteMonitor: http://otbr-app.home:80
 
   - Zigbee/Z-Wave/Thread Hub:
       icon: mdi-zigbee
@@ -159,10 +154,10 @@
       href: https://dns-sync.${SECRET_DOMAIN}/
       siteMonitor: http://adguard-home-sync.dns-private:8080
 
-  - Authelia:
-      icon: authelia
+  - Pocket-ID:
+      icon: mdi-account-key
       href: https://auth.${SECRET_DOMAIN}/
-      siteMonitor: http://authelia-app.default:9091
+      siteMonitor: http://pocket-id.default:1411
 
   - Unraid:
       icon: unraid
