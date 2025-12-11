@@ -11,5 +11,6 @@ resources:
 # - ./filerun/ks.yaml
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
+- ./opencloud/ks.yaml
 - ./pocket-id/ks.yaml
 - ./silverbullet/ks.yaml
