@@ -265,12 +265,6 @@ postBuild:
 
 ### Home Namespace
 
-#### otbr
-
-- **Current PVC**: Unknown (no PVC found in cluster output)
-- **Analysis needed**: Verify if PVC exists
-- **Status**: Not started
-
 #### zwave-js-ui
 
 - **Current PVC**: `zwave-js-ui` (1Gi, RWO, ceph-block)

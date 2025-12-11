@@ -10,5 +10,4 @@ resources:
 - ./code-server/ks.yaml
 - ./esphome/ks.yaml
 - ./home-assistant/ks.yaml
-# - ./otbr/ks.yaml # Disabled for now; no use case for it and it doesn't work
 - ./zwave-js-ui/ks.yaml
