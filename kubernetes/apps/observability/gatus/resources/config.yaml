@@ -127,13 +127,6 @@ endpoints:
   conditions:
   - "[STATUS] == 200"
 
-- name: Authelia
-  group: default
-  url: http://authelia-app.default:9091
-  interval: 1m
-  conditions:
-  - "[STATUS] == 200"
-
 - name: BookStack
   group: default
   url: http://bookstack-app.default:8080

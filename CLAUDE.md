@@ -106,7 +106,7 @@ Consistency patterns for maintainability and clarity.
   HTTPRoute exposure)
 - NEVER configure External-DNS on HTTPRoutes (Gateways only)
 - NEVER create LoadBalancer without explicit user discussion
-- Route backendRefs: Use full service name (e.g., authelia-app), not identifier (e.g., app)
+- Route backendRefs: Use full service name (e.g., radarr-app), not identifier (e.g., app)
 - NEVER use wildcards for SecurityPolicy headers (always explicit headers)
 - NEVER specify explicit timeouts/intervals without justification (use Flux defaults)
 - Container securityContext: runAsUser/runAsGroup 1000, runAsNonRoot true, allowPrivilegeEscalation
@@ -216,10 +216,6 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 
 **Security and container patterns:**
 
-- Authelia SecurityPolicy: kubernetes/apps/media/radarr/securitypolicy.yaml:1; headers:
-  headersToExtAuth (accept, cookie, authorization, x-forwarded-proto), headersToBackend
-  (remote-user, remote-groups, remote-email, remote-name, set-cookie); backendRef: authelia-app port
-  9091
 - Native sidecar for Jobs: initContainers with restartPolicy: Always (see Tier 1)
 - Container config: /config volume, emptyDir to /tmp, args: field for CLI options
 

@@ -145,12 +145,6 @@ postBuild:
 
 ## Implementation Examples
 
-### Simple Case: Authelia
-
-- **Single PVC:** All data essential (SQLite DB, config)
-- **Action:** Direct volsync configuration, no reorganization needed
-- **Result:** 400KB backed up hourly
-
 ### Complex Case: Immich
 
 - **Mixed PVC:** `immich-thumbnails` contained profiles (essential) + thumbnails (regenerable)
@@ -163,15 +157,6 @@ postBuild:
 ## Apps Requiring Backup Configuration
 
 ### Default Namespace
-
-#### authelia
-
-- **Current PVC**: `authelia` (1Gi, RWO, ceph-block)
-- **Actual usage**: 400KB (0.04% of allocated 1Gi)
-- **Contents**: SQLite database (311KB), configuration files, notifications log
-- **Exclusions**: None needed - all data is essential
-- **Volsync config**: Backing up entire PVC
-- **Status**: Complete
 
 #### immich
 

@@ -26,7 +26,7 @@ App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.de
 **Example**:
 
 ```bash
-./scripts/app-scout.sh discover authentik --sample-count 5
+./scripts/app-scout.sh discover sonarr --sample-count 5
 ```
 
 ### Correlate Command
