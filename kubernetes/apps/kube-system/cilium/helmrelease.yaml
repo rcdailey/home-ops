@@ -51,7 +51,7 @@ spec:
         # Disable ServiceMonitor creation since Envoy is disabled
         serviceMonitor:
           enabled: false
-    gatewayAPI: # Disabled in favor of Envoy Gateway for Authelia forward auth support
+    gatewayAPI: # Disabled in favor of Envoy Gateway
       enabled: false
     # bgpControlPlane:
     #   enabled: false

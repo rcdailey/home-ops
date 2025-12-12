@@ -5,7 +5,6 @@ kind: Kustomization
 resources:
 - ./backendtrafficpolicy.yaml
 - ./helmrelease.yaml
-- ./securitypolicy.yaml
 configMapGenerator:
 - name: adguard-home-config
   files:

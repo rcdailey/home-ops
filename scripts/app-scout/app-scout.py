@@ -77,7 +77,7 @@ class AppMigrationDiscovery:
         patterns for the specified application. Includes repository metadata and usage statistics.
 
         Args:
-            app_name: Name of application to discover (e.g., "authentik", "plex")
+            app_name: Name of application to discover (e.g., "sonarr", "plex")
             sample_count: Number of top repositories to analyze per category
 
         Returns:
@@ -415,7 +415,7 @@ class AppMigrationDiscovery:
         Find repositories that contain multiple specific applications deployed together.
 
         This is useful for understanding architectural patterns where apps are deployed
-        in combination (e.g., blocky + external-dns, authentik + postgres).
+        in combination (e.g., blocky + external-dns, sonarr + prowlarr).
 
         Args:
             app_names: List of application names to find together
@@ -525,8 +525,8 @@ async def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Discover all deployment patterns for authentik
-  python3 app-scout.py discover authentik
+  # Discover all deployment patterns for sonarr
+  python3 app-scout.py discover sonarr
 
   # Find repositories that have both blocky and external-dns
   python3 app-scout.py correlate blocky external-dns
@@ -548,7 +548,7 @@ After discovery, use octocode MCP tools to inspect files:
         "discover", help="Discover deployment landscape for an application"
     )
     discover_parser.add_argument(
-        "app_name", help="Application name to discover (e.g., authentik, plex)"
+        "app_name", help="Application name to discover (e.g., sonarr, plex)"
     )
     discover_parser.add_argument(
         "--sample-count",

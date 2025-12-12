@@ -8,7 +8,7 @@ ID tokens with user identity. Scopes are what you request, claims are what you g
 
 **Common use case:** App needs to authenticate users and call APIs on their behalf:
 
-1. User logs in via OIDC provider (Google, Authelia, Keycloak)
+1. User logs in via OIDC provider (Google, Pocket ID, Keycloak)
 2. App gets ID token (identity) + Access token (API permissions)
 3. App uses ID token to know who the user is
 4. App uses Access token to call APIs
@@ -43,7 +43,7 @@ different purposes.
 | ---------------------- | ----------------------------------------------------- | ------------------------------------------ |
 | **OAuth 2.0**          | Authorization framework for API access                | "Let this app read my files"               |
 | **OIDC**               | OpenID Connect - adds authentication to OAuth         | "Prove I'm <alice@example.com>"            |
-| **IDP** / **OP**       | Identity Provider / OpenID Provider - the auth server | Authelia, Keycloak, Google, Okta           |
+| **IDP** / **OP**       | Identity Provider / OpenID Provider - the auth server | Pocket ID, Keycloak, Google, Okta          |
 | **RP**                 | Relying Party - the client app trusting the IDP       | OpenCloud Android app, web apps            |
 | **Resource Server**    | API server that validates access tokens               | OpenCloud API backend                      |
 | **Scope**              | Permission you're requesting                          | `read:files`, `openid`, `profile`          |
@@ -180,7 +180,7 @@ ID Tokens contain user PII and should only travel over secure back-channel.
 
 **Correct locations:**
 
-- Authelia: `https://auth.example.com/.well-known/openid-configuration`
+- Pocket ID: `https://auth.example.com/.well-known/openid-configuration`
 - Keycloak: `https://keycloak.example.com/realms/myrealm/.well-known/openid-configuration`
 - Google: `https://accounts.google.com/.well-known/openid-configuration`
 
@@ -834,7 +834,7 @@ scope = "openid profile email"
 
 **Common extensions (not in OIDC spec):**
 
-**`groups` scope** (Authelia, Keycloak, Authentik, Azure AD, Okta):
+**`groups` scope** (Pocket ID, Keycloak, Azure AD, Okta):
 
 ```javascript
 {
@@ -885,7 +885,7 @@ scope = "openid profile email"
 // Request with unknown scope
 scope = "openid profile groups unknown-scope"
 
-// Authelia/Keycloak: Silently ignore
+// Pocket ID/Keycloak: Silently ignore
 response = {
   scope: "openid profile groups",  // 'unknown-scope' dropped
   id_token: "...",
@@ -1126,7 +1126,7 @@ https://{issuer}/.well-known/openid-configuration
 **Examples:**
 
 ```javascript
-// Authelia IDP
+// Pocket ID IDP
 "https://auth.example.com/.well-known/openid-configuration"
 
 // Keycloak IDP
@@ -1165,7 +1165,7 @@ https://{issuer}/.well-known/openid-configuration
 }
 ```
 
-**Full example (Authelia-like):**
+**Full example (Pocket ID-like):**
 
 ```javascript
 {
@@ -2393,9 +2393,9 @@ const authUrl = `https://auth.example.com/authorize?` +
 
 ## Real-World Examples
 
-### OpenCloud + Authelia Integration
+### OpenCloud + Pocket ID Integration
 
-**Scenario:** Android app authenticating users via Authelia, needs groups for role assignment.
+**Scenario:** Android app authenticating users via Pocket ID, needs groups for role assignment.
 
 **The Problem:**
 
