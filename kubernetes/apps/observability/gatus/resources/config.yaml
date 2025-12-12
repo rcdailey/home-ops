@@ -155,13 +155,6 @@ endpoints:
   conditions:
   - "[STATUS] == 200"
 
-- name: SilverBullet
-  group: default
-  url: http://silverbullet-main.default:3000
-  interval: 1m
-  conditions:
-  - "[STATUS] == 200"
-
 - name: AdGuard Home
   group: dns-private
   url: http://adguard-home.dns-private:3000

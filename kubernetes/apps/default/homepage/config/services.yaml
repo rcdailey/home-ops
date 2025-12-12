@@ -93,11 +93,6 @@
       href: https://wiki.${SECRET_DOMAIN}/
       siteMonitor: http://bookstack.default:8080/status
 
-  - SilverBullet:
-      icon: silverbullet
-      href: https://notes.${SECRET_DOMAIN}/
-      siteMonitor: http://silverbullet.default:3000
-
   - OpenCloud:
       icon: mdi-cloud
       href: https://opencloud.${SECRET_DOMAIN}/
