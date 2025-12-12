@@ -33,7 +33,7 @@ spec:
           bentopdf:
             image:
               repository: ghcr.io/alam00000/bentopdf
-              tag: v1.10.5
+              tag: v1.11.1
             env:
               TZ: America/Chicago
             securityContext:
