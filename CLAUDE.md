@@ -258,7 +258,7 @@ Optional task reconcile
 - refactor (k8s): Resource reorganization, no behavior change
 - feat/fix (scripts): Script capabilities/bug fixes
 - Breaking (type!:): API/CRD upgrades, incompatible Helm upgrades, storage migrations
-- Examples: fix(plex): resolve crash loop, feat(silverbullet): add note-taking app
+- Examples: fix(plex): resolve crash loop, feat(bookstack): add wiki documentation app
 
 ### Environment and Infrastructure
 
@@ -307,7 +307,7 @@ Optional task reconcile
 Namespace followed by a list of apps in that namespace:
 
 - cert-manager: cert-manager
-- default: bookstack, homepage, immich, opencloud, pocket-id, silverbullet
+- default: bookstack, homepage, immich, opencloud, pocket-id
 - dns-private: adguard-home, adguard-home-sync, dns-gateway, external-dns
 - external: opensprinkler
 - flux-system: flux-instance, flux-operator
