@@ -58,6 +58,8 @@ spec:
               # Storage configuration
               # decomposed is production-ready for NFS, posix is experimental
               STORAGE_USERS_DRIVER: decomposed
+              # Public URL for TUS upload tokens in JWT (what clients access)
+              STORAGE_USERS_DATA_GATEWAY_URL: https://cloud.${SECRET_DOMAIN}/data
               # Use NATS JetStream for ID caching (faster lookups)
               STORAGE_USERS_ID_CACHE_STORE: nats-js-kv
             resources:
