@@ -1,6 +1,6 @@
 ---
 # Explicitly disable authentication (overrides existing runtime config)
-# External access is protected by Authelia SecurityPolicy
+# Access restricted to internal network via internal gateway
 users: []
 
 dns:
