@@ -143,3 +143,20 @@ spec:
           Dead man's switch for monitoring stack health verification.
           Routes to Gatus heartbeat endpoint - if this stops firing, the monitoring stack is down.
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/general/watchdog
+
+    # Override KubeHpaMaxedOut to exclude KEDA-managed HPAs
+    # WHY: KEDA HPAs scale 0->1 when active; running at max=1 is expected normal behavior
+    # WHAT: Exclude HPAs with "keda-hpa-" prefix from the maxed-out alert
+    # HOW: Filter out horizontalpodautoscaler names starting with "keda-hpa-"
+    - alert: KubeHpaMaxedOut
+      expr: |
+        kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics",horizontalpodautoscaler!~"keda-hpa-.*"}
+          == kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics",horizontalpodautoscaler!~"keda-hpa-.*"}
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: HPA is running at max replicas
+        description: |
+          HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has been running at max replicas for longer than 15 minutes.
+        runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubehpamaxedout

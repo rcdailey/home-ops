@@ -308,6 +308,8 @@ spec:
           create: false # Using custom VMRule (vmrule.yaml) with >20 threshold vs default >0
         NodeSystemSaturation:
           create: false # Using custom VMRule (vmrule.yaml) requiring both high load AND high CPU
+        KubeHpaMaxedOut:
+          create: false # Using custom VMRule (vmrule.yaml) excluding KEDA HPAs
       groups:
         etcd:
           create: false
