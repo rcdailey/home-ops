@@ -28,15 +28,30 @@ spec:
           app:
             image:
               repository: solidnerd/bookstack
-              tag: 25.11.5
+              tag: 25.11.6
             env:
               TZ: America/Chicago
               APP_URL: https://wiki.${SECRET_DOMAIN}
+              APP_PROXIES: "*"
+              APP_DEFAULT_DARK_MODE: "true"
 
-              # Use filesystem-based cache/session (Laravel defaults)
-              # Adequate performance for home lab scale, eliminates Redis operational overhead
+              # Session configuration
               SESSION_LIFETIME: 360
+              SESSION_SECURE_COOKIE: "true"
               QUEUE_CONNECTION: database
+
+              # OIDC authentication via Pocket ID
+              AUTH_METHOD: oidc
+              AUTH_AUTO_INITIATE: "true"
+              OIDC_NAME: Pocket ID
+              OIDC_DISPLAY_NAME_CLAIMS: name
+              OIDC_ISSUER: https://auth.${SECRET_DOMAIN}
+              OIDC_END_SESSION_ENDPOINT: "true"
+              OIDC_ISSUER_DISCOVER: "true"
+              OIDC_USER_TO_GROUPS: "true"
+              OIDC_GROUPS_CLAIM: groups
+              OIDC_ADDITIONAL_SCOPES: groups
+              OIDC_REMOVE_FROM_GROUPS: "true"
 
               # Database connection
               DB_HOST: bookstack-mariadb
@@ -54,22 +69,14 @@ spec:
                 name: bookstack-secret
 
             probes:
-              liveness: &probe
+              liveness: &probes
                 enabled: true
-                type: HTTP
-                path: /status
+                custom: true
                 spec:
-                  initialDelaySeconds: 10
-                  timeoutSeconds: 10
-              readiness: *probe
-              startup:
-                enabled: true
-                type: HTTP
-                path: /status
-                spec:
-                  failureThreshold: 30
-                  periodSeconds: 5
-                  timeoutSeconds: 10
+                  httpGet:
+                    path: /status
+                    port: 8080
+              readiness: *probes
 
             resources:
               requests:
