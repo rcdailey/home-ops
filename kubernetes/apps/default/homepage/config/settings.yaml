@@ -19,26 +19,37 @@ theme: dark
 color: slate
 iconStyle: theme
 
-# Layout configuration for vertical design
+# Layout configuration with tabs
 layout:
-  Media Management:
+  # Main tab - frequently used services
+  Dashboard:
+    tab: Main
     style: column
-    columns: 6
-  Media Delivery:
+    columns: 4
+  # Media tab - arr stack and media tools
+  Media Automation:
+    tab: Media
     style: column
-    columns: 6
-  Applications:
+    columns: 4
+  Media Tools:
+    tab: Media
     style: column
-    columns: 6
+    columns: 4
+  # Infra tab - infrastructure, monitoring, external
   Infrastructure:
-    style: column
-    columns: 6
+    tab: Infra
+    style: row
+    columns: 4
   Monitoring:
-    style: column
-    columns: 6
+    tab: Infra
+    style: row
+    columns: 4
+    initiallyCollapsed: true
   External Services:
-    iconsOnly: true
+    tab: Infra
+    style: row
     columns: 6
+    initiallyCollapsed: true
 
 # Global settings for compactness
 useEqualHeights: true

@@ -1,26 +1,49 @@
+# yaml-language-server: $schema=https://gethomepage.dev/config-schema/services.json
 # Services configuration for Homepage
-# This file defines the main service tiles that appear on the homepage dashboard.
-# Services are organized into groups and can include status monitoring and widgets.
-#
-# Structure:
-# - Group Name:
-#     - Service Name:
-#         icon: Icon identifier (service name or mdi-* for Material Design)
-#         href: Direct link to the service
-#         description: Short description text
-#         siteMonitor: URL for uptime monitoring (optional)
-#         ping: Host/IP for ping monitoring (optional)
-#         widget: Integration configuration (optional)
-#
-# Use ${SECRET_DOMAIN} for domain substitution via Flux.
-# Icons can be service names (e.g., 'plex', 'sonarr') or Material Design icons ('mdi-*').
+# Organized into tabs: Main (daily use), Media (arr stack), Infra (everything else)
 ---
-- Media Management:
+- Dashboard:
+  - Plex:
+      icon: plex
+      href: https://plex.${SECRET_DOMAIN}/
+      siteMonitor: http://plex.media:32400
+
   - Jellyseerr:
       icon: jellyseerr
       href: https://request.${SECRET_DOMAIN}/
       siteMonitor: http://jellyseerr.media:80
 
+  - Immich:
+      icon: immich
+      href: https://photos.${SECRET_DOMAIN}/
+      siteMonitor: http://immich-server.default:2283
+
+  - Home Assistant:
+      icon: home-assistant
+      href: https://ha.${SECRET_DOMAIN}/
+      siteMonitor: http://home-assistant.home:8123
+
+  - qBittorrent:
+      icon: qbittorrent
+      href: https://torrent.${SECRET_DOMAIN}/
+      siteMonitor: http://qbittorrent.media:8080
+
+  - BookStack:
+      icon: bookstack
+      href: https://wiki.${SECRET_DOMAIN}/
+      siteMonitor: http://bookstack.default:8080/status
+
+  - OpenCloud:
+      icon: mdi-cloud
+      href: https://opencloud.${SECRET_DOMAIN}/
+      siteMonitor: http://opencloud.default:9200
+
+  - VS Code:
+      icon: vscode
+      href: https://code.${SECRET_DOMAIN}/
+      siteMonitor: http://code-server.home:8080
+
+- Media Automation:
   - Prowlarr:
       icon: prowlarr
       href: https://prowlarr.${SECRET_DOMAIN}/
@@ -56,12 +79,7 @@
       href: https://bazarr.${SECRET_DOMAIN}/
       siteMonitor: http://bazarr.media:6767
 
-- Media Delivery:
-  - Plex:
-      icon: plex
-      href: https://plex.${SECRET_DOMAIN}/
-      siteMonitor: http://plex.media:32400
-
+- Media Tools:
   - Tautulli:
       icon: tautulli
       href: https://tautulli.${SECRET_DOMAIN}/
@@ -76,57 +94,6 @@
       icon: sabnzbd
       href: https://nzb.${SECRET_DOMAIN}/
       siteMonitor: http://sabnzbd.media:8080
-
-  - qBittorrent:
-      icon: qbittorrent
-      href: https://torrent.${SECRET_DOMAIN}/
-      siteMonitor: http://qbittorrent.media:8080
-
-- Applications:
-  - Immich:
-      icon: immich
-      href: https://photos.${SECRET_DOMAIN}/
-      siteMonitor: http://immich-server.default:2283
-
-  - BookStack:
-      icon: bookstack
-      href: https://wiki.${SECRET_DOMAIN}/
-      siteMonitor: http://bookstack.default:8080/status
-
-  - OpenCloud:
-      icon: mdi-cloud
-      href: https://opencloud.${SECRET_DOMAIN}/
-      siteMonitor: http://opencloud.default:9200
-
-  - Home Assistant:
-      icon: home-assistant
-      href: https://ha.${SECRET_DOMAIN}/
-      siteMonitor: http://home-assistant.home:8123
-
-  - VS Code:
-      icon: vscode
-      href: https://code.${SECRET_DOMAIN}/
-      siteMonitor: http://code-server.home:8080
-
-  - ESPHome:
-      icon: esphome
-      href: https://esphome.${SECRET_DOMAIN}/
-      siteMonitor: http://esphome.home:6052
-
-  - Z-Wave JS UI:
-      icon: mdi-z-wave
-      href: https://zwave.${SECRET_DOMAIN}/
-      siteMonitor: http://zwave-js-ui.home:80
-
-  - Zigbee/Z-Wave/Thread Hub:
-      icon: mdi-zigbee
-      href: http://192.168.1.64
-      ping: 192.168.1.64
-
-  - Open Sprinkler:
-      icon: mdi-sprinkler-variant
-      href: https://sprinkler.${SECRET_DOMAIN}/
-      siteMonitor: http://opensprinkler.external:80
 
 - Infrastructure:
   - Headlamp:
@@ -148,6 +115,26 @@
       icon: mdi-account-key
       href: https://auth.${SECRET_DOMAIN}/
       siteMonitor: http://pocket-id.default:1411
+
+  - ESPHome:
+      icon: esphome
+      href: https://esphome.${SECRET_DOMAIN}/
+      siteMonitor: http://esphome.home:6052
+
+  - Z-Wave JS UI:
+      icon: mdi-z-wave
+      href: https://zwave.${SECRET_DOMAIN}/
+      siteMonitor: http://zwave-js-ui.home:80
+
+  - Zigbee/Z-Wave/Thread Hub:
+      icon: mdi-zigbee
+      href: http://192.168.1.64
+      ping: 192.168.1.64
+
+  - Open Sprinkler:
+      icon: mdi-sprinkler-variant
+      href: https://sprinkler.${SECRET_DOMAIN}/
+      siteMonitor: http://opensprinkler.external:80
 
   - Unraid:
       icon: unraid
