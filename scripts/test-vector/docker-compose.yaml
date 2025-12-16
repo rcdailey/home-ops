@@ -1,6 +1,6 @@
 services:
   vector:
-    image: timberio/vector:0.51.1-alpine
+    image: timberio/vector:0.52.0-alpine
     container_name: vector-test
     stdin_open: true
     tty: false
