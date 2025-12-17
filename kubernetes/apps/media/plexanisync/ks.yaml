@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app plexanibridge
+  name: &app plexanisync
 spec:
   commonMetadata:
     labels:
@@ -11,8 +11,13 @@ spec:
   dependsOn:
   - name: rook-ceph-cluster
     namespace: rook-ceph
+  - name: plex
   interval: 1h
-  path: ./kubernetes/apps/media/plexanibridge
+  path: ./kubernetes/apps/media/plexanisync
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-secrets
   prune: true
   retryInterval: 2m
   sourceRef:
@@ -22,7 +27,3 @@ spec:
   targetNamespace: media
   timeout: 5m
   wait: false
-  postBuild:
-    substituteFrom:
-    - kind: Secret
-      name: cluster-secrets
