@@ -1,0 +1,66 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: plexanisync
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      plexanisync:
+        type: cronjob
+        cronjob:
+          schedule: "0 * * * *"
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+          ttlSecondsAfterFinished: 3600
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          restartPolicy: Never
+          securityContext:
+            # Image requires root - /plexanisync/ owned by root
+            runAsUser: 0
+            runAsGroup: 0
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/rickdb/plexanisync
+              tag: 1.4.3
+            env:
+              INTERVAL: "0"
+              PLEX_SECTION: Anime Series|Anime Movies
+              PLEX_URL: http://plex.media:32400
+            envFrom:
+            - secretRef:
+                name: plexanisync-secret
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              # Image writes settings.ini and logs to /plexanisync/ (app directory)
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop: ["ALL"]
+
+    persistence:
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          plexanisync:
+            app:
+            - path: /tmp

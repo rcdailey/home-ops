@@ -311,8 +311,8 @@ Namespace followed by a list of apps in that namespace:
 - kube-system: cilium, cloudnative-pg, coredns, descheduler, external-secrets, headlamp,
   intel-gpu-resource-driver, keda, mariadb-operator, metrics-server, multus, node-feature-discovery,
   openebs, reloader, snapshot-controller, spegel
-- media: bazarr, imagemaid, jellyseerr, kometa, plex, prowlarr, qbittorrent, radarr, radarr-4k,
-  radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
+- media: bazarr, imagemaid, jellyseerr, kometa, plex, plexanisync, prowlarr, qbittorrent, radarr,
+  radarr-4k, radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
 - network: cloudflare-dns, cloudflare-tunnel, envoy-gateway
 - observability: blackbox-exporter, gatus, grafana, silence-operator, victoria-logs-single,
   victoria-metrics-k8s-stack, vmrules

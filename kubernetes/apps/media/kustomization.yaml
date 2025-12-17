@@ -12,7 +12,7 @@ resources:
 - ./jellyseerr/ks.yaml
 - ./kometa/ks.yaml
 - ./plex/ks.yaml
-- ./plexanibridge/ks.yaml
+- ./plexanisync/ks.yaml
 - ./prowlarr/ks.yaml
 - ./qbittorrent/ks.yaml
 - ./radarr/ks.yaml
