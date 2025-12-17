@@ -85,11 +85,6 @@
       href: https://tautulli.${SECRET_DOMAIN}/
       siteMonitor: http://tautulli.media:8181
 
-  - PlexAniBridge:
-      icon: plex
-      href: https://plexanibridge.${SECRET_DOMAIN}/
-      siteMonitor: http://plexanibridge.media:4848
-
   - Sabnzbd:
       icon: sabnzbd
       href: https://nzb.${SECRET_DOMAIN}/
