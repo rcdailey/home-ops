@@ -49,9 +49,11 @@
       minimumGroupSize: 2,
     },
     {
-      description: "Talos Tools Group",
+      // Groups ALL Talos-related packages across datasources (docker, mise/aqua, helm, etc.)
+      // minimumGroupSize ensures mise tool + installer image are grouped together
+      description: "Talos Group",
       groupName: "Talos",
-      matchPackageNames: ["*siderolabs*", "siderolabs/**", "*talos*", "*talosctl*"],
+      matchPackageNames: ["/siderolabs/", "/talos/", "/talosctl/"],
       minimumGroupSize: 2,
     },
   ],
