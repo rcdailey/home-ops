@@ -41,6 +41,9 @@ spec:
               INTERVAL: "0"
               PLEX_SECTION: Anime Series|Anime Movies
               PLEX_URL: http://plex.media:32400
+              # Fixed client identifier prevents Plex "new device" notifications on each job run
+              PLEXAPI_HEADER_IDENTIFIER: f05479e0ca84bb6a
+              PLEXAPI_HEADER_DEVICE_NAME: plexanisync
             envFrom:
             - secretRef:
                 name: plexanisync-secret
