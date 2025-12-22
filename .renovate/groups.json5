@@ -49,9 +49,17 @@
       minimumGroupSize: 2,
     },
     {
-      description: "Talos Tools Group",
+      // Groups Talos OS packages across datasources (docker, mise/aqua, helm, etc.)
+      // minimumGroupSize ensures mise tool + installer image are grouped together
+      // Excludes kubelet which is a Kubernetes component, not Talos itself
+      description: "Talos Group",
       groupName: "Talos",
-      matchPackageNames: ["*siderolabs*", "siderolabs/**", "*talos*", "*talosctl*"],
+      matchPackageNames: [
+        "/siderolabs/",
+        "/talos/",
+        "/talosctl/",
+        "!/kubelet/",
+      ],
       minimumGroupSize: 2,
     },
   ],
