@@ -54,8 +54,12 @@
       // Excludes kubelet which is a Kubernetes component, not Talos itself
       description: "Talos Group",
       groupName: "Talos",
-      matchPackageNames: ["/siderolabs/", "/talos/", "/talosctl/"],
-      excludePackageNames: ["/kubelet/"],
+      matchPackageNames: [
+        "/siderolabs/",
+        "/talos/",
+        "/talosctl/",
+        "!/kubelet/",
+      ],
       minimumGroupSize: 2,
     },
   ],
