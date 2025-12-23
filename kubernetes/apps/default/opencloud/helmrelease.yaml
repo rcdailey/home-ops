@@ -12,7 +12,7 @@ spec:
     namespace: flux-system
   values:
     controllers:
-      app:
+      opencloud:
         strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
@@ -78,13 +78,13 @@ spec:
                 drop:
                 - ALL
     service:
-      app:
-        controller: app
+      opencloud:
+        controller: opencloud
         ports:
           http:
             port: 9200
     route:
-      app:
+      opencloud:
         parentRefs:
         - name: external
           namespace: network

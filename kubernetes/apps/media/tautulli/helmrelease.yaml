@@ -25,7 +25,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
 
     controllers:
-      main:
+      tautulli:
         strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
@@ -73,14 +73,14 @@ spec:
                   failureThreshold: 3
 
     service:
-      main:
-        controller: main
+      tautulli:
+        controller: tautulli
         ports:
           http:
             port: *port
 
     route:
-      main:
+      tautulli:
         hostnames:
         - tautulli.${SECRET_DOMAIN}
         parentRefs:
@@ -92,19 +92,19 @@ spec:
       config:
         existingClaim: tautulli-config
         advancedMounts:
-          main:
+          tautulli:
             app:
             - path: /config
       plex-logs:
         existingClaim: plex-logs
         advancedMounts:
-          main:
+          tautulli:
             app:
             - path: /plex-logs
               readOnly: true
       tmp:
         type: emptyDir
         advancedMounts:
-          main:
+          tautulli:
             app:
             - path: /tmp
