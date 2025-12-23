@@ -1,5 +1,7 @@
 ---
 # yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/persistentvolumeclaim-v1.json
+# TODO: Monitor PVC usage - as of Dec 2025, logs+cache consume 54% of data (56MB/104MB).
+# Consider splitting logs/cache to separate PVC or emptyDir if backup size becomes problematic.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
