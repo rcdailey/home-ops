@@ -26,7 +26,7 @@ spec:
           type: RuntimeDefault
 
     controllers:
-      main:
+      bentopdf:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -53,14 +53,14 @@ spec:
               readiness: *probes
 
     service:
-      main:
-        controller: main
+      bentopdf:
+        controller: bentopdf
         ports:
           http:
             port: 8080
 
     route:
-      main:
+      bentopdf:
         hostnames:
         - pdf.${SECRET_DOMAIN}
         parentRefs:
@@ -72,18 +72,18 @@ spec:
       tmp:
         type: emptyDir
         advancedMounts:
-          main:
+          bentopdf:
             bentopdf:
             - path: /tmp
       cache:
         type: emptyDir
         advancedMounts:
-          main:
+          bentopdf:
             bentopdf:
             - path: /var/cache/nginx
       nginx-tmp:
         type: emptyDir
         advancedMounts:
-          main:
+          bentopdf:
             bentopdf:
             - path: /etc/nginx/tmp

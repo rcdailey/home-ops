@@ -25,7 +25,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
 
     controllers:
-      main:
+      gatus:
         strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
@@ -69,14 +69,14 @@ spec:
               readiness: *probes
 
     service:
-      main:
-        controller: main
+      gatus:
+        controller: gatus
         ports:
           http:
             port: *port
 
     route:
-      main:
+      gatus:
         hostnames:
         - status.${SECRET_DOMAIN}
         parentRefs:
