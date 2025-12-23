@@ -25,7 +25,7 @@ spec:
     keepHistory: false
   values:
     controllers:
-      server:
+      immich:
         replicas: 1
         strategy: Recreate
         annotations:
@@ -136,8 +136,8 @@ spec:
                 memory: 128Mi
 
     service:
-      server:
-        controller: server
+      immich:
+        controller: immich
         ports:
           http:
             port: 2283
@@ -153,7 +153,7 @@ spec:
             port: 6379
 
     route:
-      server:
+      immich:
         hostnames:
         - photos.${SECRET_DOMAIN}
         parentRefs:
@@ -162,7 +162,7 @@ spec:
           sectionName: https
         rules:
         - backendRefs:
-          - name: immich-server
+          - name: immich
             port: 2283
 
     persistence:
@@ -171,7 +171,7 @@ spec:
         server: 192.168.1.58
         path: /mnt/user/photos/immich
         advancedMounts:
-          server:
+          immich:
             main:
             - path: /data
 
@@ -180,7 +180,7 @@ spec:
         type: persistentVolumeClaim
         existingClaim: immich-thumbnails
         advancedMounts:
-          server:
+          immich:
             main:
             - path: /data/thumbs
               subPath: thumbs
@@ -190,7 +190,7 @@ spec:
         type: persistentVolumeClaim
         existingClaim: immich-profile
         advancedMounts:
-          server:
+          immich:
             main:
             - path: /data/profile
 
@@ -205,7 +205,7 @@ spec:
       tmpfs:
         type: emptyDir
         advancedMounts:
-          server:
+          immich:
             main:
             - path: /data/.reverse-geocoding-dump
               subPath: geocoding
