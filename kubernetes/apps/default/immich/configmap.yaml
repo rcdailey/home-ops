@@ -6,7 +6,7 @@ metadata:
   name: immich-configmap
 data:
   # Application URLs
-  IMMICH_SERVER_URL: http://immich-server.default:2283
+  IMMICH_SERVER_URL: http://immich.default:2283
   IMMICH_MACHINE_LEARNING_URL: http://immich-machine-learning.default:3003
   PUBLIC_IMMICH_SERVER_URL: https://photos-test.${SECRET_DOMAIN}
 
