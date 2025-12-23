@@ -23,5 +23,6 @@ spec:
       name: cluster-secrets
     substitute:
       APP: plex
+      VOLSYNC_PVC: plex-config
   prune: true
   wait: true
