@@ -67,6 +67,9 @@ Consistency patterns for maintainability and clarity.
 - Internal cluster hostnames: ONLY use `service.namespace`, without ending with `svc.cluster.local`
 - Service naming: Single `service:` entry uses HelmRelease name only; multiple entries append the
   service key (e.g., `plex` vs `plex-main`, `plex-api`)
+- Controller naming: Primary controller MUST match HelmRelease name (e.g., `controllers: plex:` for
+  release `plex`). This produces deployment `plex` instead of `plex-main`. App-template avoids
+  `{release}-{release}` duplication when controller matches release.
 - Primary: `ghcr.io/home-operations/*` containers (semantically versioned, rootless, multi-arch)
 - Secondary: `ghcr.io/onedr0p/*` containers (if home-operations unavailable)
 - Avoid: `ghcr.io/hotio/*` and containers using s6-overlay, gosu
