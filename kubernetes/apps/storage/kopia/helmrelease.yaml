@@ -17,6 +17,27 @@ spec:
           reloader.stakater.com/auto: "true"
         strategy: Recreate
         initContainers:
+          set-ignore-policy:
+            image:
+              repository: ghcr.io/home-operations/kopia
+              tag: 0.22.0@sha256:aa6a2f5987b9c991a349c34e0c7ef80f00366d84490d7637355b10d38fcbc034
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              while IFS= read -r line; do
+                [[ "$line" =~ ^# ]] && continue
+                [[ -z "$line" ]] && continue
+                echo "Adding ignore pattern: $line"
+                kopia policy set --global --add-ignore "$line"
+              done < /config/.kopiaignore
+            envFrom:
+            - secretRef:
+                name: kopia-secret
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: [ALL]
           enable-maintenance:
             image:
               repository: ghcr.io/home-operations/kopia
@@ -98,6 +119,8 @@ spec:
           subPath: repository.config
         - path: /config/ui-preferences.json
           subPath: ui-preferences.json
+        - path: /config/.kopiaignore
+          subPath: .kopiaignore
       repository:
         type: nfs
         server: 192.168.1.58
@@ -108,6 +131,13 @@ spec:
         type: emptyDir
         advancedMounts:
           kopia:
+            set-ignore-policy:
+            - path: /config/cache
+              subPath: policy-cache
+            - path: /config/logs
+              subPath: policy-logs
+            - path: /tmp
+              subPath: policy-tmp
             enable-maintenance:
             - path: /config/cache
               subPath: init-cache
