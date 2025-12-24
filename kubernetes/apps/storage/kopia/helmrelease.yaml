@@ -16,6 +16,20 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         strategy: Recreate
+        initContainers:
+          enable-maintenance:
+            image:
+              repository: ghcr.io/home-operations/kopia
+              tag: 0.22.0@sha256:aa6a2f5987b9c991a349c34e0c7ef80f00366d84490d7637355b10d38fcbc034
+            command: ["kopia", "maintenance", "set", "--enable-quick=true", "--enable-full=true"]
+            envFrom:
+            - secretRef:
+                name: kopia-secret
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: [ALL]
         containers:
           app:
             image:
@@ -37,10 +51,8 @@ spec:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet:
-                    path: /
+                  tcpSocket:
                     port: *port
-                  initialDelaySeconds: 30
               readiness: *probes
             securityContext:
               allowPrivilegeEscalation: false
@@ -96,6 +108,13 @@ spec:
         type: emptyDir
         advancedMounts:
           kopia:
+            enable-maintenance:
+            - path: /config/cache
+              subPath: init-cache
+            - path: /config/logs
+              subPath: init-logs
+            - path: /tmp
+              subPath: init-tmp
             app:
             - path: /config/cache
               subPath: cache
