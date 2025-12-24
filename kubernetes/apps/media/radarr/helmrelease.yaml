@@ -131,6 +131,16 @@ spec:
             - path: /tmp
               subPath: tmp
 
+      kopiaignore:
+        type: configMap
+        name: radarr-config
+        advancedMounts:
+          radarr:
+            radarr:
+            - path: /config/.kopiaignore
+              subPath: .kopiaignore
+              readOnly: true
+
     route:
       app:
         hostnames: ["radarr.${SECRET_DOMAIN}"]
