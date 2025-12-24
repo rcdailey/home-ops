@@ -1,0 +1,70 @@
+# =============================================================================
+# .kopiaignore Syntax Reference (gitignore-like)
+# =============================================================================
+#
+# Pattern Matching:
+#   *        - matches any characters within a single path component
+#   **       - matches zero or more directories (any depth)
+#   ?        - matches exactly one character
+#   [a-z]    - character ranges
+#   [!a-z]   - negated character ranges
+#
+# Path Anchoring:
+#   /pattern - anchors to root (where .kopiaignore is located)
+#   pattern/ - matches directories only
+#   pattern  - matches files and directories at any depth
+#
+# Depth Matching:
+#   *.log      - matches at ANY depth (checked against each filename)
+#   /*.log     - only matches at root (leading / anchors)
+#   dir/*.log  - only matches in dir/ subdirectory
+#   **/dir/    - use ** only for directory path patterns
+#
+# Special:
+#   #        - comments
+#   !pattern - negates a previous ignore rule
+#
+# Examples:
+#   *.log           - ignore all .log files
+#   **/cache/       - ignore cache/ directories at any depth
+#   /logs/*         - ignore everything in root logs/ directory
+#   temp/*.tmp      - ignore .tmp files in temp/ subdirectory
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ASP.NET / .NET Runtime
+# -----------------------------------------------------------------------------
+# Data Protection keys created with 0600 permissions by .NET runtime
+# These are auto-regenerated and cause permission denied errors for backup
+asp/key-*.xml
+
+# Mono keypairs (legacy .NET, same permission issues)
+xdg/.mono/
+
+# -----------------------------------------------------------------------------
+# Logs (ephemeral, should use emptyDir or separate volume)
+# -----------------------------------------------------------------------------
+*.log
+**/logs/
+**/log/
+
+# -----------------------------------------------------------------------------
+# Cache (regenerated on startup)
+# -----------------------------------------------------------------------------
+**/cache/
+**/Cache/
+**/.cache/
+**/*-cache/
+
+# -----------------------------------------------------------------------------
+# System / Temp Files
+# -----------------------------------------------------------------------------
+.git/
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+*~
+.Trash-*/
+lost+found/

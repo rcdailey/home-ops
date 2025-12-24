@@ -12,5 +12,6 @@ configMapGenerator:
   files:
   - repository.config=config/repository.config
   - ui-preferences.json=config/ui-preferences.json
+  - .kopiaignore=config/.kopiaignore
   options:
     disableNameSuffixHash: true
