@@ -1,0 +1,6 @@
+# Exclude ASP.NET Data Protection keys - created with restrictive permissions (0600)
+# by .NET runtime, causing permission denied errors for volsync kopia mover
+asp/
+
+# Exclude Mono keypairs directory - same permission issue
+xdg/.mono/

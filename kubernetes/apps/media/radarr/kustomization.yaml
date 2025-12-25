@@ -9,3 +9,9 @@ resources:
 - ./externalsecret.yaml
 - ./helmrelease.yaml
 - ./pvc.yaml
+configMapGenerator:
+- name: radarr-config
+  files:
+  - config/.kopiaignore
+generatorOptions:
+  disableNameSuffixHash: true
