@@ -20,6 +20,7 @@ env:
 includes:
   bootstrap: .taskfiles/bootstrap
   infisical: .taskfiles/infisical
+  kubernetes: .taskfiles/kubernetes
   talos: .taskfiles/talos
 
 tasks:
