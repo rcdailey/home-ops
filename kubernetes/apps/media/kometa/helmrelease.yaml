@@ -33,8 +33,8 @@ spec:
           activeDeadlineSeconds: 18000
           # Limit retries to prevent infinite loops
           backoffLimit: 0
-          # Cleanup completed jobs after 1 hour
-          ttlSecondsAfterFinished: 3600
+          # Cleanup completed jobs after 6 hours (matches schedule interval)
+          ttlSecondsAfterFinished: 21600
 
         containers:
           app:
