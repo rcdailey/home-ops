@@ -51,6 +51,9 @@ spec:
               python3 kometa.py --run --read-only-config --run-libraries "TV Shows";
             env:
               TZ: America/Chicago
+              # Reduce log verbosity: hide progress bars and minimize box width
+              KOMETA_IGNORE_GHOST: "true"
+              KOMETA_WIDTH: "90"
             envFrom:
             - secretRef:
                 name: kometa-secret
