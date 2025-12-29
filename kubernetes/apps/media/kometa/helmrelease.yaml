@@ -96,6 +96,15 @@ spec:
               subPath: config.yml
               readOnly: true
 
+      metadata-files:
+        type: configMap
+        name: kometa-configmap
+        advancedMounts:
+          kometa:
+            app:
+            - path: /config/metadata
+              readOnly: true
+
       logs:
         type: emptyDir
         advancedMounts:

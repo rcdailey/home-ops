@@ -26,9 +26,9 @@ trakt:
 libraries:
   Anime Series:
     metadata_files:
-    - file: config/metadata/mine/monogatari.yml
+    - file: config/metadata/monogatari.yml
     collection_files:
-    - file: config/metadata/mine/kids-anime.yml
+    - file: config/metadata/kids-anime.yml
 
   Movies:
     operations:
@@ -37,8 +37,8 @@ libraries:
     template_variables:
       visible_library: false
     collection_files:
-    - file: config/metadata/mine/movies.yml
-    - file: config/metadata/mine/kids-movies.yml
+    - file: config/metadata/movies.yml
+    - file: config/metadata/kids-movies.yml
     overlay_files:
     - reapply_overlays: false
     - pmm: mediastinger # Adds icon for post-credits scenes
