@@ -14,5 +14,9 @@ configMapGenerator:
 - name: kometa-configmap
   files:
   - ./config/config.yml
+  - ./config/movies.yml
+  - ./config/kids-movies.yml
+  - ./config/kids-anime.yml
+  - ./config/monogatari.yml
 generatorOptions:
   disableNameSuffixHash: true
