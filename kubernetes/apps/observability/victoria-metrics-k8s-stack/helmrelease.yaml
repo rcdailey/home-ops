@@ -155,7 +155,7 @@ spec:
             memory: 32Mi
         configReloaderResources:
           limits:
-            memory: 32Mi
+            memory: 64Mi
           requests:
             cpu: 10m
             memory: 25Mi
