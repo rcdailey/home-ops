@@ -38,6 +38,10 @@ spec:
         # Metrics collection intentionally disabled to avoid overwhelming observability stack
         PrometheusJobMissing:
           disabled: true
+        # Disable predict_linear disk space alert - generates false positives during image pulls
+        # Replaced with threshold-based NodeDiskSpaceLow/Critical alerts in observability vmrule
+        CephNodeDiskspaceWarning:
+          disabled: true
 
     ingress:
       dashboard:
