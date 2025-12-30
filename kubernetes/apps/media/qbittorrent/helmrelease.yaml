@@ -31,10 +31,10 @@ spec:
           gluetun:
             image:
               repository: ghcr.io/qdm12/gluetun
-              tag: v3.40.1
+              tag: v3.41.0
             env:
-              DOT: "off"
-              DNS_ADDRESS: ""
+              # Control server auth required in v3.41.0
+              HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE: '{"auth":"apikey","apikey":"$(GLUETUN_CONTROL_SERVER_API_KEY)"}'
               VPN_SERVICE_PROVIDER: protonvpn
               VPN_TYPE: wireguard
               VPN_PORT_FORWARDING: on
@@ -101,6 +101,9 @@ spec:
               CRON_ENABLED: true
               CRON_SCHEDULE: "*/5 * * * *"
               LOG_TIMESTAMP: false
+            envFrom:
+            - secretRef:
+                name: qbittorrent-secret
             securityContext:
               runAsUser: 1000
               runAsGroup: 1000
