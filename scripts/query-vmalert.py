@@ -113,7 +113,7 @@ def list_alerts(states: list[str] | None = None) -> None:
 
         print(
             colorize("  Details:", "blue"),
-            f"./scripts/vmalert-query.py detail {labels.get('alertname')}",
+            f"./scripts/query-vmalert.py detail {labels.get('alertname')}",
         )
         print()
 

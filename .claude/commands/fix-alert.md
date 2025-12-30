@@ -35,8 +35,8 @@ Investigate why the underlying failure is occurring instead of adding detection/
 ## Steps
 
 1. **Query alerts**:
-   - With arguments (`$ARGUMENTS`): Run `./scripts/vmalert-query.py detail <alertname>` for each
-   - Without arguments: Run `./scripts/vmalert-query.py` to list firing and pending alerts, then pick one
+   - With arguments (`$ARGUMENTS`): Run `./scripts/query-vmalert.py detail <alertname>` for each
+   - Without arguments: Run `./scripts/query-vmalert.py` to list firing and pending alerts, then pick one
 
 2. **Check git history BEFORE attempting any fix**:
    ```bash
@@ -67,7 +67,7 @@ Investigate why the underlying failure is occurring instead of adding detection/
    - **Fix configuration**: Resource limits, networking, application settings
    - **Fix infrastructure**: Storage, networking, scaling issues
 
-7. **Validate changes** with `./scripts/flux-local-test.sh` and `pre-commit run --files <files>`
+7. **Validate changes** with `./scripts/test-flux-local.sh` and `pre-commit run --files <files>`
 
 ## Common Fixes
 
@@ -82,9 +82,9 @@ Investigate why the underlying failure is occurring instead of adding detection/
 ## Available Query Commands
 
 ```bash
-./scripts/vmalert-query.py                # Firing and pending alerts (default)
-./scripts/vmalert-query.py detail <name>  # Full details + troubleshooting commands
-./scripts/vmalert-query.py firing         # Firing alerts only
-./scripts/vmalert-query.py pending        # Pending alerts only
-./scripts/vmalert-query.py rules          # All alert rules
+./scripts/query-vmalert.py                # Firing and pending alerts (default)
+./scripts/query-vmalert.py detail <name>  # Full details + troubleshooting commands
+./scripts/query-vmalert.py firing         # Firing alerts only
+./scripts/query-vmalert.py pending        # Pending alerts only
+./scripts/query-vmalert.py rules          # All alert rules
 ```

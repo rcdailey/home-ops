@@ -47,7 +47,7 @@ data.
    `kubernetes/apps/rook-ceph/cluster/helmrelease.yaml`:
 
    ```bash
-   ./scripts/flux-local-test.sh
+   ./scripts/test-flux-local.sh
    pre-commit run --files kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
    git add kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
    git commit -m "chore(rook-ceph): remove OSD.{osd-num} from cluster"
@@ -86,7 +86,7 @@ data.
    Validate and apply:
 
    ```bash
-   ./scripts/flux-local-test.sh
+   ./scripts/test-flux-local.sh
    pre-commit run --files kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
    git add kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
    git commit -m "feat(rook-ceph): add OSD on {node-hostname}"
