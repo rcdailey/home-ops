@@ -11,7 +11,7 @@ allowed-tools:
   - Bash(git commit:*)
   - Bash(git push:*)
   - Bash(pre-commit run:*)
-  - Bash(./scripts/flux-local-test.sh:*)
+  - Bash(./scripts/test-flux-local.sh:*)
   - Read
   - Edit
   - Grep
@@ -276,7 +276,7 @@ If pre-commit makes changes:
 If major changes were made, offer to run:
 
 ```bash
-./scripts/flux-local-test.sh
+./scripts/test-flux-local.sh
 ```
 
 ## Phase 8: Merge
