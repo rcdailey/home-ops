@@ -160,3 +160,37 @@ spec:
         description: |
           HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has been running at max replicas for longer than 15 minutes.
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubehpamaxedout
+
+    # Threshold-based disk space alerts replacing predict_linear CephNodeDiskspaceWarning
+    # WHY: predict_linear generates false positives during image pulls and temporary spikes
+    # WHAT: Alert when disk usage exceeds fixed thresholds (80% warning, 90% critical)
+    # HOW: Simple percentage calculation on node_filesystem metrics
+    - alert: NodeDiskSpaceLow
+      expr: |
+        (
+          (node_filesystem_size_bytes{job="node-exporter",fstype!="",mountpoint!=""} - node_filesystem_avail_bytes{job="node-exporter",fstype!="",mountpoint!=""})
+          / node_filesystem_size_bytes{job="node-exporter",fstype!="",mountpoint!=""} * 100 > 80
+        ) and (node_filesystem_readonly{job="node-exporter",fstype!="",mountpoint!=""} == 0)
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Disk usage above 80% on {{ $labels.instance }}"
+        description: |
+          Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is {{ printf "%.1f" $value }}% full.
+          Device: {{ $labels.device }}
+
+    - alert: NodeDiskSpaceCritical
+      expr: |
+        (
+          (node_filesystem_size_bytes{job="node-exporter",fstype!="",mountpoint!=""} - node_filesystem_avail_bytes{job="node-exporter",fstype!="",mountpoint!=""})
+          / node_filesystem_size_bytes{job="node-exporter",fstype!="",mountpoint!=""} * 100 > 90
+        ) and (node_filesystem_readonly{job="node-exporter",fstype!="",mountpoint!=""} == 0)
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Disk usage above 90% on {{ $labels.instance }}"
+        description: |
+          Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is {{ printf "%.1f" $value }}% full.
+          Immediate action required. Device: {{ $labels.device }}
