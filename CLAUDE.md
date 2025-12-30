@@ -328,7 +328,7 @@ Namespace followed by a list of apps in that namespace:
 - app-scout.sh: Kubernetes migration discovery
 - test-vector-config.py: Vector VRL configuration testing (REQUIRED for Vector changes)
 - validate-vmrules.sh: VMRule CRD syntax validation
-- vmalert-query.py: Query vmalert API via ephemeral kubectl pods
+- query-vmalert.py: Query vmalert API via ephemeral kubectl pods
 - ceph.sh: Ceph command wrapper via rook-ceph-tools
 - query-victorialogs.py: Query VictoriaLogs
 - update-gitignore/: Modular gitignore generation
