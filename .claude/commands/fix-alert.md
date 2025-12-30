@@ -35,8 +35,8 @@ Investigate why the underlying failure is occurring instead of adding detection/
 ## Steps
 
 1. **Query alerts**:
-   - With arguments (`$ARGUMENTS`): Run `./scripts/query-vmalert.py detail <alertname>` for each
-   - Without arguments: Run `./scripts/query-vmalert.py` to list firing and pending alerts, then pick one
+   - With arguments (`$ARGUMENTS`): Run `./scripts/query-vm.py alert <alertname>` for each
+   - Without arguments: Run `./scripts/query-vm.py alerts` to list firing alerts, then pick one
 
 2. **Check git history BEFORE attempting any fix**:
    ```bash
@@ -82,9 +82,11 @@ Investigate why the underlying failure is occurring instead of adding detection/
 ## Available Query Commands
 
 ```bash
-./scripts/query-vmalert.py                # Firing and pending alerts (default)
-./scripts/query-vmalert.py detail <name>  # Full details + troubleshooting commands
-./scripts/query-vmalert.py firing         # Firing alerts only
-./scripts/query-vmalert.py pending        # Pending alerts only
-./scripts/query-vmalert.py rules          # All alert rules
+./scripts/query-vm.py alerts                    # Firing alerts (default)
+./scripts/query-vm.py alerts --state pending    # Pending alerts
+./scripts/query-vm.py alerts --state all        # All alert states
+./scripts/query-vm.py alert <name>              # Full details for specific alert
+./scripts/query-vm.py rules                     # All alert rules
+./scripts/query-vm.py history                   # Alert firing frequency (6h default)
+./scripts/query-vm.py history 24h --alert <name> # History for specific alert
 ```
