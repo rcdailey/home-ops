@@ -27,6 +27,9 @@ SEVERITY_COLORS = {
     "none": "blue",
 }
 
+# Alerts that are expected to always fire (health checks, inhibitors)
+IGNORED_ALERTS = {"Watchdog", "InfoInhibitor"}
+
 
 def kubectl_curl(url: str) -> dict[str, Any]:
     """Execute curl via rook-ceph-tools pod (used as utility pod, not for Ceph operations)."""
@@ -76,7 +79,12 @@ def list_alerts(states: list[str] | None = None) -> None:
     data = query_vmalert("/api/v1/alerts")
     alerts = data.get("data", {}).get("alerts", [])
 
-    filtered_alerts = [a for a in alerts if a.get("state") in states]
+    filtered_alerts = [
+        a
+        for a in alerts
+        if a.get("state") in states
+        and a.get("labels", {}).get("alertname") not in IGNORED_ALERTS
+    ]
 
     if not filtered_alerts:
         print(colorize(f"No alerts in {state_desc} state", "green"))
