@@ -328,8 +328,31 @@ Namespace followed by a list of apps in that namespace:
 - app-scout.sh: Kubernetes migration discovery
 - test-vector-config.py: Vector VRL configuration testing (REQUIRED for Vector changes)
 - validate-vmrules.sh: VMRule CRD syntax validation
-- query-vmalert.py: Query vmalert API via ephemeral kubectl pods
+- query-vm.py: Query VictoriaMetrics and vmalert (metrics, alerts, discovery)
 - ceph.sh: Ceph command wrapper via rook-ceph-tools
 - query-victorialogs.py: Query VictoriaLogs
 - update-gitignore/: Modular gitignore generation
-- query-container-metrics.py: Get historical VictoriaMetrics data for containers
+
+**query-vm.py reference** (use `--json` before subcommand for machine output):
+
+```bash
+# Container metrics (namespace, pod-regex, container, duration)
+./scripts/query-vm.py cpu media 'plex.*' plex 7d
+./scripts/query-vm.py memory default 'homepage.*' app 24h
+
+# Raw PromQL
+./scripts/query-vm.py query 'up{job="kubelet"}'
+./scripts/query-vm.py query 'rate(http_requests_total[5m])' --range --start <ISO8601> --end <ISO8601> --step 5m
+
+# Discovery
+./scripts/query-vm.py labels                  # All label names
+./scripts/query-vm.py labels namespace        # Values for label
+./scripts/query-vm.py metrics --filter cpu    # Find metrics by pattern
+
+# Alerts
+./scripts/query-vm.py alerts                  # Firing (excludes Watchdog/InfoInhibitor)
+./scripts/query-vm.py alerts --state all      # All states
+./scripts/query-vm.py alert <name>            # Detail for specific alert
+./scripts/query-vm.py rules                   # All alert rules
+./scripts/query-vm.py history 24h             # Firing frequency
+```
