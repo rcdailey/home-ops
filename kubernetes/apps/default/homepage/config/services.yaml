@@ -16,7 +16,7 @@
   - Immich:
       icon: immich
       href: https://photos.${SECRET_DOMAIN}/
-      siteMonitor: http://immich-server.default:2283
+      siteMonitor: http://immich.default:2283
 
   - Home Assistant:
       icon: home-assistant
