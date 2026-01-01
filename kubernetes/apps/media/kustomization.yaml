@@ -15,6 +15,7 @@ resources:
 - ./plexanisync/ks.yaml
 - ./prowlarr/ks.yaml
 - ./qbittorrent/ks.yaml
+- ./qui/ks.yaml
 - ./radarr/ks.yaml
 - ./radarr-4k/ks.yaml
 - ./radarr-anime/ks.yaml
