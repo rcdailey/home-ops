@@ -40,8 +40,8 @@ spec:
               VPN_PORT_FORWARDING: on
               PORT_FORWARD_ONLY: on
               FIREWALL_INPUT_PORTS: 8080
-              FIREWALL_OUTBOUND_SUBNETS: 10.96.0.0/12,10.244.0.0/16
-              FIREWALL: "off"
+              # Pod and service CIDRs from talos/talconfig.yaml - allows cluster traffic
+              FIREWALL_OUTBOUND_SUBNETS: 10.42.0.0/16,10.43.0.0/16
               FIREWALL_VPN_INPUT_PORTS: ""
               BLOCK_IPV6: "on"
             envFrom:
