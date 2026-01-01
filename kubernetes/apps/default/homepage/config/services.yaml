@@ -28,6 +28,11 @@
       href: https://torrent.${SECRET_DOMAIN}/
       siteMonitor: http://qbittorrent.media:8080
 
+  - qui:
+      icon: qbittorrent
+      href: https://qui.${SECRET_DOMAIN}/
+      siteMonitor: http://qui.media:7476
+
   - BookStack:
       icon: bookstack
       href: https://wiki.${SECRET_DOMAIN}/
