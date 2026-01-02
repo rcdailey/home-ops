@@ -58,3 +58,9 @@ repos:
   rev: v8.30.0
   hooks:
   - id: gitleaks
+
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.14.10
+  hooks:
+  - id: ruff-check
+  - id: ruff-format
