@@ -87,6 +87,6 @@ Investigate why the underlying failure is occurring instead of adding detection/
 ./scripts/query-vm.py alerts --state all        # All alert states
 ./scripts/query-vm.py alert <name>              # Full details for specific alert
 ./scripts/query-vm.py rules                     # All alert rules
-./scripts/query-vm.py history                   # Alert firing frequency (6h default)
-./scripts/query-vm.py history 24h --alert <name> # History for specific alert
+./scripts/query-vm.py alerts --from 6h          # Historical alerts (firing frequency)
+./scripts/query-vm.py alert <name> --from 24h   # Historical alert details
 ```
