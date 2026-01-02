@@ -37,7 +37,7 @@ Investigate why the underlying failure is occurring instead of adding detection/
 
 ## Steps
 
-1. **Query alerts**:
+1. **Query alerts** (use the `querying-metrics` skill):
    - With arguments (`$ARGUMENTS`): Query alert details for each specified alert
    - Without arguments: Query firing alerts and pick one to investigate
 

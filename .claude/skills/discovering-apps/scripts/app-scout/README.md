@@ -6,10 +6,10 @@ App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.de
 
 ```bash
 # Discover deployment patterns
-./scripts/app-scout.sh discover plex
+scripts/app-scout.sh discover plex
 
 # Find repositories with multiple apps deployed together
-./scripts/app-scout.sh correlate blocky external-dns
+scripts/app-scout.sh correlate blocky external-dns
 ```
 
 ## Commands
@@ -17,7 +17,7 @@ App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.de
 ### Discovery Command
 
 ```bash
-./scripts/app-scout.sh discover <app_name> [--sample-count N]
+scripts/app-scout.sh discover <app_name> [--sample-count N]
 ```
 
 **Purpose**: Find all deployment patterns for an application
@@ -26,13 +26,13 @@ App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.de
 **Example**:
 
 ```bash
-./scripts/app-scout.sh discover sonarr --sample-count 5
+scripts/app-scout.sh discover sonarr --sample-count 5
 ```
 
 ### Correlate Command
 
 ```bash
-./scripts/app-scout.sh correlate <app_name1> <app_name2> [...] [--sample-count N]
+scripts/app-scout.sh correlate <app_name1> <app_name2> [...] [--sample-count N]
 ```
 
 **Purpose**: Find repositories that contain multiple applications deployed together
@@ -41,7 +41,7 @@ App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.de
 **Example**:
 
 ```bash
-./scripts/app-scout.sh correlate blocky external-dns --sample-count 10
+scripts/app-scout.sh correlate blocky external-dns --sample-count 10
 ```
 
 ## Workflow
@@ -63,7 +63,7 @@ After discovering repositories, use octocode MCP tools to inspect configuration 
 
 ```bash
 # Step 1: Discover repositories using app-scout
-./scripts/app-scout.sh discover plex
+scripts/app-scout.sh discover plex
 
 # Step 2: Use octocode MCP tools to inspect files (via Claude)
 # - githubViewRepoStructure for onedr0p/home-ops kubernetes/apps

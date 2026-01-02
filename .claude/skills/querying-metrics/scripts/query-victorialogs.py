@@ -4,26 +4,26 @@ VictoriaLogs query CLI - Query logs using LogSQL syntax.
 
 Basic Usage:
     # Last 10 logs from an app
-    ./scripts/query-victorialogs.py --app cloudflare-tunnel -10
+    scripts/query-victorialogs.py --app cloudflare-tunnel -10
 
     # Filter app logs by level
-    ./scripts/query-victorialogs.py --app kometa --level error -20
+    scripts/query-victorialogs.py --app kometa --level error -20
 
     # Filter by namespace
-    ./scripts/query-victorialogs.py --namespace observability --start 5m
+    scripts/query-victorialogs.py --namespace observability --start 5m
 
 Advanced Usage (LogSQL):
     # Custom LogSQL query
-    ./scripts/query-victorialogs.py "error" --start 1h --limit 50
+    scripts/query-victorialogs.py "error" --start 1h --limit 50
 
     # Complex filters
-    ./scripts/query-victorialogs.py '{app="nginx"} AND error' --start 5m
+    scripts/query-victorialogs.py '{app="nginx"} AND error' --start 5m
 
     # Statistics
-    ./scripts/query-victorialogs.py --stats "error | stats by(level) count(*)"
+    scripts/query-victorialogs.py --stats "error | stats by(level) count(*)"
 
     # Hits over time
-    ./scripts/query-victorialogs.py --hits "error" --start 3h --step 1h
+    scripts/query-victorialogs.py --hits "error" --start 3h --step 1h
 
 Note: Uses cluster-internal service by default. Use --url for external access.
 """

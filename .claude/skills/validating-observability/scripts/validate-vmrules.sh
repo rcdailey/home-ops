@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # validate-vmrules.sh - Download and use vmalert to validate VMRule files
-# Usage: ./scripts/validate-vmrules.sh [path-to-vmrules-directory]
+# Usage: scripts/validate-vmrules.sh [path-to-vmrules-directory]
 
 set -euo pipefail
 
