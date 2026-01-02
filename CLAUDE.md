@@ -336,23 +336,26 @@ Namespace followed by a list of apps in that namespace:
 **query-vm.py reference** (use `--json` before subcommand for machine output):
 
 ```bash
-# Container metrics (namespace, pod-regex, container, duration)
-./scripts/query-vm.py cpu media 'plex.*' plex 7d
-./scripts/query-vm.py memory default 'homepage.*' app 24h
+# Container metrics (namespace, pod-regex, container; default --from 7d)
+./scripts/query-vm.py cpu media 'plex.*' plex
+./scripts/query-vm.py memory default 'homepage.*' app --from 24h
 
 # Raw PromQL
 ./scripts/query-vm.py query 'up{job="kubelet"}'
-./scripts/query-vm.py query 'rate(http_requests_total[5m])' --range --start <ISO8601> --end <ISO8601> --step 5m
+./scripts/query-vm.py query 'rate(http_requests_total[5m])' --from 1h --step 5m
 
 # Discovery
 ./scripts/query-vm.py labels                  # All label names
 ./scripts/query-vm.py labels namespace        # Values for label
 ./scripts/query-vm.py metrics --filter cpu    # Find metrics by pattern
 
-# Alerts
+# Alerts (current state from vmalert)
 ./scripts/query-vm.py alerts                  # Firing (excludes Watchdog/InfoInhibitor)
 ./scripts/query-vm.py alerts --state all      # All states
 ./scripts/query-vm.py alert <name>            # Detail for specific alert
 ./scripts/query-vm.py rules                   # All alert rules
-./scripts/query-vm.py history 24h             # Firing frequency
+
+# Alerts (historical from VictoriaMetrics)
+./scripts/query-vm.py alerts --from 24h       # Alerts that fired in period
+./scripts/query-vm.py alert <name> --from 24h # Historical alert details with firing periods
 ```
