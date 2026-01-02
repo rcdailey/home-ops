@@ -8,12 +8,14 @@ argument-hint: [alert-name1] [alert-name2] ...
 Query current alerts in vmalert and fix specified alert(s) or pick one to investigate.
 
 **Usage**:
+
 - With arguments: `/fix-alert AlertName1 AlertName2` - Fix specific alerts
 - Without arguments: `/fix-alert` - List firing and pending alerts and pick one to fix
 
 ## CRITICAL RULES - PROHIBITED SOLUTIONS
 
 **NEVER adjust health probes as a solution to alerts.** This includes:
+
 - Adding new probe configurations
 - Modifying probe timing/thresholds/parameters
 - Restoring previously removed probe configurations
@@ -22,6 +24,7 @@ Query current alerts in vmalert and fix specified alert(s) or pick one to invest
 Probes detect failures - they don't fix root causes. Adjusting probes masks problems.
 
 **ONLY use GitOps/configuration-based solutions:**
+
 - Fix resource limits/requests
 - Adjust application configuration
 - Fix networking/service configuration
@@ -35,13 +38,15 @@ Investigate why the underlying failure is occurring instead of adding detection/
 ## Steps
 
 1. **Query alerts**:
-   - With arguments (`$ARGUMENTS`): Run `./scripts/query-vm.py alert <alertname>` for each
-   - Without arguments: Run `./scripts/query-vm.py alerts` to list firing alerts, then pick one
+   - With arguments (`$ARGUMENTS`): Query alert details for each specified alert
+   - Without arguments: Query firing alerts and pick one to investigate
 
 2. **Check git history BEFORE attempting any fix**:
+
    ```bash
    git log -p --follow -- path/to/relevant/file.yaml
    ```
+
    - Look for previous attempts at fixing the same alert
    - Understand why previous fixes were implemented or reverted
    - Avoid fix/unfix/fix/unfix cycles by learning from historical context
@@ -67,7 +72,7 @@ Investigate why the underlying failure is occurring instead of adding detection/
    - **Fix configuration**: Resource limits, networking, application settings
    - **Fix infrastructure**: Storage, networking, scaling issues
 
-7. **Validate changes** with `./scripts/test-flux-local.sh` and `pre-commit run --files <files>`
+7. **Validate changes** with `pre-commit run --files <changed-files>`
 
 ## Common Fixes
 
@@ -77,16 +82,4 @@ Investigate why the underlying failure is occurring instead of adding detection/
 
 **TooManyLogs**: Component logging errors
 
-- Fix: Investigate logs, resolve underlying issue, or adjust threshold
-
-## Available Query Commands
-
-```bash
-./scripts/query-vm.py alerts                    # Firing alerts (default)
-./scripts/query-vm.py alerts --state pending    # Pending alerts
-./scripts/query-vm.py alerts --state all        # All alert states
-./scripts/query-vm.py alert <name>              # Full details for specific alert
-./scripts/query-vm.py rules                     # All alert rules
-./scripts/query-vm.py history                   # Alert firing frequency (6h default)
-./scripts/query-vm.py history 24h --alert <name> # History for specific alert
-```
+- Fix: Query logs for the affected app, resolve underlying issue, or adjust threshold

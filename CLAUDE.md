@@ -42,8 +42,7 @@ drift.
 - **NEVER use raw ConfigMap resources** - ALWAYS use configMapGenerator in kustomization.yaml with
   files from config/ subdirectory
 - **NEVER inline VRL source in vector.yaml** - Separate VRL file required for testing and validation
-- **ALWAYS include test data for VRL validation** - Use ./scripts/test-vector-config.py for
-  validation
+- **ALWAYS include test data for VRL validation** - Validate VRL transforms locally before committing
 
 ## Tier 2: Conventions
 
@@ -291,7 +290,6 @@ Optional task reconcile
 - Garage S3 (192.168.1.58:3900): Region garage, buckets: postgres-backups, volsync-backups,
   bookstack-backups
 - CloudNativePG: Barman WAL archiving to s3://postgres-backups/{cluster}/
-- Ceph toolbox: kubectl exec -n rook-ceph deploy/rook-ceph-tools -- [ceph status | rbd COMMAND]
 
 **Intel GPU support:**
 
@@ -322,37 +320,3 @@ Namespace followed by a list of apps in that namespace:
 - rook-ceph: cluster, operator
 - storage: garage, kopia, volsync
 - system-upgrade: etcd-defrag, tuppr
-
-**Utility scripts:**
-
-- app-scout.sh: Kubernetes migration discovery
-- test-vector-config.py: Vector VRL configuration testing (REQUIRED for Vector changes)
-- validate-vmrules.sh: VMRule CRD syntax validation
-- query-vm.py: Query VictoriaMetrics and vmalert (metrics, alerts, discovery)
-- ceph.sh: Ceph command wrapper via rook-ceph-tools
-- query-victorialogs.py: Query VictoriaLogs
-- update-gitignore/: Modular gitignore generation
-
-**query-vm.py reference** (use `--json` before subcommand for machine output):
-
-```bash
-# Container metrics (namespace, pod-regex, container, duration)
-./scripts/query-vm.py cpu media 'plex.*' plex 7d
-./scripts/query-vm.py memory default 'homepage.*' app 24h
-
-# Raw PromQL
-./scripts/query-vm.py query 'up{job="kubelet"}'
-./scripts/query-vm.py query 'rate(http_requests_total[5m])' --range --start <ISO8601> --end <ISO8601> --step 5m
-
-# Discovery
-./scripts/query-vm.py labels                  # All label names
-./scripts/query-vm.py labels namespace        # Values for label
-./scripts/query-vm.py metrics --filter cpu    # Find metrics by pattern
-
-# Alerts
-./scripts/query-vm.py alerts                  # Firing (excludes Watchdog/InfoInhibitor)
-./scripts/query-vm.py alerts --state all      # All states
-./scripts/query-vm.py alert <name>            # Detail for specific alert
-./scripts/query-vm.py rules                   # All alert rules
-./scripts/query-vm.py history 24h             # Firing frequency
-```
