@@ -359,3 +359,22 @@ Namespace followed by a list of apps in that namespace:
 ./scripts/query-vm.py alerts --from 24h       # Alerts that fired in period
 ./scripts/query-vm.py alert <name> --from 24h # Historical alert details with firing periods
 ```
+
+**Diagnostic PromQL recipes** (use with `query` subcommand, replace NS/POD/C):
+
+```promql
+# Restarts (raw counter; query first to avoid increase() counter-reset confusion)
+kube_pod_container_status_restarts_total{namespace="NS",pod=~"POD.*"}
+
+# OOMKilled pods
+kube_pod_container_status_last_terminated_reason{reason="OOMKilled",namespace="NS"}
+
+# CrashLoopBackOff pods
+kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff",namespace="NS"}
+
+# Exit code (137=SIGKILL/OOM, 143=SIGTERM, 1=app error)
+kube_pod_container_status_last_terminated_exitcode{namespace="NS",pod=~"POD.*"}
+
+# CPU throttling % (requires CPU limits set)
+sum(increase(container_cpu_cfs_throttled_periods_total{namespace="NS",pod=~"POD.*",container="C"}[1h])) / sum(increase(container_cpu_cfs_periods_total{namespace="NS",pod=~"POD.*",container="C"}[1h])) * 100
+```
