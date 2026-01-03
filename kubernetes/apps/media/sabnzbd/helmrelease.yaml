@@ -62,7 +62,7 @@ spec:
               PGID: "1000"
               TP_THEME: plex
             probes:
-              liveness: &probes
+              liveness:
                 enabled: true
                 custom: true
                 spec:
@@ -72,8 +72,10 @@ spec:
                   # Increased timeout/threshold for I/O-heavy operations (unrar/par2)
                   # causes API timeouts triggering false-positive probe failures
                   timeoutSeconds: 10
-                  failureThreshold: 5
-              readiness: *probes
+                  periodSeconds: 30
+                  failureThreshold: 10
+              readiness:
+                enabled: false
             resources:
               requests:
                 cpu: 50m
