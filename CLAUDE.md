@@ -88,19 +88,12 @@ Consistency patterns for maintainability and clarity.
 
 **Standard pattern:**
 
-- ALWAYS enable liveness and readiness probes
-- Use YAML anchor: liveness is source of truth, readiness references it (`readiness: *probes`)
-- OMIT startup probe (disabled by default), if present or requested, favor defaults instead of
-  explicit values matching defaults.
-- NEVER specify timing/threshold properties if defaults are acceptable
+- Liveness: ALWAYS enable
+- Readiness: DISABLE for single-replica apps; ENABLE only for multi-replica load balancing
+- Startup: OMIT (disabled by default)
 - Probe types: httpGet (preferred), tcpSocket (databases), grpc (when appropriate)
 - httpGet: ONLY specify path and port
 - Adjust defaults ONLY when receiving false alerts
-
-**Examples:**
-
-- HTTP: `liveness: &probes` with `enabled: true`, `custom: true`, `spec.httpGet` (path, port)
-- TCP: `spec.tcpSocket: port: 3306`
 
 ### Security and Networking
 
