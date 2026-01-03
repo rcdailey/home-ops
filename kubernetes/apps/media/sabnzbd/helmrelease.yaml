@@ -69,21 +69,11 @@ spec:
                   httpGet:
                     path: /api?mode=version
                     port: *port
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  # IMPORTANT: Increased timeout and failure threshold for I/O-heavy operations
-                  # Sabnzbd becomes unresponsive during large archive extraction (unrar/par2)
-                  # Heavy I/O causes API endpoint timeouts, triggering false-positive probe failures
-                  # Default 1s timeout insufficient - observed connection refused/reset during processing
-                  # 10s timeout + 5 failures = 50s grace period before pod restart
+                  # Increased timeout/threshold for I/O-heavy operations (unrar/par2)
+                  # causes API timeouts triggering false-positive probe failures
                   timeoutSeconds: 10
                   failureThreshold: 5
               readiness: *probes
-              startup:
-                enabled: true
-                spec:
-                  failureThreshold: 30
-                  periodSeconds: 5
             resources:
               requests:
                 cpu: 50m
