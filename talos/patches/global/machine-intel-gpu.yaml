@@ -1,7 +1,0 @@
-# yaml-language-server: $schema=https://schemas.talos.dev/v1alpha1/config.schema.json
----
-machine:
-  install:
-    extraKernelArgs:
-      - i915.enable_guc=3      # Enable GuC submission + HuC for hardware acceleration
-      - i915.mitigations=off   # Disable Intel GPU security mitigations for ~20% compute performance gain
