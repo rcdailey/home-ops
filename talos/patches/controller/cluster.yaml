@@ -1,6 +1,8 @@
 cluster:
   allowSchedulingOnControlPlanes: true
   apiServer:
+    admissionControl:
+      $$patch: delete
     extraArgs:
       # https://kubernetes.io/docs/tasks/extend-kubernetes/configure-aggregation-layer/
       enable-aggregator-routing: true
@@ -19,6 +21,11 @@ cluster:
   etcd:
     extraArgs:
       listen-metrics-urls: http://0.0.0.0:2381
+      # Enable auto-compaction to prevent excessive database growth and fragmentation
+      # periodic mode with 24h retention compacts data older than 24 hours every hour
+      # This prevents fragmentation that causes slow commit durations (>250ms threshold)
+      auto-compaction-mode: periodic
+      auto-compaction-retention: "24h"
     advertisedSubnets:
       - 192.168.1.0/24
   proxy:
