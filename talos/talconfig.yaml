@@ -109,18 +109,20 @@ nodes:
 # Global patches
 patches:
   - "@./patches/global/machine-files.yaml"
-  - "@./patches/global/machine-intel-gpu.yaml"
   - "@./patches/global/machine-kubelet.yaml"
-  - "@./patches/global/machine-network.yaml"
   # disable nconnect=4 for now; causes plex stuttering/hanging during streams
   # - "@./patches/global/machine-nfs.yaml"
   - "@./patches/global/machine-sysctls.yaml"
-  - "@./patches/global/machine-time.yaml"
+  - "@./patches/global/resolvers.yaml"
+  - "@./patches/global/time-sync.yaml"
 
 # Worker config
 worker:
   schematic:
     customization:
+      extraKernelArgs:
+        - i915.enable_guc=3      # Enable GuC submission + HuC for hardware acceleration
+        - i915.mitigations=off   # Disable Intel GPU security mitigations for ~20% compute performance gain
       systemExtensions:
         officialExtensions:
           - siderolabs/i915
@@ -132,6 +134,9 @@ worker:
 controlPlane:
   schematic:
     customization:
+      extraKernelArgs:
+        - i915.enable_guc=3      # Enable GuC submission + HuC for hardware acceleration
+        - i915.mitigations=off   # Disable Intel GPU security mitigations for ~20% compute performance gain
       systemExtensions:
         officialExtensions:
           - siderolabs/i915
@@ -139,7 +144,5 @@ controlPlane:
           - siderolabs/mei
           - siderolabs/realtek-firmware
   patches:
-    - "@./patches/controller/admission-controller-patch.yaml"
     - "@./patches/controller/cluster.yaml"
-    - "@./patches/controller/etcd-config.yaml"
     - "@./patches/controller/machine-kubernetes-api-access.yaml"
