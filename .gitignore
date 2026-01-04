@@ -17,8 +17,6 @@
 *.decrypted~*.yaml
 /age.key
 /cloudflare-tunnel.json
-/github-deploy.key
-/github-deploy.key.pub
 /github-push-token.txt
 .infisical.json
 
@@ -97,7 +95,7 @@ go.work
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
 
 # Thumbnails
 ._*
