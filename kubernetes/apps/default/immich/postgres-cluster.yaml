@@ -62,7 +62,7 @@ spec:
     target: "prefer-standby"
     barmanObjectStore:
       destinationPath: "s3://postgres-backups/immich"
-      endpointURL: "http://garage-app.storage:3900"
+      endpointURL: "http://garage.storage:3900"
       s3Credentials:
         accessKeyId:
           name: garage-secret
