@@ -27,8 +27,7 @@ spec:
           app:
             image:
               repository: ghcr.io/autobrr/qui
-              # TODO: Switch to v1.12.0 when released (using main for automations feature)
-              tag: main
+              tag: v1.12.0
             env:
               TZ: America/Chicago
               QUI__HOST: 0.0.0.0
