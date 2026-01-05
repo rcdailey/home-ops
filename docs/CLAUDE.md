@@ -23,6 +23,10 @@ Below is an explanation of documentation subdirectories and their purpose.
 
 - `architecture`: Long-term documentation about system design, architectural decisions, and the
   rationale behind technology choices.
+- `decisions`: Architecture Decision Records (ADRs) documenting significant technical decisions with
+  context, alternatives considered, and rationale. Use format `NNN-short-title.md` with sequential
+  numbering. **MANDATORY: Read `decisions/TEMPLATE.md` before creating or editing any ADR.** The
+  template structure must be followed exactly.
 - `memory-bank`: Ephemeral documentation for temporary context and working memory. Used for ongoing
   constraints, temporary workarounds, or work spanning multiple sessions. Content is expected to
   become stale and should be removed once no longer relevant.
