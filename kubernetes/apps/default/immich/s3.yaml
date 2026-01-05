@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/garage-s3-operator.abucquet.com/garages3accesskey_v1.json
+---
+apiVersion: garage-s3-operator.abucquet.com/v1
+kind: GarageS3AccessKey
+metadata:
+  name: immich-s3
+spec:
+  instanceRef:
+    name: garage
+    namespace: storage
+  neverExpires: true
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/garage-s3-operator.abucquet.com/garages3bucket_v1.json
+apiVersion: garage-s3-operator.abucquet.com/v1
+kind: GarageS3Bucket
+metadata:
+  name: postgres-backups
+spec:
+  instanceRef:
+    name: garage
+    namespace: storage
+  permissions:
+  - accessKeyName: immich-s3
+    read: true
+    write: true
+    owner: true
