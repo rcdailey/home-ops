@@ -21,6 +21,8 @@ spec:
     namespace: kube-system
   - name: intel-gpu-resource-driver
     namespace: kube-system
+  - name: garage-instance
+    namespace: storage
   postBuild:
     substitute:
       APP: immich

@@ -65,14 +65,14 @@ spec:
       endpointURL: "http://garage.storage:3900"
       s3Credentials:
         accessKeyId:
-          name: garage-secret
-          key: S3_ACCESS_KEY_ID
+          name: immich-s3-gs3ak
+          key: AWS_ACCESS_KEY
         secretAccessKey:
-          name: garage-secret
-          key: S3_SECRET_ACCESS_KEY
+          name: immich-s3-gs3ak
+          key: AWS_SECRET_KEY
         region:
-          name: garage-secret
-          key: S3_REGION
+          name: garage-s3-region
+          key: AWS_REGION
       wal:
         compression: "gzip"
         maxParallel: 2

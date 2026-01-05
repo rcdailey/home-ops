@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/garage-s3-operator.abucquet.com/garages3instance_v1.json
+---
+apiVersion: garage-s3-operator.abucquet.com/v1
+kind: GarageS3Instance
+metadata:
+  name: garage
+spec:
+  url: garage.storage
+  port: 3903
+  adminTokenSecret: garage-operator-secret

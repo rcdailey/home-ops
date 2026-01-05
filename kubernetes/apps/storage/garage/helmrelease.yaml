@@ -50,6 +50,37 @@ spec:
               limits:
                 memory: 1Gi
 
+      init-layout:
+        type: job
+        job:
+          ttlSecondsAfterFinished: 300
+        pod:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+        containers:
+          main:
+            image:
+              repository: ghcr.io/rcdailey/garage-init
+              tag: latest@sha256:b29f8acc288332214e974618b35fcc9b2e372adb43c2e851a8ad1306ff556c74
+            env:
+              GARAGE_URL: garage.storage
+              GARAGE_PORT: "3903"
+              GARAGE_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: garage-secret
+                    key: GARAGE_ADMIN_TOKEN
+              GARAGE_CAPACITY: 100G
+            securityContext:
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+
     service:
       app:
         controller: garage

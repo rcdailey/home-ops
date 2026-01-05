@@ -13,3 +13,10 @@ resources:
 - pvc.yaml
 - resourceclaimtemplate.yaml
 - externalsecret.yaml
+- s3.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+secretGenerator:
+- name: garage-s3-region
+  literals:
+  - AWS_REGION=garage
