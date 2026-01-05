@@ -11,7 +11,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: test
-        image: amazon/aws-cli:2.22.35
+        image: amazon/aws-cli:2.32.28
         command: ["sh", "-c"]
         args:
         - |
