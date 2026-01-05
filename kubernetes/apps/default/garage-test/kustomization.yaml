@@ -3,7 +3,5 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- ./app-template.yaml
-- ./external-dns.yaml
-- ./garage-s3-operator.yaml
-- ./intel.yaml
+- s3.yaml
+- job.yaml

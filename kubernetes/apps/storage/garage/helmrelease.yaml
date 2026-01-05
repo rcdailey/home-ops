@@ -26,6 +26,29 @@ spec:
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
 
+        initContainers:
+          init-layout:
+            # Native sidecar pattern - starts before main container, polls until Garage ready
+            restartPolicy: Always
+            image:
+              repository: ghcr.io/rcdailey/garage-init
+              tag: latest@sha256:b29f8acc288332214e974618b35fcc9b2e372adb43c2e851a8ad1306ff556c74
+            env:
+              GARAGE_URL: localhost
+              GARAGE_PORT: "3903"
+              GARAGE_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: garage-secret
+                    key: GARAGE_ADMIN_TOKEN
+              GARAGE_CAPACITY: 100G
+            securityContext:
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+
         containers:
           app:
             image:

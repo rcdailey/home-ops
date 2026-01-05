@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/batch/job_v1.json
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: garage-test
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: test
+        image: amazon/aws-cli:2.22.35
+        command: ["sh", "-c"]
+        args:
+        - |
+          echo "Testing S3 write to garage-test bucket..."
+          echo "Hello from garage-test at $(date)" > /tmp/test.txt
+          aws --endpoint-url http://garage.storage:3900 s3 cp /tmp/test.txt s3://garage-test/test.txt
+          echo "Verifying file exists..."
+          aws --endpoint-url http://garage.storage:3900 s3 ls s3://garage-test/
+          echo "Test complete!"
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: garage-test-gs3ak
+              key: AWS_ACCESS_KEY
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: garage-test-gs3ak
+              key: AWS_SECRET_KEY
+        - name: AWS_DEFAULT_REGION
+          value: garage
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}

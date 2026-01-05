@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/source.toolkit.fluxcd.io/gitrepository_v1.json
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: garage-s3-operator
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://github.com/LordAntonius/garage-s3-operator
+  ref:
+    tag: 1.0.0
