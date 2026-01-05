@@ -163,7 +163,9 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 
 - Uses `spec.targetNamespace: namespace` (NOT metadata.namespace)
 - Must be listed in parent kustomization.yaml resources
-- GitRepository sourceRef: ALWAYS use flux-system as name with namespace: flux-system
+- GitRepository sourceRef: Use flux-system for local repo; external GitRepositories used as
+  Kustomization sources MUST be defined in flux/meta/repos (chicken-and-egg: ks.yaml can't deploy its
+  own source)
 - SOPS decryption: MUST include secretRef: {name: sops-age} for encrypted secrets
 - Single ks.yaml: Same namespace, timing, lifecycle; Multiple: Different namespaces/timing/lifecycle
 
@@ -176,9 +178,13 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 
 **Chart and storage patterns:**
 
-- OCIRepository/HelmRepository: Shared (2+ apps) in flux/meta/repos with `namespace: flux-system`,
-  chartRef needs `namespace: flux-system`; single-use local to app, omit `namespace:` (inherits),
-  chartRef omits namespace; exception: volsync `namespace: kube-system` for Renovate
+- GitRepository (Kustomization sources): ALWAYS in flux/meta/repos - cannot be local because ks.yaml
+  references it as sourceRef before it exists
+- OCIRepository/HelmRepository (chart sources): Can be local because HelmReleases reference them via
+  chartRef, deployed together by ks.yaml using flux-system source. Shared (2+ apps) in flux/meta/repos
+  with `namespace: flux-system`, chartRef needs `namespace: flux-system`; single-use local to app,
+  omit `namespace:` (inherits), chartRef omits namespace; exception: volsync `namespace: kube-system`
+  for Renovate
 - App-template: Add postBuild.substituteFrom: cluster-secrets; service naming auto-prefixed with
   release name
 - PVC: Namespace inherited, volsync handles backups only, ALL apps require explicit pvc.yaml,
