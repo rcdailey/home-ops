@@ -3,6 +3,9 @@
 # Access restricted to internal network via internal gateway
 users: []
 
+querylog:
+  file_enabled: true
+
 dns:
   trusted_proxies:
   - 127.0.0.0/8
