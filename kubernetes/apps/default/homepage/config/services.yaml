@@ -40,7 +40,7 @@
 
   - OpenCloud:
       icon: mdi-cloud
-      href: https://opencloud.${SECRET_DOMAIN}/
+      href: https://cloud.${SECRET_DOMAIN}/
       siteMonitor: http://opencloud.default:9200
 
   - VS Code:
