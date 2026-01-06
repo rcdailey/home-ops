@@ -36,7 +36,7 @@ repos:
     description: Validates that Kubernetes apps using secrets/configmaps have reloader annotations
 
 - repo: https://github.com/google/yamlfmt
-  rev: v0.20.0
+  rev: v0.21.0
   hooks:
   - id: yamlfmt
     name: Format YAML with yamlfmt
