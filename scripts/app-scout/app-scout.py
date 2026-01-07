@@ -64,12 +64,14 @@ class AppMigrationDiscovery:
         self.http_client = httpx.AsyncClient(
             headers={
                 "Authorization": f"Bearer {self.github_token}",
-                "Accept": "application/vnd.github.v3+json"
+                "Accept": "application/vnd.github.v3+json",
             },
-            timeout=30.0
+            timeout=30.0,
         )
 
-    async def discover_app_landscape(self, app_name: str, sample_count: int = 3) -> Dict:
+    async def discover_app_landscape(
+        self, app_name: str, sample_count: int = 3
+    ) -> Dict:
         """
         Discover complete landscape for an application.
 
@@ -105,18 +107,27 @@ class AppMigrationDiscovery:
         result[app_name]["dedicated_charts"] = dedicated_data
 
         # Discover app-template usage
-        app_template_data = await self._discover_app_template_usage(app_name, sample_count)
+        app_template_data = await self._discover_app_template_usage(
+            app_name, sample_count
+        )
         result[app_name]["app_template"] = app_template_data
 
         # Print guidance for next steps
-        print("\nNOTE: To inspect configuration files from discovered repositories, use octocode MCP tools:", file=sys.stderr)
-        print("  - githubViewRepoStructure: Explore repository structure", file=sys.stderr)
+        print(
+            "\nNOTE: To inspect configuration files from discovered repositories, use octocode MCP tools:",
+            file=sys.stderr,
+        )
+        print(
+            "  - githubViewRepoStructure: Explore repository structure", file=sys.stderr
+        )
         print("  - githubSearchCode: Search for specific patterns", file=sys.stderr)
         print("  - githubGetFileContent: Retrieve file contents\n", file=sys.stderr)
 
         return result
 
-    async def _discover_dedicated_charts(self, app_name: str, sample_count: int) -> Dict:
+    async def _discover_dedicated_charts(
+        self, app_name: str, sample_count: int
+    ) -> Dict:
         """
         Discover dedicated Helm chart usage for an application.
 
@@ -165,7 +176,9 @@ class AppMigrationDiscovery:
         # Process top repositories with batch GitHub API calls
         repositories = []
         seen_repos = set()
-        limited_rows = rows[:sample_count * 2]  # Get extra to account for deduplication
+        limited_rows = rows[
+            : sample_count * 2
+        ]  # Get extra to account for deduplication
 
         # Extract repo names for batch metadata fetching
         repo_names = [row["repo_name"] for row in limited_rows]
@@ -195,7 +208,9 @@ class AppMigrationDiscovery:
             "repositories": repositories,
         }
 
-    async def _discover_app_template_usage(self, app_name: str, sample_count: int) -> Dict:
+    async def _discover_app_template_usage(
+        self, app_name: str, sample_count: int
+    ) -> Dict:
         """
         Discover app-template usage for an application.
 
@@ -238,7 +253,9 @@ class AppMigrationDiscovery:
         # Process top repositories with batch GitHub API calls
         repositories = []
         seen_repos = set()
-        limited_rows = rows[:sample_count * 2]  # Get extra to account for deduplication
+        limited_rows = rows[
+            : sample_count * 2
+        ]  # Get extra to account for deduplication
 
         # Extract repo names for batch metadata fetching
         repo_names = [row["repo_name"] for row in limited_rows]
@@ -362,9 +379,7 @@ class AppMigrationDiscovery:
         """Make GraphQL request to GitHub API"""
         try:
             response = await self.http_client.post(
-                "https://api.github.com/graphql",
-                json={"query": query},
-                timeout=60.0
+                "https://api.github.com/graphql", json={"query": query}, timeout=60.0
             )
             response.raise_for_status()
             return response.json()
@@ -380,7 +395,7 @@ class AppMigrationDiscovery:
         # Build GraphQL query for multiple repos
         repo_queries = []
         for i, repo in enumerate(repos):
-            owner, name = repo.split('/')
+            owner, name = repo.split("/")
             repo_queries.append(f'''
                 repo{i}: repository(owner: "{owner}", name: "{name}") {{
                     stargazerCount
@@ -403,14 +418,16 @@ class AppMigrationDiscovery:
                     results[repo] = {
                         "stars": repo_data.get("stargazerCount", 0),
                         "last_commit": repo_data.get("pushedAt", ""),
-                        "description": repo_data.get("description", "")
+                        "description": repo_data.get("description", ""),
                     }
                 else:
                     results[repo] = {"stars": 0, "last_commit": "", "description": ""}
 
         return results
 
-    async def correlate_applications(self, app_names: List[str], sample_count: int = 10) -> Dict:
+    async def correlate_applications(
+        self, app_names: List[str], sample_count: int = 10
+    ) -> Dict:
         """
         Find repositories that contain multiple specific applications deployed together.
 
@@ -438,10 +455,13 @@ class AppMigrationDiscovery:
                 ]
             }
         """
-        print(f"Finding repositories with all apps: {', '.join(app_names)}", file=sys.stderr)
+        print(
+            f"Finding repositories with all apps: {', '.join(app_names)}",
+            file=sys.stderr,
+        )
 
         # Build SQL query to find repos containing ALL specified apps
-        placeholders = ','.join(['?' for _ in app_names])
+        placeholders = ",".join(["?" for _ in app_names])
         query = f"""
         SELECT repo_name, COUNT(DISTINCT release_name) as app_count
         FROM flux_helm_release
@@ -457,10 +477,7 @@ class AppMigrationDiscovery:
         matching_repos = [row[0] for row in cursor.fetchall()]
 
         if not matching_repos:
-            return {
-                "apps": app_names,
-                "repositories": []
-            }
+            return {"apps": app_names, "repositories": []}
 
         # Get detailed information for each matching repository
         repos_info = await self._gh_get_repo_metadata_batch(matching_repos)
@@ -470,40 +487,47 @@ class AppMigrationDiscovery:
             # Get app details for this repo
             apps_found = {}
             for app_name in app_names:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT release_name, chart_name, helm_repo_name, namespace
                     FROM flux_helm_release
                     WHERE repo_name = ? AND release_name = ?
-                """, (repo_name, app_name))
+                """,
+                    (repo_name, app_name),
+                )
 
                 row = cursor.fetchone()
                 if row:
                     release_name, chart_name, helm_repo_name, namespace = row
                     # Determine if it's app-template or dedicated chart
-                    chart_type = "app-template" if chart_name == "app-template" else "dedicated"
+                    chart_type = (
+                        "app-template" if chart_name == "app-template" else "dedicated"
+                    )
 
                     apps_found[app_name] = {
                         "release_name": release_name,
                         "chart_name": chart_name,
                         "helm_repo_name": helm_repo_name,
                         "namespace": namespace,
-                        "type": chart_type
+                        "type": chart_type,
                     }
 
             repo_info = repos_info.get(repo_name, {})
 
-            results.append({
-                "repo_name": repo_name,
-                "stars": repo_info.get("stars", 0),
-                "description": repo_info.get("description"),
-                "last_commit": repo_info.get("last_commit"),
-                "apps_found": apps_found
-            })
+            results.append(
+                {
+                    "repo_name": repo_name,
+                    "stars": repo_info.get("stars", 0),
+                    "description": repo_info.get("description"),
+                    "last_commit": repo_info.get("last_commit"),
+                    "apps_found": apps_found,
+                }
+            )
 
         return {
             "apps": app_names,
             "total_repositories": len(results),
-            "repositories": results
+            "repositories": results,
         }
 
     async def close(self):
@@ -562,7 +586,9 @@ After discovery, use octocode MCP tools to inspect files:
         "correlate", help="Find repositories containing multiple applications"
     )
     correlate_parser.add_argument(
-        "app_names", nargs="+", help="Application names to find together (e.g., blocky external-dns)"
+        "app_names",
+        nargs="+",
+        help="Application names to find together (e.g., blocky external-dns)",
     )
     correlate_parser.add_argument(
         "--sample-count",
@@ -581,11 +607,15 @@ After discovery, use octocode MCP tools to inspect files:
 
     try:
         if args.command == "discover":
-            result = await discovery.discover_app_landscape(args.app_name, args.sample_count)
+            result = await discovery.discover_app_landscape(
+                args.app_name, args.sample_count
+            )
             print(json.dumps(result, indent=2))
 
         elif args.command == "correlate":
-            result = await discovery.correlate_applications(args.app_names, args.sample_count)
+            result = await discovery.correlate_applications(
+                args.app_names, args.sample_count
+            )
             print(json.dumps(result, indent=2))
 
     except KeyboardInterrupt:
@@ -600,4 +630,5 @@ After discovery, use octocode MCP tools to inspect files:
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())
