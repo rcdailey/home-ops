@@ -16,13 +16,13 @@ class ReloaderValidator:
         # Pattern that indicates secret/configmap usage requiring reloader
         # Matches any ${UPPERCASE_VARIABLE} which indicates Kustomization substitution from secrets
         self.variable_patterns = [
-            r'\$\{[A-Z_][A-Z0-9_]*\}',  # ${SECRET_DOMAIN}, ${ADGUARD_HOME_PASSWORD}, etc.
+            r"\$\{[A-Z_][A-Z0-9_]*\}",  # ${SECRET_DOMAIN}, ${ADGUARD_HOME_PASSWORD}, etc.
         ]
 
     def _load_yaml_document(self, file_path: Path) -> Optional[Dict[str, Any]]:
         """Load the first relevant document from a YAML file."""
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 documents = list(yaml.safe_load_all(f))
                 # Return first non-empty document
                 for doc in documents:
@@ -54,21 +54,22 @@ class ReloaderValidator:
 
     def _has_secret_references(self, helmrelease: Dict[str, Any]) -> bool:
         """Check if HelmRelease has direct secret references."""
+
         def search_dict(obj: Any) -> bool:
             if isinstance(obj, dict):
                 # Check for valueFrom.secretKeyRef pattern
-                if 'valueFrom' in obj and isinstance(obj['valueFrom'], dict):
-                    if 'secretKeyRef' in obj['valueFrom']:
+                if "valueFrom" in obj and isinstance(obj["valueFrom"], dict):
+                    if "secretKeyRef" in obj["valueFrom"]:
                         return True
                 # Check for envFrom with secretRef
-                if 'envFrom' in obj:
-                    env_from = obj['envFrom']
+                if "envFrom" in obj:
+                    env_from = obj["envFrom"]
                     if isinstance(env_from, list):
                         for item in env_from:
-                            if isinstance(item, dict) and 'secretRef' in item:
+                            if isinstance(item, dict) and "secretRef" in item:
                                 return True
                 # Check for secret volumes
-                if 'type' in obj and obj['type'] == 'secret':
+                if "type" in obj and obj["type"] == "secret":
                     return True
                 # Recursively search nested dictionaries
                 for value in obj.values():
@@ -92,21 +93,23 @@ class ReloaderValidator:
         if not kustomization:
             return False
 
-        config_map_generators = kustomization.get('configMapGenerator', [])
+        config_map_generators = kustomization.get("configMapGenerator", [])
         for generator in config_map_generators:
-            if isinstance(generator, dict) and 'files' in generator:
-                files = generator['files']
+            if isinstance(generator, dict) and "files" in generator:
+                files = generator["files"]
                 if isinstance(files, list):
                     for file_ref in files:
                         # Handle both "file.yaml" and "key=file.yaml" formats
                         if isinstance(file_ref, str):
-                            if '=' in file_ref:
-                                file_path = file_ref.split('=', 1)[1]
+                            if "=" in file_ref:
+                                file_path = file_ref.split("=", 1)[1]
                             else:
                                 file_path = file_ref
 
                             data_file = app_dir / file_path
-                            if data_file.exists() and self._has_variable_substitution(data_file):
+                            if data_file.exists() and self._has_variable_substitution(
+                                data_file
+                            ):
                                 return True
 
         return False
@@ -121,13 +124,17 @@ class ReloaderValidator:
     def _has_reloader_annotation(self, helmrelease: Dict[str, Any]) -> bool:
         """Check if HelmRelease has reloader annotation in controllers."""
         try:
-            controllers = helmrelease.get('spec', {}).get('values', {}).get('controllers', {})
+            controllers = (
+                helmrelease.get("spec", {}).get("values", {}).get("controllers", {})
+            )
             if isinstance(controllers, dict):
                 for controller in controllers.values():
                     if isinstance(controller, dict):
-                        annotations = controller.get('annotations', {})
+                        annotations = controller.get("annotations", {})
                         if isinstance(annotations, dict):
-                            reloader_value = annotations.get('reloader.stakater.com/auto')
+                            reloader_value = annotations.get(
+                                "reloader.stakater.com/auto"
+                            )
                             if reloader_value == "true" or reloader_value is True:
                                 return True
             return False
@@ -156,8 +163,8 @@ class ReloaderValidator:
     def _is_app_template_helmrelease(self, helmrelease: Dict[str, Any]) -> bool:
         """Check if HelmRelease uses app-template chart."""
         try:
-            chart_ref = helmrelease.get('spec', {}).get('chartRef', {})
-            return chart_ref.get('name') == 'app-template'
+            chart_ref = helmrelease.get("spec", {}).get("chartRef", {})
+            return chart_ref.get("name") == "app-template"
         except Exception:
             return False
 
@@ -185,8 +192,10 @@ class ReloaderValidator:
             except ValueError:
                 # If relative path fails, use absolute path
                 relative_path = app_dir
-            return (f"{relative_path}/helmrelease.yaml: HelmRelease uses secrets/configmaps but missing "
-                   f"reloader annotation - add 'reloader.stakater.com/auto: \"true\"' to controller annotations")
+            return (
+                f"{relative_path}/helmrelease.yaml: HelmRelease uses secrets/configmaps but missing "
+                f"reloader annotation - add 'reloader.stakater.com/auto: \"true\"' to controller annotations"
+            )
 
         return None
 
@@ -233,8 +242,14 @@ class ReloaderValidator:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Validate reloader annotations for Kubernetes apps")
-    parser.add_argument("files", nargs="*", help="Specific ks.yaml files to validate (default: all apps)")
+    parser = argparse.ArgumentParser(
+        description="Validate reloader annotations for Kubernetes apps"
+    )
+    parser.add_argument(
+        "files",
+        nargs="*",
+        help="Specific ks.yaml files to validate (default: all apps)",
+    )
 
     args = parser.parse_args()
 

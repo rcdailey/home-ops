@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
 import re
 import json
 import requests
@@ -9,17 +8,18 @@ import yaml
 import jsonschema
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
-from urllib.parse import urlparse
+
 
 # ANSI color codes
 class Colors:
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    CYAN = '\033[96m'
-    MAGENTA = '\033[95m'
-    RED = '\033[91m'
-    RESET = '\033[0m'
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    CYAN = "\033[96m"
+    MAGENTA = "\033[95m"
+    RED = "\033[91m"
+    RESET = "\033[0m"
+
 
 # Cache directory for downloaded schemas
 CACHE_DIR = Path("/tmp/yaml-validator-cache")
@@ -28,13 +28,15 @@ CACHE_DIR.mkdir(exist_ok=True)
 # In-memory cache for schemas during script execution
 _schema_cache: Dict[str, Tuple[Optional[Dict], Optional[str]]] = {}
 
+
 def get_cache_path(url: str) -> Path:
     """Generate a cache file path for a schema URL"""
     # Create a safe filename from the URL
-    safe_name = re.sub(r'[^\w\-_\.]', '_', url)
+    safe_name = re.sub(r"[^\w\-_\.]", "_", url)
     if len(safe_name) > 200:  # Limit filename length
         safe_name = safe_name[:200]
     return CACHE_DIR / f"{safe_name}.json"
+
 
 def download_schema(url: str) -> Tuple[Optional[Dict], Optional[str]]:
     """Download and cache a schema from URL. Returns (schema, error_message)"""
@@ -47,7 +49,7 @@ def download_schema(url: str) -> Tuple[Optional[Dict], Optional[str]]:
     # Check file cache
     if cache_path.exists():
         try:
-            with open(cache_path, 'r') as f:
+            with open(cache_path, "r") as f:
                 schema = json.load(f)
                 # Store in memory cache
                 _schema_cache[url] = (schema, None)
@@ -75,7 +77,7 @@ def download_schema(url: str) -> Tuple[Optional[Dict], Optional[str]]:
                 return None, error_msg
 
         # Cache the schema on disk
-        with open(cache_path, 'w') as f:
+        with open(cache_path, "w") as f:
             json.dump(schema, f, indent=2)
 
         # Store in memory cache
@@ -88,35 +90,38 @@ def download_schema(url: str) -> Tuple[Optional[Dict], Optional[str]]:
         _schema_cache[url] = (None, error_msg)
         return None, error_msg
 
+
 def extract_schema_url(content: str) -> Optional[str]:
     """Extract schema URL from YAML content"""
     # Look for yaml-language-server schema annotation
-    pattern = r'#\s*yaml-language-server:\s*\$schema=(.+?)(?:\s|$)'
+    pattern = r"#\s*yaml-language-server:\s*\$schema=(.+?)(?:\s|$)"
     match = re.search(pattern, content)
     if match:
         return match.group(1).strip()
     return None
+
 
 def extract_schema_url_for_document(full_content: str, doc_index: int) -> Optional[str]:
     """Extract schema URL for a specific document in multi-document YAML"""
     import re
 
     # Split content by document separators
-    docs = re.split(r'\n---\n', full_content)
+    docs = re.split(r"\n---\n", full_content)
 
     if doc_index >= len(docs):
         return None
 
     # Look for schema annotation in the current document
     doc_content = docs[doc_index]
-    pattern = r'#\s*yaml-language-server:\s*\$schema=(.+?)(?:\s|$)'
+    pattern = r"#\s*yaml-language-server:\s*\$schema=(.+?)(?:\s|$)"
     match = re.search(pattern, doc_content)
     if match:
         return match.group(1).strip()
 
     return None
 
-def is_sops_related_error(error: 'jsonschema.ValidationError', doc: Dict) -> bool:
+
+def is_sops_related_error(error: "jsonschema.ValidationError", doc: Dict) -> bool:
     """Check if a validation error is related to SOPS variable substitution"""
     import re
 
@@ -128,20 +133,21 @@ def is_sops_related_error(error: 'jsonschema.ValidationError', doc: Dict) -> boo
             current = current[path_part]
 
         # Check if the failing value contains SOPS variable syntax
-        if isinstance(current, str) and re.search(r'\$\{[^}]+\}', current):
+        if isinstance(current, str) and re.search(r"\$\{[^}]+\}", current):
             return True
 
         # Also check if the error message mentions SOPS patterns
-        if re.search(r'\$\{[^}]+\}', str(error.instance)):
+        if re.search(r"\$\{[^}]+\}", str(error.instance)):
             return True
 
     except (KeyError, TypeError, IndexError):
         # If we can't navigate to the error location, check the error instance
-        if hasattr(error, 'instance') and isinstance(error.instance, str):
-            if re.search(r'\$\{[^}]+\}', error.instance):
+        if hasattr(error, "instance") and isinstance(error.instance, str):
+            if re.search(r"\$\{[^}]+\}", error.instance):
                 return True
 
     return False
+
 
 def validate_document(doc: Dict, schema: Dict) -> Tuple[bool, List[str]]:
     """Validate a YAML document against a schema"""
@@ -149,19 +155,23 @@ def validate_document(doc: Dict, schema: Dict) -> Tuple[bool, List[str]]:
 
     try:
         # Handle Kubernetes CRDs - extract the schema from openAPIV3Schema
-        if 'spec' in schema and 'versions' in schema['spec']:
+        if "spec" in schema and "versions" in schema["spec"]:
             # This is a Kubernetes CRD, extract the OpenAPI schema
-            for version in schema['spec']['versions']:
-                if 'schema' in version and 'openAPIV3Schema' in version['schema']:
-                    schema = version['schema']['openAPIV3Schema']
+            for version in schema["spec"]["versions"]:
+                if "schema" in version and "openAPIV3Schema" in version["schema"]:
+                    schema = version["schema"]["openAPIV3Schema"]
                     break
 
         # Use ErrorTree to collect all validation errors
         # Suppress the deprecation warning about automatic remote reference retrieval
         import warnings
+
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=DeprecationWarning,
-                                  message=".*Automatically retrieving remote references.*")
+            warnings.filterwarnings(
+                "ignore",
+                category=DeprecationWarning,
+                message=".*Automatically retrieving remote references.*",
+            )
             validator = jsonschema.Draft7Validator(schema)
             validation_errors = list(validator.iter_errors(doc))
 
@@ -173,7 +183,11 @@ def validate_document(doc: Dict, schema: Dict) -> Tuple[bool, List[str]]:
         for error in validation_errors:
             if not is_sops_related_error(error, doc):
                 # Format validation error with path context
-                path_str = '.'.join(str(p) for p in error.absolute_path) if error.absolute_path else 'root'
+                path_str = (
+                    ".".join(str(p) for p in error.absolute_path)
+                    if error.absolute_path
+                    else "root"
+                )
                 error_msg = f"{path_str}: {error.message}"
                 filtered_errors.append(error_msg)
 
@@ -191,13 +205,14 @@ def validate_document(doc: Dict, schema: Dict) -> Tuple[bool, List[str]]:
         errors.append(f"Validation error: {str(e)}")
         return False, errors
 
+
 def validate_yaml_file(file_path: str, verbose: bool = False) -> Tuple[int, int, int]:
     """
     Validate a YAML file against its schema.
     Returns tuple of (passed_count, failed_count, skipped_count)
     """
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             content = f.read()
     except IOError as e:
         print(f"{Colors.BLUE}{file_path}:{Colors.RESET}")
@@ -214,7 +229,9 @@ def validate_yaml_file(file_path: str, verbose: bool = False) -> Tuple[int, int,
         if not documents:
             if verbose:
                 print(f"{Colors.BLUE}{file_path}:{Colors.RESET}")
-                print(f"  {Colors.YELLOW}⚠ Skipped (no YAML documents found){Colors.RESET}")
+                print(
+                    f"  {Colors.YELLOW}⚠ Skipped (no YAML documents found){Colors.RESET}"
+                )
             return 0, 0, 1
 
     except yaml.YAMLError as e:
@@ -233,8 +250,8 @@ def validate_yaml_file(file_path: str, verbose: bool = False) -> Tuple[int, int,
             continue
 
         # Get document info for display
-        api_version = doc.get('apiVersion', 'unknown')
-        kind = doc.get('kind', 'unknown')
+        api_version = doc.get("apiVersion", "unknown")
+        kind = doc.get("kind", "unknown")
 
         # Extract schema URL for this specific document
         schema_url = extract_schema_url_for_document(content, i)
@@ -244,7 +261,9 @@ def validate_yaml_file(file_path: str, verbose: bool = False) -> Tuple[int, int,
                 if not file_printed:
                     print(f"{Colors.BLUE}{file_path}:{Colors.RESET}")
                     file_printed = True
-                print(f"  {Colors.YELLOW}⚠ {kind}/{api_version} :: Skipped (no schema annotation){Colors.RESET}")
+                print(
+                    f"  {Colors.YELLOW}⚠ {kind}/{api_version} :: Skipped (no schema annotation){Colors.RESET}"
+                )
             total_skipped += 1
             continue
 
@@ -254,7 +273,9 @@ def validate_yaml_file(file_path: str, verbose: bool = False) -> Tuple[int, int,
             if not file_printed:
                 print(f"{Colors.BLUE}{file_path}:{Colors.RESET}")
                 file_printed = True
-            print(f"  {Colors.RED}✗ {kind}/{api_version} :: {schema_error}{Colors.RESET}")
+            print(
+                f"  {Colors.RED}✗ {kind}/{api_version} :: {schema_error}{Colors.RESET}"
+            )
             total_failed += 1
             continue
 
@@ -275,7 +296,9 @@ def validate_yaml_file(file_path: str, verbose: bool = False) -> Tuple[int, int,
 
             error_count = len(errors)
             error_text = "error" if error_count == 1 else "errors"
-            print(f"  {Colors.RED}✗ {kind}/{api_version} :: {error_count} validation {error_text}{Colors.RESET}")
+            print(
+                f"  {Colors.RED}✗ {kind}/{api_version} :: {error_count} validation {error_text}{Colors.RESET}"
+            )
 
             # Show first few errors to avoid overwhelming output
             for error in errors[:3]:  # Limit to first 3 errors
@@ -283,25 +306,27 @@ def validate_yaml_file(file_path: str, verbose: bool = False) -> Tuple[int, int,
 
             if len(errors) > 3:
                 remaining = len(errors) - 3
-                print(f"    {Colors.YELLOW}... and {remaining} more errors{Colors.RESET}")
+                print(
+                    f"    {Colors.YELLOW}... and {remaining} more errors{Colors.RESET}"
+                )
 
             total_failed += 1
 
     return total_passed, total_failed, total_skipped
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Validate YAML files against their attached schemas'
+        description="Validate YAML files against their attached schemas"
     )
     parser.add_argument(
-        'paths',
-        nargs='+',
-        help='YAML files or directories to validate'
+        "paths", nargs="+", help="YAML files or directories to validate"
     )
     parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help='Show all validation results including successful ones'
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show all validation results including successful ones",
     )
 
     args = parser.parse_args()
@@ -310,17 +335,11 @@ def main():
     yaml_files = []
     for path_str in args.paths:
         path = Path(path_str)
-        if path.is_file() and path.suffix.lower() in ['.yaml', '.yml']:
+        if path.is_file() and path.suffix.lower() in [".yaml", ".yml"]:
             yaml_files.append(str(path))
         elif path.is_dir():
-            yaml_files.extend([
-                str(f) for f in path.rglob('*.yaml')
-                if f.is_file()
-            ])
-            yaml_files.extend([
-                str(f) for f in path.rglob('*.yml')
-                if f.is_file()
-            ])
+            yaml_files.extend([str(f) for f in path.rglob("*.yaml") if f.is_file()])
+            yaml_files.extend([str(f) for f in path.rglob("*.yml") if f.is_file()])
 
     if not yaml_files:
         print("No YAML files found in the specified paths")
@@ -339,13 +358,16 @@ def main():
 
     # Print summary
     total_files = len(yaml_files)
-    print(f"\nSummary: {total_files} files processed, "
-          f"{Colors.GREEN}{total_passed} passed{Colors.RESET}, "
-          f"{Colors.RED}{total_failed} failed{Colors.RESET}, "
-          f"{Colors.YELLOW}{total_skipped} skipped{Colors.RESET}")
+    print(
+        f"\nSummary: {total_files} files processed, "
+        f"{Colors.GREEN}{total_passed} passed{Colors.RESET}, "
+        f"{Colors.RED}{total_failed} failed{Colors.RESET}, "
+        f"{Colors.YELLOW}{total_skipped} skipped{Colors.RESET}"
+    )
 
     # Exit with error code if any validations failed
     return 1 if total_failed > 0 else 0
+
 
 if __name__ == "__main__":
     exit(main())
