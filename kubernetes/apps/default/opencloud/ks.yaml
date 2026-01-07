@@ -22,3 +22,6 @@ spec:
       name: cluster-secrets
     substitute:
       APP: opencloud
+  dependsOn:
+  - name: global-config
+    namespace: flux-system

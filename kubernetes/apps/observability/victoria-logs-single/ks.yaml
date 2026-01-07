@@ -27,3 +27,6 @@ spec:
     kind: Service
     name: victoria-logs-single
     namespace: observability
+  dependsOn:
+  - name: global-config
+    namespace: flux-system

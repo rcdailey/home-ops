@@ -25,6 +25,8 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-
   timeout: 5m
   wait: true
+  dependsOn:
+  - name: global-config
+    namespace: flux-system

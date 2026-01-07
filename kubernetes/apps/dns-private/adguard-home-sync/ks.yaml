@@ -25,6 +25,8 @@ spec:
   - name: secret
     namespace: dns-private
   - name: adguard-home
+  - name: global-config
+    namespace: flux-system
   postBuild:
     substituteFrom:
     - kind: Secret

@@ -31,3 +31,6 @@ spec:
     kind: Service
     name: vmsingle-victoria-metrics-k8s-stack
     namespace: observability
+  dependsOn:
+  - name: global-config
+    namespace: flux-system

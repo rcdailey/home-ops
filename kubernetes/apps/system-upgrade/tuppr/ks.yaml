@@ -23,6 +23,9 @@ spec:
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
+  dependsOn:
+  - name: global-config
+    namespace: flux-system
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
