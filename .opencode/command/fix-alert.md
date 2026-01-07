@@ -1,6 +1,5 @@
 ---
 description: Fix one or more alerts
-argument-hint: [alert-name1] [alert-name2] ...
 ---
 
 # Your Task

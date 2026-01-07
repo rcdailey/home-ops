@@ -1,7 +1,5 @@
 ---
-allowed-tools: Bash(kubectl get:*), Bash(kubectl describe:*), Bash(kubectl logs:*), Bash(kubectl top:*), Bash(kubectl version:*), Bash(kubectl wait:*), Read, Glob, TodoWrite, Edit, MultiEdit
-argument-hint: [namespace/resource] [additional-context]
-description: Debug cluster issues using GitOps-compliant investigation and configuration-based solutions
+description: Debug cluster issues using GitOps-compliant investigation and configuration-based solutions.
 ---
 
 # GitOps Cluster Debugging Protocol

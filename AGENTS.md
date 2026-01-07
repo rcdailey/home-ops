@@ -1,4 +1,4 @@
-# Claude Directives
+# Home-Ops Directives
 
 ## Tier 1: Breaking Rules
 

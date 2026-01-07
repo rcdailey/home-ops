@@ -1,6 +1,5 @@
 ---
 description: Establish collaborative GitOps workflow and investigate cluster state
-argument-hint: [scope or directive] - Optional natural language description of investigation focus
 ---
 
 # Cluster Work Protocol
