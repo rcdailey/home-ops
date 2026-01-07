@@ -26,6 +26,8 @@ spec:
     namespace: dns-private
   - name: rook-ceph-cluster
     namespace: rook-ceph
+  - name: global-config
+    namespace: flux-system
   postBuild:
     substituteFrom:
     - kind: Secret
