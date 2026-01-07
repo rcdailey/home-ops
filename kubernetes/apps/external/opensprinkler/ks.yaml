@@ -12,6 +12,8 @@ spec:
   dependsOn:
   - name: envoy-gateway
     namespace: network
+  - name: global-config
+    namespace: flux-system
   path: ./kubernetes/apps/external/opensprinkler
   prune: true
   sourceRef:

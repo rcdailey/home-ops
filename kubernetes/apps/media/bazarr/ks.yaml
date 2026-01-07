@@ -11,6 +11,8 @@ spec:
   dependsOn:
   - name: rook-ceph-cluster
     namespace: rook-ceph
+  - name: global-config
+    namespace: flux-system
   interval: 1h
   path: ./kubernetes/apps/media/bazarr
   prune: true

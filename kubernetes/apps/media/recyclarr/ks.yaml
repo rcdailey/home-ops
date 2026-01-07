@@ -16,6 +16,8 @@ spec:
   - name: radarr
   - name: radarr-4k
   - name: radarr-anime
+  - name: global-config
+    namespace: flux-system
   interval: 1h
   path: ./kubernetes/apps/media/recyclarr
   postBuild:

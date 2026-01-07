@@ -15,6 +15,8 @@ spec:
       name: sops-age
   dependsOn:
   - name: rook-ceph-operator
+  - name: global-config
+    namespace: flux-system
   interval: 1h
   path: ./kubernetes/apps/rook-ceph/cluster
   postBuild:
@@ -27,6 +29,5 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-
   timeout: 30m
   wait: true

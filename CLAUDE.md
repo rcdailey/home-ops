@@ -187,6 +187,8 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
   for Renovate
 - App-template: Add postBuild.substituteFrom: cluster-secrets; service naming auto-prefixed with
   release name
+- Global dependencies: Apps using cluster-secrets MUST add dependsOn: [{name: global-config,
+  namespace: flux-system}] in ks.yaml; global-config abstracts infrastructure prerequisites
 - PVC: Namespace inherited, volsync handles backups only, ALL apps require explicit pvc.yaml,
   reference via existingClaim
 - Volume types: ceph-block (RWO/Recreate/advancedMounts), ceph-filesystem (RWX/RollingUpdate), NFS
@@ -200,7 +202,8 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
   secretKey uses app's required format, ClusterSecretStore infisical, creationPolicy Owner
 - Priority: 1) envFrom, 2) env.valueFrom, 3) HelmRelease valuesFrom, 4) NEVER
   postBuild.substituteFrom for app secrets
-- SOPS (cluster-wide only): cluster-secrets.sops.yaml; commands: sops set / sops unset
+- Cluster-wide secrets: ClusterExternalSecret (cluster-secrets) auto-syncs to all namespaces from
+  Infisical root path; add via: task infisical:add-secret -- /secret-name "value"
 - ClusterSecretStore: hostAPI <https://app.infisical.com>, auth: universalAuthCredentials, scope:
   projectSlug home-ops, environmentSlug prod
 - NEVER use infisical CLI directly (use Taskfile)
@@ -211,7 +214,7 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 
 - Stable naming (disableNameSuffixHash: true): ONLY for cross-resource dependencies (Helm
   valuesFrom, persistence.name)
-- Components: common (namespace prune protection, cluster-secrets), drift-detection (all namespaces)
+- Components: common (namespace prune protection, sops-age), drift-detection (all namespaces)
 - Volsync: Add component to app `kustomization.yaml`; in `ks.yaml` add `postBuild.substitute.APP`
   (required, names ReplicationSource), `VOLSYNC_PVC` (optional, defaults to APP value, specifies
   which PVC to backup); `postBuild.substituteFrom: cluster-secrets`; `s3://volsync-backups/{APP}/`

@@ -25,3 +25,6 @@ spec:
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
+  dependsOn:
+  - name: global-config
+    namespace: flux-system

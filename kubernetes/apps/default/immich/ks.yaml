@@ -23,6 +23,8 @@ spec:
     namespace: kube-system
   - name: garage-instance
     namespace: storage
+  - name: global-config
+    namespace: flux-system
   postBuild:
     substitute:
       APP: immich

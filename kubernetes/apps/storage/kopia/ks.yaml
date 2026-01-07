@@ -23,3 +23,6 @@ spec:
       name: cluster-secrets
     substitute:
       APP: kopia
+  dependsOn:
+  - name: global-config
+    namespace: flux-system
