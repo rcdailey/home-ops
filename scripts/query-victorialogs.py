@@ -41,7 +41,9 @@ from typing import Any, Dict, List, Optional
 class VictoriaLogsClient:
     """Client for querying VictoriaLogs."""
 
-    def __init__(self, base_url: str = "http://victoria-logs-single.observability:9428"):
+    def __init__(
+        self, base_url: str = "http://victoria-logs-single.observability:9428"
+    ):
         self.base_url = base_url.rstrip("/")
 
     def query_logs(
@@ -236,7 +238,9 @@ class VictoriaLogsClient:
             raise Exception(f"HTTP {e.code}: {error_body}")
 
 
-def format_log_entry(log: Dict[str, Any], show_all_fields: bool = False, show_detail: bool = False) -> str:
+def format_log_entry(
+    log: Dict[str, Any], show_all_fields: bool = False, show_detail: bool = False
+) -> str:
     """Format a log entry for display."""
     timestamp = log.get("_time", "")
     message = log.get("message", log.get("_msg", log.get("msg", "")))
@@ -306,8 +310,16 @@ def detect_victorialogs_url() -> str:
     try:
         # Try HTTPRoute first (external access)
         result = subprocess.run(
-            ["kubectl", "get", "httproute", "-n", "observability", "victoria-logs",
-             "-o", "jsonpath={.spec.hostnames[0]}"],
+            [
+                "kubectl",
+                "get",
+                "httproute",
+                "-n",
+                "observability",
+                "victoria-logs",
+                "-o",
+                "jsonpath={.spec.hostnames[0]}",
+            ],
             capture_output=True,
             text=True,
             timeout=5,
@@ -491,7 +503,9 @@ def main():
         args.limit = args.tail_limit
 
     # Build query from basic filters or use advanced query
-    has_basic_filters = any([args.app, args.namespace, args.pod, args.container, args.level, args.search])
+    has_basic_filters = any(
+        [args.app, args.namespace, args.pod, args.container, args.level, args.search]
+    )
     has_advanced_query = args.query is not None
 
     # Check if query looks like a negative number (misinterpreted -n argument)
@@ -502,7 +516,9 @@ def main():
         )
 
     if has_basic_filters and has_advanced_query:
-        parser.error("Cannot mix basic filters (--app, --namespace, etc.) with advanced query")
+        parser.error(
+            "Cannot mix basic filters (--app, --namespace, etc.) with advanced query"
+        )
 
     if has_basic_filters:
         query = build_query_from_filters(
@@ -518,7 +534,9 @@ def main():
     elif args.stats or args.stats_range:
         query = None
     else:
-        parser.error("Either specify basic filters (--app, --namespace, etc.) or provide a LogSQL query")
+        parser.error(
+            "Either specify basic filters (--app, --namespace, etc.) or provide a LogSQL query"
+        )
 
     # Handle kubectl exec access method
     if args.via_kubectl:
@@ -550,7 +568,9 @@ def main():
 
         elif args.hits:
             if not query:
-                parser.error("--hits requires a query (use basic filters or advanced query)")
+                parser.error(
+                    "--hits requires a query (use basic filters or advanced query)"
+                )
             result = client.query_hits(
                 query,
                 start=args.start,
@@ -562,7 +582,9 @@ def main():
 
         elif args.fields:
             if not query:
-                parser.error("--fields requires a query (use basic filters or advanced query)")
+                parser.error(
+                    "--fields requires a query (use basic filters or advanced query)"
+                )
             result = client.query_field_names(
                 query,
                 start=args.start,
