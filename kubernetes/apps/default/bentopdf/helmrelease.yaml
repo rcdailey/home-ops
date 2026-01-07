@@ -33,7 +33,7 @@ spec:
           bentopdf:
             image:
               repository: docker.io/bentopdf/bentopdf-simple
-              tag: v1.15.3
+              tag: v1.15.4
             env:
               TZ: America/Chicago
             securityContext:
