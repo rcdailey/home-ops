@@ -1,0 +1,58 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "bash": {
+      // kubectl - DENY (hard block, GitOps only)
+      "kubectl apply*": "deny",
+      "kubectl create*": "deny",
+      "kubectl edit*": "deny",
+      "kubectl replace*": "deny",
+      "kubectl label*": "deny",
+      "kubectl taint*": "deny",
+      "kubectl cordon*": "deny",
+      "kubectl uncordon*": "deny",
+      "kubectl port-forward*": "deny",
+
+      // kubectl - ASK (sometimes needed, prompt for approval)
+      "kubectl delete*": "ask",
+      "kubectl patch*": "ask",
+      "kubectl rollout*": "ask",
+      "kubectl scale*": "ask",
+      "kubectl annotate*": "ask",
+      "kubectl drain*": "ask",
+      "kubectl cp*": "ask",
+      "kubectl run*": "ask",
+
+      // talosctl - DENY (infrastructure mutations)
+      "talosctl apply-config*": "deny",
+      "talosctl upgrade*": "deny",
+      "talosctl reset*": "deny",
+      "talosctl reboot*": "deny",
+      "talosctl shutdown*": "deny",
+      "talosctl patch*": "deny",
+      "talosctl edit*": "deny",
+      "talosctl bootstrap*": "deny",
+      "talosctl kubeconfig*": "deny",
+
+      // flux - DENY (infrastructure mutations)
+      "flux install*": "deny",
+      "flux uninstall*": "deny",
+      "flux bootstrap*": "deny",
+      "flux delete*": "deny",
+
+      // flux - ASK (debugging/operations)
+      "flux suspend*": "ask",
+      "flux resume*": "ask",
+
+      // helm - DENY (bypasses GitOps)
+      "helm install*": "deny",
+      "helm upgrade*": "deny",
+      "helm uninstall*": "deny",
+      "helm rollback*": "deny",
+
+      // git - ASK (matches existing AGENTS.md rules)
+      "git commit*": "ask",
+      "git push*": "ask"
+    }
+  }
+}

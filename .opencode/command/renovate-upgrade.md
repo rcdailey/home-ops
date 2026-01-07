@@ -1,31 +1,5 @@
 ---
 description: Comprehensive Renovate PR upgrade validation and merge assistant
-argument-hint: <pr-number> [--dry-run]
-allowed-tools:
-  - Bash(gh pr view:*)
-  - Bash(gh pr checkout:*)
-  - Bash(gh pr merge:*)
-  - Bash(gh api:*)
-  - Bash(git status:*)
-  - Bash(git log:*)
-  - Bash(git commit:*)
-  - Bash(git push:*)
-  - Bash(pre-commit run:*)
-  - Bash(./scripts/test-flux-local.sh:*)
-  - Read
-  - Edit
-  - Grep
-  - Glob
-  - TodoWrite
-  - AskUserQuestion
-  - mcp__octocode__githubSearchCode
-  - mcp__octocode__githubGetFileContent
-  - mcp__octocode__githubSearchPullRequests
-  - mcp__octocode__githubViewRepoStructure
-  - mcp__exa__web_search_exa
-  - mcp__exa__crawling_exa
-  - mcp__context7__resolve-library-id
-  - mcp__context7__get-library-docs
 ---
 
 # Renovate PR Upgrade Assistant
@@ -283,7 +257,7 @@ If major changes were made, offer to run:
 
 ### Commit Changes
 
-Follow conventional commit format from CLAUDE.md:
+Follow conventional commit format from AGENTS.md:
 
 - Breaking changes: `feat(app)!: upgrade to version X with breaking changes`
 - Feature upgrades: `build(deps): update chart/image to version X`
