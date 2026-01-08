@@ -12,10 +12,6 @@ spec:
   # commonMetadata:
   #   labels:
   #     app.kubernetes.io/name: *app
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
   interval: 1h
   path: ./kubernetes/apps/rook-ceph/operator
   postBuild:

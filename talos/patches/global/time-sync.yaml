@@ -1,6 +1,0 @@
-apiVersion: v1alpha1
-kind: TimeSyncConfig
-ntp:
-  servers:
-    - 162.159.200.1
-    - 162.159.200.123

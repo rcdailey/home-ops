@@ -1,0 +1,14 @@
+# Bootstrap resources for Infisical credentials
+# Applied with: just bootstrap::resources
+# Secrets injected via: infisical run --env=prod --path=/bootstrap
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: infisical-credentials
+  namespace: kube-system
+type: Opaque
+stringData:
+  CLIENT_ID: {{ ENV.INFISICAL_CLIENT_ID }}
+  CLIENT_SECRET: {{ ENV.INFISICAL_CLIENT_SECRET }}
+  PROJECT_ID: {{ ENV.INFISICAL_PROJECT_ID }}

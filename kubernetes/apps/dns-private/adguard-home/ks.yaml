@@ -9,10 +9,6 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *appname
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
   interval: 10m
   path: "./kubernetes/apps/dns-private/adguard-home"
   prune: true
