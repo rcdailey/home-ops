@@ -46,9 +46,7 @@ diff-config node="":
         node=$(just talos::select-node "Select node to diff")
     fi
     ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
-    diff_cmd="${DIFFTOOL:-diff}"
-    $diff_cmd <(talosctl get machineconfig -n "$ip" -o yaml | yq '.spec') \
-              <(just talos::render-config "$node")
+    just talos::render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin --dry-run
 
 [doc('Apply Talos config to a node')]
 apply-node node="":
