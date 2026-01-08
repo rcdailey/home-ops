@@ -1,0 +1,17 @@
+# Talos schematic for Talos Factory
+# Submit to: https://factory.talos.dev/schematics
+# Usage: just talos::gen-schematic-id
+#
+# All nodes (controllers and workers) use identical schematic since they have
+# the same hardware (Intel NUCs with i915 GPU).
+---
+customization:
+  extraKernelArgs:
+    - i915.enable_guc=3
+    - i915.mitigations=off
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/i915
+      - siderolabs/intel-ucode
+      - siderolabs/mei
+      - siderolabs/realtek-firmware

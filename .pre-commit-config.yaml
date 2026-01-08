@@ -7,26 +7,11 @@ repos:
     name: Merge Conflict Check
   - id: trailing-whitespace
     name: Trim Whitespace
-    exclude: '\.sops\.yaml$'
   - id: end-of-file-fixer
     name: Fix End of Files
-    exclude: '\.sops\.yaml$'
 
 - repo: local
   hooks:
-  - id: check-dependencies
-    name: Dependency Check
-    entry: scripts/pre-commit/check-dependencies.sh
-    language: script
-    always_run: true
-    pass_filenames: false
-    description: Ensures all required tools are available before running other hooks
-  - id: validate-sops-config
-    name: SOPS Config Validation
-    entry: scripts/pre-commit/validate-sops-config.sh
-    language: script
-    files: '^kubernetes/apps/.*/(ks\.yaml|.*\.sops\.yaml|secrets/.*\.sops\.yaml|secrets/kustomization\.yaml)$'
-    description: Ensures SOPS secrets have proper decryption configuration in Kustomizations
   - id: reloader-validator
     name: Reloader Annotation Validator
     entry: scripts/pre-commit/reloader-validator.py
@@ -42,7 +27,6 @@ repos:
     name: Format YAML with yamlfmt
     description: Formats YAML files with Google's yamlfmt tool
     files: '^kubernetes/.*\.ya?ml$'
-    exclude: '\.sops\.yaml$'
 
 - repo: https://github.com/adrienverge/yamllint
   rev: v1.37.1
@@ -52,7 +36,6 @@ repos:
     description: Lints YAML files for formatting and syntax issues
     args: [-c=.yamllint.yaml]
     files: '\.ya?ml$'
-    exclude: '\.sops\.yaml$'
 
 - repo: https://github.com/gitleaks/gitleaks
   rev: v8.30.0
