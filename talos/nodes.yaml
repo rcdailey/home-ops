@@ -1,0 +1,29 @@
+---
+nodes:
+  lucy:
+    ip: 192.168.1.54
+    mac: "6c:1f:f7:28:71:b4"
+    controller: false
+    disk_model: "SanDisk SDSSDH32"
+  nami:
+    ip: 192.168.1.50
+    mac: "6c:1f:f7:28:71:b8"
+    controller: false
+    disk_model: "CT2000BX500SSD1"
+  marin:
+    ip: 192.168.1.59
+    mac: "6c:1f:f7:28:66:bf"
+    controller: true
+    disk_model: "Samsung SSD 870"
+  sakura:
+    ip: 192.168.1.62
+    mac: "6c:1f:f7:28:71:82"
+    controller: true
+    disk_model: "Samsung SSD 870"
+    disk_size: "<= 300GB"
+  hanekawa:
+    ip: 192.168.1.63
+    mac: "6c:1f:f7:28:71:08"
+    controller: true
+    disk_model: "Samsung SSD 870"
+    disk_size: "<= 300GB"

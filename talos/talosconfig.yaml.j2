@@ -1,0 +1,10 @@
+context: home-ops
+contexts:
+  home-ops:
+    endpoints:
+{% for name, node in nodes|dictsort if node.controller %}
+      - {{ node.ip }}
+{% endfor %}
+    ca: {{ ENV.TALOS_MACHINE_CA_CRT }}
+    crt: {{ ENV.TALOS_ADMIN_CRT }}
+    key: {{ ENV.TALOS_ADMIN_KEY }}
