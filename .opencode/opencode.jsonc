@@ -52,7 +52,11 @@
 
       // git - ASK (matches existing AGENTS.md rules)
       "git commit*": "ask",
-      "git push*": "ask"
+      "git push*": "ask",
+
+      // task/just - DENY (infrastructure operations)
+      "task *": "deny",
+      "just *": "deny"
     }
   }
 }
