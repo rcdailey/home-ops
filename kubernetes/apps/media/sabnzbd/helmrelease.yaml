@@ -63,7 +63,7 @@ spec:
               TP_THEME: plex
             probes:
               liveness:
-                enabled: true
+                enabled: false # TODO: causes crash looping
                 custom: true
                 spec:
                   httpGet:
