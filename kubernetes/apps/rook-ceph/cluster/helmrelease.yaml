@@ -117,11 +117,15 @@ spec:
             osdsPerDevice: "1"
       # Resource limits - prevent memory pressure
       # MGR: peaked at 928Mi with 1Gi limit (90% alert threshold)
+      # MGR-sidecar: spiked to 93Mi of 100Mi default (only exists when mgr.count: 2)
       # OSD: observed using 1.7GB during backfill operations
       resources:
         mgr:
           limits:
             memory: 2Gi
+        mgr-sidecar:
+          limits:
+            memory: 200Mi
         osd:
           limits:
             memory: 8Gi
