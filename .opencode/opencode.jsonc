@@ -50,10 +50,6 @@
       "helm uninstall*": "deny",
       "helm rollback*": "deny",
 
-      // git - ASK (matches existing AGENTS.md rules)
-      "git commit*": "ask",
-      "git push*": "ask",
-
       // task/just - DENY (infrastructure operations)
       "task *": "deny",
       "just *": "deny"
