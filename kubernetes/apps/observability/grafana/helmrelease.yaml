@@ -194,6 +194,18 @@ spec:
       GF_ANALYTICS_REPORTING_ENABLED: false
       GF_AUTH_ANONYMOUS_ENABLED: false
       GF_AUTH_BASIC_ENABLED: true
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: https://auth.${SECRET_DOMAIN}/authorize
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: grafana
+      GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH: email
+      GF_AUTH_GENERIC_OAUTH_ENABLED: true
+      GF_AUTH_GENERIC_OAUTH_NAME: Pocket ID
+      GF_AUTH_GENERIC_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN: true
+      GF_AUTH_GENERIC_OAUTH_GROUPS_ATTRIBUTE_PATH: groups
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: contains(groups[*], 'admins') && 'GrafanaAdmin' || contains(groups[*], 'users') && 'Editor' || 'Viewer'
+      GF_AUTH_GENERIC_OAUTH_SCOPES: openid email profile groups
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: https://auth.${SECRET_DOMAIN}/api/oidc/token
+      GF_AUTH_GENERIC_OAUTH_USE_PKCE: true
+      GF_AUTH_OAUTH_ALLOW_INSECURE_EMAIL_LOOKUP: true
       GF_PLUGINS_PREINSTALL: victoriametrics-logs-datasource
       GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
       GF_EXPLORE_ENABLED: true
@@ -202,6 +214,8 @@ spec:
       GF_NEWS_NEWS_FEED_ENABLED: false
       GF_SECURITY_COOKIE_SAMESITE: grafana
       GF_SERVER_ROOT_URL: https://grafana.${SECRET_DOMAIN}
+
+    envFromSecret: grafana-secret
 
     persistence:
       enabled: false
