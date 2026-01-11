@@ -109,15 +109,6 @@ spec:
             app:
             - path: /config
 
-      media:
-        type: nfs
-        server: 192.168.1.58
-        path: /mnt/user/media
-        advancedMounts:
-          prowlarr:
-            app:
-            - path: /media
-
       tmp:
         type: emptyDir
         advancedMounts:
