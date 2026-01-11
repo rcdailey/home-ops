@@ -13,6 +13,7 @@ resources:
 # - Logs: Disabled centralized Vector; using sidecar pattern (Plex example)
 - ./victoria-metrics-k8s-stack/ks.yaml
 - ./victoria-logs-single/ks.yaml
+- ./grafana-operator/ks.yaml
 - ./grafana/ks.yaml
 - ./gatus/ks.yaml
 - ./silence-operator/ks.yaml

@@ -1,0 +1,49 @@
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: victoriametrics
+spec:
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasource:
+    name: VictoriaMetrics
+    type: prometheus
+    access: proxy
+    url: http://vmsingle-victoria-metrics-k8s-stack.observability:8428
+    isDefault: true
+    jsonData:
+      prometheusType: Prometheus
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: victorialogs
+spec:
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasource:
+    name: VictoriaLogs
+    type: victoriametrics-logs-datasource
+    access: proxy
+    url: http://victoria-logs-single.observability:9428
+    jsonData:
+      maxLines: 1000
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: vmalertmanager
+spec:
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasource:
+    name: VMAlertmanager
+    type: alertmanager
+    access: proxy
+    url: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093
+    jsonData:
+      implementation: prometheus
