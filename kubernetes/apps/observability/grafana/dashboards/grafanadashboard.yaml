@@ -1,0 +1,17 @@
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: container-memory-usage
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  configMapRef:
+    name: container-memory-usage-dashboard
+    key: container-memory-usage.json

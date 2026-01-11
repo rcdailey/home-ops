@@ -9,3 +9,4 @@ resources:
 - ./externalsecret.yaml
 - ./vmalertmanagerconfig.yaml
 - ./vmrule.yaml
+- ./grafanadashboard.yaml
