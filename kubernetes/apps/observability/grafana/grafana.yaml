@@ -1,0 +1,109 @@
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: grafana
+  labels:
+    grafana.internal/instance: grafana
+spec:
+  # Disable operator's default securityContext so our custom one (UID 1000) applies.
+  # Required for correct file ownership on operator-managed PVC.
+  disableDefaultSecurityContext: All
+  config:
+    analytics:
+      check_for_updates: "false"
+      check_for_plugin_updates: "false"
+      reporting_enabled: "false"
+    auth:
+      disable_login_form: "false"
+    auth.anonymous:
+      enabled: "false"
+    auth.basic:
+      enabled: "true"
+    date_formats:
+      use_browser_locale: "true"
+    explore:
+      enabled: "true"
+    feature_toggles:
+      enable: publicDashboards
+    log:
+      mode: console
+    news:
+      news_feed_enabled: "false"
+    plugins:
+      preinstall: victoriametrics-logs-datasource
+    security:
+      cookie_samesite: grafana
+    server:
+      root_url: https://grafana.${SECRET_DOMAIN}
+  deployment:
+    spec:
+      strategy:
+        type: Recreate
+      template:
+        # NOTE: No reloader annotation - Grafana Operator updates grafana-plugins
+        # ConfigMap on every reconciliation, causing constant restarts with Reloader.
+        # The operator handles config changes internally.
+        spec:
+          containers:
+          - name: grafana
+            env:
+            - name: GF_AUTH_GENERIC_OAUTH_ENABLED
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_NAME
+              value: Pocket ID
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
+              value: grafana
+            - name: GF_AUTH_GENERIC_OAUTH_AUTH_URL
+              value: https://auth.${SECRET_DOMAIN}/authorize
+            - name: GF_AUTH_GENERIC_OAUTH_TOKEN_URL
+              value: https://auth.${SECRET_DOMAIN}/api/oidc/token
+            - name: GF_AUTH_GENERIC_OAUTH_SCOPES
+              value: openid email profile groups
+            - name: GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH
+              value: email
+            - name: GF_AUTH_GENERIC_OAUTH_GROUPS_ATTRIBUTE_PATH
+              value: groups
+            - name: GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH
+              value: contains(groups[*], 'admins') && 'GrafanaAdmin' || contains(groups[*], 'users') && 'Editor' || 'Viewer'
+            - name: GF_AUTH_GENERIC_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_USE_PKCE
+              value: "true"
+            - name: GF_AUTH_OAUTH_ALLOW_INSECURE_EMAIL_LOOKUP
+              value: "true"
+            envFrom:
+            - secretRef:
+                name: grafana-secret
+            resources:
+              limits:
+                memory: 512Mi
+              requests:
+                cpu: 50m
+                memory: 128Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: ["ALL"]
+            volumeMounts:
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+          volumes:
+          - name: grafana-data
+            persistentVolumeClaim:
+              claimName: grafana-pvc
+  persistentVolumeClaim:
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: ceph-block
+      resources:
+        requests:
+          storage: 5Gi

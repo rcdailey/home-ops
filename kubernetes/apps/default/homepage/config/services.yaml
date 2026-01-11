@@ -170,7 +170,7 @@
   - Grafana:
       icon: grafana
       href: https://grafana.${SECRET_DOMAIN}/
-      siteMonitor: http://grafana.observability:80
+      siteMonitor: http://grafana-service.observability:3000
 
   - VictoriaMetrics:
       icon: victoriametrics

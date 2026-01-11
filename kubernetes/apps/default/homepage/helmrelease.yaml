@@ -63,6 +63,7 @@ spec:
     defaultPodOptions:
       securityContext:
         fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
         runAsGroup: 1000
         runAsNonRoot: true
         runAsUser: 1000
@@ -96,10 +97,6 @@ spec:
           path: /app/config-templates/widgets.yaml
         - subPath: bookmarks.yaml
           path: /app/config-templates/bookmarks.yaml
-        - subPath: kubernetes.yaml
-          path: /app/config-templates/kubernetes.yaml
-        - subPath: docker.yaml
-          path: /app/config-templates/docker.yaml
 
     route:
       app:

@@ -1,0 +1,32 @@
+---
+# Node Exporter Full - hardware health per node
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: node-exporter-full
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: https://grafana.com/api/dashboards/1860/revisions/41/download
+---
+# Kubernetes Views / Pods - per-pod CPU/memory
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-pods
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: https://grafana.com/api/dashboards/15760/revisions/36/download

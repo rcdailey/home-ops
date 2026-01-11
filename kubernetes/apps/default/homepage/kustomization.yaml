@@ -13,6 +13,3 @@ configMapGenerator:
   - ./config/bookmarks.yaml
   options:
     disableNameSuffixHash: true
-commonLabels:
-  app.kubernetes.io/name: homepage
-  app.kubernetes.io/instance: homepage
