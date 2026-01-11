@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: ghcr.io/pocket-id/pocket-id
-              tag: v2.1.0
+              tag: v2.2.0
             env:
               TZ: America/Chicago
               PORT: &port 1411
