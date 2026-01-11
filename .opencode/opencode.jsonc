@@ -1,5 +1,14 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "formatter": {
+    "yamlfmt": {
+      "command": ["yamlfmt", "$FILE"],
+      "extensions": [".yaml", ".yml"]
+    },
+    "shfmt": {
+      "disabled": true
+    }
+  },
   "permission": {
     "bash": {
       // kubectl - DENY (hard block, GitOps only)
