@@ -1,0 +1,49 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/grafana.integreatly.org/grafanadashboard_v1beta1.json
+# Envoy Gateway Global - gateway-level metrics
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: envoy-gateway
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: https://raw.githubusercontent.com/envoyproxy/gateway/refs/heads/main/charts/gateway-addons-helm/dashboards/envoy-gateway-global.json
+---
+# Envoy Proxy Global - proxy-level metrics
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: envoy-proxy
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: https://raw.githubusercontent.com/envoyproxy/gateway/refs/heads/main/charts/gateway-addons-helm/dashboards/envoy-proxy-global.json
+---
+# Envoy Overview - request rates, error rates, latencies
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: envoy-overview
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: https://grafana.com/api/dashboards/24459/revisions/1/download
