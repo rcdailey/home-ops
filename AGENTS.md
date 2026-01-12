@@ -11,8 +11,6 @@ drift.
   accountability
 - **NEVER use kubectl apply/create/patch** - Bypasses GitOps, creates configuration drift. Use
   manifest changes only.
-- **NEVER proceed to commit without pre-commit validation** - Run `pre-commit run <files>` after ANY
-  changes
 
 ### Storage, Volumes, and Resource Patterns
 
@@ -228,14 +226,13 @@ Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to 
 
 ### Operational Workflows
 
-**GitOps flow:** Modify manifests → Run pre-commit → User commits/pushes → Flux auto-applies →
-Optional task reconcile
+**GitOps flow:** Modify manifests → User commits/pushes → Flux auto-applies → Optional task
+reconcile
 
 **Commands:**
 
 - Setup: mise trust .mise.toml && mise install
 - Sync cluster: task reconcile
-- Validation: pre-commit run --all-files (or --files for specific files)
 - Flux reconcile helmrelease: `flux reconcile hr NAME -n NAMESPACE --force` (`--reset` clears retry,
   `--with-source` refreshes source)
 - Helm: `helm show values <chart>` to check available values before configuring HelmReleases (charts
