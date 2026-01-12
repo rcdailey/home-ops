@@ -1,0 +1,20 @@
+---
+# Local preview for Homepage dashboard
+# Usage: ./scripts/preview-homepage.sh
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    network_mode: bridge
+    init: true
+    ports:
+    - "3080:3000"
+    volumes:
+    - ./config/settings.yaml:/app/config/settings.yaml:ro
+    - ./config/services.yaml:/app/config/services.yaml:ro
+    - ./config/widgets.yaml:/app/config/widgets.yaml:ro
+    - ./config/bookmarks.yaml:/app/config/bookmarks.yaml:ro
+    tmpfs:
+    - /app/config/logs:size=10M
+    - /app/.next/cache:size=50M
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: localhost:3080
