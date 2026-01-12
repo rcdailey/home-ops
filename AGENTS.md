@@ -1,382 +1,209 @@
-# Home-Ops Directives
+# Home-Ops
 
-## Tier 1: Breaking Rules
+Kubernetes homelab managed with Flux GitOps. Repository: `rcdailey/home-ops`
 
-These rules prevent immediate cluster failures. Violations cause crashes, data corruption, or GitOps
-drift.
+## Reference Repositories
 
-### GitOps and Validation
-
-- **NEVER run git commit/push without explicit user request** - GitOps requires user commits for
-  accountability
-- **NEVER use kubectl apply/create/patch** - Bypasses GitOps, creates configuration drift. Use
-  manifest changes only.
-
-### Storage, Volumes, and Resource Patterns
-
-- **RWO volumes MUST use strategy: Recreate** - RollingUpdate causes Multi-Attach errors during pod
-  transitions (ceph-block is RWO)
-- **RWO volumes REQUIRE advancedMounts** - Single-pod exclusive access requires explicit
-  controller/container specification
-- **Jobs/CronJobs with RWO PVCs MUST use native sidecar pattern** - initContainers with
-  restartPolicy: Always prevents Multi-Attach errors on subsequent runs
-- **NEVER specify metadata.namespace in app resources** - Breaks namespace inheritance from parent
-  kustomization.yaml
-- **App ks.yaml (Flux Kustomization) uses spec.targetNamespace** - Exception to inheritance rule,
-  NOT metadata.namespace
-- **NEVER use chart.spec.sourceRef for app-template** - Use chartRef (references OCIRepository).
-  Exception: External HelmRepository charts may use chart.spec.sourceRef.
-- **chartRef REQUIRES namespace for cross-namespace OCIRepository references** - App-template
-  OCIRepository is in flux-system namespace; all HelmReleases MUST specify namespace: flux-system
-
-### Secrets and Configuration
-
-- **NEVER use secret.sops.yaml files** - Obsolete pattern replaced by ExternalSecret with Infisical
-  ClusterSecretStore
-- **NEVER use postBuild.substituteFrom for app secrets** - Timing race condition with ExternalSecret
-  creation causes failures
-- **ONLY use postBuild.substituteFrom for**: cluster-secrets, email-secrets (pre-existing SOPS
-  secrets managed centrally)
-- **NEVER use raw ConfigMap resources** - ALWAYS use configMapGenerator in kustomization.yaml with
-  files from config/ subdirectory
-- **NEVER inline VRL source in vector.yaml** - Separate VRL file required for testing and validation
-- **ALWAYS include test data for VRL validation** - Use ./scripts/test-vector-config.py for
-  validation
-
-## Tier 2: Conventions
-
-Consistency patterns for maintainability and clarity.
-
-### Configuration Standards
-
-- ALWAYS use chartRef (see Tier 1: Storage, Volumes, and Resource Patterns)
-- ALWAYS include appropriate `# yaml-language-server:` directive at top of YAML files
-- ALWAYS use reloader.stakater.com/auto: "true" for ALL apps (NEVER use targeted annotations)
-- ALWAYS use rootless containers (security requirement)
-- ALWAYS check existing applications before making changes
-- PREFER YAML defaults by omission over explicit configuration (minimal config improves
-  maintainability)
-- Add comments explaining WHY special approaches were needed (e.g., chart limitations, upstream
-  issues)
-- NEVER use cluster-apps- prefix in service/app names
-- NEVER invent new patterns or adopt conventions from other repositories
-- NEVER reference real homelab domain names in documentation or config examples (use
-  `${SECRET_DOMAIN}` in YAML manifests)
-- Internal cluster hostnames: ONLY use `service.namespace`, without ending with `svc.cluster.local`
-- Service naming: Single `service:` entry uses HelmRelease name only; multiple entries append the
-  service key (e.g., `plex` vs `plex-main`, `plex-api`)
-- Controller naming: Primary controller MUST match HelmRelease name (e.g., `controllers: plex:` for
-  release `plex`). This produces deployment `plex` instead of `plex-main`. App-template avoids
-  `{release}-{release}` duplication when controller matches release.
-- Primary: `ghcr.io/home-operations/*` containers (semantically versioned, rootless, multi-arch)
-- Secondary: `ghcr.io/onedr0p/*` containers (if home-operations unavailable)
-- Avoid: `ghcr.io/hotio/*` and containers using s6-overlay, gosu
-- NEVER use latest, rolling, or non-semantic tags (semantic versioning required)
-- SHA256 digests: Automatically added by renovatebot
-- Container command/args: Use bracket notation `command: ["cmd", "arg"]` instead of multi-line dash
-  format for consistency
-- ALWAYS use America/Chicago (or equivalent representation) for timezone if needed.
-
-### Health Probes
-
-**App-template defaults (reference only, NEVER override):**
-
-- Defaults (for all 3 probe types): initialDelaySeconds: 0, periodSeconds: 10, timeoutSeconds: 1,
-  failureThreshold: 3, type: TCP
-
-**Standard pattern:**
-
-- Liveness: ALWAYS enable
-- Readiness: DISABLE for single-replica apps; ENABLE only for multi-replica load balancing
-- Startup: OMIT (disabled by default)
-- Probe types: httpGet (preferred), tcpSocket (databases), grpc (when appropriate)
-- httpGet: ONLY specify path and port
-- Adjust defaults ONLY when receiving false alerts
-
-### Security and Networking
-
-- HTTPRoute ONLY for all routing (never Ingress)
-- NEVER use kubectl port-forward under ANY circumstances (alternatives: kubectl exec, debug pods,
-  HTTPRoute exposure)
-- NEVER configure External-DNS on HTTPRoutes (Gateways only)
-- NEVER create LoadBalancer without explicit user discussion
-- Route backendRefs: Use full service name (e.g., radarr-app), not identifier (e.g., app)
-- NEVER use wildcards for SecurityPolicy headers (always explicit headers)
-- NEVER specify explicit timeouts/intervals without justification (use Flux defaults)
-- Container securityContext: runAsUser/runAsGroup 1000, runAsNonRoot true, allowPrivilegeEscalation
-  false, readOnlyRootFilesystem true, capabilities drop ALL
-- Pod securityContext: fsGroup 1000, fsGroupChangePolicy OnRootMismatch
-
-### Database and Logging
-
-- NEVER share databases between apps (dedicated instances per app)
-- Use CloudNativePG for PostgreSQL, MariaDB Operator for MariaDB
-- NEVER create custom equivalents to standard Vector fields (message, timestamp, level, severity,
-  host, source_type)
-- VRL regex: Prefer non-greedy `.*?` over greedy `.*`
-- Sidecar pattern: Regular containers for Deployments, initContainers with restartPolicy: Always for
-  Jobs/CronJobs
-
-## Tier 3: Reference
-
-Implementation patterns, operational workflows, and environment details.
-
-This repository is at `rcdailey/home-ops` in github.
-
-### Reference Repositories
-
-Popular repositories to use as reliable reference implementations. You MUST reference these
-repositories often as documentation.
+Consult these for patterns and precedent:
 
 - onedr0p/home-ops
 - bjw-s-labs/home-ops
 - buroa/k8s-gitops
 - m00nwtchr/homelab-cluster
 
-### API Versions
+## Constraints
 
-- ExternalSecret: `external-secrets.io/v1`
+### GitOps
 
-### Repository and File Organization
+- NEVER run `git commit/push` without explicit user request
+- NEVER use `kubectl apply/create/patch` - modify manifests only
+- NEVER use `kubectl port-forward` - use kubectl exec, debug pods, or HTTPRoute
 
-Pattern: `kubernetes/apps/namespace/app/`
+### Storage
 
-- Namespace directories MUST match actual namespace names exactly
-- Use flat directory structure for YAML files
-- Use subdirectory for files used in configMapGenerator
-- Use straightforward naming matching directory structure (e.g., mariadb-operator NOT
-  cluster-apps-mariadb-operator)
-- App `ks.yaml` file (Flux Kustomization) must be listed in parent kustomization.yaml resources
-- App `kustomization.yaml` lists resources: `helmrelease.yaml`, `pvc.yaml`, `externalsecret.yaml`,
-  etc
-- ALWAYS include ./pvc.yaml in kustomization.yaml resources
-- PVC naming: Primary PVC matches app name, additional PVCs use {app}-{purpose}
+- RWO volumes MUST use `strategy: Recreate` - RollingUpdate causes Multi-Attach errors
+- RWO volumes REQUIRE `advancedMounts` - explicit controller/container specification
+- Jobs/CronJobs with RWO PVCs MUST use native sidecar pattern (initContainers with `restartPolicy:
+  Always`)
 
-### Kustomization and Manifest Patterns
+### Namespaces and Resources
 
-Namespace inheritance: Parent kustomization.yaml sets namespace → Inherits to all resources
-(exceptions: Flux Kustomization `spec.targetNamespace`, sourceRef cross-namespace references)
+- NEVER specify `metadata.namespace` in app resources - breaks inheritance from parent
+  kustomization.yaml
+- App ks.yaml uses `spec.targetNamespace` (exception to inheritance rule)
+- chartRef REQUIRES `namespace: flux-system` for app-template OCIRepository
 
-**Flux Kustomization (ks.yaml):**
+### Secrets and Configuration
 
-- Uses `spec.targetNamespace: namespace` (NOT metadata.namespace)
-- Must be listed in parent kustomization.yaml resources
-- GitRepository sourceRef: Use flux-system for local repo; external GitRepositories used as
-  Kustomization sources MUST be defined in flux/meta/repos (chicken-and-egg: ks.yaml can't deploy its
-  own source)
-- SOPS decryption: MUST include secretRef: {name: sops-age} for encrypted secrets
-- Single ks.yaml: Same namespace, timing, lifecycle; Multiple: Different namespaces/timing/lifecycle
+- NEVER use `secret.sops.yaml` files - use ExternalSecret with Infisical
+- NEVER use `postBuild.substituteFrom` for app secrets - race condition with ExternalSecret
+- ONLY use `postBuild.substituteFrom` for: cluster-secrets, email-secrets
+- NEVER use raw ConfigMap resources - use configMapGenerator with files from config/
+- NEVER inline VRL source in vector.yaml - separate .vrl file required for testing
 
-**Kustomize files:**
+### Networking
 
-- Parent kustomization.yaml: Sets namespace, lists app ks.yaml files, includes components (common,
-  drift-detection)
-- App kustomization.yaml: Lists resources (helmrelease.yaml, pvc.yaml, externalsecret.yaml), may
-  include components (volsync), may define configMapGenerator
+- HTTPRoute ONLY for routing (never Ingress)
+- NEVER configure External-DNS on HTTPRoutes (Gateways only)
+- NEVER create LoadBalancer without user discussion
 
-**Chart and storage patterns:**
-
-- GitRepository (Kustomization sources): ALWAYS in flux/meta/repos - cannot be local because ks.yaml
-  references it as sourceRef before it exists
-- OCIRepository/HelmRepository (chart sources): Can be local because HelmReleases reference them via
-  chartRef, deployed together by ks.yaml using flux-system source. Shared (2+ apps) in flux/meta/repos
-  with `namespace: flux-system`, chartRef needs `namespace: flux-system`; single-use local to app,
-  omit `namespace:` (inherits), chartRef omits namespace; exception: volsync `namespace: kube-system`
-  for Renovate
-- App-template: Add postBuild.substituteFrom: cluster-secrets; service naming auto-prefixed with
-  release name
-- Global dependencies: Apps using cluster-secrets MUST add dependsOn: [{name: global-config,
-  namespace: flux-system}] in ks.yaml; global-config abstracts infrastructure prerequisites
-- PVC: Namespace inherited, volsync handles backups only, ALL apps require explicit pvc.yaml,
-  reference via existingClaim
-- Volume types: ceph-block (RWO/Recreate/advancedMounts), ceph-filesystem (RWX/RollingUpdate), NFS
-  (RWX), emptyDir
-- Mount config: RWO requires advancedMounts; RWX/emptyDir PREFER advancedMounts for consistency
-  (globalMounts acceptable for multi-controller only when needed)
-
-**Secrets:**
-
-- ExternalSecret: Infisical path /namespace/app-name/, secret names use kebab-case (remoteRef.key),
-  secretKey uses app's required format, ClusterSecretStore infisical, creationPolicy Owner
-- Priority: 1) envFrom, 2) env.valueFrom, 3) HelmRelease valuesFrom, 4) NEVER
-  postBuild.substituteFrom for app secrets
-- Cluster-wide secrets: ClusterExternalSecret (cluster-secrets) auto-syncs to all namespaces from
-  Infisical root path; add via: task infisical:add-secret -- /secret-name "value"
-- ClusterSecretStore: hostAPI <https://app.infisical.com>, auth: universalAuthCredentials, scope:
-  projectSlug home-ops, environmentSlug prod
-- NEVER use infisical CLI directly (use Taskfile)
-- Add secrets: task infisical:add-secret -- /namespace/app-name/secret-name "value"
-- Path: /namespace/app-name/, names: kebab-case
-
-**ConfigMaps and components:**
-
-- Stable naming (disableNameSuffixHash: true): ONLY for cross-resource dependencies (Helm
-  valuesFrom, persistence.name)
-- Components: common (namespace prune protection, sops-age), drift-detection (all namespaces)
-- Volsync: Add component to app `kustomization.yaml`; in `ks.yaml` add `postBuild.substituteFrom:
-  cluster-secrets`; backups go to `s3://volsync-backups/{APP}/`. Variables: `APP` (required),
-  `VOLSYNC_PVC` (default: APP), `VOLSYNC_STORAGECLASS`/`VOLSYNC_SNAPSHOTCLASS` (default: ceph-block/
-  csi-ceph-blockpool). For ceph-filesystem PVCs: MUST set both to
-  ceph-filesystem/csi-ceph-filesystem
-
-**Security and container patterns:**
-
-- Native sidecar for Jobs: initContainers with restartPolicy: Always (see Tier 1)
-- Container config: /config volume, emptyDir to /tmp, args: field for CLI options
-
-### Operational Workflows
-
-**GitOps flow:** Modify manifests → User commits/pushes → Flux auto-applies → Optional task
-reconcile
-
-**Commands:**
-
-- Setup: mise trust .mise.toml && mise install
-- Sync cluster: task reconcile
-- Flux reconcile helmrelease: `flux reconcile hr NAME -n NAMESPACE --force` (`--reset` clears retry,
-  `--with-source` refreshes source)
-- Helm: `helm show values <chart>` to check available values before configuring HelmReleases (charts
-  have custom value schemas - don't assume standard k8s patterns); `helm template` to test rendering
-- PV migration: Install `kubectl krew install pv-migrate`; workflow: `kubectl apply -f new-pvc.yaml`
-  (imperative), `kubectl pv-migrate --source=old --source-namespace=ns --dest=new
-  --dest-namespace=ns --ignore-mounted`, update Git manifests, Flux adopts existing PVC
-- Talos:
-  1. After talos configuration changes, run `task talos:generate-config` only once
-  1. Then `task talos:apply-node IP=192.168.1.X` once for each node to apply configuration. Only do
-     this one node at a time!
-- When running `talosctl` commands, use the format `talosctl <subcommand> <otheroptions> -n
-  <nodeip>`, e.g. `talosctl usage /var/lib/containerd -n 192.168.1.62`. The `-n` option must be
-  toward the end.
-
-**Conventional commits (MANDATORY path-based):**
-
-- ci: `.github/workflows/**`, `.taskfiles/**`, Taskfile.yaml
-- build: renovate.json5, `.renovate/**`
-- chore: .editorconfig, .gitignore, .yamllint.yaml, .markdownlint-cli2.yaml, .pre-commit-config.yaml
-- docs: `*.md`, `docs/**`, LICENSE, SECURITY.md, CODEOWNERS
-- feat (k8s): New apps/services (new kubernetes/apps/namespace/app/ directories)
-- fix (k8s): Bug fixes, crash loops, probe failures, resource issues, alert resolutions
-- refactor (k8s): Resource reorganization, no behavior change
-- feat/fix (scripts): Script capabilities/bug fixes
-- Breaking (type!:): API/CRD upgrades, incompatible Helm upgrades, storage migrations
-- Examples: fix(plex): resolve crash loop, feat(bookstack): add wiki documentation app
-
-### Environment and Infrastructure
-
-**Stack components:**
-
-- OS: Talos Linux
-- Orchestration: Kubernetes with Flux v2 GitOps
-- Secrets: SOPS with Age encryption, External Secrets Operator with Infisical
-- Storage: Rook Ceph (distributed), NFS from Nezuko, Garage S3
-- Automation: Taskfile, mise, talhelper
-- Renovate: `renohate[bot]` (intentional name)
-
-**Network topology:**
-
-- Main subnet: 192.168.1.0/24
-- BGP subnet (Cilium LoadBalancers): 192.168.50.0/24
-- Gateway (Unifi UDMP): 192.168.1.1
-- Kubernetes API: 192.168.1.70
-- LoadBalancer IPs (Cilium IPAM): 192.168.50.71-.99 (infrastructure), 192.168.50.100+ (applications)
-- Cloudflare Tunnel: 6b689c5b-81a9-468e-9019-5892b3390500
-
-**Cluster nodes:**
-
-- Control plane: hanekawa (192.168.1.63), marin (192.168.1.59), sakura (192.168.1.62)
-- Workers: lucy (192.168.1.54), nami (192.168.1.50)
-
-**Storage backends:**
-
-- Rook Ceph: Distributed block/filesystem storage across cluster nodes
-- NFS (Nezuko 192.168.1.58): Media (100Ti), Photos (10Ti)
-- Garage S3 (192.168.1.58:3900): Region garage, buckets: postgres-backups, volsync-backups,
-  bookstack-backups
-- CloudNativePG: Barman WAL archiving to s3://postgres-backups/{cluster}/
-- Ceph toolbox: kubectl exec -n rook-ceph deploy/rook-ceph-tools -- [ceph status | rbd COMMAND]
-
-**Intel GPU support:**
-
-- Resource allocation: DRA via ResourceClaimTemplate with deviceClassName: gpu.intel.com
-- Management: Intel GPU Resource Driver (replaces deprecated Device Plugin)
-- Dependencies: Apps requiring GPU must depend on intel-gpu-resource-driver in kube-system
-- Pod pattern: spec.resourceClaims references ResourceClaimTemplate, container uses resources.claims
-- OpenVINO: Set OPENVINO_DEVICE: GPU for hardware acceleration
-
-**Available namespaces:**
-
-Namespace followed by a list of apps in that namespace:
-
-- cert-manager: cert-manager
-- default: bookstack, homepage, immich, opencloud, pocket-id
-- dns-private: adguard-home, adguard-home-sync, dns-gateway, external-dns
-- external: opensprinkler
-- flux-system: flux-instance, flux-operator
-- home: esphome, home-assistant, zwave-js-ui
-- kube-system: cilium, cloudnative-pg, coredns, descheduler, external-secrets, headlamp,
-  intel-gpu-resource-driver, keda, mariadb-operator, metrics-server, multus, node-feature-discovery,
-  openebs, reloader, snapshot-controller, spegel
-- media: bazarr, imagemaid, jellyseerr, kometa, plex, plexanisync, prowlarr, qbittorrent, radarr,
-  radarr-4k, radarr-anime, recyclarr, sabnzbd, sonarr, sonarr-anime, tautulli
-- network: cloudflare-dns, cloudflare-tunnel, envoy-gateway
-- observability: blackbox-exporter, gatus, grafana, silence-operator, victoria-logs-single,
-  victoria-metrics-k8s-stack, vmrules
-- rook-ceph: cluster, operator
-- storage: garage, kopia, volsync
-- system-upgrade: etcd-defrag, tuppr
-
-**Utility scripts:**
-
-- app-scout.sh: Kubernetes migration discovery
-- test-vector-config.py: Vector VRL configuration testing (REQUIRED for Vector changes)
-- validate-vmrules.sh: VMRule CRD syntax validation
-- query-vm.py: Query VictoriaMetrics and vmalert (metrics, alerts, discovery)
-- ceph.sh: Ceph command wrapper via rook-ceph-tools
-- query-victorialogs.py: Query VictoriaLogs
-- update-gitignore/: Modular gitignore generation
-
-**query-vm.py reference** (use `--json` before subcommand for machine output):
+## Commands
 
 ```bash
-# Container metrics (namespace, pod-regex, container; default --from 7d)
-./scripts/query-vm.py cpu media 'plex.*' plex
-./scripts/query-vm.py memory default 'homepage.*' app --from 24h
+# Setup
+mise trust .mise.toml && mise install
 
-# Raw PromQL
-./scripts/query-vm.py query 'up{job="kubelet"}'
-./scripts/query-vm.py query 'rate(http_requests_total[5m])' --from 1h --step 5m
+# Reconcile cluster
+task reconcile
 
-# Discovery
-./scripts/query-vm.py labels                  # All label names
-./scripts/query-vm.py labels namespace        # Values for label
-./scripts/query-vm.py metrics --filter cpu    # Find metrics by pattern
+# Flux operations
+flux reconcile hr NAME -n NAMESPACE --force
+flux reconcile hr NAME -n NAMESPACE --force --with-source  # Refresh source
+flux reconcile hr NAME -n NAMESPACE --force --reset        # Clear retry backoff
 
-# Alerts (current state from vmalert)
-./scripts/query-vm.py alerts                  # Firing (excludes Watchdog/InfoInhibitor)
-./scripts/query-vm.py alerts --state all      # All states
-./scripts/query-vm.py alert <name>            # Detail for specific alert
-./scripts/query-vm.py rules                   # All alert rules
+# Helm (check values before configuring)
+helm show values CHART
+helm template RELEASE CHART
 
-# Alerts (historical from VictoriaMetrics)
-./scripts/query-vm.py alerts --from 24h       # Alerts that fired in period
-./scripts/query-vm.py alert <name> --from 24h # Historical alert details with firing periods
+# Talos (one node at a time)
+task talos:generate-config                    # After config changes, run once
+task talos:apply-node IP=192.168.1.X          # Apply to each node sequentially
+talosctl SUBCOMMAND OPTIONS -n NODEIP         # -n toward end
 ```
 
-**Diagnostic PromQL recipes** (use with `query` subcommand, replace NS/POD/C):
+Scripts in `./scripts/` - use `--help` for usage:
 
-```promql
-# Restarts (raw counter; query first to avoid increase() counter-reset confusion)
-kube_pod_container_status_restarts_total{namespace="NS",pod=~"POD.*"}
+- query-vm.py: VictoriaMetrics queries, alerts, discovery
+- query-victorialogs.py: Log queries
+- ceph.sh: Ceph commands via rook-ceph-tools
+- test-vector-config.py: Vector VRL validation (required for Vector changes)
+- validate-vmrules.sh: VMRule syntax validation
 
-# OOMKilled pods
-kube_pod_container_status_last_terminated_reason{reason="OOMKilled",namespace="NS"}
+## Project Structure
 
-# CrashLoopBackOff pods
-kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff",namespace="NS"}
-
-# Exit code (137=SIGKILL/OOM, 143=SIGTERM, 1=app error)
-kube_pod_container_status_last_terminated_exitcode{namespace="NS",pod=~"POD.*"}
-
-# CPU throttling % (requires CPU limits set)
-sum(increase(container_cpu_cfs_throttled_periods_total{namespace="NS",pod=~"POD.*",container="C"}[1h])) / sum(increase(container_cpu_cfs_periods_total{namespace="NS",pod=~"POD.*",container="C"}[1h])) * 100
+```txt
+kubernetes/apps/{namespace}/{app}/
+  ks.yaml           Flux Kustomization (spec.targetNamespace)
+  kustomization.yaml    Kustomize resources list, components
+  helmrelease.yaml  HelmRelease (chartRef or chart.spec.sourceRef)
+  pvc.yaml          PersistentVolumeClaims
+  externalsecret.yaml   Infisical secrets
+  config/           Files for configMapGenerator
 ```
+
+Parent kustomization.yaml sets namespace, lists app ks.yaml files.
+
+**Load the `k8s-app` skill before creating or modifying apps.** Update the skill when conventions
+change.
+
+## Conventions
+
+### Naming
+
+- App/service names: no `cluster-apps-` prefix
+- Controller name MUST match HelmRelease name (produces `app` not `app-main`)
+- Single service: HelmRelease name; multiple: append key (`plex`, `plex-api`)
+- PVC: primary = app name; additional = `{app}-{purpose}`
+- Internal hostnames: `service.namespace` (no `.svc.cluster.local`)
+
+### Containers
+
+- Primary: `ghcr.io/home-operations/*` (rootless, multi-arch, semver)
+- Secondary: `ghcr.io/onedr0p/*`
+- Avoid: `ghcr.io/hotio/*`, s6-overlay, gosu
+- NEVER use `latest`, `rolling`, or non-semantic tags
+- command/args: bracket notation `["cmd", "arg"]`
+
+### Configuration
+
+- `reloader.stakater.com/auto: "true"` on ALL apps
+- Timezone: America/Chicago
+- YAML language-server directive at top of files
+- Prefer defaults by omission over explicit configuration
+- Domain references: `${SECRET_DOMAIN}` (never real domain in manifests)
+
+### Security
+
+- Container: runAsUser/runAsGroup 1000, runAsNonRoot true, allowPrivilegeEscalation false,
+  readOnlyRootFilesystem true, capabilities drop ALL
+- Pod: fsGroup 1000, fsGroupChangePolicy OnRootMismatch
+
+### Probes
+
+- Liveness and Readiness: ALWAYS enable both
+- Startup: OMIT unless slow initialization requires it
+- httpGet with app health endpoint (e.g., `/ping`, `/health`) preferred over TCP
+- Use YAML anchor (`&probes` / `*probes`) to share spec between liveness and readiness
+- Omit default values (initialDelaySeconds: 0, periodSeconds: 10, timeoutSeconds: 1,
+  failureThreshold: 3)
+
+### Databases
+
+- NEVER share databases between apps
+- PostgreSQL: CloudNativePG
+- MariaDB: MariaDB Operator
+
+## Environment
+
+### Stack
+
+- OS: Talos Linux
+- Orchestration: Kubernetes + Flux v2
+- Secrets: SOPS/Age + External Secrets Operator + Infisical
+- Storage: Rook Ceph, NFS (Nezuko), Garage S3
+- Automation: Taskfile, mise, talhelper
+
+### Network
+
+| Purpose            | Address           |
+|--------------------|-------------------|
+| Main subnet        | 192.168.1.0/24    |
+| BGP (Cilium LB)    | 192.168.50.0/24   |
+| Gateway (UDMP)     | 192.168.1.1       |
+| Kubernetes API     | 192.168.1.70      |
+| LB: Infrastructure | 192.168.50.71-.99 |
+| LB: Applications   | 192.168.50.100+   |
+
+### Nodes
+
+| Role    | Name     | IP           |
+|---------|----------|--------------|
+| Control | hanekawa | 192.168.1.63 |
+| Control | marin    | 192.168.1.59 |
+| Control | sakura   | 192.168.1.62 |
+| Worker  | lucy     | 192.168.1.54 |
+| Worker  | nami     | 192.168.1.50 |
+
+### Storage Backends
+
+| Backend                       | Type             | Notes                                   |
+|-------------------------------|------------------|-----------------------------------------|
+| Rook Ceph                     | Block/Filesystem | ceph-block (RWO), ceph-filesystem (RWX) |
+| NFS (192.168.1.58)            | Media, Photos    | /mnt/user/media, /mnt/user/photos       |
+| Garage S3 (192.168.1.58:3900) | Backups          | postgres-backups, volsync-backups       |
+
+Ceph toolbox: `kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status`
+
+### Intel GPU
+
+- DRA via ResourceClaimTemplate with deviceClassName: gpu.intel.com
+- Apps depend on intel-gpu-resource-driver in kube-system
+- OpenVINO: `OPENVINO_DEVICE: GPU`
+
+## Commits
+
+Path-based conventional commits:
+
+| Type     | Paths                                                   |
+|----------|---------------------------------------------------------|
+| ci       | .github/workflows/**, .taskfiles/**, Taskfile.yaml      |
+| build    | renovate.json5, .renovate/**                            |
+| chore    | .editorconfig, .gitignore, .yamllint.yaml, lint configs |
+| docs     | *.md, docs/**, LICENSE                                  |
+| feat     | New apps (kubernetes/apps/namespace/app/)               |
+| fix      | Bug fixes, crash loops, probe failures, alerts          |
+| refactor | Resource reorganization, no behavior change             |
+
+Breaking changes (type!:): API/CRD upgrades, storage migrations
+
+Examples: `fix(plex): resolve crash loop`, `feat(bookstack): add wiki app`
