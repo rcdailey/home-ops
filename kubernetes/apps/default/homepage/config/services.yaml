@@ -1,13 +1,7 @@
-# yaml-language-server: $schema=https://gethomepage.dev/config-schema/services.json
-# Services configuration for Homepage
-# Organized into tabs: Main (daily use), Media (arr stack), Infra (everything else)
+# Services organized by usage frequency: frequently used expanded, rarely used collapsed
 ---
-- Dashboard:
-  - Plex:
-      icon: plex
-      href: https://plex.${SECRET_DOMAIN}/
-      siteMonitor: http://plex.media:32400
-
+# Expanded sections (frequently used)
+- Favorites:
   - Jellyseerr:
       icon: jellyseerr
       href: https://request.${SECRET_DOMAIN}/
@@ -23,15 +17,10 @@
       href: https://ha.${SECRET_DOMAIN}/
       siteMonitor: http://home-assistant.home:8123
 
-  - qBittorrent:
-      icon: qbittorrent
-      href: https://torrent.${SECRET_DOMAIN}/
-      siteMonitor: http://qbittorrent.media:8080
-
-  - qui:
-      icon: qbittorrent
-      href: https://qui.${SECRET_DOMAIN}/
-      siteMonitor: http://qui.media:7476
+  - Tautulli:
+      icon: tautulli
+      href: https://tautulli.${SECRET_DOMAIN}/
+      siteMonitor: http://tautulli.media:8181
 
   - BookStack:
       icon: bookstack
@@ -43,16 +32,26 @@
       href: https://cloud.${SECRET_DOMAIN}/
       siteMonitor: http://opencloud.default:9200
 
-  - VS Code:
-      icon: vscode
-      href: https://code.${SECRET_DOMAIN}/
-      siteMonitor: http://code-server.home:8080
+  - AdGuard Home:
+      icon: adguard-home
+      href: https://dns.${SECRET_DOMAIN}/
+      siteMonitor: http://adguard-home-primary.dns-private:3000
 
-- Media Automation:
-  - Prowlarr:
-      icon: prowlarr
-      href: https://prowlarr.${SECRET_DOMAIN}/
-      siteMonitor: http://prowlarr.media:9696
+  - Grafana:
+      icon: grafana
+      href: https://grafana.${SECRET_DOMAIN}/
+      siteMonitor: http://grafana-service.observability:3000
+
+- Media:
+  - Qui:
+      icon: qbittorrent
+      href: https://qui.${SECRET_DOMAIN}/
+      siteMonitor: http://qui.media:7476
+
+  - Sabnzbd:
+      icon: sabnzbd
+      href: https://nzb.${SECRET_DOMAIN}/
+      siteMonitor: http://sabnzbd.media:8080
 
   - Sonarr:
       icon: sonarr
@@ -64,58 +63,42 @@
       href: https://sonarr-anime.${SECRET_DOMAIN}/
       siteMonitor: http://sonarr-anime.media:8989
 
-  - Radarr:
-      icon: radarr
-      href: https://radarr.${SECRET_DOMAIN}/
-      siteMonitor: http://radarr.media:7878
-
   - Radarr (4K):
       icon: radarr
       href: https://radarr-4k.${SECRET_DOMAIN}/
       siteMonitor: http://radarr-4k.media:7878
+
+  - Radarr:
+      icon: radarr
+      href: https://radarr.${SECRET_DOMAIN}/
+      siteMonitor: http://radarr.media:7878
 
   - Radarr (Anime):
       icon: radarr
       href: https://radarr-anime.${SECRET_DOMAIN}/
       siteMonitor: http://radarr-anime.media:7878
 
+  - Prowlarr:
+      icon: prowlarr
+      href: https://prowlarr.${SECRET_DOMAIN}/
+      siteMonitor: http://prowlarr.media:9696
+
   - Bazarr:
       icon: bazarr
       href: https://bazarr.${SECRET_DOMAIN}/
       siteMonitor: http://bazarr.media:6767
 
-- Media Tools:
-  - Tautulli:
-      icon: tautulli
-      href: https://tautulli.${SECRET_DOMAIN}/
-      siteMonitor: http://tautulli.media:8181
+  - Plex:
+      icon: plex
+      href: https://plex.${SECRET_DOMAIN}/
+      siteMonitor: http://plex.media:32400
 
-  - Sabnzbd:
-      icon: sabnzbd
-      href: https://nzb.${SECRET_DOMAIN}/
-      siteMonitor: http://sabnzbd.media:8080
+  - qBittorrent:
+      icon: qbittorrent
+      href: https://torrent.${SECRET_DOMAIN}/
+      siteMonitor: http://qbittorrent.media:8080
 
-- Infrastructure:
-  - Headlamp:
-      icon: mdi-kubernetes
-      href: https://cluster.${SECRET_DOMAIN}/
-      siteMonitor: http://headlamp.kube-system:80
-
-  - AdGuard Home:
-      icon: adguard-home
-      href: https://dns.${SECRET_DOMAIN}/
-      siteMonitor: http://adguard-home-primary.dns-private:3000
-
-  - AdGuard Sync:
-      icon: adguard-home
-      href: https://dns-sync.${SECRET_DOMAIN}/
-      siteMonitor: http://adguard-home-sync.dns-private:8080
-
-  - Pocket-ID:
-      icon: mdi-account-key
-      href: https://auth.${SECRET_DOMAIN}/
-      siteMonitor: http://pocket-id.default:1411
-
+- Home Automation:
   - ESPHome:
       icon: esphome
       href: https://esphome.${SECRET_DOMAIN}/
@@ -136,6 +119,27 @@
       href: https://sprinkler.${SECRET_DOMAIN}/
       siteMonitor: http://opensprinkler.external:80
 
+- Infrastructure:
+  - Headlamp:
+      icon: mdi-kubernetes
+      href: https://cluster.${SECRET_DOMAIN}/
+      siteMonitor: http://headlamp.kube-system:80
+
+  - AdGuard Sync:
+      icon: adguard-home
+      href: https://dns-sync.${SECRET_DOMAIN}/
+      siteMonitor: http://adguard-home-sync.dns-private:8080
+
+  - Pocket-ID:
+      icon: mdi-account-key
+      href: https://auth.${SECRET_DOMAIN}/
+      siteMonitor: http://pocket-id.default:1411
+
+  - VS Code:
+      icon: vscode
+      href: https://code.${SECRET_DOMAIN}/
+      siteMonitor: http://code-server.home:8080
+
   - Unraid:
       icon: unraid
       href: http://192.168.1.58/Dashboard
@@ -145,11 +149,6 @@
       icon: ubiquiti-unifi
       href: https://192.168.1.1/
       ping: 192.168.1.1
-
-  - Proxmox:
-      icon: proxmox
-      href: https://192.168.1.54:8006/
-      ping: 192.168.1.54
 
   - AT&T Gateway:
       icon: mdi-router-wireless
@@ -161,16 +160,20 @@
       href: http://192.168.1.53/
       ping: 192.168.1.53
 
+  - CUPS Print Server:
+      icon: mdi-printer
+      href: http://192.168.1.52:631/
+      ping: 192.168.1.52
+
+  - APC SmartConnect:
+      icon: mdi-battery-charging-100
+      href: https://smartconnect.apc.com/
+
 - Monitoring:
   - Gatus:
       icon: gatus
       href: https://status.${SECRET_DOMAIN}/
       siteMonitor: http://gatus.observability:80
-
-  - Grafana:
-      icon: grafana
-      href: https://grafana.${SECRET_DOMAIN}/
-      siteMonitor: http://grafana-service.observability:3000
 
   - VictoriaMetrics:
       icon: victoriametrics
@@ -203,32 +206,6 @@
       siteMonitor: http://kopia.storage:80
 
   - Garage:
-      icon: mdi-garage
+      icon: si-amazons3
       href: http://garage.storage:3903
       siteMonitor: http://garage.storage:3903
-
-- External Services:
-  - Bitwarden:
-      icon: bitwarden
-      href: https://vault.bitwarden.com/
-
-  - Unifi Portal:
-      icon: ubiquiti-unifi
-      href: https://unifi.ui.com/dashboard
-
-  - Cloudflare:
-      icon: cloudflare
-      href: https://dash.cloudflare.com
-
-  - BorgBase:
-      icon: mdi-backup-restore
-      href: https://www.borgbase.com/repositories
-
-  - APC SmartConnect:
-      icon: mdi-battery-charging-100
-      href: https://smartconnect.apc.com/
-
-  - CUPS Print Server:
-      icon: mdi-printer
-      href: http://192.168.1.52:631/
-      ping: 192.168.1.52
