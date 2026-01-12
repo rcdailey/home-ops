@@ -1,64 +1,33 @@
 ---
-# Settings configuration for Homepage
-# This file contains global settings that control the appearance and behavior
-# of the homepage dashboard.
-#
-# Key settings:
-# - title: Browser tab title and main heading
-# - favicon: Icon displayed in browser tab and bookmarks
-# - theme: Color scheme (light, dark, or color name)
-# - layout: Per-group layout configuration (style, columns, heights)
-# - quicklaunch: Search functionality settings
-#
-# Use ${SECRET_DOMAIN} for domain substitution via Flux.
 title: Nami
 favicon: https://raw.githubusercontent.com/rcdailey/home-ops/main/kubernetes/apps/default/homepage/icons/nami.png
 
-# Theme configuration
 theme: dark
 color: slate
 iconStyle: theme
 
-# Layout configuration with tabs
+# Layout: no tabs, frequently used expanded, rarely used collapsed
 layout:
-  # Main tab - frequently used services
-  Dashboard:
-    tab: Main
-    style: column
+  Favorites:
+    style: row
     columns: 4
-  # Media tab - arr stack and media tools
-  Media Automation:
-    tab: Media
-    style: column
+  Media:
+    style: row
     columns: 4
-  Media Tools:
-    tab: Media
-    style: column
-    columns: 4
-  # Infra tab - infrastructure, monitoring, external
+  Home Automation:
+    columns: 1
   Infrastructure:
-    tab: Infra
-    style: row
-    columns: 4
+    columns: 1
   Monitoring:
-    tab: Infra
-    style: row
-    columns: 4
-    initiallyCollapsed: true
-  External Services:
-    tab: Infra
-    style: row
-    columns: 6
-    initiallyCollapsed: true
+    columns: 1
 
-# Global settings for compactness
 useEqualHeights: true
-maxGroupColumns: 6
 headerStyle: clean
 statusStyle: dot
 target: _self
+maxGroupColumns: 1
+fullWidth: true
 
-# Quick launch settings
 quicklaunch:
   searchDescriptions: true
   hideInternetSearch: false
@@ -66,5 +35,4 @@ quicklaunch:
   hideVisitURL: false
   provider: google
 
-# Hide version info
 hideVersion: true
