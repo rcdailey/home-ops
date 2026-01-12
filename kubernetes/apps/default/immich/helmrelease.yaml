@@ -32,12 +32,17 @@ spec:
           reloader.stakater.com/auto: "true"
         pod:
           enableServiceLinks: false
+          nodeSelector:
+            feature.node.kubernetes.io/custom-intel-gpu: "true"
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
+          resourceClaims:
+          - name: gpu
+            resourceClaimTemplateName: immich
         containers:
           main:
             image:
@@ -54,6 +59,8 @@ spec:
                 memory: 256Mi
               limits:
                 memory: 4Gi
+              claims:
+              - name: gpu
 
       machine-learning:
         strategy: Recreate
