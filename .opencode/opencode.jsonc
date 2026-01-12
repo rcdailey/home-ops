@@ -29,8 +29,6 @@
       "kubectl scale*": "ask",
       "kubectl annotate*": "ask",
       "kubectl drain*": "ask",
-      "kubectl cp*": "ask",
-      "kubectl run*": "ask",
 
       // talosctl - DENY (infrastructure mutations)
       "talosctl apply-config*": "deny",
