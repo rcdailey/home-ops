@@ -11,3 +11,4 @@ resources:
 - ./internal.yaml
 - ./external.yaml
 - ./external-gateway-service.yaml
+- ./grafanadashboard.yaml

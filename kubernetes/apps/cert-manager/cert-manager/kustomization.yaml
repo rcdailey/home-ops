@@ -6,3 +6,4 @@ resources:
 - helmrelease.yaml
 - clusterissuer.yaml
 - externalsecret.yaml
+- grafanadashboard.yaml

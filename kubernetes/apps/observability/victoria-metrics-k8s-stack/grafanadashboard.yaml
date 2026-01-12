@@ -13,7 +13,55 @@ spec:
   datasources:
   - datasourceName: VictoriaMetrics
     inputName: DS_PROMETHEUS
-  url: https://grafana.com/api/dashboards/1860/revisions/41/download
+  url: https://grafana.com/api/dashboards/1860/revisions/42/download
+---
+# Kubernetes Views / Global - cluster-wide overview
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-global
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: https://grafana.com/api/dashboards/15757/revisions/43/download
+---
+# Kubernetes Views / Namespaces - per-namespace resource usage
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-namespaces
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: https://grafana.com/api/dashboards/15758/revisions/44/download
+---
+# Kubernetes Views / Nodes - per-node CPU/memory/disk
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-views-nodes
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: https://grafana.com/api/dashboards/15759/revisions/40/download
 ---
 # Kubernetes Views / Pods - per-pod CPU/memory
 apiVersion: grafana.integreatly.org/v1beta1
@@ -29,4 +77,20 @@ spec:
   datasources:
   - datasourceName: VictoriaMetrics
     inputName: DS_PROMETHEUS
-  url: https://grafana.com/api/dashboards/15760/revisions/36/download
+  url: https://grafana.com/api/dashboards/15760/revisions/37/download
+---
+# Kubernetes Volumes - PVC usage and capacity
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: k8s-volumes
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: https://grafana.com/api/dashboards/11454/revisions/14/download

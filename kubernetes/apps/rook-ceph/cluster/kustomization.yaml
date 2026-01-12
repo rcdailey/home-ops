@@ -7,4 +7,5 @@ resources:
 - helmrelease.yaml
 - httproute.yaml
 - externalsecret.yaml
+- grafanadashboard.yaml
 # - cephobjectstoreuser-console.yaml

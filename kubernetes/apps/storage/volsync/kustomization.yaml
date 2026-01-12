@@ -7,3 +7,4 @@ resources:
 - ./mutatingadmissionpolicy.yaml
 - ./kopiamaintenance.yaml
 - ./externalsecret.yaml
+- ./grafanadashboard.yaml
