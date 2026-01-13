@@ -177,8 +177,8 @@ endpoints:
   - "[STATUS] == 200"
 
 - name: Headlamp
-  group: kube-system
-  url: http://headlamp.kube-system:80
+  group: default
+  url: http://headlamp.default:80
   interval: 1m
   conditions:
   - "[STATUS] == 200"

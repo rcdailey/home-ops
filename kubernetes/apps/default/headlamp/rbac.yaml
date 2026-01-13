@@ -3,7 +3,6 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: headlamp-admin
-  namespace: kube-system
 automountServiceAccountToken: true
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -17,4 +16,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: headlamp-admin
-  namespace: kube-system
+  namespace: default
