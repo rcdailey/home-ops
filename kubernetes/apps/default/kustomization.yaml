@@ -12,4 +12,5 @@ resources:
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
 - ./opencloud/ks.yaml
+- ./headlamp/ks.yaml
 - ./pocket-id/ks.yaml
