@@ -123,7 +123,7 @@
   - Headlamp:
       icon: mdi-kubernetes
       href: https://cluster.${SECRET_DOMAIN}/
-      siteMonitor: http://headlamp.kube-system:80
+      siteMonitor: http://headlamp.default:80
 
   - AdGuard Sync:
       icon: adguard-home

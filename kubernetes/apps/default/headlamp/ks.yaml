@@ -5,12 +5,12 @@ kind: Kustomization
 metadata:
   name: &app headlamp
 spec:
-  targetNamespace: kube-system
+  targetNamespace: default
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   interval: 1h
-  path: ./kubernetes/apps/kube-system/headlamp
+  path: ./kubernetes/apps/default/headlamp
   postBuild:
     substituteFrom:
     - name: cluster-secrets
