@@ -30,6 +30,15 @@ spec:
     config:
       baseURL: ""
       pluginsDir: /headlamp/plugins
+      oidc:
+        secret:
+          create: false
+        externalSecret:
+          enabled: true
+          name: headlamp-oidc-secret
+        issuerURL: https://auth.${SECRET_DOMAIN}
+        scopes: openid profile email
+        callbackURL: https://cluster.${SECRET_DOMAIN}/oidc-callback
 
     initContainers:
     - name: headlamp-flux-plugin
