@@ -24,6 +24,7 @@ task scripts:gitignore:update
 ## Templates Covered
 
 The `templates.txt` already includes templates that cover common patterns:
+
 - `.DS_Store` (macOS template)
 - `Thumbs.db` (Windows template)
 - `.venv/` (Python template)

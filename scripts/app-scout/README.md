@@ -1,6 +1,10 @@
 # App Scout - Kubernetes Migration Discovery Tool
 
-App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.dev), designed to automate the discovery of real-world Kubernetes deployment patterns. This tool enables AI-assisted analysis and automated searches across thousands of GitOps repositories, making it ideal for migrating Docker Compose services to Kubernetes and learning deployment best practices from production environments.
+App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.dev), designed to
+automate the discovery of real-world Kubernetes deployment patterns. This tool enables AI-assisted
+analysis and automated searches across thousands of GitOps repositories, making it ideal for
+migrating Docker Compose services to Kubernetes and learning deployment best practices from
+production environments.
 
 ## Quick Start
 
@@ -20,8 +24,8 @@ App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.de
 ./scripts/app-scout.sh discover <app_name> [--sample-count N]
 ```
 
-**Purpose**: Find all deployment patterns for an application
-**Output**: JSON showing dedicated charts vs app-template usage
+- **Purpose**: Find all deployment patterns for an application
+- **Output**: JSON showing dedicated charts vs app-template usage
 
 **Example**:
 
@@ -35,8 +39,8 @@ App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.de
 ./scripts/app-scout.sh correlate <app_name1> <app_name2> [...] [--sample-count N]
 ```
 
-**Purpose**: Find repositories that contain multiple applications deployed together
-**Output**: JSON showing repositories with all specified apps and their deployment details
+- **Purpose**: Find repositories that contain multiple applications deployed together
+- **Output**: JSON showing repositories with all specified apps and their deployment details
 
 **Example**:
 
@@ -55,6 +59,7 @@ App Scout is a command-line interface for [kubesearch.dev](https://kubesearch.de
 After discovering repositories, use octocode MCP tools to inspect configuration files:
 
 **Available Tools**:
+
 - `githubViewRepoStructure`: Explore repository directory structure
 - `githubSearchCode`: Search for specific code patterns across files
 - `githubGetFileContent`: Retrieve complete file contents

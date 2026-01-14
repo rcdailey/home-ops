@@ -7,12 +7,14 @@ description: Fix one or more alerts
 Query current alerts in vmalert and fix specified alert(s) or pick one to investigate.
 
 **Usage**:
+
 - With arguments: `/fix-alert AlertName1 AlertName2` - Fix specific alerts
 - Without arguments: `/fix-alert` - List firing and pending alerts and pick one to fix
 
 ## CRITICAL RULES - PROHIBITED SOLUTIONS
 
 **NEVER adjust health probes as a solution to alerts.** This includes:
+
 - Adding new probe configurations
 - Modifying probe timing/thresholds/parameters
 - Restoring previously removed probe configurations
@@ -21,6 +23,7 @@ Query current alerts in vmalert and fix specified alert(s) or pick one to invest
 Probes detect failures - they don't fix root causes. Adjusting probes masks problems.
 
 **ONLY use GitOps/configuration-based solutions:**
+
 - Fix resource limits/requests
 - Adjust application configuration
 - Fix networking/service configuration
@@ -38,9 +41,11 @@ Investigate why the underlying failure is occurring instead of adding detection/
    - Without arguments: Run `./scripts/query-vm.py alerts` to list firing alerts, then pick one
 
 2. **Check git history BEFORE attempting any fix**:
+
    ```bash
    git log -p --follow -- path/to/relevant/file.yaml
    ```
+
    - Look for previous attempts at fixing the same alert
    - Understand why previous fixes were implemented or reverted
    - Avoid fix/unfix/fix/unfix cycles by learning from historical context
