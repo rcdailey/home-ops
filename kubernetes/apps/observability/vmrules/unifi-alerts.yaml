@@ -1,0 +1,52 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/victoriametrics/operator/master/config/crd/bases/operator.victoriametrics.com_vmrules.yaml
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: unifi-alerts
+spec:
+  groups:
+  - name: unifi-link-speed
+    interval: 30s
+    rules:
+    # Compliance: Catch unconfigured ports with active links
+    # Ports should follow naming convention: <description>-<speed> (e.g., NAS-10G, Printer-100M)
+    # Excludes APs - their uplink ports are uneditable and always show as "Port N"
+    - alert: UnifiPortMissingSpeedLabel
+      expr: unpoller_device_port_port_speed_bps{port_name!~".+-(100M|1G|2\\.5G|10G)", name!~".* AP$"} > 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Port {{ $labels.port_num }} on {{ $labels.name }} missing speed label"
+        description: "Port has active link but name '{{ $labels.port_name }}' doesn't follow naming convention (<description>-<speed>)"
+
+    # 10G ports degraded below expected speed
+    - alert: UnifiLinkSpeedDegraded10G
+      expr: unpoller_device_port_port_speed_bps{port_name=~".+-10G"} < 10000000000
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "10G port {{ $labels.port_name }} on {{ $labels.name }} degraded"
+        description: "Expected 10Gbps, negotiated {{ $value | humanize }}bps"
+
+    # 2.5G ports degraded below expected speed
+    - alert: UnifiLinkSpeedDegraded2_5G
+      expr: unpoller_device_port_port_speed_bps{port_name=~".+-2\\.5G"} < 2500000000
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "2.5G port {{ $labels.port_name }} on {{ $labels.name }} degraded"
+        description: "Expected 2.5Gbps, negotiated {{ $value | humanize }}bps"
+
+    # 1G ports degraded below expected speed
+    - alert: UnifiLinkSpeedDegraded1G
+      expr: unpoller_device_port_port_speed_bps{port_name=~".+-1G"} < 1000000000
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "1G port {{ $labels.port_name }} on {{ $labels.name }} degraded"
+        description: "Expected 1Gbps, negotiated {{ $value | humanize }}bps"
