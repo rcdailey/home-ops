@@ -41,6 +41,12 @@ Consult these for patterns and precedent:
 - NEVER use raw ConfigMap resources - use configMapGenerator with files from config/
 - NEVER inline VRL source in vector.yaml - separate .vrl file required for testing
 
+### Scaling
+
+- KEDA ScaledObjects create HPAs that continuously enforce replica counts
+- Manual `kubectl scale` is overridden by KEDA HPA when trigger is active
+- To manually scale: pause ScaledObject first (`autoscaling.keda.sh/paused: "true"` annotation)
+
 ### Networking
 
 - HTTPRoute ONLY for routing (never Ingress)
