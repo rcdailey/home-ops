@@ -1,3 +1,4 @@
+---
 # Pre-commit hooks for Kubernetes manifest validation
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -29,13 +30,19 @@ repos:
     files: '^kubernetes/.*\.ya?ml$'
 
 - repo: https://github.com/adrienverge/yamllint
-  rev: v1.37.1
+  rev: v1.38.0
   hooks:
   - id: yamllint
     name: YAML Lint
     description: Lints YAML files for formatting and syntax issues
     args: [-c=.yamllint.yaml]
     files: '\.ya?ml$'
+
+- repo: https://github.com/DavidAnson/markdownlint-cli2
+  rev: v0.20.0
+  hooks:
+  - id: markdownlint-cli2
+    args: [--fix]
 
 - repo: https://github.com/gitleaks/gitleaks
   rev: v8.30.0
