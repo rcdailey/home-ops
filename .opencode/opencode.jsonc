@@ -26,6 +26,7 @@
       "kubectl delete*": "ask",
       "kubectl patch*": "ask",
       "kubectl rollout*": "ask",
+      "kubectl rollout history*": "allow",
       "kubectl scale*": "ask",
       "kubectl annotate*": "ask",
       "kubectl drain*": "ask",
