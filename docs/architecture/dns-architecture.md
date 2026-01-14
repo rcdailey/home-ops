@@ -2,14 +2,18 @@
 
 ## Overview
 
-This document describes the DNS architecture and resolution flow for services running in the cluster. The architecture uses AdGuard Home for DNS filtering with VLAN-based client rules and conditional forwarding for local domain resolution.
+This document describes the DNS architecture and resolution flow for services running in the
+cluster. The architecture uses AdGuard Home for DNS filtering with VLAN-based client rules and
+conditional forwarding for local domain resolution.
 
 ## Design Challenges
 
 The DNS architecture solves two fundamental problems:
 
-- **Local traffic efficiency**: Internal requests to `domain.com` services must short-circuit to local cluster gateways instead of routing through external Cloudflare infrastructure
-- **Subnet-specific filtering**: Different VLANs require distinct content filtering policies, demanding DNS server solutions that preserve client source IPs
+- **Local traffic efficiency**: Internal requests to `domain.com` services must short-circuit to
+  local cluster gateways instead of routing through external Cloudflare infrastructure
+- **Subnet-specific filtering**: Different VLANs require distinct content filtering policies,
+  demanding DNS server solutions that preserve client source IPs
 
 ## DNS Resolution Flow
 
@@ -154,9 +158,11 @@ flowchart TD
 
 The architecture implements a dual-path DNS resolution system:
 
-- **Internal Path**: Home devices connect directly to AdGuard Home for filtering and conditional forwarding to local DNS records
+- **Internal Path**: Home devices connect directly to AdGuard Home for filtering and conditional
+  forwarding to local DNS records
 - **External Path**: Internet clients resolve through Cloudflare DNS to tunnel endpoints
-- **Client IP Preservation**: Direct connections to AdGuard Home enable real source IP visibility for VLAN-based filtering
+- **Client IP Preservation**: Direct connections to AdGuard Home enable real source IP visibility
+  for VLAN-based filtering
 
 ### External-DNS Integration
 
@@ -164,9 +170,10 @@ A dual-provider external-dns setup automatically manages DNS records:
 
 - **UniFi Provider**: Watches all HTTPRoutes and creates local DNS records in UDMP
 - **Cloudflare Provider**: Watches external HTTPRoutes and creates public DNS records
-- **Target Inheritance**: HTTPRoutes inherit gateway targets automatically without explicit configuration
+- **Target Inheritance**: HTTPRoutes inherit gateway targets automatically without explicit
+  configuration
 
-### VLAN-Based Filtering
+### VLAN Filtering Strategy
 
 Network segmentation enables subnet-specific content filtering:
 
@@ -182,6 +189,7 @@ Network segmentation enables subnet-specific content filtering:
 Primary DNS server providing ad/tracker blocking, VLAN-based filtering, and conditional forwarding.
 
 **Key Features**:
+
 - Real source IP preservation for VLAN-based filtering
 - Conditional forwarding to UDMP for local domain resolution
 - 590,523+ filtering rules with automatic updates
@@ -189,17 +197,20 @@ Primary DNS server providing ad/tracker blocking, VLAN-based filtering, and cond
 
 ### DNS Gateway Service
 
-Provider-agnostic LoadBalancer service that separates infrastructure from application concerns, enabling zero-downtime DNS provider switching.
+Provider-agnostic LoadBalancer service that separates infrastructure from application concerns,
+enabling zero-downtime DNS provider switching.
 
 ### Envoy Gateway Infrastructure
 
 Dual gateway architecture for service exposure:
+
 - **External Gateway**: WAN/tunnel accessible services
 - **Internal Gateway**: LAN-only services
 
 ### External-DNS Providers
 
 Automated DNS record management across multiple providers:
+
 - **UniFi External-DNS**: Local DNS records in UDMP
 - **Cloudflare External-DNS**: Public DNS records for internet access
 
@@ -222,6 +233,7 @@ When internet clients query DNS through Cloudflare:
 ### Client IP Preservation
 
 Direct client connections to AdGuard Home eliminate proxy masking:
+
 - Clients connect directly to AdGuard Home (192.168.50.71)
 - Real source IPs enable VLAN-based filtering rules
 - No UDMP DNS forwarding to mask client identities
@@ -283,7 +295,7 @@ filters:
   - HaGeZi Threat Intelligence Feeds (532,939 rules) - Malware protection
 ```
 
-### DNS Gateway Service
+### DNS Gateway Service Configuration
 
 **Configuration**: `kubernetes/apps/dns-private/dns-gateway/service.yaml`
 
@@ -294,23 +306,27 @@ filters:
 - **Ports**: TCP/UDP 53 → 5353
 
 **Benefits**:
+
 - Zero-downtime DNS provider switching
 - Infrastructure/application separation
 - Future Blocky/other DNS provider support
 
-### Envoy Gateway Infrastructure
+### Envoy Gateway Configuration
 
 **External Gateway** (`kubernetes/apps/network/envoy-gateway/external.yaml`):
+
 - **VIP**: `192.168.50.73`
 - **Target**: `external.domain.com`
 - **Purpose**: WAN/tunnel accessible services
 
 **Internal Gateway** (`kubernetes/apps/network/envoy-gateway/internal.yaml`):
+
 - **VIP**: `192.168.50.72`
 - **Target**: `internal.domain.com`
 - **Purpose**: LAN-only services
 
 **EnvoyProxy Configuration**:
+
 - **Traffic Policy**: Cluster (via parametersRef)
 - **TLS**: Wildcard certificate for `*.domain.com`
 
@@ -319,6 +335,7 @@ filters:
 #### Cloudflare External-DNS
 
 **HTTPRoute Instance** (`kubernetes/apps/network/cloudflare-dns/httproute.yaml`):
+
 - **Sources**: `gateway-httproute`
 - **Filter**: `--gateway-name=external`
 - **Purpose**: External HTTPRoutes → Cloudflare DNS (internet access)
@@ -326,6 +343,7 @@ filters:
 - **Record Pattern**: `service.domain.com` → CNAME → `external.domain.com`
 
 **CRD Instance** (`kubernetes/apps/network/cloudflare-dns/crd.yaml`):
+
 - **Sources**: `crd`
 - **Namespace**: `network`
 - **Purpose**: Gateway A records → Cloudflare DNS
@@ -333,11 +351,13 @@ filters:
 - **Record Pattern**: `external.domain.com` → CNAME → `tunnel.cfargotunnel.com`
 
 **Manual Records** (Cloudflare dashboard):
+
 - **Tunnel endpoint**: Managed via Cloudflare Tunnel configuration
 
 #### UniFi External-DNS
 
 **Single Instance** (`kubernetes/apps/dns-private/external-dns/helmrelease.yaml`):
+
 - **Provider**: `webhook` (UniFi webhook)
 - **Sources**: `gateway-httproute`
 - **Purpose**: All HTTPRoutes → UDMP local DNS records
@@ -394,7 +414,6 @@ spec:
   - name: external  # Inherits external.domain.com
   hostnames: ["service.domain.com"]
 ```
-
 
 ## Traffic Flow Examples
 
