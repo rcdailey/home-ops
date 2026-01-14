@@ -8,3 +8,4 @@ resources:
 - ./kubernetes-alerts.yaml
 - ./ceph-alerts.yaml
 - ./pvc-alerts.yaml
+- ./unifi-alerts.yaml

@@ -19,3 +19,4 @@ resources:
 - ./silence-operator/ks.yaml
 - ./vmrules
 - ./blackbox-exporter/ks.yaml
+- ./unpoller/ks.yaml
