@@ -102,6 +102,7 @@ spec:
       enabled: true
       spec:
         disableNamespaceMatcher: true
+        externalURL: https://vmalertmanager.${SECRET_DOMAIN}
         replicaCount: 1
         storage:
           volumeClaimTemplate:
