@@ -9,6 +9,7 @@ description: Comprehensive Renovate PR upgrade validation and merge assistant
 If no PR number is provided as `$1`:
 
 1. List all open Renovate PRs:
+
    ```bash
    gh pr list --author "app/renovate" --state open --json number,title
    ```
