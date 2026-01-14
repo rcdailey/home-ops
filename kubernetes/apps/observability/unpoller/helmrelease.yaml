@@ -37,7 +37,7 @@ spec:
           app:
             image:
               repository: ghcr.io/unpoller/unpoller
-              tag: v2.21.0@sha256:bd72ffa08f0e88cf660f3ce1b4eee355a35a2d3da82f9c6475106291ee39f464
+              tag: v2.21.0@sha256:a08b532be181256318211b6170691e316d29ac04575bc54d59620189953f03aa
             env:
               TZ: America/Chicago
               # Prometheus exporter settings
