@@ -54,6 +54,15 @@ SEVERITY_COLORS = {
     "none": "blue",
 }
 IGNORED_ALERTS = {"Watchdog", "InfoInhibitor"}
+IGNORED_ALERT_PREFIXES = ("Unifi",)
+
+
+def is_ignored_alert(alertname: str) -> bool:
+    """Check if alert should be ignored."""
+    if alertname in IGNORED_ALERTS:
+        return True
+    return alertname.startswith(IGNORED_ALERT_PREFIXES)
+
 
 # Global JSON output mode
 _json_mode = False
@@ -464,7 +473,7 @@ def _cmd_alerts_current(args: argparse.Namespace) -> None:
         a
         for a in alerts
         if a.get("state") in states
-        and a.get("labels", {}).get("alertname") not in IGNORED_ALERTS
+        and not is_ignored_alert(a.get("labels", {}).get("alertname", ""))
     ]
 
     if _json_mode:
@@ -526,7 +535,7 @@ def _cmd_alerts_historical(args: argparse.Namespace, time_range: TimeRange) -> N
             continue
 
         alertname = metric.get("alertname", "unknown")
-        if alertname in IGNORED_ALERTS:
+        if is_ignored_alert(alertname):
             continue
 
         severity = metric.get("severity", "none")
