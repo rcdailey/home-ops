@@ -127,6 +127,7 @@ change.
 - YAML language-server directive at top of files
 - Prefer defaults by omission over explicit configuration
 - Domain references: `${SECRET_DOMAIN}` (never real domain in manifests)
+- SMTP: `smtp-relay.network:587` (no auth) - never configure app-specific SMTP credentials
 
 ### Security
 
