@@ -60,7 +60,7 @@ Consult these for patterns and precedent:
 mise trust .mise.toml && mise install
 
 # Reconcile cluster
-task reconcile
+just reconcile
 
 # Flux operations
 flux reconcile hr NAME -n NAMESPACE --force
@@ -72,8 +72,8 @@ helm show values CHART
 helm template RELEASE CHART
 
 # Talos (one node at a time)
-task talos:generate-config                    # After config changes, run once
-task talos:apply-node IP=192.168.1.X          # Apply to each node sequentially
+just talos generate-config                    # After config changes, run once
+just talos apply-node IP=192.168.1.X          # Apply to each node sequentially
 talosctl SUBCOMMAND OPTIONS -n NODEIP         # -n toward end
 ```
 
@@ -157,7 +157,7 @@ change.
 - Orchestration: Kubernetes + Flux v2
 - Secrets: SOPS/Age + External Secrets Operator + Infisical
 - Storage: Rook Ceph, NFS (Nezuko), Garage S3
-- Automation: Taskfile, mise, talhelper
+- Automation: just, mise, talhelper
 
 ### Network
 
@@ -202,7 +202,7 @@ Path-based conventional commits:
 
 | Type     | Paths                                                   |
 |----------|---------------------------------------------------------|
-| ci       | .github/workflows/**, .taskfiles/**, Taskfile.yaml      |
+| ci       | .github/workflows/**, .justfiles/**, .justfile          |
 | build    | renovate.json5, .renovate/**                            |
 | chore    | .editorconfig, .gitignore, .yamllint.yaml, lint configs |
 | docs     | *.md, docs/**, LICENSE                                  |

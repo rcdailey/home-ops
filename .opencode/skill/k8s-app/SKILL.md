@@ -261,7 +261,7 @@ spec:
       key: /namespace/example-app/api-key  # Infisical path (kebab-case)
 ```
 
-**Path format:** `/namespace/app-name/secret-name` **Add secrets:** `task infisical:add-secret --
+**Path format:** `/namespace/app-name/secret-name` **Add secrets:** `just infisical add-secret
 /namespace/app-name/secret-name "value"`
 
 ## Multi-Controller Apps
@@ -379,7 +379,7 @@ resourceClaimTemplates:
 5. [ ] Create pvc.yaml if stateful (match storage type to strategy)
 6. [ ] Create externalsecret.yaml if secrets needed
 7. [ ] Add ks.yaml to parent `kubernetes/apps/{namespace}/kustomization.yaml`
-8. [ ] Add secrets to Infisical: `task infisical:add-secret -- /namespace/app/key "value"`
+8. [ ] Add secrets to Infisical: `just infisical add-secret /namespace/app/key "value"`
 
 ## Common Mistakes
 

@@ -48,7 +48,7 @@ For control plane nodes, ensure cluster has quorum without this node before star
    Regenerate configs:
 
    ```bash
-   task talos:generate-config
+   just talos generate-config
    ```
 
 5. Install Talos. Node will reboot automatically. Wait 5-8 minutes for installation and rejoin.
@@ -110,7 +110,7 @@ talosctl apply-config --insecure \
 Boot from USB installer, correct `talconfig.yaml` disk model, regenerate and reapply:
 
 ```bash
-task talos:generate-config
+just talos generate-config
 talosctl apply-config --insecure --nodes {node-ip} --file talos/clusterconfig/home-ops-{node-hostname}.yaml
 ```
 
