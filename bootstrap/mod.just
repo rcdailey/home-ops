@@ -22,7 +22,7 @@ talos-apply:
     for node in $(yq '.nodes | keys | .[]' "{{nodes_file}}"); do
         ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
         just log info "Applying config to $node ($ip)..."
-        if ! output=$(just talos::render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin --insecure 2>&1); then
+        if ! output=$(just talos render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin --insecure 2>&1); then
             if [[ "$output" == *"certificate required"* ]]; then
                 just log info "Talos already configured, skipping" node="$node"
                 continue

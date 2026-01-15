@@ -27,7 +27,7 @@ Prerequisites: [mise](https://mise.jdx.dev/installing-mise.html) installed.
 1. Generate Talos configuration:
 
    ```bash
-   just talos::init-config
+   just talos init-config
    ```
 
 1. Verify access:
@@ -44,13 +44,13 @@ Bootstrap a new cluster from scratch:
 1. Bootstrap Talos cluster:
 
    ```bash
-   just bootstrap::talos
+   just bootstrap talos
    ```
 
 1. Bootstrap applications:
 
    ```bash
-   just bootstrap::apps
+   just bootstrap apps
    ```
 
 ## Quick Reference

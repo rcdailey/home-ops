@@ -43,10 +43,10 @@ diff-config node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just talos::select-node "Select node to diff")
+        node=$(just talos select-node "Select node to diff")
     fi
     ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
-    just talos::render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin --dry-run
+    just talos render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin --dry-run
 
 [doc('Apply Talos config to a node')]
 apply-node node="":
@@ -54,11 +54,11 @@ apply-node node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just talos::select-node "Select node to apply config")
+        node=$(just talos select-node "Select node to apply config")
     fi
     ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
     just log info "Applying config to $node ($ip)..."
-    just talos::render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin
+    just talos render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin
 
 [doc('Generate schematic ID from Talos factory')]
 gen-schematic-id:
@@ -84,7 +84,7 @@ reboot-node node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just talos::select-node "Select node to reboot")
+        node=$(just talos select-node "Select node to reboot")
     fi
     ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
     just log info "Rebooting $node ($ip)..."
@@ -96,7 +96,7 @@ shutdown-node node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just talos::select-node "Select node to shutdown")
+        node=$(just talos select-node "Select node to shutdown")
     fi
     ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
     just log info "Shutting down $node ($ip)..."
@@ -108,10 +108,10 @@ upgrade-node node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just talos::select-node "Select node to upgrade")
+        node=$(just talos select-node "Select node to upgrade")
     fi
     ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
-    image=$(just talos::render-config "$node" | yq '.machine.install.image')
+    image=$(just talos render-config "$node" | yq '.machine.install.image')
     just log info "Upgrading $node ($ip)..." image="$image"
     talosctl upgrade -n "$ip" --image "$image" --timeout=10m
 
