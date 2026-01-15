@@ -7,53 +7,53 @@ helmDefaults:
   waitForJobs: true
 
 repositories:
-  - name: cilium
-    url: https://helm.cilium.io
+- name: cilium
+  url: https://helm.cilium.io
 
 releases:
-  - name: cilium
-    namespace: kube-system
-    atomic: true
-    chart: cilium/cilium
-    version: 1.18.5
-    values: ['../kubernetes/apps/kube-system/cilium/app/helm/values.yaml']
+- name: cilium
+  namespace: kube-system
+  atomic: true
+  chart: cilium/cilium
+  version: 1.18.6
+  values: ['../kubernetes/apps/kube-system/cilium/app/helm/values.yaml']
 
-  - name: coredns
-    namespace: kube-system
-    atomic: true
-    chart: oci://ghcr.io/coredns/charts/coredns
-    version: 1.45.0
-    values: ['../kubernetes/apps/kube-system/coredns/app/helm/values.yaml']
-    needs: ['kube-system/cilium']
+- name: coredns
+  namespace: kube-system
+  atomic: true
+  chart: oci://ghcr.io/coredns/charts/coredns
+  version: 1.45.0
+  values: ['../kubernetes/apps/kube-system/coredns/app/helm/values.yaml']
+  needs: ['kube-system/cilium']
 
-  - name: spegel
-    namespace: kube-system
-    atomic: true
-    chart: oci://ghcr.io/spegel-org/helm-charts/spegel
-    version: 0.6.0
-    values: ['../kubernetes/apps/kube-system/spegel/app/helm/values.yaml']
-    needs: ['kube-system/coredns']
+- name: spegel
+  namespace: kube-system
+  atomic: true
+  chart: oci://ghcr.io/spegel-org/helm-charts/spegel
+  version: 0.6.0
+  values: ['../kubernetes/apps/kube-system/spegel/app/helm/values.yaml']
+  needs: ['kube-system/coredns']
 
-  - name: cert-manager
-    namespace: cert-manager
-    atomic: true
-    chart: oci://quay.io/jetstack/charts/cert-manager
-    version: v1.19.1
-    values: ['../kubernetes/apps/cert-manager/cert-manager/app/helm/values.yaml']
-    needs: ['kube-system/spegel']
+- name: cert-manager
+  namespace: cert-manager
+  atomic: true
+  chart: oci://quay.io/jetstack/charts/cert-manager
+  version: v1.19.1
+  values: ['../kubernetes/apps/cert-manager/cert-manager/app/helm/values.yaml']
+  needs: ['kube-system/spegel']
 
-  - name: flux-operator
-    namespace: flux-system
-    atomic: true
-    chart: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator
-    version: 0.38.1
-    values: ['../kubernetes/apps/flux-system/flux-operator/app/helm/values.yaml']
-    needs: ['cert-manager/cert-manager']
+- name: flux-operator
+  namespace: flux-system
+  atomic: true
+  chart: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator
+  version: 0.38.1
+  values: ['../kubernetes/apps/flux-system/flux-operator/app/helm/values.yaml']
+  needs: ['cert-manager/cert-manager']
 
-  - name: flux-instance
-    namespace: flux-system
-    atomic: true
-    chart: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-instance
-    version: 0.38.1
-    values: ['../kubernetes/apps/flux-system/flux-instance/app/helm/values.yaml']
-    needs: ['flux-system/flux-operator']
+- name: flux-instance
+  namespace: flux-system
+  atomic: true
+  chart: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-instance
+  version: 0.38.1
+  values: ['../kubernetes/apps/flux-system/flux-instance/app/helm/values.yaml']
+  needs: ['flux-system/flux-operator']
