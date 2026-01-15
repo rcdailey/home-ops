@@ -46,7 +46,7 @@ write_header() {
 #
 # 1. Edit custom patterns in: scripts/update-gitignore/custom/*.gitignore
 # 2. Edit template list in: scripts/update-gitignore/templates.txt
-# 3. Regenerate with: task scripts:gitignore:update
+# 3. Regenerate with: ./scripts/update-gitignore/update.sh
 #
 # =============================================================================
 EOF

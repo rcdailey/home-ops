@@ -5,7 +5,7 @@ Builds `.gitignore` from modular components.
 ## Usage
 
 ```bash
-task scripts:gitignore:update
+./scripts/update-gitignore/update.sh
 ```
 
 ## Customization
