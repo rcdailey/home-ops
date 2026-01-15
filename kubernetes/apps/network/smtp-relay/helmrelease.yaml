@@ -1,0 +1,74 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: smtp-relay
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      smtp-relay:
+        replicas: 2
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.io/boky/postfix
+              tag: v5.1.0
+            env:
+              TZ: America/Chicago
+              ALLOWED_SENDER_DOMAINS: ${SECRET_DOMAIN}
+              POSTFIX_myhostname: smtp-relay
+              POSTFIX_smtp_tls_security_level: encrypt
+            envFrom:
+            - secretRef:
+                name: smtp-relay-secret
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: &port 587
+                  failureThreshold: 30
+                  periodSeconds: 2
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: *port
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command: ["/scripts/healthcheck.sh"]
+                  periodSeconds: 60
+                  timeoutSeconds: 8
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
+
+    service:
+      app:
+        controller: smtp-relay
+        ports:
+          smtp:
+            port: *port
