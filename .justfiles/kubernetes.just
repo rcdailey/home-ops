@@ -20,7 +20,7 @@ fence-node node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just kubernetes::select-node "Select node to fence")
+        node=$(just kubernetes select-node "Select node to fence")
     fi
     kubectl taint node "$node" node.kubernetes.io/out-of-service=nodeshutdown:NoExecute --overwrite
 
@@ -31,7 +31,7 @@ unfence-node node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just kubernetes::select-node "Select node to unfence")
+        node=$(just kubernetes select-node "Select node to unfence")
     fi
     kubectl taint node "$node" node.kubernetes.io/out-of-service=nodeshutdown:NoExecute-
 
@@ -57,7 +57,7 @@ node-shell node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just kubernetes::select-node "Select node")
+        node=$(just kubernetes select-node "Select node")
     fi
     kubectl debug node/"$node" -n default -it --image=alpine:latest --profile sysadmin
 
@@ -75,7 +75,7 @@ force-delete-terminating node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just kubernetes::select-node "Select node")
+        node=$(just kubernetes select-node "Select node")
     fi
     kubectl get pods -A --field-selector spec.nodeName="$node" -o json | \
         jq -r '.items[] | select(.metadata.deletionTimestamp != null) | "\(.metadata.namespace) \(.metadata.name)"' | \
@@ -88,7 +88,7 @@ delete-stale-attachments node="":
     set -euo pipefail
     node="{{node}}"
     if [ -z "$node" ]; then
-        node=$(just kubernetes::select-node "Select node")
+        node=$(just kubernetes select-node "Select node")
     fi
     kubectl get volumeattachments -o json | \
         jq -r ".items[] | select(.spec.nodeName==\"$node\") | .metadata.name" | \

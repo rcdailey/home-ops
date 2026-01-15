@@ -91,7 +91,7 @@ data.
    git add kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
    git commit -m "feat(rook-ceph): add OSD on {node-hostname}"
    git push
-   task reconcile
+   just reconcile
    ```
 
 3. Monitor OSD creation. OSD creation takes 5-10 minutes.
