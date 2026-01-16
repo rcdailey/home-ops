@@ -48,25 +48,6 @@ machine:
       validSubnets:
         - 192.168.1.0/24
     disableManifestsDirectory: true
-  network:
-    interfaces:
-      - interface: bond0
-        addresses:
-          - {{ n.ip }}/24
-        routes:
-          - network: 0.0.0.0/0
-            gateway: 192.168.1.1
-        bond:
-          interfaces: []
-          deviceSelectors:
-            - hardwareAddr: {{ n.mac }}
-          mode: active-backup
-        mtu: 1500
-        dhcp: false
-{% if n.controller %}
-        vip:
-          ip: 192.168.1.70
-{% endif %}
   install:
     diskSelector:
       model: {{ n.disk_model }}
@@ -200,6 +181,31 @@ cluster:
       kubernetes:
         disabled: true
       service: {}
+{% endif %}
+---
+apiVersion: v1alpha1
+kind: LinkAliasConfig
+name: eth-main
+selector:
+  match: mac(link.permanent_addr) == "{{ n.mac }}"
+---
+apiVersion: v1alpha1
+kind: BondConfig
+name: bond0
+links:
+  - eth-main
+bondMode: active-backup
+mtu: 1500
+addresses:
+  - address: {{ n.ip }}/24
+routes:
+  - gateway: 192.168.1.1
+{% if n.controller %}
+---
+apiVersion: v1alpha1
+kind: Layer2VIPConfig
+name: 192.168.1.70
+link: bond0
 {% endif %}
 ---
 apiVersion: v1alpha1
