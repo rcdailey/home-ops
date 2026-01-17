@@ -63,25 +63,21 @@ spec:
               TP_THEME: plex
             probes:
               liveness:
-                enabled: false # TODO: causes crash looping
+                enabled: true
                 custom: true
                 spec:
                   httpGet:
                     path: /api?mode=version
                     port: *port
-                  # Increased timeout/threshold for I/O-heavy operations (unrar/par2)
-                  # causes API timeouts triggering false-positive probe failures
                   timeoutSeconds: 10
                   periodSeconds: 30
                   failureThreshold: 10
-              readiness:
-                enabled: false
             resources:
               requests:
                 cpu: 50m
                 memory: 3Gi
               limits:
-                memory: 6Gi
+                memory: 8Gi
             securityContext:
               runAsUser: 1000
               runAsGroup: 1000
