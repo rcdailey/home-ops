@@ -63,7 +63,7 @@ spec:
               TP_THEME: plex
             probes:
               liveness:
-                enabled: true
+                enabled: false # NO PROBES -- sabnzbd hangs too much
                 custom: true
                 spec:
                   httpGet:
