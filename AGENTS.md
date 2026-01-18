@@ -95,6 +95,13 @@ kubernetes/apps/{namespace}/{app}/
   pvc.yaml          PersistentVolumeClaims
   externalsecret.yaml   Infisical secrets
   config/           Files for configMapGenerator
+
+docs/
+  architecture/     System design, rationale for technology choices
+  decisions/        ADRs - read TEMPLATE.md before creating/editing
+  memory-bank/      Ephemeral context, temporary workarounds (remove when stale)
+  runbooks/         Step-by-step operational procedures
+  troubleshooting/  Historical investigations with root cause analysis
 ```
 
 Parent kustomization.yaml sets namespace, lists app ks.yaml files.
@@ -149,6 +156,14 @@ change.
 - NEVER share databases between apps
 - PostgreSQL: CloudNativePG
 - MariaDB: MariaDB Operator
+
+### Documentation
+
+- Validate markdown changes with `markdownlint-cli2` before committing
+- Links: reference-style `[text][anchor]` with definitions at section end (not inline)
+- NEVER use bold text as heading replacement - use actual `##` headings
+- Hard-wrap at column 100
+- Blank line required between headings, lists, code blocks, and other elements
 
 ## Environment
 
