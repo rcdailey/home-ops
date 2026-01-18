@@ -11,6 +11,9 @@
   },
   "permission": {
     "bash": {
+      // kubectl - ALLOW (read-only inspection)
+      "kubectl exec*": "allow",
+
       // kubectl - DENY (hard block, GitOps only)
       "kubectl apply*": "deny",
       "kubectl create*": "deny",
