@@ -124,7 +124,9 @@ spec:
             - path: /media
 
       incomplete:
-        type: emptyDir
+        type: nfs
+        server: 192.168.1.58
+        path: /mnt/user/media/.usenet/incomplete
         advancedMounts:
           sabnzbd:
             app:
