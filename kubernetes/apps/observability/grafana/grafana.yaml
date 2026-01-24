@@ -15,11 +15,11 @@ spec:
       check_for_plugin_updates: "false"
       reporting_enabled: "false"
     auth:
-      disable_login_form: "false"
+      disable_login_form: "true"
     auth.anonymous:
       enabled: "false"
     auth.basic:
-      enabled: "true"
+      enabled: "false"
     date_formats:
       use_browser_locale: "true"
     explore:
@@ -69,6 +69,8 @@ spec:
             - name: GF_AUTH_GENERIC_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN
               value: "true"
             - name: GF_AUTH_GENERIC_OAUTH_USE_PKCE
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_AUTO_LOGIN
               value: "true"
             - name: GF_AUTH_OAUTH_ALLOW_INSECURE_EMAIL_LOOKUP
               value: "true"
