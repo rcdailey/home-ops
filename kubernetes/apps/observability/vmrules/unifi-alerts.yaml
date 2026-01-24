@@ -11,9 +11,10 @@ spec:
     rules:
     # Compliance: Catch unconfigured ports with active links
     # Ports should follow naming convention: <description>-<speed> (e.g., NAS-10G, Printer-100M)
+    # Use -AUTO suffix for devices with variable link speeds (e.g., MacBook-AUTO for sleep modes)
     # Excludes APs - their uplink ports are uneditable and always show as "Port N"
     - alert: UnifiPortMissingSpeedLabel
-      expr: unpoller_device_port_port_speed_bps{port_name!~".+-(100M|1G|2\\.5G|10G)", name!~".* AP$"} > 0
+      expr: unpoller_device_port_port_speed_bps{port_name!~".+-(100M|1G|2\\.5G|10G|AUTO)", name!~".* AP$"} > 0
       for: 10m
       labels:
         severity: warning
