@@ -204,8 +204,3 @@
       icon: mdi-backup-restore
       href: https://kopia.${SECRET_DOMAIN}/
       siteMonitor: http://kopia.storage:80
-
-  - Garage:
-      icon: si-amazons3
-      href: http://garage.storage:3903
-      siteMonitor: http://garage.storage:3903
