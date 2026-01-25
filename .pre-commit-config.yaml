@@ -20,6 +20,12 @@ repos:
     additional_dependencies: ["PyYAML>=6.0"]
     files: '^kubernetes/apps/.*/ks\.yaml$'
     description: Validates that Kubernetes apps using secrets/configmaps have reloader annotations
+  - id: domain-leak-check
+    name: Domain Leak Check
+    entry: scripts/pre-commit/domain-leak-check.sh
+    language: script
+    types: [text]
+    description: Prevents committing real domain name - use secret manager or redact
 
 - repo: https://github.com/google/yamlfmt
   rev: v0.21.0
