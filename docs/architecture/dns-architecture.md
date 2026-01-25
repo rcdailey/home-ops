@@ -295,6 +295,18 @@ filters:
   - HaGeZi Threat Intelligence Feeds (532,939 rules) - Malware protection
 ```
 
+**Custom Filtering Rules**:
+
+```txt
+||domain.com^$dnstype=AAAA,dnsrewrite=REFUSED
+||domain.com^$dnstype=HTTPS,dnsrewrite=REFUSED
+```
+
+These rules block AAAA and HTTPS queries for `domain.com` at AdGuard before conditional forwarding to
+UDMP. This prevents UDMP from forwarding these record types upstream to Cloudflare, which would
+return CNAME chains pointing to unreachable IPv6 tunnel addresses. See
+[troubleshooting][opencloud-ipv6] for detailed root cause analysis.
+
 ### DNS Gateway Service Configuration
 
 **Configuration**: `kubernetes/apps/dns-private/dns-gateway/service.yaml`
@@ -474,3 +486,5 @@ HTTPRoutes with `parentRefs: internal` create records only locally:
 - **Provider abstraction**: Use `app.kubernetes.io/component: dns-server` for service selection
 - **Zero-downtime migrations**: Enable seamless DNS provider switching
 - **Infrastructure separation**: Decouple dns-gateway service from dns-server applications
+
+[opencloud-ipv6]: /docs/troubleshooting/opencloud-desktop-ipv6-auth-failure-2026-01-25.md
