@@ -1,0 +1,103 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: structurizr
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      structurizr:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        strategy: Recreate
+        pod:
+          securityContext:
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+        initContainers:
+          init-users:
+            image:
+              repository: alpine
+              tag: 3.21
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              apk add --no-cache apache2-utils
+              htpasswd -nbB "$USERNAME" "$PASSWORD" | sed 's/:/=/' > /data/structurizr.users
+            env:
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: structurizr-secret
+                  key: username
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: structurizr-secret
+                  key: password
+        containers:
+          app:
+            image:
+              repository: structurizr/onpremises
+              tag: 2025.11.09
+            env:
+              TZ: America/Chicago
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop: [ALL]
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: &port 8080
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 1Gi
+
+    service:
+      app:
+        controller: structurizr
+        ports:
+          http:
+            port: *port
+
+    persistence:
+      data:
+        existingClaim: structurizr
+        advancedMounts:
+          structurizr:
+            init-users:
+            - path: /data
+            app:
+            - path: /usr/local/structurizr
+      config:
+        type: configMap
+        name: structurizr-config
+        advancedMounts:
+          structurizr:
+            app:
+            - path: /usr/local/structurizr/structurizr.properties
+              subPath: structurizr.properties
+
+    route:
+      app:
+        hostnames:
+        - c4.${SECRET_DOMAIN}
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https
