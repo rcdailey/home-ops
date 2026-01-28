@@ -78,7 +78,7 @@ spec:
           vector-sidecar:
             image:
               repository: timberio/vector
-              tag: 0.52.0-alpine
+              tag: 0.53.0-alpine
             env:
               TZ: America/Chicago
               VECTOR_CONFIG_PATH: /etc/vector/vector.yaml
