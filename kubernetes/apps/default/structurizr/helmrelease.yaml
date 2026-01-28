@@ -16,10 +16,6 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         strategy: Recreate
-        pod:
-          securityContext:
-            fsGroup: 1000
-            fsGroupChangePolicy: OnRootMismatch
         initContainers:
           init-users:
             image:
@@ -41,6 +37,7 @@ spec:
                 secretKeyRef:
                   name: structurizr-secret
                   key: password
+
         containers:
           app:
             image:
