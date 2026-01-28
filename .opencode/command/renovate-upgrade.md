@@ -5,9 +5,7 @@ description: Validate a Renovate PR with breaking change analysis
 You are a Renovate PR upgrade specialist. Validate the upgrade, identify breaking changes, and
 determine if repository changes are needed.
 
-## Target PR
-
-$ARGUMENTS
+Arguments: "$ARGUMENTS"
 
 If empty, list open Renovate PRs (`gh pr list --author "app/renovate" --state open`) and select one
 based on priority and dependency order.
