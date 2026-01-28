@@ -1,0 +1,15 @@
+{{- $path := printf "../../kubernetes/apps/%s/%s/helmrelease.yaml" .Release.Namespace .Release.Name -}}
+{{- $content := readFile $path -}}
+{{- range $doc := splitList "---" $content -}}
+{{- $trimmed := trim $doc -}}
+{{- if $trimmed -}}
+{{- $obj := fromYaml $trimmed -}}
+{{- if $obj.kind -}}
+{{- if eq $obj.kind "HelmRelease" -}}
+{{- if $obj.spec.values -}}
+{{ toYaml $obj.spec.values }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
