@@ -10,9 +10,9 @@
     {
       description: "Flux Operator Group",
       groupName: "Flux Operator",
-      matchPackageNames: ["/flux-operator/", "/flux-instance/"],
+      matchPackageNames: ["/flux-operator/", "/flux-instance/", "/flux-operator-manifests/"],
       matchDatasources: ["docker"],
-      minimumGroupSize: 2,
+      minimumGroupSize: 3,
     },
     {
       description: "Immich Group",
