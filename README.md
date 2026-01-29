@@ -2,6 +2,34 @@
 
 Personal Kubernetes homelab managed with Talos Linux and Flux GitOps.
 
+## Stack
+
+- **OS**: Talos Linux
+- **GitOps**: Flux
+- **Storage**: Rook Ceph
+- **Secrets**: External Secrets + Infisical
+- **Networking**: Cilium, Envoy Gateway
+- **Observability**: VictoriaMetrics + Logs, Grafana
+- **Databases**: CloudNativePG
+- **Backups**: Volsync, Kopia
+
+## Repository Structure
+
+```txt
+bootstrap/          # Cluster bootstrap scripts
+docs/
+  architecture/     # System design docs
+  decisions/        # ADRs
+  runbooks/         # Operational procedures
+  troubleshooting/  # Historical investigations
+kubernetes/
+  apps/             # Application manifests by namespace
+  components/       # Reusable Kustomize components
+  flux/             # Flux system configuration
+scripts/            # Operational scripts
+talos/              # Talos node configuration
+```
+
 ## New Machine Setup
 
 Prerequisites: [mise](https://mise.jdx.dev/installing-mise.html) installed.
@@ -52,23 +80,3 @@ Bootstrap a new cluster from scratch:
    ```bash
    just bootstrap apps
    ```
-
-## Quick Reference
-
-List available commands:
-
-```bash
-just
-```
-
-Sync cluster with Git:
-
-```bash
-just reconcile
-```
-
-Flux resource status:
-
-```bash
-flux get all -A
-```
