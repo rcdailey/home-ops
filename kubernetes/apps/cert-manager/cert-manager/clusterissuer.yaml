@@ -7,6 +7,8 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
+    # Request 6-day short-lived certificates (reduced key compromise exposure)
+    profile: shortlived
     privateKeySecretRef:
       name: letsencrypt-production
     solvers:
