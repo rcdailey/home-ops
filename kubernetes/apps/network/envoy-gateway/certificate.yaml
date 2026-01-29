@@ -10,5 +10,11 @@ spec:
   issuerRef:
     name: letsencrypt-production
     kind: ClusterIssuer
+  # 6-day duration to match short-lived ACME profile
+  duration: 160h
+  privateKey:
+    algorithm: ECDSA
+  usages:
+  - digital signature
   commonName: "${SECRET_DOMAIN}"
   dnsNames: ["${SECRET_DOMAIN}", "*.${SECRET_DOMAIN}"]
