@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
 - ./backend-traffic-policy.yaml
 - ./certificate.yaml
+- ./client-traffic-policy.yaml
 - ./gatewayclass.yaml
 - ./helmrelease.yaml
 - ./envoyproxy-config.yaml
