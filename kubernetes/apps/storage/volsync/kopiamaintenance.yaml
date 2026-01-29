@@ -6,6 +6,8 @@ metadata:
   name: daily
 spec:
   enabled: true
+  # 6 hours - allows completion when repository is degraded with many index blobs
+  activeDeadlineSeconds: 21600
   trigger:
     schedule: "0 */8 * * *"
   repository:
