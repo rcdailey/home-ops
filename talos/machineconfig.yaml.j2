@@ -75,6 +75,8 @@ machine:
     net.ipv4.tcp_fastopen: "3"
     net.ipv4.tcp_mtu_probing: "1"
     net.ipv4.tcp_rmem: 4096 262144 67108864
+    # Preserve congestion window after idle (improves perf for bursty traffic)
+    net.ipv4.tcp_slow_start_after_idle: "0"
     net.ipv4.tcp_wmem: 4096 262144 67108864
   features:
 {% if n.controller %}
