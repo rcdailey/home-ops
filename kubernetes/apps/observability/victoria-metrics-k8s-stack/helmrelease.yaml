@@ -312,6 +312,8 @@ spec:
           create: false # Using custom VMRule (vmrule.yaml) requiring both high load AND high CPU
         KubeHpaMaxedOut:
           create: false # Using custom VMRule (vmrule.yaml) excluding KEDA HPAs
+        TooHighChurnRate24h:
+          create: false # Using custom VMRule (vmrule.yaml) with 10x threshold vs default 3x
       groups:
         etcd:
           create: false

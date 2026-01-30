@@ -161,6 +161,25 @@ spec:
           HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has been running at max replicas for longer than 15 minutes.
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubehpamaxedout
 
+    # Override TooHighChurnRate24h with relaxed threshold for homelab
+    # WHY: Default 3x threshold is too aggressive for dynamic Kubernetes environments
+    # WHAT: Normal pod churn (restarts, rolling updates) creates new series with different pod labels
+    # HOW: Increase threshold from 3x to 10x active series to reduce false positives
+    # WHEN to reconsider: If memory pressure or slow queries occur due to high cardinality
+    - alert: TooHighChurnRate24h
+      expr: |
+        sum(increase(vm_new_timeseries_created_total[24h])) by(job)
+          > (sum(vm_cache_entries{type="storage/hour_metric_ids"}) by(job) * 10)
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: High time series churn rate for {{ $labels.job }}
+        description: |
+          New time series created over 24h exceeds 10x active series count.
+          Current ratio: {{ $value | printf "%.1f" }}x
+          This may indicate label cardinality issues or excessive pod restarts.
+
     # Threshold-based disk space alerts replacing predict_linear CephNodeDiskspaceWarning
     # WHY: predict_linear generates false positives during image pulls and temporary spikes
     # WHAT: Alert when disk usage exceeds fixed thresholds (80% warning, 90% critical)
