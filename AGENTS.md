@@ -5,12 +5,31 @@
 These rules prevent immediate cluster failures. Violations cause crashes, data corruption, or GitOps
 drift.
 
-### GitOps and Validation
+### GitOps Mindset
+
+**Every cluster change MUST flow through git.** Imperative commands are diagnostic only.
 
 - **NEVER run git commit/push without explicit user request** - GitOps requires user commits for
   accountability
 - **NEVER use kubectl apply/create/patch** - Bypasses GitOps, creates configuration drift. Use
   manifest changes only.
+- **NEVER use kubectl delete as a fix** - Deleting resources (jobs, pods, PVCs) treats symptoms, not
+  causes. Find the manifest issue and fix it. Exception: cleanup after root cause is fixed.
+- **NEVER adjust health probes to fix failures** - Probes detect problems, they don't cause them.
+  Investigate WHY the probe fails (resource exhaustion, slow startup, missing deps).
+- **Perform extended kubectl/research in subagents** - Use Task tool for multi-step diagnostics
+  (describe, logs, events, explain). Keep main context focused on analysis and fixes.
+
+### Troubleshooting Approach
+
+1. **Query**: Gather symptoms via subagent (alerts, logs, events, pod status)
+2. **History**: `git log -p --follow -- path/to/file.yaml` for recent changes
+3. **Analyze**: Read manifests, check CRD specs, verify dependencies
+4. **Research**: Subagent for reference repos, Context7, upstream docs
+5. **Fix**: Modify manifests to address root cause
+6. **Validate**: `pre-commit run --files <changed-files>`
+
+Recurring issues indicate incomplete root cause analysis.
 
 ### Storage, Volumes, and Resource Patterns
 
