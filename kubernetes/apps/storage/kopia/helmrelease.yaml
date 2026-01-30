@@ -20,7 +20,7 @@ spec:
           set-ignore-policy:
             image:
               repository: ghcr.io/home-operations/kopia
-              tag: 0.22.0@sha256:aa6a2f5987b9c991a349c34e0c7ef80f00366d84490d7637355b10d38fcbc034
+              tag: 0.22.3@sha256:17ab64542280197a5368247deaefadc3e3bbe15714ab666c2455a06824e86efd
             command: ["/bin/sh", "-c"]
             args:
             - |
@@ -41,7 +41,7 @@ spec:
           enable-maintenance:
             image:
               repository: ghcr.io/home-operations/kopia
-              tag: 0.22.0@sha256:aa6a2f5987b9c991a349c34e0c7ef80f00366d84490d7637355b10d38fcbc034
+              tag: 0.22.3@sha256:17ab64542280197a5368247deaefadc3e3bbe15714ab666c2455a06824e86efd
             command: ["kopia", "maintenance", "set", "--enable-quick=true", "--enable-full=true"]
             envFrom:
             - secretRef:
@@ -55,7 +55,7 @@ spec:
           app:
             image:
               repository: ghcr.io/home-operations/kopia
-              tag: 0.22.0@sha256:aa6a2f5987b9c991a349c34e0c7ef80f00366d84490d7637355b10d38fcbc034
+              tag: 0.22.3@sha256:17ab64542280197a5368247deaefadc3e3bbe15714ab666c2455a06824e86efd
             env:
               KOPIA_WEB_ENABLED: "true"
               KOPIA_WEB_PORT: &port 80
