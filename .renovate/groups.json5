@@ -55,12 +55,6 @@
       minimumGroupSize: 2,
     },
     {
-      description: "VolSync Group",
-      groupName: "VolSync",
-      matchPackageNames: ["/volsync-perfectra1n/", "ghcr.io/perfectra1n/volsync"],
-      minimumGroupSize: 2,
-    },
-    {
       // Groups Talos OS packages across datasources (docker, mise/aqua, helm, etc.)
       // minimumGroupSize ensures mise tool + installer image are grouped together
       // Excludes kubelet which is a Kubernetes component, not Talos itself
