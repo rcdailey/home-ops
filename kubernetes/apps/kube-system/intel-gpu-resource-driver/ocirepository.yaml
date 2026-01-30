@@ -8,4 +8,4 @@ spec:
   interval: 1h
   url: oci://ghcr.io/intel/intel-resource-drivers-for-kubernetes/intel-gpu-resource-driver-chart
   ref:
-    tag: 0.9.0
+    tag: 0.9.1
