@@ -16,6 +16,7 @@
 
       // kubectl - DENY (hard block, GitOps only)
       "kubectl apply*": "deny",
+      "kubectl apply -f /tmp/*": "ask", // allow for adhoc testing
       "kubectl create*": "deny",
       "kubectl edit*": "deny",
       "kubectl replace*": "deny",
