@@ -1,0 +1,16 @@
+# Limiter configuration for SearXNG
+# Reference: https://docs.searxng.org/admin/searx.limiter.html
+
+[botdetection]
+# Cilium pod CIDR - trust proxy headers from gateway
+trusted_proxies = ["10.42.0.0/16"]
+
+[botdetection.ip_limit]
+# Disable IP-based rate limiting for internal use
+filter_link_local = false
+link_token = false
+
+[botdetection.ip_lists]
+# No blocked IPs for internal use
+block_ip = []
+pass_ip = []
