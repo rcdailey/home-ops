@@ -20,7 +20,7 @@ spec:
           init-users:
             image:
               repository: alpine
-              tag: 3.23
+              tag: latest
             command: ["/bin/sh", "-c"]
             args:
             - |

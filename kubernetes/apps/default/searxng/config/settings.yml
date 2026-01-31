@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/searxng/searxng/master/searx/settings.yml
+#
+# SearXNG configuration optimized for AI agent access via MCP server.
+# This instance is internal-only (VPN-secured), not public-facing.
+#
+# Note: %%GITHUB_TOKEN%% and %%SECRET_KEY%% are substituted at runtime by init container.
+# Reference: https://docs.searxng.org/admin/settings/settings.html
+---
+use_default_settings: true
+
+server:
+  # Disable rate limiting - internal use with trusted clients only
+  limiter: false
+  # Disable image proxying - reduces server load, agents fetch directly
+  image_proxy: false
+  # Not a public instance - disables public instance features
+  public_instance: false
+  # Unique secret for this instance
+  secret_key: "%%SECRET_KEY%%"
+
+search:
+  # Autocomplete for interactive use (optional, can be removed for pure API)
+  autocomplete: duckduckgo
+  # JSON format required for MCP server API access
+  formats:
+  - html
+  - json
+
+general:
+  instance_name: SearXNG
+
+ui:
+  default_theme: simple
+  # Cache-bust static files on version changes
+  static_use_hash: true
+
+# Connection pool tuning for concurrent API requests from agents.
+# Defaults: pool_connections=100, pool_maxsize=20, request_timeout=3.0
+outgoing:
+  # Allow slower engines to complete (github, stackoverflow can be slow)
+  request_timeout: 5.0
+  # Increased for parallel requests from multiple agents
+  pool_connections: 150
+  pool_maxsize: 30
+
+# Hostnames plugin adjusts result ranking based on domain.
+# Prioritizes authoritative technical sources over social/noise sites.
+hostnames:
+  high_priority:
+  - (.*\.)?github\.com$
+  - (.*\.)?stackoverflow\.com$
+  - (.*\.)?stackexchange\.com$
+  - (.*\.)?kubernetes\.io$
+  - (.*\.)?docker\.com$
+  - (.*\.)?docs\.python\.org$
+  - (.*\.)?go\.dev$
+  - (.*\.)?rust-lang\.org$
+  - (.*\.)?developer\.mozilla\.org$
+  low_priority:
+  - (.*\.)?pinterest\.com$
+  - (.*\.)?facebook\.com$
+  - (.*\.)?instagram\.com$
+
+# Engine overrides - only engines needing changes from defaults.
+# Most useful engines (google, duckduckgo, brave, stackoverflow, github,
+# docker hub, arch wiki) are already enabled by default.
+engines:
+# GitHub code search - disabled by default, useful for finding implementations.
+# Authenticated via fine-grained PAT (Public Repositories read-only scope).
+# Provides 5000 req/hr vs 10 req/min unauthenticated.
+- name: github code
+  engine: github_code
+  shortcut: ghc
+  inactive: false
+  timeout: 10.0
+  ghc_auth:
+    type: personal_access_token
+    token: "%%GITHUB_TOKEN%%"
+  ghc_highlight_matching_lines: true
+  ghc_strip_new_lines: true
+
+# GitLab - disabled by default, useful for finding projects not on GitHub
+- name: gitlab
+  engine: gitlab
+  base_url: https://gitlab.com
+  shortcut: gl
+  disabled: false
+
+# Hacker News - disabled by default, useful for tech discussions/opinions
+- name: hackernews
+  engine: hackernews
+  shortcut: hn
+  disabled: false
+
+# crates.io - disabled by default, useful for Rust package discovery
+- name: crates.io
+  engine: crates
+  shortcut: crates
+  disabled: false
+  timeout: 6.0
+
+# Tor engines - inactive to prevent "loading engine failed" errors (no Tor proxy configured)
+- name: ahmia
+  inactive: true
+
+- name: torch
+  inactive: true

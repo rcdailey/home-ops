@@ -23,3 +23,4 @@ resources:
 - ./opencloud/ks.yaml
 - ./headlamp/ks.yaml
 - ./pocket-id/ks.yaml
+- ./searxng/ks.yaml
