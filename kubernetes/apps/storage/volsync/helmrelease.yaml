@@ -31,9 +31,11 @@ spec:
     remediation:
       retries: 3
   values:
+    # TESTING: CGO_ENABLED=0 fix for user lookup deadlock
+    # Revert to ghcr.io/perfectra1n/volsync once upstream releases fix
     image: &image
-      repository: ghcr.io/perfectra1n/volsync
-      tag: 0.17.7
+      repository: ghcr.io/rcdailey/volsync
+      tag: 0.17.7-cgo-fix-v2@sha256:996299f917517110fef6cef16f18b8853d16edfe55d4e41379e72618542433ea
     kopia: *image
     rclone: *image
     restic: *image
