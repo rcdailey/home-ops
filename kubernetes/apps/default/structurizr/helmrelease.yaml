@@ -20,7 +20,7 @@ spec:
           init-users:
             image:
               repository: alpine
-              tag: latest
+              tag: latest # don't want to deal with renovate upgrades
             command: ["/bin/sh", "-c"]
             args:
             - |
