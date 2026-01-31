@@ -129,9 +129,9 @@ spec:
           This might indicate this instance resources saturation and can cause it becoming unresponsive.
 
     # Override Watchdog alert to add 'hidden' label for UI filtering
-    # WHY: Watchdog is a dead man's switch that must always fire to Gatus heartbeat
-    # WHAT: Keep functional for Gatus routing but hide from VMAlertmanager/Grafana UIs
-    # HOW: Add 'hidden: "true"' label for UI filtering while preserving routing
+    # WHY: Watchdog is a dead man's switch for monitoring stack health
+    # WHAT: Hide from VMAlertmanager/Grafana UIs while keeping functional
+    # HOW: Add 'hidden: "true"' label for UI filtering
     - alert: Watchdog
       expr: vector(1)
       labels:
@@ -139,9 +139,7 @@ spec:
         hidden: "true"
       annotations:
         summary: Alerting pipeline health check (always firing)
-        description: |
-          Dead man's switch for monitoring stack health verification.
-          Routes to Gatus heartbeat endpoint - if this stops firing, the monitoring stack is down.
+        description: Dead man's switch for monitoring stack health verification.
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/general/watchdog
 
     # Override KubeHpaMaxedOut to exclude KEDA-managed HPAs

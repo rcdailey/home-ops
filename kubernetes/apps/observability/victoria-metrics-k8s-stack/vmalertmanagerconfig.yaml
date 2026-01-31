@@ -21,7 +21,7 @@ spec:
     - receiver: blackhole
       matchers:
       - alertname = "CephNodeInconsistentMTU"
-    - receiver: gatus-heartbeat
+    - receiver: watchdog-heartbeat
       matchers:
       - alertname = "Watchdog"
       group_wait: 0s
@@ -40,7 +40,6 @@ spec:
     equal: [alertname, namespace]
 
   # Hide alerts with hidden="true" label from UI (Watchdog dead man's switch)
-  # Alerts still route to receivers (Gatus heartbeat) but don't appear in VMAlertmanager UI
   - source_matchers:
     - hidden = "true"
     target_matchers:
@@ -49,13 +48,11 @@ spec:
   receivers:
   - name: blackhole
 
-  - name: gatus-heartbeat
+  - name: watchdog-heartbeat
     webhook_configs:
-    - url: http://gatus.observability/api/v1/endpoints/_Heartbeat/external?success=true
-      http_config:
-        bearer_token_secret:
-          name: gatus-secret
-          key: GATUS_HEARTBEAT_TOKEN
+    - url_secret:
+        name: watchdog-secret
+        key: WATCHDOG_PING_URL
 
   - name: pushover
     pushover_configs:
