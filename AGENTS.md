@@ -17,8 +17,8 @@ drift.
   causes. Find the manifest issue and fix it. Exception: cleanup after root cause is fixed.
 - **NEVER adjust health probes to fix failures** - Probes detect problems, they don't cause them.
   Investigate WHY the probe fails (resource exhaustion, slow startup, missing deps).
-- **Perform extended kubectl/research in subagents** - Use Task tool for multi-step diagnostics
-  (describe, logs, events, explain). Keep main context focused on analysis and fixes.
+- MUST use cluster-investigate agent for all cluster investigation. Use for kubectl, helm, flux,
+  talosctl diagnostics. Agent enforces read-only operations and token-efficient output patterns.
 
 ### Troubleshooting Approach
 
