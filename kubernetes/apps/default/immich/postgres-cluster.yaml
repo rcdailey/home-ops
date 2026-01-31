@@ -75,6 +75,6 @@ spec:
           key: AWS_REGION
       wal:
         compression: "gzip"
-        maxParallel: 2
+        maxParallel: 1
       data:
         compression: "gzip"
