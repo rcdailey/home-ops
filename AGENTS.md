@@ -144,6 +144,19 @@ Consistency patterns for maintainability and clarity.
 - Hard-wrap at column 100
 - Blank line required between headings, lists, code blocks, and other elements
 
+### Upstream Issue Writeups
+
+When root cause analysis identifies an issue requiring upstream fixes (container images, charts,
+external projects):
+
+1. MUST load the `gh-gist` skill
+2. MUST read `docs/issues/TEMPLATE.md` for structure
+3. Create `docs/issues/{component}-{brief-description}.md` following the template
+4. Upload as a secret gist for sharing
+
+Files in `docs/issues/*.md` are gitignored (except TEMPLATE.md). Gists are the sharing mechanism;
+local files are for iterative editing before upload.
+
 ## Tier 3: Reference
 
 Implementation patterns, operational workflows, and environment details.
@@ -180,6 +193,7 @@ kubernetes/apps/{namespace}/{app}/
 docs/
   architecture/       System design, rationale for technology choices
   decisions/          ADRs - read TEMPLATE.md before creating/editing
+  issues/             Upstream issue writeups (gitignored, shared via gists)
   memory-bank/        Ephemeral context, temporary workarounds (remove when stale)
   runbooks/           Step-by-step operational procedures
   troubleshooting/    Historical investigations with root cause analysis
