@@ -53,7 +53,7 @@ spec:
           fetch-certs:
             image:
               repository: alpine
-              tag: latest
+              tag: latest # don't want to deal with renovate upgrades
             command:
             - sh
             - -c
