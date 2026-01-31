@@ -105,10 +105,12 @@ Consistency patterns for maintainability and clarity.
 
 ### Health Probes
 
-- Liveness and Readiness: ALWAYS enable both
-- Startup: OMIT unless slow initialization requires it
-- httpGet with app health endpoint (e.g., `/ping`, `/health`) preferred over TCP
-- Use YAML anchor (`&probes` / `*probes`) to share spec between liveness and readiness
+- Probes default to off in app-template; only specify probes you need
+- Liveness: ALWAYS enable with simple httpGet returning 200 (e.g., `/status`, `/health`, `/ping`)
+- Readiness: OMIT for single-replica services (readiness controls traffic routing, irrelevant
+  without HA). Only add readiness for multi-replica deployments where it should perform a more
+  comprehensive check than liveness.
+- Startup: OMIT unless slow initialization requires extended startup time
 - Omit default values (initialDelaySeconds: 0, periodSeconds: 10, timeoutSeconds: 1,
   failureThreshold: 3)
 
@@ -212,242 +214,60 @@ docs/
 
 ### App Templates
 
-#### ks.yaml (Flux Kustomization)
+Copy patterns from exemplary apps rather than using synthetic templates. These apps follow all
+Tier 1 and Tier 2 conventions:
 
-```yaml
----
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: &app example-app
-spec:
-  commonMetadata:
-    labels:
-      app.kubernetes.io/name: *app
-  dependsOn:
-  - name: rook-ceph-cluster
-    namespace: rook-ceph
-  - name: global-config
-    namespace: flux-system
-  interval: 1h
-  path: ./kubernetes/apps/{namespace}/{app}
-  prune: true
-  retryInterval: 2m
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  targetNamespace: {namespace}  # Sets namespace for ALL resources
-  timeout: 5m
-  wait: false
-  postBuild:
-    substituteFrom:
-    - kind: Secret
-      name: cluster-secrets
-    substitute:
-      APP: example-app
-      VOLSYNC_PVC: example-app  # Only if using volsync component
-```
+**Canonical example (start here):** `kubernetes/apps/default/bookstack/`
+
+- Complete app-template implementation with all best practices
+- Files: ks.yaml, kustomization.yaml, helmrelease.yaml, pvc.yaml, externalsecret.yaml
+- Patterns: chartRef, strategy: Recreate, advancedMounts, security context, liveness-only probe
+
+**ConfigMapGenerator pattern:** `kubernetes/apps/media/plex/`
+
+- Uses config/ subdirectory with configMapGenerator and disableNameSuffixHash: true
+
+**External chart pattern:** `kubernetes/apps/default/headlamp/`
+
+- Uses chart.spec.sourceRef with local HelmRepository (not app-template)
+
+#### File Requirements
+
+**ks.yaml (Flux Kustomization):**
 
 - `targetNamespace` sets namespace (NOT metadata.namespace)
 - `dependsOn: global-config` required if using cluster-secrets substitution
 - `dependsOn: rook-ceph-cluster` required if using ceph storage
 - `postBuild.substitute.APP` required if using volsync component
 
-#### kustomization.yaml (Kustomize)
+**kustomization.yaml (Kustomize):**
 
-```yaml
----
-# yaml-language-server: $schema=https://json.schemastore.org/kustomization.json
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-components:
-- ../../../components/volsync      # Optional: backup replication
-- ../../../components/nfs-scaler   # Optional: KEDA scaler for NFS
-resources:
-- ./externalsecret.yaml
-- ./helmrelease.yaml
-- ./pvc.yaml
-```
-
-- NO namespace field (inherited from parent)
+- NO namespace field (inherited from parent ks.yaml)
 - List all resources explicitly
-- Components are optional based on app needs
+- Components (volsync, nfs-scaler) are optional based on app needs
 
-#### helmrelease.yaml (App-Template)
-
-```yaml
----
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: example-app
-spec:
-  interval: 1h
-  chartRef:
-    kind: OCIRepository
-    name: app-template
-    namespace: flux-system  # REQUIRED - OCIRepository lives in flux-system
-  values:
-    controllers:
-      example-app:  # MUST match HelmRelease metadata.name
-        strategy: Recreate  # REQUIRED for RWO volumes
-        annotations:
-          reloader.stakater.com/auto: "true"
-        pod:
-          securityContext:
-            fsGroup: 1000
-            fsGroupChangePolicy: OnRootMismatch
-        containers:
-          app:
-            image:
-              repository: ghcr.io/home-operations/example
-              tag: 1.0.0
-            env:
-              TZ: America/Chicago
-            securityContext:
-              runAsUser: 1000
-              runAsGroup: 1000
-              runAsNonRoot: true
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities:
-                drop: [ALL]
-            probes:
-              liveness: &probes
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /ping  # App-specific health endpoint
-                    port: *port
-              readiness: *probes
-            resources:
-              requests:
-                cpu: 100m
-                memory: 256Mi
-              limits:
-                memory: 1Gi
-
-    service:
-      app:
-        controller: example-app
-        ports:
-          http:
-            port: 8080
-
-    persistence:
-      config:
-        existingClaim: example-app
-        advancedMounts:
-          example-app:  # Controller name
-            app:        # Container name
-            - path: /config
-      tmp:
-        type: emptyDir
-        advancedMounts:
-          example-app:
-            app:
-            - path: /tmp
-
-    route:
-      app:
-        hostnames: ["example.${SECRET_DOMAIN}"]
-        parentRefs:
-        - name: internal
-          namespace: network
-          sectionName: https
-```
+**helmrelease.yaml (App-Template):**
 
 - `chartRef.namespace: flux-system` REQUIRED (OCIRepository location)
-- Controller name MUST match HelmRelease name
-- `strategy: Recreate` REQUIRED for RWO volumes (prevents Multi-Attach errors)
-- ALWAYS use `advancedMounts` (even for RWX/emptyDir for consistency)
-- Format: `advancedMounts: {controller}: {container}: - path: /path`
+- Controller name MUST match HelmRelease metadata.name
+- `strategy: Recreate` REQUIRED for RWO volumes
+- ALWAYS use advancedMounts (format: `{controller}: {container}: - path: /path`)
 
-#### helmrelease.yaml (External Chart)
+**helmrelease.yaml (External Chart):**
 
-For non-app-template charts, use `chart.spec.sourceRef` with local HelmRepository:
+- Use `chart.spec.sourceRef` with local HelmRepository defined in same directory
+- See headlamp for example with helmrepository.yaml alongside helmrelease.yaml
 
-```yaml
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: example-charts
-spec:
-  interval: 2h
-  url: https://charts.example.com
----
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: example
-spec:
-  interval: 1h
-  chart:
-    spec:
-      chart: example
-      version: 1.0.0
-      sourceRef:
-        kind: HelmRepository
-        name: example-charts
-  values:
-    # Chart-specific values
-```
+**pvc.yaml:**
 
-#### pvc.yaml
+- Primary PVC name matches app name; additional PVCs use {app}-{purpose}
+- Storage types: ceph-block (RWO, Recreate), ceph-filesystem (RWX, RollingUpdate), NFS (RWX,
+  RollingUpdate, media/large files)
 
-```yaml
----
-# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.30.3-standalone-strict/persistentvolumeclaim-v1.json
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: example-app  # Primary PVC matches app name
-spec:
-  accessModes: [ReadWriteOnce]
-  resources:
-    requests:
-      storage: 5Gi
-  storageClassName: ceph-block
-```
+**externalsecret.yaml:**
 
-Storage types:
-
-| Type            | Access | Strategy      | Use Case           |
-|-----------------|--------|---------------|--------------------|
-| ceph-block      | RWO    | Recreate      | Config, databases  |
-| ceph-filesystem | RWX    | RollingUpdate | Shared data        |
-| NFS             | RWX    | RollingUpdate | Media, large files |
-
-#### externalsecret.yaml
-
-```yaml
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/external-secrets.io/externalsecret_v1.json
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: example-app
-spec:
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: infisical
-  target:
-    name: example-app-secret  # Kubernetes secret name
-    creationPolicy: Owner
-  data:
-  - secretKey: API_KEY  # Key in Kubernetes secret (app's expected format)
-    remoteRef:
-      key: /namespace/example-app/api-key  # Infisical path (kebab-case)
-```
-
-Path format: `/namespace/app-name/secret-name`
-
-Add secrets: `just infisical add-secret /namespace/app-name/secret-name "value"`
+- Path format: `/namespace/app-name/secret-name`
+- Add secrets: `just infisical add-secret /namespace/app/key "value"`
 
 ### Additional Patterns
 
@@ -478,85 +298,27 @@ ceph-filesystem PVCs: set both to ceph-filesystem/csi-ceph-filesystem
 
 ### Multi-Controller Apps
 
-For apps with multiple processes (like Immich):
+For apps with multiple processes (main + worker + redis pattern):
 
-```yaml
-controllers:
-  main-app:
-    containers:
-      main:
-        image: ...
-  worker:
-    containers:
-      main:
-        image: ...
-  redis:
-    containers:
-      main:
-        image: ...
+**Reference implementation:** `kubernetes/apps/default/immich/`
 
-service:
-  main-app:
-    controller: main-app
-    ports:
-      http:
-        port: 8080
-  worker:
-    controller: worker
-    ports:
-      http:
-        port: 9000
-  redis:
-    controller: redis
-    ports:
-      http:
-        port: 6379
-
-persistence:
-  data:
-    advancedMounts:
-      main-app:
-        main:
-        - path: /data
-      worker:
-        main:
-        - path: /data
-```
+- Define separate controllers for each process (immich, machine-learning, redis)
+- Each controller gets its own service with `controller:` reference
+- Use advancedMounts to map persistence per-controller: `{controller}: {container}: - path:`
+- Each controller can have independent strategy, replicas, and security context
 
 ### Intel GPU (DRA)
 
-For apps requiring Intel GPU:
+For apps requiring Intel GPU acceleration:
 
-```yaml
-# In ks.yaml dependsOn:
-dependsOn:
-- name: intel-gpu-resource-driver
-  namespace: kube-system
+**Reference implementation:** `kubernetes/apps/default/immich/` (machine-learning controller)
 
-# In helmrelease.yaml:
-controllers:
-  app:
-    pod:
-      nodeSelector:
-        feature.node.kubernetes.io/custom-intel-gpu: "true"
-      resourceClaims:
-      - name: gpu
-        resourceClaimTemplateName: app-name
-    containers:
-      main:
-        resources:
-          claims:
-          - name: gpu
-
-# Separate ResourceClaimTemplate in helmrelease.yaml values:
-resourceClaimTemplates:
-  app-name:
-    spec:
-      devices:
-        requests:
-        - name: gpu
-          deviceClassName: gpu.intel.com
-```
+- ks.yaml: Add `dependsOn: intel-gpu-resource-driver` (namespace: kube-system)
+- Pod: nodeSelector `feature.node.kubernetes.io/custom-intel-gpu: "true"`
+- Pod: resourceClaims with resourceClaimTemplateName referencing app-specific ResourceClaimTemplate
+- Container: resources.claims to request the GPU
+- Values: resourceClaimTemplates with deviceClassName: gpu.intel.com
+- OpenVINO: Set OPENVINO_DEVICE: GPU for hardware acceleration
 
 ### Operational Workflows
 
@@ -617,6 +379,13 @@ Scripts in `./scripts/` - use `--help` for usage:
 - Secrets: SOPS with Age encryption, External Secrets Operator with Infisical
 - Storage: Rook Ceph (distributed), NFS from Nezuko, Garage S3
 - Automation: just, mise, talhelper
+
+**Alerting:**
+
+- Pushover: VMAlertmanager sends alerts to Pushover app for mobile notifications
+- Healthchecks.io: Dead man's switch; Watchdog alert pings external endpoint every 5 minutes. If
+  cluster or monitoring stack goes down, Healthchecks.io detects missing pings and alerts via
+  Pushover.
 
 **Network topology:**
 

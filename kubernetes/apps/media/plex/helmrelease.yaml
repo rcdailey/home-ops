@@ -44,14 +44,13 @@ spec:
               PLEX_PREFERENCE_2: "LanNetworksBandwidth=192.168.0.0/19"
 
             probes:
-              liveness: &probes
+              liveness:
                 enabled: true
                 custom: true
                 spec:
                   httpGet:
                     path: /identity
                     port: 32400
-              readiness: *probes
               startup:
                 enabled: true
                 spec:
