@@ -170,11 +170,6 @@
       href: https://smartconnect.apc.com/
 
 - Monitoring:
-  - Gatus:
-      icon: gatus
-      href: https://status.${SECRET_DOMAIN}/
-      siteMonitor: http://gatus.observability:80
-
   - VictoriaMetrics:
       icon: victoriametrics
       href: https://victoria-metrics.${SECRET_DOMAIN}/
