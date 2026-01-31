@@ -38,13 +38,12 @@ spec:
             - secretRef:
                 name: pocket-id-secret
             probes:
-              liveness: &probes
+              liveness:
                 enabled: true
                 custom: true
                 spec:
                   exec:
                     command: [/app/pocket-id, healthcheck]
-              readiness: *probes
             resources:
               requests:
                 cpu: 10m

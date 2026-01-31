@@ -69,14 +69,13 @@ spec:
                 name: bookstack-secret
 
             probes:
-              liveness: &probes
+              liveness:
                 enabled: true
                 custom: true
                 spec:
                   httpGet:
                     path: /status
                     port: 8080
-              readiness: *probes
 
             resources:
               requests:
