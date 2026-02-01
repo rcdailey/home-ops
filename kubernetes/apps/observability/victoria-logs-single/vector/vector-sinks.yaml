@@ -12,6 +12,7 @@ sinks:
     - kometa_parser
     - qbittorrent_parser
     - cloudflare_tunnel_parser
+    - volsync_parser
     mode: bulk
     api_version: v8
     compression: gzip

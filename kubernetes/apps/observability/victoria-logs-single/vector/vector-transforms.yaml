@@ -13,7 +13,7 @@ transforms:
   default_parser:
     type: remap
     inputs: [k8s]
-    file: /etc/vector/vrl/parse-default.vrl
+    file: /etc/vector/parse-default.vrl
 
   # Filter for kometa logs
   kometa_filter:
@@ -28,7 +28,7 @@ transforms:
   kometa_parser:
     type: remap
     inputs: [kometa_filter]
-    file: /etc/vector/vrl/parse-kometa.vrl
+    file: /etc/vector/parse-kometa.vrl
 
   # Filter for qbittorrent logs
   qbittorrent_filter:
@@ -43,7 +43,7 @@ transforms:
   qbittorrent_parser:
     type: remap
     inputs: [qbittorrent_filter]
-    file: /etc/vector/vrl/parse-qbittorrent.vrl
+    file: /etc/vector/parse-qbittorrent.vrl
 
   # Filter for cloudflare-tunnel logs
   cloudflare_tunnel_filter:
@@ -58,4 +58,19 @@ transforms:
   cloudflare_tunnel_parser:
     type: remap
     inputs: [cloudflare_tunnel_filter]
-    file: /etc/vector/vrl/parse-cloudflare-tunnel.vrl
+    file: /etc/vector/parse-cloudflare-tunnel.vrl
+
+  # Filter for volsync/kopia mover logs
+  volsync_filter:
+    type: filter
+    inputs: [k8s]
+    condition:
+      type: vrl
+      source: |
+        .kubernetes.pod_labels."app.kubernetes.io/created-by" == "volsync"
+
+  # Custom parser for volsync
+  volsync_parser:
+    type: remap
+    inputs: [volsync_filter]
+    file: /etc/vector/parse-volsync.vrl

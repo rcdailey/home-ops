@@ -1,0 +1,177 @@
+[
+  {
+    "input": {
+      "_msg": "INFO: Starting kopia mover container",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "info",
+      "message": "Starting kopia mover container",
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  },
+  {
+    "input": {
+      "_msg": "DEBUG: KOPIA_CACHE_DIRECTORY set to: /cache",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "debug",
+      "message": "KOPIA_CACHE_DIRECTORY set to: /cache",
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  },
+  {
+    "input": {
+      "_msg": "ERROR: kopia snapshot failed with exit code 1",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "error",
+      "message": "kopia snapshot failed with exit code 1",
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  },
+  {
+    "input": {
+      "_msg": "WARN: Cache usage at 85%",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "warn",
+      "message": "Cache usage at 85%",
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  },
+  {
+    "input": {
+      "_msg": "TIMING: Kopia version check took 2 seconds",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "timing",
+      "message": "Kopia version check took 2 seconds",
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  },
+  {
+    "input": {
+      "_msg": "=== OPERATION SUMMARY ===",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "info",
+      "message": "=== OPERATION SUMMARY ===",
+      "is_section_header": true,
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  },
+  {
+    "input": {
+      "_msg": "INFO: OPERATION_RESULT: SUCCESS",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "info",
+      "message": "OPERATION_RESULT: SUCCESS",
+      "operation_result": "SUCCESS",
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  },
+  {
+    "input": {
+      "_msg": "INFO: MAINTENANCE_DURATION: 3600",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "info",
+      "message": "MAINTENANCE_DURATION: 3600",
+      "maintenance_duration_seconds": 3600,
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  },
+  {
+    "input": {
+      "_msg": "INFO: CACHE_USAGE_PERCENT: 45",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "info",
+      "message": "CACHE_USAGE_PERCENT: 45",
+      "cache_usage_percent": 45,
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  },
+  {
+    "input": {
+      "_msg": "WARN: CACHE_EXHAUSTION_WARNING: Cache usage at 95%",
+      "kubernetes": {
+        "pod_namespace": "storage",
+        "pod_labels": {
+          "app.kubernetes.io/created-by": "volsync"
+        }
+      }
+    },
+    "expected": {
+      "level": "warn",
+      "message": "CACHE_EXHAUSTION_WARNING: Cache usage at 95%",
+      "is_cache_exhaustion": true,
+      "app": "volsync",
+      "namespace": "storage"
+    }
+  }
+]

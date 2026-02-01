@@ -4,13 +4,11 @@ sources:
     type: kubernetes_logs
     # Memory optimization: Use API server cache instead of etcd
     use_apiserver_cache: true
-    # Exclude high-volume, low-value namespaces
-    exclude_paths_glob_patterns:
-    - /var/log/pods/rook-ceph_*/**
-    - /var/log/pods/kube-system_*/**
-    - /var/log/pods/flux-system_*/**
-    - /var/log/pods/cert-manager_*/**
+    # Opt-in log collection: only collect from pods with this label
+    # Currently used by volsync mover pods; add label to other apps as needed
+    extra_label_selector: app.kubernetes.io/created-by=volsync
     # Exclude rotated/compressed log files (only watch current logs)
+    exclude_paths_glob_patterns:
     - "**/*.gz"
     - "**/*.log.[0-9]*"
   internal_metrics:

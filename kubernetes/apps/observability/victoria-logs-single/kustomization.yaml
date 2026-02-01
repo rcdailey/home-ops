@@ -6,4 +6,20 @@ resources:
 - ./ocirepository.yaml
 - ./helmrelease.yaml
 - ./httproute.yaml
-# ConfigMapGenerator removed: Vector DaemonSet disabled, using sidecar pattern instead
+configMapGenerator:
+- name: victoria-logs-vector-config
+  files:
+  - vector.yaml=vector/vector-sources.yaml
+  - vector/vector-transforms.yaml
+  - vector/vector-sinks.yaml
+  options:
+    disableNameSuffixHash: true
+- name: victoria-logs-vector-vrl
+  files:
+  - vrl/parse-default.vrl
+  - vrl/parse-kometa.vrl
+  - vrl/parse-qbittorrent.vrl
+  - vrl/parse-cloudflare-tunnel.vrl
+  - vrl/parse-volsync.vrl
+  options:
+    disableNameSuffixHash: true

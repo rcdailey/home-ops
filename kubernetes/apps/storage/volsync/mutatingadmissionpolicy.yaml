@@ -1,5 +1,64 @@
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/admissionregistration.k8s.io/mutatingadmissionpolicy_v1beta1.json
 ---
+# Debug logging injection for volsync/kopia mover pods
+# Sets KOPIA_LOG_LEVEL=debug for verbose stdout logging
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: volsync-mover-debug-logging
+spec:
+  policyName: volsync-mover-debug-logging
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: volsync-mover-debug-logging
+spec:
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - batch
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - jobs
+  matchConditions:
+  - name: has-volsync-job-name-prefix
+    expression: object.metadata.name.startsWith("volsync-") || object.metadata.name.startsWith("kopia-maint-")
+  - name: has-volsync-created-by-labels
+    expression: |
+      object.metadata.?labels["app.kubernetes.io/created-by"].orValue("") == "volsync" ||
+      object.metadata.?labels["volsync.backube/kopia-maintenance"].orValue("") == "true"
+  failurePolicy: Fail
+  reinvocationPolicy: IfNeeded
+  mutations:
+  - patchType: JSONPatch
+    jsonPatch:
+      expression: |
+        [
+          JSONPatch{
+            op: "add", path: "/spec/template/spec/containers/0/env",
+            value: []
+          },
+          JSONPatch{
+            op: "add", path: "/spec/template/spec/containers/0/env/-",
+            value: Object.spec.template.spec.containers.env{
+              name: "KOPIA_LOG_LEVEL",
+              value: "debug"
+            }
+          },
+          JSONPatch{
+            op: "add", path: "/spec/template/spec/containers/0/env/-",
+            value: Object.spec.template.spec.containers.env{
+              name: "KOPIA_FILE_LOG_LEVEL",
+              value: "debug"
+            }
+          }
+        ]
+---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingAdmissionPolicyBinding
 metadata:

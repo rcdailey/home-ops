@@ -1,0 +1,57 @@
+# Volsync/Kopia mover log parser
+# Parses entry.sh log format: INFO: message, DEBUG: message, ERROR: message, etc.
+
+log_msg = string!(._msg)
+
+# Parse log level prefix (INFO:, DEBUG:, ERROR:, WARN:, TIMING:)
+level_match = parse_regex(log_msg, r'^(?P<level>INFO|DEBUG|ERROR|WARN|TIMING):\s*(?P<content>.*)$') ?? {}
+
+if exists(level_match.level) {
+  .level = downcase(string!(level_match.level))
+  .message = level_match.content
+} else {
+  # Handle section headers like "=== OPERATION SUMMARY ==="
+  if starts_with(log_msg, "===") {
+    .level = "info"
+    .is_section_header = true
+  } else {
+    .level = "info"
+  }
+  .message = log_msg
+}
+
+# Extract operation result from summary
+if contains(log_msg, "OPERATION_RESULT:") {
+  result_match = parse_regex(log_msg, r'OPERATION_RESULT:\s*(?P<result>\w+)') ?? {}
+  if exists(result_match.result) {
+    .operation_result = result_match.result
+  }
+}
+
+# Extract maintenance duration
+if contains(log_msg, "MAINTENANCE_DURATION:") {
+  duration_match = parse_regex(log_msg, r'MAINTENANCE_DURATION:\s*(?P<duration>\d+)') ?? {}
+  if exists(duration_match.duration) {
+    .maintenance_duration_seconds = to_int(duration_match.duration) ?? 0
+  }
+}
+
+# Extract cache usage info
+if contains(log_msg, "CACHE_USAGE_PERCENT:") {
+  cache_match = parse_regex(log_msg, r'CACHE_USAGE_PERCENT:\s*(?P<percent>\d+)') ?? {}
+  if exists(cache_match.percent) {
+    .cache_usage_percent = to_int(cache_match.percent) ?? 0
+  }
+}
+
+# Mark cache exhaustion warnings
+if contains(log_msg, "CACHE_EXHAUSTION") {
+  .is_cache_exhaustion = true
+}
+
+# Add app metadata
+.app = "volsync"
+.namespace = .kubernetes.pod_namespace
+
+# Remove pod_labels to reduce cardinality
+.kubernetes = del(.kubernetes.pod_labels)

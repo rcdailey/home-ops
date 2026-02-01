@@ -88,11 +88,22 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
 
-    # Disable centralized Vector DaemonSet log collection
-    # WHY: Opt-in approach - use sidecar pattern for application-specific logs (e.g., Plex)
-    # This eliminates continuous writes to VictoriaLogs from cluster-wide log collection
+    # Opt-in Vector DaemonSet log collection
+    # Uses label selector (app.kubernetes.io/created-by=volsync) to limit collection
+    # Add the label to other apps as needed for targeted log aggregation
     vector:
-      enabled: false
+      enabled: true
+      # Mount external Vector config and VRL files from ConfigMaps
+      # Chart projects all ConfigMaps into /etc/vector directory
+      existingConfigMaps:
+      - victoria-logs-vector-config
+      - victoria-logs-vector-vrl
+      resources:
+        limits:
+          memory: 512Mi
+        requests:
+          cpu: 20m
+          memory: 128Mi
 
     # Service monitor for metrics
     serviceMonitor:
