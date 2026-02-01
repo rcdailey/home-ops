@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/admissionregistration.k8s.io/mutatingadmissionpolicy_v1beta1.json
 ---
 # Logging configuration for volsync/kopia mover pods
-# - Adds /logs emptyDir (image creates dir before processing args)
 # - Disables file logging via --disable-file-logging flag
 # - Sets debug log level for verbose stdout (flows to VictoriaLogs)
+# Note: /logs volume is provided by the image natively
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingAdmissionPolicyBinding
 metadata:
@@ -41,20 +41,6 @@ spec:
     jsonPatch:
       expression: |
         [
-          JSONPatch{
-            op: "add", path: "/spec/template/spec/volumes/-",
-            value: Object.spec.template.spec.volumes{
-              name: "logs",
-              emptyDir: Object.spec.template.spec.volumes.emptyDir{}
-            }
-          },
-          JSONPatch{
-            op: "add", path: "/spec/template/spec/containers/0/volumeMounts/-",
-            value: Object.spec.template.spec.containers.volumeMounts{
-              name: "logs",
-              mountPath: "/logs"
-            }
-          },
           JSONPatch{
             op: "add", path: "/spec/template/spec/containers/0/env",
             value: []
