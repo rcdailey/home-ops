@@ -17,8 +17,8 @@ drift.
   causes. Find the manifest issue and fix it. Exception: cleanup after root cause is fixed.
 - **NEVER adjust health probes to fix failures** - Probes detect problems, they don't cause them.
   Investigate WHY the probe fails (resource exhaustion, slow startup, missing deps).
-- MUST use cluster-investigate agent for all cluster investigation. Use for kubectl, helm, flux,
-  talosctl diagnostics. Agent enforces read-only operations and token-efficient output patterns.
+- **Cluster investigation is read-only** - NEVER use kubectl apply/create/delete/patch, helm
+  install/upgrade/uninstall, flux suspend/resume, or talosctl apply-config/upgrade/reboot/reset.
 
 ### Troubleshooting Approach
 
@@ -30,6 +30,23 @@ drift.
 6. **Validate**: `pre-commit run --files <changed-files>`
 
 Recurring issues indicate incomplete root cause analysis.
+
+**Token-efficient kubectl patterns:**
+
+- Use `--no-headers`, `-o name`, `| head -n 50` for large result sets
+- Pipe verbose output through `rg` to extract relevant lines
+- Write to /tmp for iteration: `kubectl describe pod foo -n bar > /tmp/pod.txt` then grep multiple
+  times
+- Use label selectors, field selectors, jsonpath to reduce output
+- Avoid `kubectl get all`, unfiltered logs, full resource dumps
+
+**Ephemeral test pods** (connectivity/DNS/network debugging):
+
+```bash
+kubectl run dns-test --rm -i --restart=Never --image=busybox:stable -- nslookup kubernetes.default
+```
+
+MUST use `--rm --restart=Never`. MUST NOT deploy services or use privileged contexts.
 
 ### Storage, Volumes, and Resource Patterns
 
