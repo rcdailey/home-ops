@@ -1,29 +1,28 @@
 # VolSync Kopia Root Ownership and UID Mismatch Investigation
 
-**Date:** 2026-01-31
-**Status:** ACTIVE INVESTIGATION - ROOT CAUSE UNCONFIRMED
+- **Date:** 2026-01-31
+- **Status:** RESOLVED
+- **Cause:** Namespace-level `privileged-movers` annotation forcing movers to run as root
 
 ## Executive Summary
 
-Kopia maintenance jobs and mover pods are creating root-owned files (UID 0) on NFS despite having
-`runAsUser: 1000` configured in the pod securityContext. This causes permission denied errors when
-subsequent jobs (running as UID 1000) cannot read the root-owned files.
+Kopia mover pods were creating root-owned files (UID 0) on NFS despite having `runAsUser: 1000`
+configured in the moverSecurityContext. This caused permission denied errors when subsequent jobs
+(running as UID 1000) attempted to read the root-owned files.
 
-**Symptoms:**
+**Root Cause:** The `default` namespace had `volsync.backube/privileged-movers: "true"` annotation,
+which overrides moverSecurityContext and forces all volsync movers in that namespace to run as root.
+This annotation was added for structurizr (which runs as root) but affected ALL apps in the
+namespace.
+
+**Resolution:** Removed structurizr application and the privileged-movers annotation from the
+default namespace. Fixed existing root-owned files with `chown -R 1000:1000 /mnt/user/volsync`.
+
+## Symptoms
 
 - Files owned by `root:ssh-allow` (UID 0, GID 1000) appearing in `/mnt/user/volsync` on NFS
-- KubeJobFailed alerts for `kopia-maint-daily` jobs
 - Kopia web server logging "permission denied" errors reading index blobs
 - Recurring need to run `chown -R 1000:1000 /mnt/user/volsync` on nezuko
-
-**Confirmed facts:**
-
-- Pod securityContext correctly specifies `runAsUser: 1000`
-- Test jobs with identical image and security context run correctly as UID 1000
-- Files created by test jobs are correctly owned by 1000:1000
-- Root-owned files have GID 1000 (from fsGroup), confirming partial security context application
-
-**Mystery:** Security context is correct, test jobs work, but root-owned files still appear.
 
 ## Environment
 
@@ -39,29 +38,74 @@ subsequent jobs (running as UID 1000) cannot read the root-owned files.
 - Export: `/mnt/user/volsync`
 - Options: `rw,sec=sys,insecure,no_root_squash`
 
-**Security Context (from KopiaMaintenance CRD):**
+**Security Context (from moverSecurityContext):**
 
 ```yaml
-podSecurityContext:
+moverSecurityContext:
   runAsUser: 1000
   runAsGroup: 1000
   fsGroup: 1000
   fsGroupChangePolicy: OnRootMismatch
 ```
 
-## Timeline
+## Root Cause Analysis
 
-| Time (CST)       | Event                                                           |
-| ---------------- | --------------------------------------------------------------- |
-| Jan 30, 3:21 PM  | Commit f239523d: Added podSecurityContext to KopiaMaintenance   |
-| Jan 31, 6:34 AM  | Commit 4cd72e26: Deployed CGO fix image (0.17.7-cgo-fix-v2)     |
-| Jan 31, 10:00 AM | Maintenance job with OLD image took 4h47m (deadlock symptoms)   |
-| Jan 31, 2:47 PM  | 10:00 AM job finally completed                                  |
-| Jan 31, 6:00 PM  | First maintenance job with CGO fix image - FAILED (exit code 1) |
-| Jan 31, 6:00 PM  | Root-owned files created at exactly this time                   |
-| Feb 1, 1:49 AM   | Test job confirms UID 1000 enforcement works correctly          |
+### The Privileged-Movers Annotation
+
+The `default` namespace kustomization had this patch:
+
+```yaml
+patches:
+# structurizr runs as root; volsync needs privileged movers to backup root-owned files
+- target:
+    kind: Namespace
+  patch: |
+    - op: add
+      path: /metadata/annotations/volsync.backube~1privileged-movers
+      value: "true"
+```
+
+This annotation was added on Jan 28, 2026 to support structurizr, which runs as root and creates
+root-owned files that a UID 1000 mover cannot read. The annotation grants `CAP_DAC_OVERRIDE` to
+movers, allowing them to read any file regardless of ownership.
+
+**The problem:** This annotation applies namespace-wide, affecting ALL apps in `default`:
+
+- bookstack
+- immich
+- opencloud
+- pocket-id
+- structurizr
+
+When the annotation is set, volsync ignores `moverSecurityContext.runAsUser` and runs movers as root
+(UID 0). The `fsGroup: 1000` still applied (hence GID 1000 on files), but UID was 0.
+
+### File Timestamp Correlation
+
+Root-owned files were created at exactly 00:00 UTC on Feb 1 (6:00 PM CST Jan 31). The
+ReplicationSource lastSyncTime values confirmed which jobs created them:
+
+| ReplicationSource   | lastSyncTime         |
+|---------------------|----------------------|
+| default/opencloud   | 2026-02-01T00:00:33Z |
+| default/immich      | 2026-02-01T00:00:36Z |
+| default/structurizr | 2026-02-01T00:00:38Z |
+| default/pocket-id   | 2026-02-01T00:00:59Z |
+| default/bookstack   | 2026-02-01T00:01:01Z |
+
+Files in `_lo/g_2/` showed the exact pattern:
+
+| Timestamp (UTC)   | UID  | Observation               |
+|-------------------|------|---------------------------|
+| 00:00:06-00:00:10 | 1000 | Files from storage ns     |
+| 00:00:25-00:00:58 | 0    | Files from default ns     |
+| 00:01:01+         | 1000 | Correct ownership resumes |
 
 ## Investigation Evidence
+
+This section documents all the areas checked during investigation. The privileged-movers annotation
+was not initially suspected because the jobs in question were in the `default` namespace, while
+initial focus was on `storage` namespace maintenance jobs.
 
 ### Root-Owned Files Found
 
@@ -75,7 +119,8 @@ Modify: 2026-01-31 18:00:31.089921041 -0600
 Change: 2026-01-31 18:00:31.090921037 -0600
 ```
 
-**Pattern:** UID 0 (root), GID 1000 (from fsGroup). The fsGroup setting worked, but runAsUser didn't.
+**Pattern:** UID 0 (root), GID 1000 (from fsGroup). The fsGroup setting worked, but runAsUser was
+overridden by the privileged-movers annotation.
 
 ### NFS Export Configuration Verified
 
@@ -84,10 +129,12 @@ $ ssh nezuko "cat /etc/exports | rg volsync"
 "/mnt/user/volsync" -fsid=106,async,no_subtree_check 192.168.1.0/24(rw,sec=sys,insecure,no_root_squash)
 ```
 
-`no_root_squash` means UID 0 from client is preserved as UID 0 on server. This is NOT the cause;
-it just means the NFS server honestly reports what UID created the file.
+`no_root_squash` means UID 0 from client is preserved as UID 0 on server. This is NOT the cause; it
+just means the NFS server honestly reports what UID created the file.
 
-### Job Security Context Verified
+### Storage Namespace Jobs Verified
+
+Jobs in the `storage` namespace had correct security context and were NOT the source of root files:
 
 ```bash
 $ kubectl get job kopia-maint-daily-768a081a131cc03c-29498400 -n storage \
@@ -95,11 +142,10 @@ $ kubectl get job kopia-maint-daily-768a081a131cc03c-29498400 -n storage \
 {"fsGroup":1000,"fsGroupChangePolicy":"OnRootMismatch","runAsGroup":1000,"runAsUser":1000}
 ```
 
-The failed job's spec correctly shows `runAsUser: 1000`.
+### Test Jobs in Storage Namespace
 
-### Test Job Results
-
-#### Test 1: Basic image test (no admission policy)
+Test jobs in the storage namespace (which does NOT have the privileged-movers annotation) worked
+correctly:
 
 ```bash
 $ kubectl apply -f /tmp/test-uid-job.yaml
@@ -111,19 +157,8 @@ uid=1000 gid=1000 groups=1000
 -rw-r--r--. 1 1000 1000 0 Feb  1 01:49 /repository/test-uid-check
 ```
 
-#### Test 2: With MutatingAdmissionPolicy (NFS volume injection)
-
-```bash
-$ kubectl apply -f /tmp/test-uid-with-admission.yaml
-$ kubectl logs job/kopia-maint-test-uid -n storage
-=== Process identity ===
-uid=1000 gid=1000 groups=1000
-
-=== Creating test file ===
--rw-r--r--. 1 1000 1000 0 Feb  1 02:01 /repository/test-uid-admission-check
-```
-
-Both tests prove the security context IS enforced correctly.
+This confirmed that the volsync image and security context enforcement worked correctly when the
+privileged-movers annotation was not present.
 
 ### CronJob Template Verified
 
@@ -133,11 +168,32 @@ $ kubectl get cronjob -n storage -l volsync.backube/kopia-maintenance=true \
 {"fsGroup":1000,"fsGroupChangePolicy":"OnRootMismatch","runAsGroup":1000,"runAsUser":1000}
 ```
 
-### Controller Code Review
+### ReplicationSource moverSecurityContext Verified
 
-Reviewed `internal/controller/kopiamaintenance_controller.go` in perfectra1n/volsync. The code
-correctly applies `PodSecurityContext` with `runAsUser: 1000` default when creating both CronJobs
-and manual Jobs.
+All ReplicationSources had correct moverSecurityContext:
+
+```bash
+$ kubectl get replicationsource -n default -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.kopia.moverSecurityContext}{"\n"}{end}'
+bookstack   {"fsGroup":1000,"fsGroupChangePolicy":"OnRootMismatch","runAsGroup":1000,"runAsUser":1000}
+immich      {"fsGroup":1000,"fsGroupChangePolicy":"OnRootMismatch","runAsGroup":1000,"runAsUser":1000}
+opencloud   {"fsGroup":1000,"fsGroupChangePolicy":"OnRootMismatch","runAsGroup":1000,"runAsUser":1000}
+pocket-id   {"fsGroup":1000,"fsGroupChangePolicy":"OnRootMismatch","runAsGroup":1000,"runAsUser":1000}
+structurizr {"fsGroup":1000,"fsGroupChangePolicy":"OnRootMismatch","runAsGroup":1000,"runAsUser":1000}
+```
+
+This was misleading because the moverSecurityContext was correct; the namespace annotation was
+overriding it.
+
+### Default Namespace Annotation (Root Cause)
+
+```bash
+$ kubectl get namespace default -o yaml | rg -A 5 "annotations:"
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    volsync.backube/privileged-movers: "true"
+```
+
+The `volsync.backube/privileged-movers: "true"` annotation was the root cause.
 
 ### Image Configuration
 
@@ -150,284 +206,81 @@ $ crane config ghcr.io/rcdailey/volsync:0.17.7-cgo-fix-v2 | jq '.config'
 }
 ```
 
-**Issue identified:** Image has `ENV USER=volsync` (environment variable) but no `USER` directive
-(Dockerfile instruction). The image defaults to root, BUT Kubernetes `runAsUser: 1000` should
-override this at runtime.
+Image has `ENV USER=volsync` (environment variable) but no `USER` directive (Dockerfile
+instruction). The image defaults to root, but Kubernetes `runAsUser: 1000` should override this at
+runtime, which it does unless privileged-movers is set.
 
 ## Ruled Out Causes
 
-| Potential Cause                     | Status     | Evidence                                      |
-| ----------------------------------- | ---------- | --------------------------------------------- |
-| NFS root_squash misconfiguration    | Ruled out  | Export uses no_root_squash; passes UID through|
-| Job spec missing security context   | Ruled out  | Job spec shows runAsUser: 1000                |
-| CronJob template incorrect          | Ruled out  | Template has correct security context         |
-| Controller code bug                 | Ruled out  | Code review confirms correct implementation   |
-| MutatingAdmissionPolicy interference| Ruled out  | Test with admission policy works correctly    |
-| Volsync controller creating files   | Ruled out  | Controller runs as UID 1000                   |
-| Image ignoring security context     | Ruled out  | Test jobs run correctly as UID 1000           |
-| Different job at 6PM                | Ruled out  | Only kopia-maint-daily ran at that time       |
+| Potential Cause                      | Status    | Evidence                                       |
+|--------------------------------------|-----------|------------------------------------------------|
+| NFS root_squash misconfiguration     | Ruled out | Export uses no_root_squash; passes UID through |
+| Job spec missing security context    | Ruled out | Job spec shows runAsUser: 1000                 |
+| CronJob template incorrect           | Ruled out | Template has correct security context          |
+| Controller code bug                  | Ruled out | Code review confirms correct implementation    |
+| MutatingAdmissionPolicy interference | Ruled out | Test with admission policy works correctly     |
+| Volsync controller creating files    | Ruled out | Controller runs as UID 1000                    |
+| Image ignoring security context      | Ruled out | Test jobs run correctly as UID 1000            |
+| Storage namespace jobs               | Ruled out | Root files came from default namespace         |
 
-## Unresolved Questions
+## Resolution
 
-1. **Why did the 6PM job create root-owned files when security context was correct?**
-   - Test jobs with identical configuration work correctly
-   - The specific pod from 6PM no longer exists to inspect
+1. **Removed structurizr application** - The only app requiring root access
+2. **Removed privileged-movers patch** - From `kubernetes/apps/default/kustomization.yaml`
+3. **Removed namespace annotation** - `kubectl annotate namespace default
+   volsync.backube/privileged-movers-`
+4. **Fixed existing files** - `ssh nezuko "chown -R 1000:1000 /mnt/user/volsync"`
 
-2. **Is there a race condition or edge case we haven't reproduced?**
-   - All test scenarios pass
-   - The failure may be non-deterministic
+**Commit:** `fix(volsync)!: remove structurizr to prevent root-owned backup files`
 
-3. **Could there be clock skew or misleading timestamps?**
-   - File timestamps precisely match job execution time
-   - Unlikely to be a coincidence
+## Lessons Learned
 
-## CGO Fix Experiment Context
+1. **Namespace-level annotations affect all apps** - The privileged-movers annotation was added for
+   one app but affected all apps in the namespace. Apps requiring special permissions should be
+   isolated in their own namespace.
 
-This investigation overlaps with an experiment to fix a separate issue: kopia user lookup deadlock.
+2. **moverSecurityContext can be overridden** - The volsync privileged-movers annotation takes
+   precedence over moverSecurityContext settings.
 
-**Original Problem:** Kopia mover jobs hang indefinitely due to glibc `getpwuid_r()` deadlock when
-running as UID 1000 without `/etc/passwd` entry.
+3. **Check namespace annotations early** - When security context appears correct but behavior
+   differs, check for namespace-level overrides.
 
-**Attempted Fix:** Custom image with `CGO_ENABLED=0` to use pure Go user lookup.
-
-**Changes made to perfectra1n/volsync Dockerfile:**
-
-```dockerfile
-# Line 78-79: Added CGO disable
-ENV CGO_ENABLED=0
-
-# Line 235: Added USER env var (NOT a USER directive)
-ENV USER=volsync
-```
-
-**Issue:** `ENV USER=volsync` sets an environment variable, not the container's runtime user. The
-image still defaults to root. However, Kubernetes `runAsUser: 1000` should override this.
-
-**See also:** [Gist: volsync-kopia-cgo-user-lookup-deadlock-2026-01-31][gist-cgo]
-
-[gist-cgo]: https://gist.github.com/rcdailey/571f0aab65eac86f82c1581f48a64b8d
-
-## Monitoring Gap
-
-**Critical issue:** Kopia logs are not reaching VictoriaLogs, preventing diagnosis of failures.
-
-**Why logs are missing:**
-
-- Kopia writes to `/cache/logs/cli-logs/kopia-*.log` files, not stdout
-- Vector collects from `kubernetes_logs` (stdout/stderr only)
-- Pods crash/complete before logs can be scraped
-- Short-lived job pods don't persist for log collection
-
-**Required fix:** Configure kopia/volsync to log to stdout, or add Vector file source for kopia logs.
-
-## Logging Architecture
-
-This section provides context for implementing proper kopia log collection.
-
-### Current Log Flow
-
-```txt
-┌─────────────────────────────────────────────────────────────────────┐
-│ Volsync Mover Pod                                                   │
-│                                                                     │
-│  entry.sh                                                           │
-│  ├── echo/log_info() ──────────────────────► stdout ──► Vector ✓   │
-│  ├── log_error() ──────────────────────────► stderr ──► Vector ✓   │
-│  │                                                                  │
-│  └── kopia snapshot/maintenance                                     │
-│      ├── --log-level=info ─────────────────► stdout (minimal) ✓    │
-│      └── --file-log-level=info ────────────► /cache/logs/*.log ✗   │
-│                                              (NOT collected)        │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-The entry.sh wrapper script logs extensively to stdout, but kopia's detailed internal logs go to
-files that Vector doesn't collect.
-
-### Logging-Related Files
-
-| File | Purpose |
-| ---- | ------- |
-| `kubernetes/apps/observability/victoria-logs-single/vector/vector-sources.yaml` | Vector input config |
-| `kubernetes/apps/observability/victoria-logs-single/vector/vector-transforms.yaml` | Log parsing/filtering |
-| `kubernetes/apps/observability/victoria-logs-single/vector/vector-sinks.yaml` | VictoriaLogs output |
-| `mover-kopia/entry.sh` (in perfectra1n/volsync repo) | Mover entrypoint script |
-
-### Entry.sh Log Configuration
-
-The entry.sh script (in perfectra1n/volsync) sets these environment variables:
-
-```bash
-# Console log level (stdout) - default: info
-export KOPIA_LOG_LEVEL="${KOPIA_LOG_LEVEL:-info}"
-
-# File log level (/cache/logs/) - default: info
-export KOPIA_FILE_LOG_LEVEL="${KOPIA_FILE_LOG_LEVEL:-info}"
-
-# Log retention
-export KOPIA_LOG_DIR_MAX_FILES="${KOPIA_LOG_DIR_MAX_FILES:-3}"
-export KOPIA_LOG_DIR_MAX_AGE="${KOPIA_LOG_DIR_MAX_AGE:-4h}"
-```
-
-Kopia is invoked with these flags:
-
-```bash
-KOPIA=("kopia"
-  "--config-file=${KOPIA_CACHE_DIR}/kopia.config"
-  "--log-dir=${KOPIA_CACHE_DIR}/logs"
-  "--log-level=${KOPIA_LOG_LEVEL}"
-  "--file-log-level=${KOPIA_FILE_LOG_LEVEL}"
-  "--log-dir-max-files=${KOPIA_LOG_DIR_MAX_FILES}"
-  "--log-dir-max-age=${KOPIA_LOG_DIR_MAX_AGE}"
-)
-```
-
-### Entry.sh Logging Functions
-
-The script has these logging helpers that write to stdout/stderr:
-
-```bash
-log_info() { echo "INFO: $*"; }
-log_debug() { [[ "${KOPIA_FILE_LOG_LEVEL}" == "debug" ]] && echo "DEBUG: $*"; }
-log_error() { echo "ERROR: $*" >&2; }
-log_warn() { echo "WARN: $*"; }
-```
-
-The `run_with_progress_output()` function captures kopia's output:
-
-```bash
-run_with_progress_output() {
-    "$@" 2>&1 | tr '\r' '\n'  # Merges stderr to stdout, converts CR to LF
-    return "${PIPESTATUS[0]}"
-}
-```
-
-### Vector Current Configuration
-
-Vector sources (`vector-sources.yaml`):
-
-```yaml
-sources:
-  k8s:
-    type: kubernetes_logs
-    use_apiserver_cache: true
-    exclude_paths_glob_patterns:
-    - /var/log/pods/rook-ceph_*/**
-    - /var/log/pods/kube-system_*/**
-    - /var/log/pods/flux-system_*/**
-    - /var/log/pods/cert-manager_*/**
-```
-
-The `storage` namespace is NOT excluded, so volsync pod stdout/stderr should be collected.
-
-### Options for Fixing Log Collection
-
-#### Option A: Increase kopia console verbosity
-
-Set `KOPIA_LOG_LEVEL=debug` in the volsync helmrelease to get more output on stdout. This would
-require adding env vars to the mover pods via the ReplicationSource or KopiaMaintenance CRD.
-
-**Pros:** No Vector changes needed
-**Cons:** May be very verbose; requires upstream CRD support for env vars
-
-#### Option B: Add Vector transform for volsync pods
-
-Create a Vector filter/transform specifically for volsync pods to ensure their logs are captured
-and properly parsed.
-
-**Pros:** Better log organization
-**Cons:** Doesn't capture kopia file logs
-
-#### Option C: Sidecar to tail log files
-
-Add a sidecar container that tails `/cache/logs/*.log` to stdout.
-
-**Pros:** Captures all kopia logs
-**Cons:** More complex; requires modifying mover pod specs
-
-#### Option D: Configure kopia to skip file logging
-
-If kopia supports `--log-dir=""` or similar to disable file logging and increase console output,
-this would be the cleanest solution.
-
-### Testing Log Collection
-
-```bash
-# Check if Vector is collecting from storage namespace
-./scripts/query-victorialogs.py --namespace storage --start 1h --limit 10
-
-# Check for any volsync-related logs
-./scripts/query-victorialogs.py --start 1h 'volsync OR kopia' --limit 20
-
-# Watch logs from a running volsync pod
-kubectl logs -f -n <namespace> volsync-src-<app>-<pod> -c kopia
-```
+4. **File timestamps are valuable forensics** - Correlating file creation times with job execution
+   times identified which jobs created the root-owned files.
 
 ## Relevant Files
 
-| File                                                            | Purpose                           |
-| --------------------------------------------------------------- | --------------------------------- |
-| `kubernetes/apps/storage/volsync/helmrelease.yaml`              | Volsync operator with CGO fix     |
-| `kubernetes/apps/storage/volsync/kopiamaintenance.yaml`         | KopiaMaintenance CRD config       |
-| `kubernetes/apps/storage/volsync/mutatingadmissionpolicy.yaml`  | NFS volume injection              |
-| `kubernetes/components/volsync/replicationsource.yaml`          | ReplicationSource template        |
+| File                                                    | Purpose                     |
+|---------------------------------------------------------|-----------------------------|
+| `kubernetes/apps/storage/volsync/helmrelease.yaml`      | Volsync operator config     |
+| `kubernetes/apps/storage/volsync/kopiamaintenance.yaml` | KopiaMaintenance CRD config |
+| `kubernetes/components/volsync/replicationsource.yaml`  | ReplicationSource template  |
+| `kubernetes/apps/default/kustomization.yaml`            | Had privileged-movers patch |
 
-## Commands for Investigation
+## Commands for Future Reference
 
 ```bash
 # Check for root-owned files
 ssh nezuko "find /mnt/user/volsync -maxdepth 3 -uid 0 -ls 2>/dev/null | head -20"
 
-# Check file timestamps
-ssh nezuko "stat /mnt/user/volsync/q56/569"
+# Check namespace for privileged-movers annotation
+kubectl get namespace <ns> -o jsonpath='{.metadata.annotations.volsync\.backube/privileged-movers}'
 
-# Verify job security context
-kubectl get job <job-name> -n storage -o jsonpath='{.spec.template.spec.securityContext}' | jq .
-
-# Verify CronJob template
-kubectl get cronjob -n storage -l volsync.backube/kopia-maintenance=true \
-  -o jsonpath='{.items[0].spec.jobTemplate.spec.template.spec.securityContext}' | jq .
+# Verify moverSecurityContext
+kubectl get replicationsource -n <ns> -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.kopia.moverSecurityContext}{"\n"}{end}'
 
 # Check NFS export options
 ssh nezuko "cat /etc/exports"
 
-# Run test job
-kubectl apply -f /tmp/test-uid-job.yaml
-kubectl wait --for=condition=complete job/test-uid -n storage --timeout=60s
-kubectl logs job/test-uid -n storage
-
-# Check UID mapping on nezuko
-ssh nezuko "id robert; getent group ssh-allow"
-# robert = UID 1000, ssh-allow = GID 1000
-
-# Inspect image user config
-crane config ghcr.io/rcdailey/volsync:0.17.7-cgo-fix-v2 | jq '.config.User'
+# Fix permissions
+ssh nezuko "chown -R 1000:1000 /mnt/user/volsync"
 ```
-
-## Next Steps
-
-1. **Enable kopia logging to stdout** - Required before further diagnosis
-2. **Monitor next maintenance run** - Check for new root-owned files at 2AM/10AM
-3. **Fix existing permissions** - `ssh nezuko "chown -R 1000:1000 /mnt/user/volsync"`
-4. **Verify CGO fix effectiveness** - Check if maintenance jobs complete without deadlock
-
-## Perplexity Research Summary
-
-Research identified several potential causes for `runAsUser` failing while `fsGroup` works:
-
-- **CRI runtime bugs with device mounts** - Not applicable (no devices)
-- **NFS no_root_squash interaction** - Verified not the cause
-- **Container runtime race conditions** - Possible but not reproducible
-- **MutatingAdmissionPolicy modifications** - Tested and ruled out
-- **Volsync privileged-movers annotation** - Not set on storage namespace
-- **Talos Linux specific issues** - Possible but not confirmed
-
-See Perplexity response in conversation for full details.
 
 ## Document History
 
-| Date       | Changes                                                           |
-| ---------- | ----------------------------------------------------------------- |
-| 2026-01-31 | Initial investigation, root-owned files discovered                |
-| 2026-02-01 | Comprehensive testing, all scenarios pass but mystery remains     |
-| 2026-02-01 | Document created to track ongoing investigation                   |
+| Date       | Changes                                                       |
+|------------|---------------------------------------------------------------|
+| 2026-01-31 | Initial investigation, root-owned files discovered            |
+| 2026-02-01 | Comprehensive testing, storage namespace ruled out            |
+| 2026-02-01 | Root cause identified: privileged-movers on default namespace |
+| 2026-02-01 | Resolution: removed structurizr and annotation                |
