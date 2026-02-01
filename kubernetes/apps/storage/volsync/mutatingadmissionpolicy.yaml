@@ -1,18 +1,19 @@
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/admissionregistration.k8s.io/mutatingadmissionpolicy_v1beta1.json
 ---
-# Debug logging injection for volsync/kopia mover pods
-# Sets KOPIA_LOG_LEVEL=debug for verbose stdout logging
+# Logging configuration for volsync/kopia mover pods
+# - Disables file logging (prevents mkdir /logs on read-only filesystem)
+# - Sets debug log level for verbose stdout (flows to VictoriaLogs)
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingAdmissionPolicyBinding
 metadata:
-  name: volsync-mover-debug-logging
+  name: volsync-mover-logging
 spec:
-  policyName: volsync-mover-debug-logging
+  policyName: volsync-mover-logging
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingAdmissionPolicy
 metadata:
-  name: volsync-mover-debug-logging
+  name: volsync-mover-logging
 spec:
   matchConstraints:
     resourceRules:
@@ -53,8 +54,8 @@ spec:
           JSONPatch{
             op: "add", path: "/spec/template/spec/containers/0/env/-",
             value: Object.spec.template.spec.containers.env{
-              name: "KOPIA_FILE_LOG_LEVEL",
-              value: "debug"
+              name: "KOPIA_ADDITIONAL_ARGS",
+              value: "--disable-file-logging"
             }
           }
         ]

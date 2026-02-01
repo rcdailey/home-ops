@@ -1,7 +1,11 @@
 # Volsync/Kopia mover log parser
 # Parses entry.sh log format: INFO: message, DEBUG: message, ERROR: message, etc.
 
-log_msg = string!(._msg)
+# Handle null _msg gracefully
+log_msg = string(._msg) ?? ""
+if log_msg == "" {
+  abort
+}
 
 # Parse log level prefix (INFO:, DEBUG:, ERROR:, WARN:, TIMING:)
 level_match = parse_regex(log_msg, r'^(?P<level>INFO|DEBUG|ERROR|WARN|TIMING):\s*(?P<content>.*)$') ?? {}
