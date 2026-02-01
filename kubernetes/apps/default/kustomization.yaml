@@ -6,18 +6,9 @@ namespace: default
 components:
 - ../../components/common
 - ../../components/drift-detection
-patches:
-# structurizr runs as root; volsync needs privileged movers to backup root-owned files
-- target:
-    kind: Namespace
-  patch: |
-    - op: add
-      path: /metadata/annotations/volsync.backube~1privileged-movers
-      value: "true"
 resources:
 - ./bentopdf/ks.yaml
 - ./bookstack/ks.yaml
-- ./structurizr/ks.yaml
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
 - ./opencloud/ks.yaml
