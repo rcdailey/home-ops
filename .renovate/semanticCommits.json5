@@ -3,6 +3,7 @@
   packageRules: [
     {
       matchUpdateTypes: ["major"],
+      labels: ["type/major"],
       semanticCommitType: "build",
       semanticCommitScope: "deps",
       commitMessagePrefix: "{{semanticCommitType}}({{semanticCommitScope}})!:",
@@ -10,40 +11,48 @@
     },
     {
       matchUpdateTypes: ["minor"],
+      labels: ["type/minor"],
       semanticCommitType: "build",
       semanticCommitScope: "deps",
       commitMessageExtra: "( {{currentVersion}} ➔{{newVersion}} )"
     },
     {
       matchUpdateTypes: ["patch"],
+      labels: ["type/patch"],
       semanticCommitType: "build",
       semanticCommitScope: "deps",
       commitMessageExtra: "( {{currentVersion}} ➔{{newVersion}} )"
     },
     {
       matchUpdateTypes: ["digest"],
+      labels: ["type/digest"],
       semanticCommitType: "build",
       semanticCommitScope: "deps",
       commitMessageExtra: "( {{currentDigestShort}} ➔{{newDigestShort}} )"
     },
     {
       matchDatasources: ["docker"],
+      addLabels: ["renovate/container"],
       commitMessageTopic: "image {{depName}}"
     },
     {
       matchDatasources: ["helm"],
+      addLabels: ["renovate/helm"],
       commitMessageTopic: "chart {{depName}}"
     },
     {
       matchManagers: ["github-actions"],
+      addLabels: ["renovate/github-action"],
       commitMessageTopic: "action {{depName}}"
     },
     {
       matchDatasources: ["github-releases"],
+      addLabels: ["renovate/github-release"],
       commitMessageTopic: "release {{depName}}"
     },
     {
       matchManagers: ["mise"],
+      addLabels: ["renovate/mise"],
       commitMessageTopic: "tool {{depName}}"
     }
   ]
