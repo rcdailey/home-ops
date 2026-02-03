@@ -10,23 +10,23 @@
       minimumReleaseAge: "3 days",
     },
     {
-      // Python minor version updates frequently introduce breaking changes to stdlib APIs
-      // Example: Python 3.14's BooleanOptionalAction no longer accepts 'type' parameter,
-      // breaking flux-local and other tools. Only auto-merge patch versions (security fixes).
-      description: "Disable auto-merge for Mise Python",
+      // Generalized rule at the top so it can be overridden
+      description: "Auto-merge Mise Tools",
       matchManagers: ["mise"],
-      matchPackageNames: ["python"],
-      automerge: false,
-      matchUpdateTypes: ["minor", "major"],
-    },
-    {
-      description: "Auto-merge Mise Tools (excluding Python)",
-      matchManagers: ["mise"],
-      excludePackageNames: ["python"],
       automerge: true,
       automergeType: "pr",
       matchUpdateTypes: ["minor", "patch"],
       ignoreTests: true,
+    },
+    {
+      // Python minor version updates frequently introduce breaking changes to stdlib APIs
+      // Example: Python 3.14's BooleanOptionalAction no longer accepts 'type' parameter,
+      // breaking flux-local and other tools. Only auto-merge patch versions (security fixes).
+      description: "Disable auto-merge for Mise Python minor/major",
+      matchManagers: ["mise"],
+      matchPackageNames: ["python"],
+      matchUpdateTypes: ["minor", "major"],
+      automerge: false,
     },
     {
       description: "Auto-merge OCI charts and containers",
