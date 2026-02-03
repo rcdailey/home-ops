@@ -1,0 +1,20 @@
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: context7
+spec:
+  image: ghcr.io/stacklok/dockyard/npx/context7:2.1.1
+  transport: stdio
+  proxyPort: 8080
+  groupRef: mcp-tools
+  secrets:
+  - name: context7
+    key: CONTEXT7_API_KEY
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
