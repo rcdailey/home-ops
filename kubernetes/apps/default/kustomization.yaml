@@ -9,6 +9,7 @@ components:
 resources:
 - ./bentopdf/ks.yaml
 - ./bookstack/ks.yaml
+- ./donetick/ks.yaml
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
 - ./opencloud/ks.yaml
