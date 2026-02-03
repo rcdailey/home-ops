@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+# Temporary local build until dockyard PR merges:
+# https://github.com/stacklok/dockyard/pull/362
+---
+metadata:
+  name: octocode-mcp
+  description: MCP server for GitHub repository analysis and code discovery
+  upstream: https://github.com/stacklok/dockyard/pull/362
+
+spec:
+  # renovate: datasource=npm depName=octocode-mcp
+  package: octocode-mcp
+  version: 12.0.0
