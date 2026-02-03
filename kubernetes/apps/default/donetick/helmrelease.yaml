@@ -1,0 +1,118 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app donetick
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      donetick:
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.io/donetick/donetick
+              tag: v0.1.64
+            env:
+              TZ: America/Chicago
+              DT_ENV: selfhosted
+              DT_NAME: Donetick
+              DT_SERVER_PORT: &port 2021
+
+              # SQLite database - explicit path ensures only DB is in backed-up volume
+              DT_DATABASE_TYPE: sqlite
+              DT_SQLITE_PATH: /data/donetick.db
+
+              # Email configuration
+              DT_EMAIL_HOST: smtp-relay.network
+              DT_EMAIL_PORT: 587
+              DT_EMAIL_EMAIL: donetick@${SECRET_DOMAIN}
+
+              # OIDC authentication via Pocket ID
+              DT_OAUTH2_NAME: Pocket ID
+              DT_OAUTH2_CLIENT_ID: donetick
+              DT_OAUTH2_AUTH_URL: https://auth.${SECRET_DOMAIN}/authorize
+              DT_OAUTH2_TOKEN_URL: https://auth.${SECRET_DOMAIN}/api/oidc/token
+              DT_OAUTH2_USER_INFO_URL: https://auth.${SECRET_DOMAIN}/api/oidc/userinfo
+              DT_OAUTH2_REDIRECT_URL: https://tasks.${SECRET_DOMAIN}/auth/oauth2
+
+              # Disable built-in user creation (OIDC only)
+              DT_IS_USER_CREATION_DISABLED: true
+
+            envFrom:
+            - secretRef:
+                name: donetick-secret
+
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/v1/ping
+                    port: *port
+
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 1000
+              capabilities:
+                drop:
+                - ALL
+
+        pod:
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: *port
+
+    route:
+      app:
+        hostnames:
+        - tasks.${SECRET_DOMAIN}
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+
+    persistence:
+      data:
+        existingClaim: *app
+        advancedMounts:
+          donetick:
+            app:
+            - path: /data
