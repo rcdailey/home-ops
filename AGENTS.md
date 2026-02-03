@@ -133,6 +133,7 @@ Consistency patterns for maintainability and clarity.
 
 ### Security and Networking
 
+- OIDC client IDs: Hardcode as app name in env vars (not secret); only client secret needs Infisical
 - HTTPRoute ONLY for all routing (never Ingress)
 - NEVER use kubectl port-forward under ANY circumstances (alternatives: kubectl exec, debug pods,
   HTTPRoute exposure)
@@ -373,6 +374,7 @@ Scripts in `./scripts/` - use `--help` for usage:
 - ceph.sh: Ceph commands via rook-ceph-tools
 - test-vector-config.py: Vector VRL validation (required for Vector changes)
 - validate-vmrules.sh: VMRule syntax validation
+- icon-search.py: Search dashboard icons for Homepage services
 
 **Conventional commits (MANDATORY path-based):**
 
