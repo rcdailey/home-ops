@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+---
+name: Build MCP Server Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+    - .github/mcp-images/**/*.yaml
+    - .github/workflows/mcp-images.yaml
+  pull_request:
+    branches: [main]
+    paths:
+    - .github/mcp-images/**/*.yaml
+    - .github/workflows/mcp-images.yaml
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  # renovate: datasource=github-releases depName=stacklok/toolhive
+  THV_VERSION: v0.9.0
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      with:
+        fetch-depth: 0
+
+    - name: Find changed specs
+      id: set-matrix
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          # Manual trigger: build all
+          specs=$(find .github/mcp-images -name "*.yaml" -type f | sort)
+        elif [ "${{ github.event_name }}" = "pull_request" ]; then
+          # PR: only changed files
+          specs=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '^\.github/mcp-images/.*\.yaml$' || true)
+        else
+          # Push: only changed files
+          specs=$(git diff --name-only HEAD~1..HEAD | grep -E '^\.github/mcp-images/.*\.yaml$' || true)
+        fi
+
+        if [ -z "$specs" ]; then
+          echo "matrix=[]" >> $GITHUB_OUTPUT
+        else
+          matrix=$(echo "$specs" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+        fi
+        echo "Specs to build: $specs"
+
+  build:
+    needs: discover
+    if: ${{ needs.discover.outputs.matrix != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        spec: ${{ fromJson(needs.discover.outputs.matrix) }}
+      fail-fast: false
+
+    permissions:
+      packages: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+    - name: Extract metadata
+      id: meta
+      run: |
+        spec_file="${{ matrix.spec }}"
+        protocol=$(echo "$spec_file" | cut -d'/' -f4)
+        name=$(basename "$spec_file" .yaml)
+        package=$(yq '.spec.package' "$spec_file")
+        version=$(yq '.spec.version' "$spec_file")
+
+        echo "protocol=$protocol" >> $GITHUB_OUTPUT
+        echo "name=$name" >> $GITHUB_OUTPUT
+        echo "package=$package" >> $GITHUB_OUTPUT
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "image=${{ env.REGISTRY }}/${{ github.repository_owner }}/$name:$version" >> $GITHUB_OUTPUT
+
+    - name: Install toolhive
+      run: |
+        curl -fsSL "https://github.com/stacklok/toolhive/releases/download/${{ env.THV_VERSION }}/toolhive_${THV_VERSION#v}_linux_amd64.tar.gz" \
+          | tar -xzf - -C /usr/local/bin thv
+        thv version
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+    - name: Login to GHCR
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build image
+      run: |
+        thv build "${{ steps.meta.outputs.protocol }}://${{ steps.meta.outputs.package }}" \
+          --image "${{ steps.meta.outputs.image }}"
+
+    - name: Push image
+      if: github.event_name != 'pull_request'
+      run: |
+        docker push "${{ steps.meta.outputs.image }}"
+        echo "Pushed: ${{ steps.meta.outputs.image }}" >> $GITHUB_STEP_SUMMARY
