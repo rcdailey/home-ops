@@ -27,6 +27,11 @@
       href: https://wiki.${SECRET_DOMAIN}/
       siteMonitor: http://bookstack.default:8080/status
 
+  - Donetick:
+      icon: donetick
+      href: https://tasks.${SECRET_DOMAIN}/
+      siteMonitor: http://donetick.default:2021/api/v1/ping
+
   - OpenCloud:
       icon: mdi-cloud
       href: https://cloud.${SECRET_DOMAIN}/
@@ -105,7 +110,7 @@
       siteMonitor: http://esphome.home:6052
 
   - Z-Wave JS UI:
-      icon: mdi-z-wave
+      icon: z-wave-js-ui
       href: https://zwave.${SECRET_DOMAIN}/
       siteMonitor: http://zwave-js-ui.home:80
 
@@ -115,13 +120,13 @@
       ping: 192.168.1.64
 
   - Open Sprinkler:
-      icon: mdi-sprinkler-variant
+      icon: opensprinkler
       href: https://sprinkler.${SECRET_DOMAIN}/
       siteMonitor: http://opensprinkler.external:80
 
 - Infrastructure:
   - Headlamp:
-      icon: mdi-kubernetes
+      icon: kubernetes
       href: https://cluster.${SECRET_DOMAIN}/
       siteMonitor: http://headlamp.default:80
 
@@ -131,7 +136,7 @@
       siteMonitor: http://adguard-home-sync.dns-private:8080
 
   - Pocket-ID:
-      icon: mdi-account-key
+      icon: pocket-id
       href: https://auth.${SECRET_DOMAIN}/
       siteMonitor: http://pocket-id.default:1411
 
@@ -161,12 +166,12 @@
       ping: 192.168.1.53
 
   - CUPS Print Server:
-      icon: mdi-printer
+      icon: cups
       href: http://192.168.1.52:631/
       ping: 192.168.1.52
 
   - APC SmartConnect:
-      icon: mdi-battery-charging-100
+      icon: apc
       href: https://smartconnect.apc.com/
 
 - Monitoring:
@@ -176,12 +181,12 @@
       siteMonitor: http://vmsingle-victoria-metrics-k8s-stack.observability:8428/health
 
   - VictoriaLogs:
-      icon: mdi-text-box-search
+      icon: victorialogs
       href: https://victoria-logs.${SECRET_DOMAIN}/
       siteMonitor: http://victoria-logs-single.observability:9428/health
 
   - VM AlertManager:
-      icon: mdi-bell-alert
+      icon: alertmanager
       href: https://vmalertmanager.${SECRET_DOMAIN}/
       siteMonitor: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093/-/healthy
 
@@ -196,6 +201,6 @@
       siteMonitor: http://rook-ceph-mgr-dashboard.rook-ceph:7000
 
   - Kopia:
-      icon: mdi-backup-restore
+      icon: kopia
       href: https://kopia.${SECRET_DOMAIN}/
       siteMonitor: http://kopia.storage:80
