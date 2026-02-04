@@ -21,3 +21,6 @@ spec:
   values:
     operator:
       replicaCount: 1
+      # TODO: Remove after upstream fixes SPDY EOF issue (PR #3183 incomplete)
+      # https://github.com/stacklok/toolhive/issues/3179
+      toolhiveRunnerImage: ghcr.io/rcdailey/toolhive:fix-spdy-eof-3183
