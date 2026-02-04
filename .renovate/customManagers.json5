@@ -14,30 +14,6 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n.+/(?<currentValue>(v|\\d)[^/]+)"
       ],
       datasourceTemplate: "{{#if datasource}}{{{datasource}}}{{else}}github-releases{{/if}}"
-    },
-    {
-      description: "Process Talos versions",
-      customType: "regex",
-      managerFilePatterns: [
-        "/(^|/).+\\.ya?ml(?:\\.j2)?$/"
-      ],
-      matchStrings: [
-        "# renovate: depName=siderolabs/talos\\n.*?talosVersion:\\s*(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
-      ],
-      datasourceTemplate: "github-releases",
-      depNameTemplate: "siderolabs/talos"
-    },
-    {
-      description: "Process Kubernetes versions",
-      customType: "regex",
-      managerFilePatterns: [
-        "/(^|/).+\\.ya?ml(?:\\.j2)?$/"
-      ],
-      matchStrings: [
-        "# renovate: depName=kubernetes/kubernetes\\n.*?kubernetesVersion:\\s*(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
-      ],
-      datasourceTemplate: "github-releases",
-      depNameTemplate: "kubernetes/kubernetes"
     }
   ]
 }
