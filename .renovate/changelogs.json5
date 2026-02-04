@@ -20,16 +20,9 @@
     },
     {
       description: "CoreDNS - Link to Helm chart releases (not CoreDNS app releases)",
-      matchDatasources: ["docker"],
       matchPackageNames: ["ghcr.io/coredns/charts/coredns"],
       sourceUrl: "https://github.com/coredns/helm",
       changelogUrl: "https://github.com/coredns/helm/releases"
-    },
-    {
-      description: "Elasticsearch - Link to Elastic release notes",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["elasticsearch"],
-      changelogUrl: "https://www.elastic.co/docs/release-notes/elasticsearch"
     }
   ]
 }
