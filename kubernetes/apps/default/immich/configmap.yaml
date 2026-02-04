@@ -16,7 +16,7 @@ data:
 
   # General Configuration
   NODE_ENV: production
-  LOG_LEVEL: warn
+  LOG_LEVEL: info
   TZ: America/Chicago
   NO_COLOR: "1"
 
