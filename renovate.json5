@@ -21,7 +21,6 @@
     "github>rcdailey/home-ops//.renovate/customManagers.json5",
   ],
   dependencyDashboardTitle: "Renovate Dashboard 🤖",
-  dependencyDashboardAutoclose: true,
   suppressNotifications: ["prEditedNotification", "prIgnoreNotification"],
   configMigration: true,
   osvVulnerabilityAlerts: false,
