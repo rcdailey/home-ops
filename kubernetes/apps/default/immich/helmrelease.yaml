@@ -109,13 +109,14 @@ spec:
             - configMapRef:
                 name: immich-configmap
             # Optimized resource allocation for ML workloads
+            # SigLIP model requires ~10GB RAM when fully loaded
             resources:
               requests:
                 cpu: 750m
-                memory: 2Gi
+                memory: 4Gi
               limits:
                 cpu: 2
-                memory: 8Gi
+                memory: 12Gi
               claims:
               - name: gpu
             probes:
