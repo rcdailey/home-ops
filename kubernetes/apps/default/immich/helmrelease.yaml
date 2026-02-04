@@ -47,7 +47,7 @@ spec:
           main:
             image:
               repository: ghcr.io/immich-app/immich-server
-              tag: v2.5.2
+              tag: v2.5.3
             envFrom:
             - secretRef:
                 name: immich-secret
@@ -84,7 +84,7 @@ spec:
           main:
             image:
               repository: ghcr.io/immich-app/immich-machine-learning
-              tag: v2.5.2-openvino
+              tag: v2.5.3-openvino
             env:
             # OpenVINO optimizations for Intel GPU ML
             - name: OPENVINO_DEVICE
