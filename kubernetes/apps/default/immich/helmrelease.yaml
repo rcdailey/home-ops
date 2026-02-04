@@ -89,11 +89,15 @@ spec:
             # OpenVINO optimizations for Intel GPU ML
             - name: OPENVINO_DEVICE
               value: "GPU"
-            # Preload models for better performance
-            - name: MACHINE_LEARNING_PRELOAD__CLIP
-              value: "ViT-B-32__openai"
-            - name: MACHINE_LEARNING_PRELOAD__FACIAL_RECOGNITION
-              value: "buffalo_l"
+            # Preload models at startup for faster first search
+            - name: MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL
+              value: ViT-SO400M-16-SigLIP2-384__webli
+            - name: MACHINE_LEARNING_PRELOAD__CLIP__VISUAL
+              value: ViT-SO400M-16-SigLIP2-384__webli
+            - name: MACHINE_LEARNING_PRELOAD__FACIAL_RECOGNITION__DETECTION
+              value: buffalo_l
+            - name: MACHINE_LEARNING_PRELOAD__FACIAL_RECOGNITION__RECOGNITION
+              value: buffalo_l
             # Cache configuration matching official chart
             - name: HF_HOME
               value: "/cache"
@@ -197,8 +201,8 @@ spec:
             - path: /data/profile
 
       ml-cache:
-        type: emptyDir
-        sizeLimit: 10Gi
+        type: persistentVolumeClaim
+        existingClaim: immich-ml-cache
         advancedMounts:
           machine-learning:
             main:
