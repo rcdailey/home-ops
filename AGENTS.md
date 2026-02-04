@@ -164,6 +164,10 @@ Consistency patterns for maintainability and clarity.
 - Hard-wrap at column 100
 - Blank line required between headings, lists, code blocks, and other elements
 
+### Skills
+
+- `renovate`: REQUIRED when creating, modifying, or auditing Renovate configuration
+
 ### Upstream Issue Writeups
 
 When root cause analysis identifies an issue requiring upstream fixes (container images, charts,
