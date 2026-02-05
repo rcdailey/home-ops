@@ -10,7 +10,7 @@ drift.
 **Every cluster change MUST flow through git.** Imperative commands are diagnostic only.
 
 - **NEVER run git commit/push without explicit user request** - GitOps requires user commits for
-  accountability
+  accountability. This includes using the commit subagent. Always wait for explicit "commit" request.
 - **NEVER use kubectl apply/create/patch** - Bypasses GitOps, creates configuration drift. Use
   manifest changes only.
 - **NEVER use kubectl delete as a fix** - Deleting resources (jobs, pods, PVCs) treats symptoms, not
