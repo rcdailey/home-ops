@@ -58,7 +58,6 @@ spec:
                 cpu: 100m
                 memory: 256Mi
               limits:
-                cpu: 3
                 memory: 4Gi
               claims:
               - name: gpu
@@ -108,14 +107,11 @@ spec:
                 name: immich-secret
             - configMapRef:
                 name: immich-configmap
-            # Optimized resource allocation for ML workloads
-            # SigLIP model requires ~14GB RAM when fully loaded with all models
             resources:
               requests:
                 cpu: 750m
                 memory: 8Gi
               limits:
-                cpu: 2
                 memory: 16Gi
               claims:
               - name: gpu
