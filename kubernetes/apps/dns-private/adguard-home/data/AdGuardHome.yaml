@@ -5,6 +5,7 @@ users: []
 
 querylog:
   file_enabled: true
+  interval: 168h
 
 dns:
   trusted_proxies:
