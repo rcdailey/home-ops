@@ -12,3 +12,4 @@ resources:
 - ./adguard-home/ks.yaml
 - ./adguard-home-sync/ks.yaml
 - ./blocky/ks.yaml
+- ./blocky-ui/ks.yaml
