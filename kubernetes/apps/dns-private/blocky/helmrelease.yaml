@@ -55,11 +55,11 @@ spec:
         initContainers:
           init-config:
             image:
-              repository: alpine
+              repository: dibi/envsubst
               tag: latest
             command: ["/bin/sh", "-c"]
             args:
-            - apk add --no-cache gettext > /dev/null 2>&1 && envsubst '$${DATABASE_URL}' < /config-template/config.yaml > /config/config.yml
+            - envsubst '$${DATABASE_URL}' < /config-template/config.yaml > /config/config.yml
             env:
               DATABASE_URL:
                 valueFrom:
@@ -68,8 +68,8 @@ spec:
                     key: uri
             securityContext:
               allowPrivilegeEscalation: false
-              runAsNonRoot: false
-              runAsUser: 0
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
               capabilities:
                 drop: [ALL]
 
