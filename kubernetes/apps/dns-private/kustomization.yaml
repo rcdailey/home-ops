@@ -11,3 +11,4 @@ resources:
 - ./dns-gateway/ks.yaml
 - ./adguard-home/ks.yaml
 - ./adguard-home-sync/ks.yaml
+- ./blocky/ks.yaml
