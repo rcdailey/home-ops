@@ -63,7 +63,7 @@ spec:
                 custom: true
                 spec:
                   exec:
-                    command: ["/app/blocky", "healthcheck"]
+                    command: ["/app/blocky", "healthcheck", "--port", "5353"]
               readiness:
                 enabled: true
                 custom: true
@@ -76,7 +76,7 @@ spec:
                 custom: true
                 spec:
                   exec:
-                    command: ["/app/blocky", "healthcheck"]
+                    command: ["/app/blocky", "healthcheck", "--port", "5353"]
                   failureThreshold: 30
                   periodSeconds: 5
             resources:
