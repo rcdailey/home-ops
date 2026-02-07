@@ -1,22 +1,33 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Create virtual environment if it doesn't exist
 VENV_DIR="${SCRIPT_DIR}/app-scout/.venv"
+REQ_FILE="${SCRIPT_DIR}/app-scout/requirements.txt"
+STAMP_FILE="${VENV_DIR}/.requirements-stamp"
+
+# Recreate venv if missing or if its Python interpreter is broken (e.g. mise upgrade)
+needs_rebuild=false
 if [[ ! -d "$VENV_DIR" ]]; then
-    echo "Creating Python virtual environment..."
+    needs_rebuild=true
+elif ! "$VENV_DIR/bin/python3" --version &>/dev/null; then
+    echo "Stale venv detected (Python interpreter missing), rebuilding..." >&2
+    rm -rf "$VENV_DIR"
+    needs_rebuild=true
+fi
+
+if [[ "$needs_rebuild" == true ]]; then
+    echo "Creating Python virtual environment..." >&2
     python3 -m venv "$VENV_DIR"
 fi
 
-# Activate virtual environment
 source "$VENV_DIR/bin/activate"
 
-# Install requirements if needed
-pip install --quiet --upgrade pip
-pip install --quiet -r "${SCRIPT_DIR}/app-scout/requirements.txt"
+# Reinstall deps only when requirements.txt changes
+if [[ ! -f "$STAMP_FILE" ]] || ! diff -q "$REQ_FILE" "$STAMP_FILE" &>/dev/null; then
+    pip install --quiet --upgrade pip
+    pip install --quiet -r "$REQ_FILE"
+    cp "$REQ_FILE" "$STAMP_FILE"
+fi
 
-# Run the Python script with all arguments passed through
 python "${SCRIPT_DIR}/app-scout/app-scout.py" "$@"

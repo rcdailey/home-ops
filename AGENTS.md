@@ -161,12 +161,18 @@ Consistency patterns for maintainability and clarity.
 - Validate markdown changes with `markdownlint-cli2` before committing
 - Links: reference-style `[text][anchor]` with definitions at section end (not inline)
 - NEVER use bold text as heading replacement - use actual `##` headings
-- Hard-wrap at column 100
+- MUST hard-wrap at column 100
 - Blank line required between headings, lists, code blocks, and other elements
 
 ### Skills
 
 - `renovate`: REQUIRED when creating, modifying, or auditing Renovate configuration
+
+### Agents
+
+- `app-scout`: SHOULD delegate app discovery and market share research (app-scout.sh + octocode).
+  Runs on haiku-4-5 for cost efficiency. Use when evaluating Helm charts, comparing dedicated chart
+  vs app-template adoption, or finding reference implementations.
 
 ### Upstream Issue Writeups
 
