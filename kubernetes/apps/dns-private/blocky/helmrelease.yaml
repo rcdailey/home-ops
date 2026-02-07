@@ -52,6 +52,27 @@ spec:
                     values: [blocky]
                 topologyKey: kubernetes.io/hostname
 
+        initContainers:
+          init-config:
+            image:
+              repository: alpine
+              tag: latest
+            command: ["/bin/sh", "-c"]
+            args:
+            - apk add --no-cache gettext > /dev/null 2>&1 && envsubst '$${DATABASE_URL}' < /config-template/config.yaml > /config/config.yml
+            env:
+              DATABASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: blocky-postgres-app
+                    key: uri
+            securityContext:
+              allowPrivilegeEscalation: false
+              runAsNonRoot: false
+              runAsUser: 0
+              capabilities:
+                drop: [ALL]
+
         containers:
           app:
             image:
@@ -112,10 +133,21 @@ spec:
           scrapeTimeout: 10s
 
     persistence:
-      config:
+      config-template:
         type: configMap
         name: blocky-config
-        globalMounts:
-        - path: /app/config.yml
-          subPath: config.yaml
-          readOnly: true
+        advancedMounts:
+          blocky:
+            init-config:
+            - path: /config-template
+              readOnly: true
+      config:
+        type: emptyDir
+        advancedMounts:
+          blocky:
+            init-config:
+            - path: /config
+            app:
+            - path: /app/config.yml
+              subPath: config.yml
+              readOnly: true

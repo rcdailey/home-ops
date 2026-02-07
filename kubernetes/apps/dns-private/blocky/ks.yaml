@@ -24,5 +24,9 @@ spec:
     - kind: Secret
       name: cluster-secrets
   dependsOn:
+  - name: cloudnative-pg
+    namespace: kube-system
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
   - name: global-config
     namespace: flux-system

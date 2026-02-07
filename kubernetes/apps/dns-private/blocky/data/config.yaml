@@ -92,6 +92,11 @@ caching:
 prometheus:
   enable: true
 
+queryLog:
+  type: postgresql
+  target: $${DATABASE_URL}
+  logRetentionDays: 7
+
 ports:
   dns: 5353
   http: 4000
