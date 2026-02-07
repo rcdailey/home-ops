@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/service-v1.json
+# Temporary test LoadBalancer for Phase 1 validation (remove in Phase 2)
+apiVersion: v1
+kind: Service
+metadata:
+  name: blocky-test
+  labels:
+    app.kubernetes.io/component: proxy
+  annotations:
+    lbipam.cilium.io/ips: 192.168.50.74
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/name: blocky
+  ports:
+  - name: dns-tcp
+    port: 53
+    protocol: TCP
+    targetPort: 5353
+  - name: dns-udp
+    port: 53
+    protocol: UDP
+    targetPort: 5353
