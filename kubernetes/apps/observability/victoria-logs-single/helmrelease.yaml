@@ -25,13 +25,6 @@ spec:
       fullnameOverride: "victoria-logs-single"
       retentionPeriod: 14
 
-      # CRITICAL: OnDelete strategy required for RWO volumes (ceph-block storage)
-      # RollingUpdate causes Multi-Attach errors and I/O failures on /storage mount
-      statefulSet:
-        spec:
-          updateStrategy:
-            type: OnDelete
-
       # Reloader annotation to restart pod when ConfigMap changes
       podAnnotations:
         reloader.stakater.com/auto: "true"
