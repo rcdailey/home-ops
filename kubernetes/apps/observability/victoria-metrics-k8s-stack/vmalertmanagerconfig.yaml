@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/victoriametrics/operator/master/config/crd/bases/operator.victoriametrics.com_vmalertmanagerconfigs.yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/operator.victoriametrics.com/vmalertmanagerconfig_v1beta1.json
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMAlertmanagerConfig
 metadata:
@@ -27,6 +27,9 @@ spec:
       group_wait: 0s
       group_interval: 5m
       repeat_interval: 5m
+    - receiver: pushover-silent
+      matchers:
+      - alertname =~ "UnifiLinkSpeedDegraded.*"
     - receiver: blackhole
       matchers:
       - severity = "none"
@@ -53,6 +56,42 @@ spec:
     - url_secret:
         name: watchdog-secret
         key: WATCHDOG_PING_URL
+
+  - name: pushover-silent
+    pushover_configs:
+    - user_key:
+        name: pushover-secret
+        key: PUSHOVER_USER_KEY
+      token:
+        name: pushover-secret
+        key: PUSHOVER_APP_TOKEN
+      send_resolved: true
+      html: true
+      priority: |-
+        {{ if eq .Status "firing" }}0{{ else }}-1{{ end }}
+      sound: none
+      url_title: View in Alertmanager
+      title: >-
+        [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
+      message: |-
+        {{- range .Alerts }}
+          {{- if ne .Annotations.description "" }}
+            {{ .Annotations.description }}
+          {{- else if ne .Annotations.summary "" }}
+            {{ .Annotations.summary }}
+          {{- else if ne .Annotations.message "" }}
+            {{ .Annotations.message }}
+          {{- else }}
+            Alert description not available
+          {{- end }}
+          {{- if gt (len .Labels.SortedPairs) 0 }}
+            <small>
+              {{- range .Labels.SortedPairs }}
+                <b>{{ .Name }}:</b> {{ .Value }}
+              {{- end }}
+            </small>
+          {{- end }}
+        {{- end }}
 
   - name: pushover
     pushover_configs:
