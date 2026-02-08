@@ -6,23 +6,24 @@ Examples:
   # Recent DNS queries (default last 1h)
   %(prog)s logs
 
-  # Queries from a specific client
-  %(prog)s logs --client 192.168.3.40
+  # Queries from a specific client (by IP, device name, or VLAN)
+  %(prog)s logs -c 192.168.3.40
+  %(prog)s logs -c pixel -f 1h
 
   # Queries for a domain from a client in the last 24h
-  %(prog)s logs --client 192.168.3.40 --domain homedepot.com --from 24h
+  %(prog)s logs -c 192.168.3.40 -d homedepot.com -f 24h
 
   # All blocked queries for a client
-  %(prog)s blocked --client 192.168.3.40 --from 24h
+  %(prog)s blocked -c 192.168.3.40 -f 24h
 
   # Search for a domain across all clients
-  %(prog)s search homedepot --from 24h
+  %(prog)s search homedepot -f 24h
 
   # Machine-readable output
-  %(prog)s blocked --client 192.168.3.40 --json
+  %(prog)s -j blocked -c 192.168.3.40
 
   # Test if a domain is blocked for kids VLAN
-  %(prog)s test pornhub.com --client kids
+  %(prog)s test pornhub.com -c kids
 
   # Test multiple domains against all VLANs
   %(prog)s test pornhub.com tiktok.com draftkings.com
@@ -152,6 +153,7 @@ def add_time_args(
     default_start: str = "1h",
 ) -> None:
     parser.add_argument(
+        "-f",
         "--from",
         dest="time_from",
         default=default_start,
@@ -159,6 +161,7 @@ def add_time_args(
         help="Start time (duration like 1h/24h/7d, or ISO timestamp; default: %(default)s)",
     )
     parser.add_argument(
+        "-t",
         "--to",
         dest="time_to",
         metavar="TIME",
@@ -166,11 +169,19 @@ def add_time_args(
     )
 
 
-def resolve_client(client: str) -> str:
-    """Resolve VLAN name or pass through IP/prefix."""
-    if client in VLAN_NAMES:
-        return VLAN_NAMES[client]
-    return client
+def resolve_client(client: str) -> str | None:
+    """Resolve VLAN name or pass through IP/prefix.
+
+    Returns None when the client value should match by name instead of IP.
+    """
+    lower = client.lower()
+    if lower in VLAN_NAMES:
+        return VLAN_NAMES[lower]
+    # Looks like an IP or CIDR
+    if re.match(r"^\d{1,3}(\.\d{1,3}){0,3}(/\d+)?$", client):
+        return client
+    # Not an IP; treat as a name pattern
+    return None
 
 
 def resolve_test_clients(client: str | None) -> list[tuple[str, str]]:
@@ -333,14 +344,22 @@ def build_where(
 
     if client:
         resolved = resolve_client(client)
-        if resolved.endswith("."):
+        if resolved is None:
+            # Name pattern: match against client_name or client_ip, case-insensitive
+            pattern = client.lower()
+            conditions.append(
+                f"(LOWER(client_name) LIKE '%{pattern}%'"
+                f" OR LOWER(client_ip) LIKE '%{pattern}%')"
+            )
+        elif resolved.endswith("."):
             # VLAN prefix match
             conditions.append(f"client_ip LIKE '{resolved}%'")
         elif "/" in resolved:
             # CIDR notation
             conditions.append(f"client_ip::inet <<= '{resolved}'::inet")
         else:
-            conditions.append(f"client_ip = '{resolved}'")
+            # Partial or full IP match
+            conditions.append(f"client_ip LIKE '%{resolved}%'")
 
     if domain:
         conditions.append(f"question_name LIKE '%{domain}%'")
@@ -670,6 +689,7 @@ def main() -> int:
         epilog=__doc__,
     )
     parser.add_argument(
+        "-j",
         "--json",
         action="store_true",
         help="Output as newline-delimited JSON",
@@ -684,11 +704,13 @@ def main() -> int:
     )
     add_time_args(p_logs)
     p_logs.add_argument(
-        "--client", help="Client IP, CIDR, or VLAN name (lan/iot/kids/guest/work)"
+        "-c",
+        "--client",
+        help="Client IP (partial), device name (partial), CIDR, or VLAN name",
     )
-    p_logs.add_argument("--domain", help="Domain substring filter")
+    p_logs.add_argument("-d", "--domain", help="Domain substring filter")
     p_logs.add_argument(
-        "--limit", type=int, default=100, help="Max rows (default: 100)"
+        "-l", "--limit", type=int, default=100, help="Max rows (default: 100)"
     )
 
     # blocked
@@ -697,10 +719,14 @@ def main() -> int:
         help="Show blocked DNS queries",
     )
     add_time_args(p_blocked)
-    p_blocked.add_argument("--client", help="Client IP, CIDR, or VLAN name")
-    p_blocked.add_argument("--domain", help="Domain substring filter")
     p_blocked.add_argument(
-        "--limit", type=int, default=100, help="Max rows (default: 100)"
+        "-c",
+        "--client",
+        help="Client IP (partial), device name (partial), CIDR, or VLAN name",
+    )
+    p_blocked.add_argument("-d", "--domain", help="Domain substring filter")
+    p_blocked.add_argument(
+        "-l", "--limit", type=int, default=100, help="Max rows (default: 100)"
     )
 
     # search
@@ -711,7 +737,7 @@ def main() -> int:
     p_search.add_argument("pattern", help="Domain substring to search for")
     add_time_args(p_search, default_start="24h")
     p_search.add_argument(
-        "--limit", type=int, default=50, help="Max rows (default: 50)"
+        "-l", "--limit", type=int, default=50, help="Max rows (default: 50)"
     )
 
     # test
@@ -725,6 +751,7 @@ def main() -> int:
         help="Domain(s) to test",
     )
     p_test.add_argument(
+        "-c",
         "--client",
         help="Client IP or VLAN name to test as (default: all VLANs)",
     )
