@@ -24,7 +24,8 @@ drift.
 ### Troubleshooting Approach
 
 1. **Query**: Gather symptoms via subagent (alerts, logs, events, pod status)
-2. **History**: `git log -p --follow -- path/to/file.yaml` for recent changes
+2. **History**: `git log -p --follow --invert-grep --author="renovate" -- path/to/file.yaml`
+   for recent changes
 3. **Analyze**: Read manifests, check CRD specs, verify dependencies
 4. **Research**: Subagent for reference repos, Context7, upstream docs
 5. **Fix**: Modify manifests to address root cause

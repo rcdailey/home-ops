@@ -122,7 +122,8 @@ skill file to move it from this list to the Quick Reference section above.
 When adding allowlist entries, check git history for systemic issues:
 
 ```bash
-git log --oneline -- kubernetes/apps/dns-private/blocky/data/config.yaml
+git log --oneline --invert-grep --author="renovate" \
+  -- kubernetes/apps/dns-private/blocky/data/config.yaml
 ```
 
 If you see 3+ allowlist additions in a short period, the denylist tier may be too aggressive.
