@@ -35,7 +35,7 @@ Blocky's `clientGroupsBlock` maps CIDR ranges directly to blocklist groups, repl
 per-client configuration that required manual maintenance through the web UI or adguardhome-sync.
 
 PostgreSQL query logging (via CloudNativePG) replaces AdGuard Home's built-in query log UI with
-structured SQL queries, enabling richer analysis through `query-blocky.py`.
+structured SQL queries, enabling richer analysis through `blocky.py`.
 
 ## Consequences
 
@@ -46,7 +46,7 @@ structured SQL queries, enabling richer analysis through `query-blocky.py`.
 - Good, because PostgreSQL query logging enables structured analysis
 - Good, because `filterUnmappedTypes` natively solves the IPv6 CNAME leak that required custom
   AdGuard filtering rules
-- Bad, because no web UI for ad-hoc query lookups (mitigated by `query-blocky.py`)
+- Bad, because no web UI for ad-hoc query lookups (mitigated by `blocky.py`)
 - Bad, because blocklist entry counts differ slightly between replicas due to independent fetching
 
 ## References
