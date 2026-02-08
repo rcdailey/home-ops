@@ -1,19 +1,4 @@
 ---
-# Widgets configuration for Homepage
-# This file defines the informational widgets that appear on the homepage dashboard.
-# Widgets provide system information, cluster stats, and interactive elements.
-#
-# Available widget types:
-# - logo: Custom logo/branding
-# - search: Search functionality with various providers
-# - greeting: Personalized welcome message
-# - datetime: Date and time display
-# - resources: Local system resource monitoring
-# - kubernetes: Cluster information and metrics
-#
-# Each widget can be customized with various options specific to its type.
-# Use ${SECRET_DOMAIN} for domain substitution via Flux.
----
 - logo:
     icon: https://raw.githubusercontent.com/rcdailey/home-ops/main/kubernetes/apps/default/homepage/icons/nami.png
 
