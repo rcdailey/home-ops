@@ -10,7 +10,8 @@ drift.
 **Every cluster change MUST flow through git.** Imperative commands are diagnostic only.
 
 - **NEVER run git commit/push without explicit user request** - GitOps requires user commits for
-  accountability. This includes using the commit subagent. Always wait for explicit "commit" request.
+  accountability. This includes using the commit subagent. Always wait for explicit "commit"
+  request.
 - **NEVER use kubectl apply/create/patch** - Bypasses GitOps, creates configuration drift. Use
   manifest changes only.
 - **NEVER use kubectl delete as a fix** - Deleting resources (jobs, pods, PVCs) treats symptoms, not
@@ -166,6 +167,7 @@ Consistency patterns for maintainability and clarity.
 
 ### Skills
 
+- `dns-debug`: REQUIRED when diagnosing DNS issues, or investigating blocked domains
 - `renovate`: REQUIRED when creating, modifying, or auditing Renovate configuration
 
 ### Agents
@@ -242,8 +244,8 @@ docs/
 
 ### App Templates
 
-Copy patterns from exemplary apps rather than using synthetic templates. These apps follow all
-Tier 1 and Tier 2 conventions:
+Copy patterns from exemplary apps rather than using synthetic templates. These apps follow all Tier
+1 and Tier 2 conventions:
 
 **Canonical example (start here):** `kubernetes/apps/default/bookstack/`
 
@@ -379,6 +381,7 @@ talosctl SUBCOMMAND OPTIONS -n NODEIP         # -n toward end
 
 Scripts in `./scripts/` - use `--help` for usage:
 
+- query-blocky.py: Blocky DNS query log analysis (requires `dns-debug` skill)
 - query-vm.py: VictoriaMetrics queries, alerts, discovery
 - query-victorialogs.py: Log queries
 - ceph.sh: Ceph commands via rook-ceph-tools

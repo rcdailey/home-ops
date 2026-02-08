@@ -1,6 +1,6 @@
 # Retain AdGuard Home for DNS Server Architecture
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-004][adr-004]
 - **Date:** 2026-01-05
 - **Decision:** Continue with AdGuard Home + adguardhome-sync; reject Technitium v14 due to TLS
   termination incompatibility
@@ -84,6 +84,7 @@ native clustering, or a new DNS server emerges with native HA, UI, and Kubernete
 [technitium-v14]: https://blog.technitium.com/2025/11/technitium-dns-server-v14-released.html
 [adguardhome-sync]: https://github.com/bakito/adguardhome-sync
 [blocky]: https://github.com/0xERR0R/blocky
+[adr-004]: /docs/decisions/004-blocky-dns-migration.md
 
 ## Historical Context
 

@@ -27,25 +27,20 @@
       href: https://wiki.${SECRET_DOMAIN}/
       siteMonitor: http://bookstack.default:8080/status
 
-  - Donetick:
-      icon: donetick
-      href: https://tasks.${SECRET_DOMAIN}/
-      siteMonitor: http://donetick.default:2021/api/v1/ping
-
   - OpenCloud:
       icon: mdi-cloud
       href: https://cloud.${SECRET_DOMAIN}/
       siteMonitor: http://opencloud.default:9200
 
-  - AdGuard Home:
-      icon: adguard-home
-      href: https://dns.${SECRET_DOMAIN}/
-      siteMonitor: http://adguard-home-primary.dns-private:3000
-
   - Grafana:
       icon: grafana
       href: https://grafana.${SECRET_DOMAIN}/
       siteMonitor: http://grafana-service.observability:3000/api/health
+
+  - Donetick:
+      icon: donetick
+      href: https://tasks.${SECRET_DOMAIN}/
+      siteMonitor: http://donetick.default:2021/api/v1/ping
 
 - Media:
   - Qui:
@@ -129,11 +124,6 @@
       icon: kubernetes
       href: https://cluster.${SECRET_DOMAIN}/
       siteMonitor: http://headlamp.default:80
-
-  - AdGuard Sync:
-      icon: adguard-home
-      href: https://dns-sync.${SECRET_DOMAIN}/
-      siteMonitor: http://adguard-home-sync.dns-private:8080
 
   - Pocket-ID:
       icon: pocket-id

@@ -1,12 +1,13 @@
 ---
-# yaml-language-server: $schema=https://www.schemastore.org/kustomization.json
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization.json
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - ./helmrelease.yaml
+- ./postgres-cluster.yaml
 configMapGenerator:
-- name: adguard-home-sync-config
+- name: blocky-config
   files:
-  - data/adguardhome-sync.yaml
+  - data/config.yaml
 generatorOptions:
   disableNameSuffixHash: true

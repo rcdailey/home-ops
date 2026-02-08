@@ -1,0 +1,102 @@
+---
+upstreams:
+  groups:
+    default:
+    - https://1.1.1.1/dns-query
+    - https://9.9.9.9/dns-query
+
+bootstrapDns:
+- upstream: https://1.1.1.1/dns-query
+  ips: [1.1.1.1]
+- upstream: https://9.9.9.9/dns-query
+  ips: [9.9.9.9]
+
+conditional:
+  mapping:
+    ${SECRET_DOMAIN}: tcp+udp:192.168.1.1
+
+customDNS:
+  # filterUnmappedTypes: true (default) prevents AAAA/HTTPS leak through UDMP
+  # See: docs/troubleshooting/opencloud-desktop-ipv6-auth-failure-2026-01-25.md
+  mapping:
+    external.${SECRET_DOMAIN}: 192.168.50.73
+    internal.${SECRET_DOMAIN}: 192.168.50.72
+
+blocking:
+  denylists:
+    ads:
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro.txt
+    threats:
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/tif.txt
+    social:
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/social.txt
+    nsfw:
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nsfw.txt
+    gambling:
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/gambling.medium.txt
+    nosafesearch:
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nosafesearch.txt
+    # DoH/VPN/proxy bypass prevention (stops kids circumventing DNS filtering)
+    bypass:
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-vpn-proxy-bypass.txt
+    # Device/service telemetry trackers (HaGeZi native lists)
+    telemetry:
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.amazon.txt
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.apple.txt
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.lgwebos.txt
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.roku.txt
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.samsung.txt
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.tiktok.txt
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.winoffice.txt
+    - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.xiaomi.txt
+  clientGroupsBlock:
+    default:
+    # Main LAN (192.168.1.0/24) + fallback
+    - ads
+    - threats
+    - telemetry
+    192.168.3.0/24:
+    # Kids VLAN
+    - ads
+    - threats
+    - telemetry
+    - nsfw
+    - social
+    - gambling
+    - nosafesearch
+    - bypass
+    192.168.2.0/24:
+    # IoT VLAN
+    - ads
+    - threats
+    - telemetry
+    - social
+    192.168.7.0/24:
+    # Work VLAN
+    - ads
+    - threats
+    - telemetry
+    - social
+    192.168.4.0/24:
+    # Guest VLAN
+    - ads
+    - threats
+    - nsfw
+    - gambling
+    # Leave this out; this VLAN is not allowed internet access at the router level
+    # 192.168.5.0/24: # Cameras VLAN
+
+caching:
+  prefetching: true
+
+prometheus:
+  enable: true
+
+queryLog:
+  type: postgresql
+  target: $${DATABASE_URL}
+  logRetentionDays: 7
+
+ports:
+  dns: 5353
+  http: 4000
