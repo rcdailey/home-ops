@@ -24,7 +24,7 @@ spec:
   selector:
     # For finding backend DNS pods to route traffic to
     app.kubernetes.io/component: dns-server
-    app.kubernetes.io/controller: adguard-home
+    app.kubernetes.io/controller: blocky
   ports:
   - name: dns-tcp
     port: 53
