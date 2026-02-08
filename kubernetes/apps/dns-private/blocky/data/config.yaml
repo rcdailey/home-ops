@@ -34,7 +34,7 @@ blocking:
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nsfw.txt
     gambling:
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/gambling.medium.txt
-    nosafesearch:
+    safesearch-bypass:
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nosafesearch.txt
     # DoH/VPN/proxy bypass prevention (stops kids circumventing DNS filtering)
     bypass:
@@ -63,7 +63,7 @@ blocking:
     - nsfw
     - social
     - gambling
-    - nosafesearch
+    - safesearch-bypass
     - bypass
     192.168.2.0/24:
     # IoT VLAN
