@@ -49,6 +49,14 @@ blocking:
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.tiktok.txt
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.winoffice.txt
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.xiaomi.txt
+  allowlists:
+    # PerimeterX bot-detection collectors; required for Microsoft captcha flow
+    ads:
+    - |
+      collector-pxzc5j78di.px-cloud.net
+      collector-pxzc5j78di.px-client.net
+      collector-pxzc5j78di.px-cdn.net
+      collector-pxzc5j78di.hsprotect.net
   clientGroupsBlock:
     default:
     # Main LAN (192.168.1.0/24) + fallback
