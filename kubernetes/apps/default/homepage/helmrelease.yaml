@@ -45,8 +45,11 @@ spec:
             probes:
               liveness:
                 enabled: true
-              readiness:
-                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/healthcheck
+                    port: 3000
             resources:
               requests:
                 cpu: 25m
