@@ -20,10 +20,17 @@ Examples:
 
   # Machine-readable output
   %(prog)s blocked --client 192.168.3.40 --json
+
+  # Test if a domain is blocked for kids VLAN
+  %(prog)s test pornhub.com --client kids
+
+  # Test multiple domains against all VLANs
+  %(prog)s test pornhub.com tiktok.com draftkings.com
 """
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -34,6 +41,10 @@ CNPG_NAMESPACE = "dns-private"
 CNPG_CLUSTER = "blocky-postgres"
 CNPG_DATABASE = "blocky"
 CNPG_USER = "postgres"
+
+BLOCKY_SERVICE = "blocky"
+BLOCKY_HTTP_PORT = 4000
+CURL_IMAGE = "curlimages/curl:8.11.1"
 
 VLAN_NAMES = {
     "lan": "192.168.1.",
@@ -162,6 +173,15 @@ def resolve_client(client: str) -> str:
     return client
 
 
+def resolve_test_clients(client: str | None) -> list[tuple[str, str]]:
+    """Resolve client spec to (display_name, ip) pairs for API testing."""
+    if client:
+        if client in VLAN_NAMES:
+            return [(client, VLAN_NAMES[client] + "100")]
+        return [(client, client)]
+    return [(name, prefix + "100") for name, prefix in VLAN_NAMES.items()]
+
+
 def run_psql(sql: str) -> str:
     """Execute SQL against the Blocky PostgreSQL database via kubectl exec."""
     pod = f"{CNPG_CLUSTER}-1"
@@ -203,6 +223,89 @@ def run_psql(sql: str) -> str:
         sys.exit(1)
 
     return result.stdout.strip()
+
+
+def run_blocky_api(
+    queries: list[tuple[str, str, str]],
+) -> list[dict[str, str] | None]:
+    """Query Blocky's HTTP API with client IP spoofing via X-Forwarded-For.
+
+    Each query is a (domain, qtype, client_ip) tuple. All queries run in a
+    single ephemeral pod for efficiency.
+    """
+    url = f"http://{BLOCKY_SERVICE}.{CNPG_NAMESPACE}:{BLOCKY_HTTP_PORT}/api/query"
+
+    curl_cmds = []
+    for i, (domain, qtype, client_ip) in enumerate(queries):
+        payload = json.dumps({"query": domain, "type": qtype})
+        # Prefix each response with index for reliable matching
+        curl_cmds.append(
+            f"(printf '{i}:' && curl -sf"
+            f" -H 'Content-Type: application/json'"
+            f" -H 'X-Forwarded-For: {client_ip}'"
+            f" -d '{payload}'"
+            f" '{url}' && echo"
+            f" || echo '{{\"error\":true}}')"
+        )
+
+    script = "; ".join(curl_cmds)
+    pod_name = f"blocky-test-{os.getpid()}"
+    cmd = [
+        "kubectl",
+        "run",
+        pod_name,
+        "--rm",
+        "-i",
+        "--restart=Never",
+        f"--image={CURL_IMAGE}",
+        "--",
+        "sh",
+        "-c",
+        script,
+    ]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        print("Error: API query timed out", file=sys.stderr)
+        sys.exit(1)
+
+    if result.returncode != 0:
+        stderr = result.stderr.strip()
+        # Filter kubectl pod lifecycle noise
+        lines = [
+            line
+            for line in stderr.splitlines()
+            if not line.startswith("pod ") and "already exists" not in line
+        ]
+        if lines:
+            print(f"Error: API query failed: {lines[0]}", file=sys.stderr)
+            sys.exit(1)
+
+    results: list[dict[str, str] | None] = [None] * len(queries)
+    for line in result.stdout.strip().splitlines():
+        line = line.strip()
+        if ":" not in line:
+            continue
+        idx_str, _, payload = line.partition(":")
+        try:
+            idx = int(idx_str)
+        except ValueError:
+            continue
+        if idx < 0 or idx >= len(queries):
+            continue
+        try:
+            data = json.loads(payload)
+            results[idx] = None if data.get("error") else data
+        except json.JSONDecodeError:
+            pass
+
+    return results
 
 
 def parse_rows(output: str, columns: list[str]) -> list[dict[str, str]]:
@@ -500,6 +603,66 @@ LIMIT {args.limit};"""
     return 0
 
 
+def cmd_test(args: argparse.Namespace) -> int:
+    """Test DNS blocking for domains against client groups via Blocky API."""
+    domains = args.domains
+    qtype = args.type
+    clients = resolve_test_clients(args.client)
+
+    # Build query list and track metadata for display
+    queries: list[tuple[str, str, str]] = []
+    meta: list[tuple[str, str, str]] = []
+    for domain in domains:
+        for client_name, client_ip in clients:
+            queries.append((domain, qtype, client_ip))
+            meta.append((domain, client_name, client_ip))
+
+    results = run_blocky_api(queries)
+
+    if _json_mode:
+        for i, result in enumerate(results):
+            domain, client_name, client_ip = meta[i]
+            entry: dict[str, str] = {
+                "domain": domain,
+                "client": client_name,
+                "clientIP": client_ip,
+            }
+            if result:
+                entry.update(result)
+            else:
+                entry["error"] = "true"
+            print(json.dumps(entry))
+        return 0
+
+    # Build table
+    headers = ["Domain", "Client", "Client IP", "Status", "Response", "Reason"]
+    alignments = ["<", "<", "<", "<", "<", "<"]
+    color_fns: list = [
+        None,
+        None,
+        lambda v: colorize(v, "dim"),
+        lambda v: colorize(v, REASON_COLORS.get(v, "dim")),
+        lambda v: colorize(v, "dim"),
+        lambda v: colorize(v, "dim"),
+    ]
+
+    table_rows = []
+    for i, result in enumerate(results):
+        domain, client_name, client_ip = meta[i]
+        if result:
+            status = result.get("responseType", "UNKNOWN")
+            response = result.get("response", "")
+            reason = result.get("reason", "")
+        else:
+            status = "ERROR"
+            response = ""
+            reason = "query failed"
+        table_rows.append([domain, client_name, client_ip, status, response, reason])
+
+    print_table(headers, table_rows, alignments, color_fns)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Query Blocky DNS logs from PostgreSQL",
@@ -551,6 +714,26 @@ def main() -> int:
         "--limit", type=int, default=50, help="Max rows (default: 50)"
     )
 
+    # test
+    p_test = subparsers.add_parser(
+        "test",
+        help="Test DNS blocking for domains against client groups",
+    )
+    p_test.add_argument(
+        "domains",
+        nargs="+",
+        help="Domain(s) to test",
+    )
+    p_test.add_argument(
+        "--client",
+        help="Client IP or VLAN name to test as (default: all VLANs)",
+    )
+    p_test.add_argument(
+        "--type",
+        default="A",
+        help="DNS record type (default: A)",
+    )
+
     args = parser.parse_args()
 
     global _json_mode
@@ -560,6 +743,7 @@ def main() -> int:
         "logs": cmd_logs,
         "blocked": cmd_blocked,
         "search": cmd_search,
+        "test": cmd_test,
     }
 
     return commands[args.command](args)

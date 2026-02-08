@@ -13,41 +13,41 @@ domain.
 
 ## Tool
 
-`./scripts/query-blocky.py` queries the `log_entries` table in the Blocky CNPG PostgreSQL cluster
+`./scripts/blocky.py` queries the `log_entries` table in the Blocky CNPG PostgreSQL cluster
 via `kubectl exec`.
 
-Run `./scripts/query-blocky.py --help` for full usage.
+Run `./scripts/blocky.py --help` for full usage.
 
 ### Quick Reference
 
 ```bash
 # Search: who queried a domain recently?
-./scripts/query-blocky.py search homedepot --from 24h
+./scripts/blocky.py search homedepot --from 24h
 
 # Logs: all queries from a specific client
-./scripts/query-blocky.py logs --client 192.168.3.40 --from 1h
+./scripts/blocky.py logs --client 192.168.3.40 --from 1h
 
 # Blocked: only blocked queries for a client
-./scripts/query-blocky.py blocked --client 192.168.3.40 --from 1h
+./scripts/blocky.py blocked --client 192.168.3.40 --from 1h
 
 # Combine filters
-./scripts/query-blocky.py logs --client 192.168.3.40 --domain homedepot --from 2h
+./scripts/blocky.py logs --client 192.168.3.40 --domain homedepot --from 2h
 
 # VLAN shorthand (lan, iot, kids, guest, work, cameras)
-./scripts/query-blocky.py blocked --client kids --from 24h
+./scripts/blocky.py blocked --client kids --from 24h
 
 # Machine-readable
-./scripts/query-blocky.py --json blocked --client 192.168.3.40
+./scripts/blocky.py --json blocked --client 192.168.3.40
 ```
 
 ## Diagnostic Workflow
 
 When a user reports "website X is broken":
 
-1. **Search for the domain** to identify the client device: `./scripts/query-blocky.py search
+1. **Search for the domain** to identify the client device: `./scripts/blocky.py search
    <domain> --from 24h` Pick the client with the most recent `last_seen` timestamp.
 
-2. **Get blocked queries for that client** to find the offending domain: `./scripts/query-blocky.py
+2. **Get blocked queries for that client** to find the offending domain: `./scripts/blocky.py
    blocked --client <ip> --from 1h` The blocked domain is often not the main site but a subdomain
    (API, CDN, auth service).
 
@@ -57,7 +57,7 @@ When a user reports "website X is broken":
 4. **Determine the fix** (see Remediation below).
 
 5. **After pushing the fix**, Flux applies the change and Blocky reloads automatically (reloader
-   annotation). Verify resolution: `./scripts/query-blocky.py logs --client <ip> --domain <domain>
+   annotation). Verify resolution: `./scripts/blocky.py logs --client <ip> --domain <domain>
    --from 5m` The domain should now show `RESOLVED` or `CACHED` instead of `BLOCKED`.
 
 ## Remediation
@@ -105,7 +105,7 @@ Read `kubernetes/apps/dns-private/blocky/data/config.yaml` for current:
 ## Unimplemented Subcommands
 
 The following subcommands were deferred. If you need one during diagnosis, implement it in
-`./scripts/query-blocky.py` following the patterns of the existing subcommands, then update this
+`./scripts/blocky.py` following the patterns of the existing subcommands, then update this
 skill file to move it from this list to the Quick Reference section above.
 
 - **top-domains**: Top queried domains by count. Flags: `--from`, `--client`, `--limit`. GROUP BY

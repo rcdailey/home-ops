@@ -381,7 +381,7 @@ talosctl SUBCOMMAND OPTIONS -n NODEIP         # -n toward end
 
 Scripts in `./scripts/` - use `--help` for usage:
 
-- query-blocky.py: Blocky DNS query log analysis (requires `dns-debug` skill)
+- blocky.py: Blocky DNS query log analysis (requires `dns-debug` skill)
 - query-vm.py: VictoriaMetrics queries, alerts, discovery
 - query-victorialogs.py: Log queries
 - ceph.sh: Ceph commands via rook-ceph-tools
