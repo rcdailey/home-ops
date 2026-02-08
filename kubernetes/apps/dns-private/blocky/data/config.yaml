@@ -86,6 +86,9 @@ blocking:
     # Leave this out; this VLAN is not allowed internet access at the router level
     # 192.168.5.0/24: # Cameras VLAN
 
+clientLookup:
+  upstream: 192.168.1.1
+
 caching:
   prefetching: true
 
