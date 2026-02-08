@@ -18,7 +18,8 @@ investigate the underlying failure instead.
 ## Workflow
 
 1. **Query**: Get alert details with `./scripts/query-vm.py alert <name>`
-2. **History**: Check `git log -p --follow -- path/to/file.yaml` for previous fix attempts
+2. **History**: Check `git log -p --follow --invert-grep --author="renovate" -- path/to/file.yaml`
+   for previous fix attempts
 3. **Analyze**: Read relevant YAML manifests, check related resources and dependencies
 4. **Research**: Use Context7 to verify best practices before implementing
 5. **Fix**: Apply GitOps solution (silence useless alerts, fix thresholds, fix config, fix infra)
