@@ -143,9 +143,12 @@ Consistency patterns for maintainability and clarity.
 - Route backendRefs: Use full service name (e.g., radarr-app), not identifier (e.g., app)
 - NEVER use wildcards for SecurityPolicy headers (always explicit headers)
 - NEVER specify explicit timeouts/intervals without justification (use Flux defaults)
-- Container securityContext: runAsUser/runAsGroup 1000, runAsNonRoot true, allowPrivilegeEscalation
-  false, readOnlyRootFilesystem true, capabilities drop ALL
-- Pod securityContext: fsGroup 1000, fsGroupChangePolicy OnRootMismatch
+- Pod securityContext: runAsUser/runAsGroup 1000, runAsNonRoot true, fsGroup 1000,
+  fsGroupChangePolicy OnRootMismatch (identity + volume ownership for all containers)
+- Container securityContext: allowPrivilegeEscalation false, readOnlyRootFilesystem true,
+  capabilities drop ALL (hardening only; these fields have no pod-level equivalent)
+- NEVER duplicate identity fields (runAsUser, runAsGroup, runAsNonRoot) in container securityContext
+  unless containers in the same pod require different UIDs
 
 ### Database and Logging
 
