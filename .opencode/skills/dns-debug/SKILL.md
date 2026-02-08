@@ -13,8 +13,8 @@ domain.
 
 ## Tool
 
-`./scripts/blocky.py` queries the `log_entries` table in the Blocky CNPG PostgreSQL cluster
-via `kubectl exec`.
+`./scripts/blocky.py` queries the `log_entries` table in the Blocky CNPG PostgreSQL cluster via
+`kubectl exec`.
 
 Run `./scripts/blocky.py --help` for full usage.
 
@@ -22,33 +22,40 @@ Run `./scripts/blocky.py --help` for full usage.
 
 ```bash
 # Search: who queried a domain recently?
-./scripts/blocky.py search homedepot --from 24h
+./scripts/blocky.py search homedepot -f 24h
 
-# Logs: all queries from a specific client
-./scripts/blocky.py logs --client 192.168.3.40 --from 1h
+# Logs: all queries from a specific client (by IP, name, or VLAN)
+./scripts/blocky.py logs -c 192.168.3.40 -f 1h
+./scripts/blocky.py logs -c pixel -f 1h
 
 # Blocked: only blocked queries for a client
-./scripts/blocky.py blocked --client 192.168.3.40 --from 1h
+./scripts/blocky.py blocked -c 192.168.3.40 -f 1h
 
 # Combine filters
-./scripts/blocky.py logs --client 192.168.3.40 --domain homedepot --from 2h
+./scripts/blocky.py logs -c 192.168.3.40 -d homedepot -f 2h
 
 # VLAN shorthand (lan, iot, kids, guest, work, cameras)
-./scripts/blocky.py blocked --client kids --from 24h
+./scripts/blocky.py blocked -c kids -f 24h
 
 # Machine-readable
-./scripts/blocky.py --json blocked --client 192.168.3.40
+./scripts/blocky.py -j blocked -c 192.168.3.40
 ```
+
+The `-c/--client` flag accepts: partial IP, partial device name (from reverse DNS), CIDR notation,
+or VLAN name. All matching is case-insensitive.
 
 ## Diagnostic Workflow
 
-When a user reports "website X is broken":
+When a user reports "website X is broken" or "app Y is not working":
 
-1. **Search for the domain** to identify the client device: `./scripts/blocky.py search
-   <domain> --from 24h` Pick the client with the most recent `last_seen` timestamp.
+1. **Identify the device.** If the user names a specific device, use `-c` with the device name to
+   target it directly: `./scripts/blocky.py blocked -c pixel -f 1h`. NEVER assume a VLAN based on
+   the app or use case; always confirm or search. If the device is unknown, search for the domain to
+   find it: `./scripts/blocky.py search <domain> -f 24h` and pick the client with the most recent
+   `last_seen` timestamp.
 
 2. **Get blocked queries for that client** to find the offending domain: `./scripts/blocky.py
-   blocked --client <ip> --from 1h` The blocked domain is often not the main site but a subdomain
+   blocked -c <ip-or-name> -f 1h` The blocked domain is often not the main site but a subdomain
    (API, CDN, auth service).
 
 3. **Verify the block** by checking the `reason` field. It indicates which blocklist group matched
@@ -57,8 +64,8 @@ When a user reports "website X is broken":
 4. **Determine the fix** (see Remediation below).
 
 5. **After pushing the fix**, Flux applies the change and Blocky reloads automatically (reloader
-   annotation). Verify resolution: `./scripts/blocky.py logs --client <ip> --domain <domain>
-   --from 5m` The domain should now show `RESOLVED` or `CACHED` instead of `BLOCKED`.
+   annotation). Verify resolution: `./scripts/blocky.py logs -c <ip-or-name> -d <domain> -f 5m` The
+   domain should now show `RESOLVED` or `CACHED` instead of `BLOCKED`.
 
 ## Remediation
 
@@ -105,17 +112,17 @@ Read `kubernetes/apps/dns-private/blocky/data/config.yaml` for current:
 ## Unimplemented Subcommands
 
 The following subcommands were deferred. If you need one during diagnosis, implement it in
-`./scripts/blocky.py` following the patterns of the existing subcommands, then update this
-skill file to move it from this list to the Quick Reference section above.
+`./scripts/blocky.py` following the patterns of the existing subcommands, then update this skill
+file to move it from this list to the Quick Reference section above.
 
-- **top-domains**: Top queried domains by count. Flags: `--from`, `--client`, `--limit`. GROUP BY
-  `question_name`, ORDER BY count DESC.
-- **top-blocked**: Top blocked domains by count. Same as top-domains but filtered to
-  `response_type = 'BLOCKED'`. Include the `reason` column to show which blocklist group matched.
-- **top-clients**: Top clients by query volume. Flags: `--from`, `--limit`. GROUP BY `client_ip`,
+- **top-domains**: Top queried domains by count. Flags: `-f`, `-c`, `-l`. GROUP BY `question_name`,
+  ORDER BY count DESC.
+- **top-blocked**: Top blocked domains by count. Same as top-domains but filtered to `response_type
+  = 'BLOCKED'`. Include the `reason` column to show which blocklist group matched.
+- **top-clients**: Top clients by query volume. Flags: `-f`, `-l`. GROUP BY `client_ip`,
   `client_name`, ORDER BY count DESC.
-- **slow**: Queries exceeding a duration threshold. Flags: `--from`, `--client`, `--threshold`
-  (milliseconds, default 500). Filter `duration_ms >= threshold`, ORDER BY `duration_ms` DESC.
+- **slow**: Queries exceeding a duration threshold. Flags: `-f`, `-c`, `--threshold` (milliseconds,
+  default 500). Filter `duration_ms >= threshold`, ORDER BY `duration_ms` DESC.
 
 ## Pattern Detection
 
