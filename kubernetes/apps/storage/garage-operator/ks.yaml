@@ -12,10 +12,9 @@ spec:
   dependsOn:
   - name: garage
   interval: 1h
-  path: ./config/default
   prune: true
   sourceRef:
-    kind: GitRepository
+    kind: OCIRepository
     name: garage-s3-operator
     namespace: flux-system
   wait: true

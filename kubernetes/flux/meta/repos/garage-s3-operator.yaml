@@ -1,12 +1,12 @@
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/source.toolkit.fluxcd.io/gitrepository_v1.json
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/source.toolkit.fluxcd.io/ocirepository_v1.json
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
-kind: GitRepository
+kind: OCIRepository
 metadata:
   name: garage-s3-operator
   namespace: flux-system
 spec:
-  interval: 1h
-  url: https://github.com/rcdailey/garage-s3-operator
+  interval: 5m
   ref:
-    branch: main
+    tag: latest
+  url: oci://ghcr.io/rcdailey/garage-s3-operator-manifests
