@@ -24,7 +24,7 @@ spec:
           app:
             image:
               repository: docker.io/opencloudeu/opencloud-rolling
-              tag: 5.0.1
+              tag: 5.0.2
             command: ["/bin/sh", "-c", "opencloud init || true; opencloud server"]
             env:
               # Disable internal IDP, use external OIDC (Pocket-ID)
