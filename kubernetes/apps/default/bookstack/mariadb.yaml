@@ -18,7 +18,7 @@ spec:
   database: bookstackapp
 
   # Image configuration
-  image: docker-registry1.mariadb.com/library/mariadb:12.1.2
+  image: docker-registry1.mariadb.com/library/mariadb:12.2.2
   imagePullPolicy: IfNotPresent
 
   # Network
