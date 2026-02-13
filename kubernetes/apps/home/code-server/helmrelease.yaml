@@ -42,14 +42,13 @@ spec:
             env:
               TZ: America/Chicago
             probes:
-              liveness: &probes
+              liveness:
                 enabled: true
                 custom: true
                 spec:
                   httpGet:
                     path: /healthz
                     port: 8080
-              readiness: *probes
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
