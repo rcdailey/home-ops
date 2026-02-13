@@ -108,14 +108,17 @@ Consistency patterns for maintainability and clarity.
   `${SECRET_DOMAIN}` in YAML manifests)
 - Internal cluster hostnames: ONLY use `service.namespace`, without ending with `svc.cluster.local`
 - Service naming: Single `service:` entry uses HelmRelease name only; multiple entries append the
-  service key (e.g., `plex` vs `plex-main`, `plex-api`)
+  service key (e.g., `plex` vs `plex-main`, `plex-api`). Using `app` as a single service key is also
+  acceptable
 - Controller naming: Primary controller MUST match HelmRelease name (e.g., `controllers: plex:` for
   release `plex`). This produces deployment `plex` instead of `plex-main`. App-template avoids
   `{release}-{release}` duplication when controller matches release.
 - Primary: `ghcr.io/home-operations/*` containers (semantically versioned, rootless, multi-arch)
 - Secondary: `ghcr.io/onedr0p/*` containers (if home-operations unavailable)
 - Avoid: `ghcr.io/hotio/*` and containers using s6-overlay, gosu
-- NEVER use latest, rolling, or non-semantic tags (semantic versioning required)
+- Prefer semantic versions for all production containers. Rolling tags (like `latest`) are
+  acceptable for trivial init containers (e.g., alpine for file copying) where renovate upgrades add
+  no value
 - SHA256 digests: Automatically added by renovatebot
 - Container command/args: Use bracket notation `command: ["cmd", "arg"]` instead of multi-line dash
   format for consistency
