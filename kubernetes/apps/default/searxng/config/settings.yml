@@ -3,7 +3,7 @@
 # SearXNG configuration optimized for AI agent access via MCP server.
 # This instance is internal-only (VPN-secured), not public-facing.
 #
-# Note: %%GITHUB_TOKEN%% and %%SECRET_KEY%% are substituted at runtime by init container.
+# Note: Placeholder tokens are substituted at runtime by init container.
 # Reference: https://docs.searxng.org/admin/settings/settings.html
 ---
 use_default_settings: true
@@ -19,20 +19,9 @@ server:
   secret_key: "%%SECRET_KEY%%"
 
 search:
-  # Autocomplete for interactive use (optional, can be removed for pure API)
-  autocomplete: duckduckgo
-  # JSON format required for MCP server API access
+  # JSON-only; sole consumer is the MCP server
   formats:
-  - html
   - json
-
-general:
-  instance_name: SearXNG
-
-ui:
-  default_theme: simple
-  # Cache-bust static files on version changes
-  static_use_hash: true
 
 # Connection pool tuning for concurrent API requests from agents.
 # Defaults: pool_connections=100, pool_maxsize=20, request_timeout=3.0
@@ -61,47 +50,67 @@ hostnames:
   - (.*\.)?facebook\.com$
   - (.*\.)?instagram\.com$
 
-# Engine overrides - only engines needing changes from defaults.
-# Most useful engines (google, duckduckgo, brave, stackoverflow, github,
-# docker hub, arch wiki) are already enabled by default.
+# Engine category overrides: add "general" so IT engines fire on default
+# (uncategorized) API queries. The MCP server does not send a categories
+# parameter, so only "general" engines are queried by default.
 engines:
-# GitHub code search - disabled by default, useful for finding implementations.
-# Authenticated via fine-grained PAT (Public Repositories read-only scope).
-# Provides 5000 req/hr vs 10 req/min unauthenticated.
+# Default-enabled engines promoted to general category
+- name: stackoverflow
+  categories: [general, it, q&a]
+- name: askubuntu
+  categories: [general, it, q&a]
+- name: superuser
+  categories: [general, it, q&a]
+- name: github
+  categories: [general, it, repos]
+- name: arch linux wiki
+  categories: [general, it, software wikis]
+- name: mankier
+  categories: [general, it]
+# Disabled-by-default engines: enabled and promoted to general
 - name: github code
   engine: github_code
   shortcut: ghc
   inactive: false
+  categories: [general, it]
   timeout: 10.0
   ghc_auth:
     type: personal_access_token
     token: "%%GITHUB_TOKEN%%"
   ghc_highlight_matching_lines: true
   ghc_strip_new_lines: true
-
-# GitLab - disabled by default, useful for finding projects not on GitHub
 - name: gitlab
   engine: gitlab
   base_url: https://gitlab.com
   shortcut: gl
   disabled: false
-
-# Hacker News - disabled by default, useful for tech discussions/opinions
+  categories: [general, it, repos]
 - name: hackernews
   engine: hackernews
   shortcut: hn
   disabled: false
-
-# crates.io - disabled by default, useful for Rust package discovery
+  categories: [general, it]
 - name: crates.io
   engine: crates
   shortcut: crates
   disabled: false
   timeout: 6.0
+- name: npm
+  disabled: false
+  timeout: 6.0
+- name: codeberg
+  disabled: false
+  categories: [general, it, repos]
+- name: lobste.rs
+  disabled: false
+  categories: [general, it]
 
-# Tor engines - inactive to prevent "loading engine failed" errors (no Tor proxy configured)
-- name: ahmia
+# wikidata - slow, frequently times out, not useful for coding queries
+- name: wikidata
   inactive: true
 
+# Tor engines - inactive to prevent "loading engine failed" errors
+- name: ahmia
+  inactive: true
 - name: torch
   inactive: true
