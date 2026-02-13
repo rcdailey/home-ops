@@ -36,7 +36,6 @@ spec:
                   -e "s|%%SECRET_KEY%%|$SECRET_KEY|g" \
                   /config-template/settings.yml > /config/settings.yml
               cp /config-template/limiter.toml /config/limiter.toml
-              chown -R 977:977 /config
             envFrom:
             - secretRef:
                 name: searxng-secret
@@ -51,13 +50,12 @@ spec:
               SEARXNG_PORT: &port 8080
             probes:
               # Exec probe with X-Real-IP header prevents "X-Forwarded-For nor X-Real-IP header is set!" warning
-              liveness: &probes
+              liveness:
                 enabled: true
                 custom: true
                 spec:
                   exec:
                     command: ["wget", "-q", "--spider", "--header", "X-Real-IP: 127.0.0.1", "http://localhost:8080/healthz"]
-              readiness: *probes
             resources:
               requests:
                 cpu: 10m
@@ -65,16 +63,15 @@ spec:
               limits:
                 memory: 512Mi
             securityContext:
-              runAsUser: 977
-              runAsGroup: 977
-              runAsNonRoot: true
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities:
                 drop: [ALL]
-                add: [CHOWN, SETGID, SETUID]
         pod:
           securityContext:
+            runAsUser: 977
+            runAsGroup: 977
+            runAsNonRoot: true
             fsGroup: 977
             fsGroupChangePolicy: OnRootMismatch
 
