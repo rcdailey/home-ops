@@ -38,6 +38,14 @@
       minimumReleaseAge: "5 days",
     },
     {
+      // Per SemVer spec, 0.x versions may introduce breaking changes in any release.
+      // tuppr 0.0.55 broke the cluster by adding self-signed webhook certs without notice.
+      description: "Disable auto-merge for pre-1.0 packages",
+      matchDatasources: ["docker"],
+      matchCurrentVersion: "/^0/",
+      automerge: false,
+    },
+    {
       description: "Auto-merge app-template chart updates",
       matchDatasources: ["docker"],
       matchPackageNames: ["/app-template/"],
