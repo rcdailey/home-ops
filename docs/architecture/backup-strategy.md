@@ -260,7 +260,7 @@ retain:
 
 **Media namespace:**
 
-- jellyseerr
+- seerr
 - prowlarr
 - qbittorrent
 - radarr

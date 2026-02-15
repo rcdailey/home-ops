@@ -28,6 +28,6 @@ spec:
       fsGroupChangePolicy: OnRootMismatch
     repository: ${APP}-volsync-secret
     sourceIdentity:
-      sourceName: ${APP}
+      sourceName: ${VOLSYNC_SOURCE_NAME:=${APP}}
     storageClassName: ${VOLSYNC_STORAGECLASS:=ceph-block}
     volumeSnapshotClassName: ${VOLSYNC_SNAPSHOTCLASS:=csi-ceph-blockpool}

@@ -9,7 +9,7 @@ components:
 resources:
 - ./bazarr/ks.yaml
 - ./imagemaid/ks.yaml
-- ./jellyseerr/ks.yaml
+- ./seerr/ks.yaml
 - ./kometa/ks.yaml
 - ./plex/ks.yaml
 - ./plexanisync/ks.yaml
