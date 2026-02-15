@@ -2,10 +2,10 @@
 ---
 # Expanded sections (frequently used)
 - Favorites:
-  - Jellyseerr:
+  - Seerr:
       icon: jellyseerr
       href: https://request.${SECRET_DOMAIN}/
-      siteMonitor: http://jellyseerr.media:80
+      siteMonitor: http://seerr.media:5055
 
   - Immich:
       icon: immich

@@ -192,12 +192,10 @@ postBuild:
 - **Analysis needed**: Check what needs backing up
 - **Status**: Not started
 
-#### jellyseerr
+#### seerr
 
-- **Current PVC**: `jellyseerr` (2Gi, RWO, ceph-block)
-- **Analysis needed**: Check for cache/logs to exclude
-- **Status**: Not started
-- **Note**: volsync PVCs exist but component not in kustomization.yaml
+- **Current PVC**: `seerr` (2Gi, RWO, ceph-block)
+- **Status**: Complete (migrated from jellyseerr, volsync component active)
 
 #### kometa
 
@@ -266,7 +264,7 @@ postBuild:
 
 ## Notes
 
-- Some apps (jellyseerr, prowlarr, qbittorrent, tautulli) have volsync cache PVCs created but the
+- Some apps (prowlarr, qbittorrent, tautulli) have volsync cache PVCs created but the
   volsync component is not included in their kustomization.yaml
 - Need to investigate why these volsync PVCs exist and potentially clean them up
 - Apps with multiple PVCs need careful analysis to avoid backing up regenerable data (caches,

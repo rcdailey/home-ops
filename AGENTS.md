@@ -443,8 +443,9 @@ Scripts in `./scripts/` - use `--help` for usage:
 
 - Rook Ceph: Distributed block/filesystem storage across cluster nodes
 - NFS (Nezuko 192.168.1.58): Media (100Ti), Photos (10Ti)
-- Garage S3 (192.168.1.58:3900): Region garage, buckets: postgres-backups, volsync-backups,
-  bookstack-backups
+- Garage S3 (192.168.1.58:3900): Region garage, buckets: postgres-backups, bookstack-backups
+- Volsync: Kopia repository on NFS (Nezuko /mnt/user/volsync), shared single repository with
+  per-app isolation via snapshot identity
 - CloudNativePG: Barman WAL archiving to s3://postgres-backups/{cluster}/
 - Ceph toolbox: kubectl exec -n rook-ceph deploy/rook-ceph-tools -- [ceph status | rbd COMMAND]
 
