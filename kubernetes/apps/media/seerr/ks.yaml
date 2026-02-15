@@ -10,6 +10,8 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
+  - name: cloudnative-pg
+    namespace: kube-system
   - name: rook-ceph-cluster
     namespace: rook-ceph
   - name: global-config

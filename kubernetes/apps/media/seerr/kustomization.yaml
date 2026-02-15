@@ -6,4 +6,5 @@ components:
 - ../../../components/volsync
 resources:
 - ./helmrelease.yaml
+- ./postgres-cluster.yaml
 - ./pvc.yaml
