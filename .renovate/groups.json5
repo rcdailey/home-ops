@@ -39,6 +39,13 @@
       minimumGroupSize: 2,
     },
     {
+      // Groups Kubernetes version upgrades across mise (kubectl), tuppr, and talenv (kubelet)
+      description: "Kubernetes Group",
+      groupName: "Kubernetes",
+      matchPackageNames: ["/kubelet/", "/kubectl/"],
+      minimumGroupSize: 3,
+    },
+    {
       // Groups Talos OS packages across datasources (docker, mise/aqua, helm, etc.)
       // minimumGroupSize ensures mise tool + installer image are grouped together
       // Excludes kubelet which is a Kubernetes component, not Talos itself
