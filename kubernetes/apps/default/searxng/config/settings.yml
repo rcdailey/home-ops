@@ -22,6 +22,9 @@ search:
   # JSON-only; sole consumer is the MCP server
   formats:
   - json
+  # Reduce default 1hr suspension on 429s so engines recover faster
+  suspended_times:
+    SearxEngineTooManyRequests: 600
 
 # Connection pool tuning for concurrent API requests from agents.
 # Defaults: pool_connections=100, pool_maxsize=20, request_timeout=3.0
@@ -104,6 +107,10 @@ engines:
 - name: lobste.rs
   disabled: false
   categories: [general, it]
+
+# Brave - cap request time to prevent slow 429 responses from blocking threads
+- name: brave
+  timeout: 3.0
 
 # wikidata - slow, frequently times out, not useful for coding queries
 - name: wikidata
