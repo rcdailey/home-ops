@@ -31,3 +31,7 @@ talosctl = "1.12.4"
 yamlfmt = "latest"
 yamllint = "latest"
 yq = "latest"
+
+[hooks.enter]
+shell = "zsh"
+script = "eval \"$(just --completions bash)\""
