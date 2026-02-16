@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: docker.io/donetick/donetick
-              tag: v0.1.70
+              tag: v0.1.71
             env:
               TZ: America/Chicago
               DT_ENV: selfhosted
