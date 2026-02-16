@@ -57,6 +57,8 @@ blocking:
       collector-pxzc5j78di.px-client.net
       collector-pxzc5j78di.px-cdn.net
       collector-pxzc5j78di.hsprotect.net
+      *.bloomreach.co
+      *.usablenet.com
   clientGroupsBlock:
     default:
     # Main LAN (192.168.1.0/24) + fallback
