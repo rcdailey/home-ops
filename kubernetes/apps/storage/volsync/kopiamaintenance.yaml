@@ -15,6 +15,7 @@ spec:
   # Match ReplicationSource moverSecurityContext to prevent UID mismatch on NFS
   # Without this, maintenance jobs run as root (UID 0) creating files that
   # ReplicationSource jobs (UID 1000) cannot read
+  successfulJobsHistoryLimit: 1
   podSecurityContext:
     runAsUser: 1000
     runAsGroup: 1000
