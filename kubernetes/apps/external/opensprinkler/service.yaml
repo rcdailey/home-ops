@@ -18,7 +18,7 @@ metadata:
   name: opensprinkler
 subsets:
 - addresses:
-  - ip: 192.168.1.30
+  - ip: 192.168.2.108
   ports:
   - name: http
     port: 80
