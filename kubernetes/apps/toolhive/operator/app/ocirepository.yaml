@@ -11,5 +11,5 @@ spec:
     operation: copy
   ref:
     # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
-    tag: 0.9.4
+    tag: 0.10.0
   url: oci://ghcr.io/stacklok/toolhive/toolhive-operator
