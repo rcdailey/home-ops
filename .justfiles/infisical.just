@@ -56,3 +56,19 @@ add-secret path value:
     echo "Setting secret: $SECRET_NAME at path: $SECRET_PATH"
     infisical secrets set "$SECRET_NAME=$SECRET_VALUE" --path "$SECRET_PATH" --env prod
     echo "Successfully created secret: $SECRET_NAME at path: $SECRET_PATH"
+
+[doc('Get a secret value from Infisical')]
+get-secret path:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    FULL_PATH="{{path}}"
+    SECRET_NAME=$(basename "$FULL_PATH")
+    FOLDER_PATH=$(dirname "$FULL_PATH")
+
+    # Normalize path
+    FOLDER_PATH="${FOLDER_PATH#/}"
+    FOLDER_PATH="${FOLDER_PATH%/}"
+    SECRET_PATH="/$FOLDER_PATH"
+
+    infisical secrets get "$SECRET_NAME" --path "$SECRET_PATH" --env prod --silent --plain
