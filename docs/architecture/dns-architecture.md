@@ -388,25 +388,25 @@ PostgreSQL cluster is managed by CloudNativePG (`blocky-postgres`).
 
 #### Cloudflare External-DNS
 
-**HTTPRoute Instance** (`kubernetes/apps/network/cloudflare-dns/httproute.yaml`):
+**Single Instance** (`kubernetes/apps/network/cloudflare-dns/helmrelease.yaml`):
 
-- **Sources**: `gateway-httproute`
-- **Filter**: `--gateway-name=external`
-- **Purpose**: External HTTPRoutes -> Cloudflare DNS (internet access)
-- **TxtOwnerId**: `default`
-- **Record Pattern**: `service.domain.com` -> CNAME -> `external.domain.com`
-
-**CRD Instance** (`kubernetes/apps/network/cloudflare-dns/crd.yaml`):
-
-- **Sources**: `crd`
-- **Namespace**: `network`
-- **Purpose**: Gateway A records -> Cloudflare DNS
+- **Sources**: `crd`, `gateway-httproute`
+- **Filter**: `--gateway-name=external` (only affects gateway-httproute source)
 - **TxtOwnerId**: `cloudflare`
-- **Record Pattern**: `external.domain.com` -> CNAME -> `tunnel.cfargotunnel.com`
+- **Purpose**: External HTTPRoutes and gateway infrastructure -> Cloudflare DNS
+- **Record Patterns**:
+  - `service.domain.com` -> CNAME -> `external.domain.com` (from HTTPRoutes)
+  - `external.domain.com` -> CNAME -> `tunnel.cfargotunnel.com` (from DNSEndpoint CRD)
 
-**Manual Records** (Cloudflare dashboard):
+DNSEndpoint CRDs targeting Cloudflare should carry the convention label
+`external-dns/provider: cloudflare`. This is not enforced by filtering (external-dns
+`--label-filter` is global across all sources) but establishes intent for future tooling.
 
-- **Tunnel endpoint**: Managed via Cloudflare Tunnel configuration
+**Why not split?** The `--namespace` flag is global in external-dns; it scopes all sources
+identically. Splitting CRD and gateway-httproute into separate instances requires a shared
+`txtOwnerId`, which causes the instances to fight (each deletes records the other creates).
+`--gateway-name` is gateway-httproute-specific and sufficient for filtering without namespace
+scoping.
 
 #### UniFi External-DNS
 
