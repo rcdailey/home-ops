@@ -79,7 +79,7 @@ spec:
         hostnames:
         - tautulli.${SECRET_DOMAIN}
         parentRefs:
-        - name: external
+        - name: internal
           namespace: network
           sectionName: https
 
