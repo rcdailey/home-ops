@@ -143,6 +143,8 @@ Consistency patterns for maintainability and clarity.
 - NEVER use kubectl port-forward under ANY circumstances (alternatives: kubectl exec, debug pods,
   HTTPRoute exposure)
 - NEVER configure External-DNS on HTTPRoutes (Gateways only)
+- DNSEndpoint CRDs MUST carry `external-dns/provider: <provider>` label indicating which
+  external-dns instance should manage them
 - NEVER create LoadBalancer without explicit user discussion
 - Route backendRefs: Use full service name (e.g., radarr-app), not identifier (e.g., app)
 - NEVER use wildcards for SecurityPolicy headers (always explicit headers)
