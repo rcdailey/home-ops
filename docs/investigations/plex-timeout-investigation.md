@@ -1,21 +1,15 @@
-# Plex Timeout and Connectivity Issues - Investigation Log
+# Plex Timeout and Connectivity Issues
 
-**Last Updated:** 2025-10-22
+- **Date:** 2025-10-20 (updated through 2025-11-02)
+- **Status:** PARTIALLY RESOLVED
 
-**Status:** ROOT CAUSE CONFIRMED
+## Summary
 
-## Executive Summary
-
-Plex server experiencing recurring complete failures where all client requests timeout, leading to
-health check failures and container restarts.
-
-**ROOT CAUSE CONFIRMED:** Unraid array NFS stale file handle issues causing mount hangs on specific
-Kubernetes nodes.
-
-**Secondary Factor:** Plex EAE (Easy Audio Encoder) Service deadlocks during media analysis.
-
-**Primary Issue:** Unraid's SHFS/XFS array filesystem incompatibility with NFS, NOT
-network/Cilium/Envoy infrastructure.
+Plex server experiencing recurring complete failures from three distinct causes: (1) Unraid array
+NFS stale file handle issues causing mount hangs on specific nodes (primary), (2) Plex EAE deadlocks
+during media analysis (secondary), (3) Intel GPU driver initialization failures causing
+uninterruptible application hangs (tertiary). ZFS pool migration recommended but not yet
+implemented.
 
 ## Root Cause: Unraid Array NFS Incompatibility
 
@@ -255,14 +249,15 @@ failure causing application decoder hang, preventing graceful termination and vo
 ### Failure Sequence
 
 1. Pod started 2025-10-31T18:54:59Z with GPU ResourceClaim successfully allocated
-2. GPU driver initialization failed (Level Zero API error 0x78000001 - ZE_RESULT_ERROR_UNINITIALIZED)
+2. GPU driver initialization failed (Level Zero API error 0x78000001 -
+   ZE_RESULT_ERROR_UNINITIALIZED)
 3. Plex decoder attempted GPU access, hung in infinite loop outputting `decoder information: 249`
 4. Application became unresponsive (not crashed, but hung waiting on broken GPU driver)
 5. Readiness probe failed 48 hours later (2025-11-02T19:33:52Z) - HTTP GET to `/identity` timeout
 6. Kubernetes initiated deletion 3 seconds after probe failure
 7. SIGTERM sent to containers - containers remained Running, no shutdown signal logged
-8. Containers could not terminate - application likely in uninterruptible sleep (D state) waiting
-   on GPU I/O
+8. Containers could not terminate - application likely in uninterruptible sleep (D state) waiting on
+   GPU I/O
 9. RWO volumes could not unmount while container held file handles
 10. Pod stuck indefinitely - exceeded grace period but process wouldn't die
 
@@ -332,9 +327,9 @@ kubectl exec -n rook-ceph deploy/rook-ceph-tools -- \
 
 ### Related Web Research
 
-**Plex decoder hang pattern** from Plex Forums: `decoder information: 249` repeating lines
-precede Plex Media Server crashes related to hardware transcoding failures, GPU driver issues,
-and corrupted media files.
+**Plex decoder hang pattern** from Plex Forums: `decoder information: 249` repeating lines precede
+Plex Media Server crashes related to hardware transcoding failures, GPU driver issues, and corrupted
+media files.
 
 **Intel GPU driver issues** with Level Zero API commonly caused by:
 
@@ -343,10 +338,9 @@ and corrupted media files.
 - Device claim attachment failures
 - GPU hung state requiring driver reset
 
-**RWO volume terminating pattern** confirmed across multiple storage systems (Ceph, Longhorn):
-When application crashes/hangs BEFORE receiving SIGTERM, Kubernetes cannot complete graceful
-termination because process may be in uninterruptible sleep (D state) waiting on I/O, preventing
-volume unmount.
+**RWO volume terminating pattern** confirmed across multiple storage systems (Ceph, Longhorn): When
+application crashes/hangs BEFORE receiving SIGTERM, Kubernetes cannot complete graceful termination
+because process may be in uninterruptible sleep (D state) waiting on I/O, preventing volume unmount.
 
 ### Recommendations
 
@@ -358,17 +352,3 @@ pod ready
 
 **Document GPU-specific termination pattern:** This is distinct from volume attachment RBAC issues
 and requires different troubleshooting approach
-
-## Document History
-
-| Date       | Changes                                                               |
-| ---------- | --------------------------------------------------------------------- |
-| 2025-10-20 | Initial investigation document with EAE deadlock hypothesis           |
-| 2025-10-20 | ROOT CAUSE CONFIRMED: EAE deadlock, external validation added         |
-| 2025-10-22 | Deadlock recurrence documented, infrastructure failures identified    |
-| 2025-10-22 | ROOT CAUSE REVISED: Unraid NFS primary, EAE secondary, community data |
-| 2025-11-02 | Intel GPU driver failure causing pod terminating hang documented      |
-
-**Status:** Multiple Plex failure modes documented: (1) Unraid NFS incompatibility, (2) EAE
-Service deadlocks, (3) Intel GPU driver initialization failures. Each requires distinct
-troubleshooting and resolution approach.

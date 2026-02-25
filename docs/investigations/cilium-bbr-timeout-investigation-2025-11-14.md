@@ -1,19 +1,19 @@
 # Cilium BBR Timeout Investigation - Pod Networking Performance
 
-**Date:** 2025-11-14
+- **Date:** 2025-11-14
+- **Status:** RESOLVED (see [ADR-007][adr-007], [ADR-008][adr-008])
 
-**Status:** RESOLVED
+## Summary
 
-## Executive Summary
+BBR congestion control caused severe timeout issues affecting both external-to-pod (Plex streaming)
+and pod-to-pod (VictoriaMetrics) communication. Root cause: Linux kernel BBR stuck-state bug causing
+throughput collapse to 100 Kbit/s, compounded by Cilium Bandwidth Manager enforcement. Resolution:
+disabled BBR system-wide, enabled Bandwidth Manager with CUBIC. Attempted netkit + BigTCP deployment
+also failed due to socketLB namespace incompatibility and GSO/GRO conflicts with Intel e1000e NIC
+patches (NICs later replaced with USB-C r8152 adapters in commit `08065c6`).
 
-BBR congestion control implementation caused severe timeout issues affecting both external-to-pod
-(Plex streaming) and pod-to-pod (VictoriaMetrics) communication. Root cause: Linux kernel BBR
-stuck-state bug causing throughput collapse to 100 Kbit/s, compounded by Cilium Bandwidth Manager
-enforcement. Resolution: Disabled BBR system-wide, enabled Cilium Bandwidth Manager without BBR to
-use CUBIC congestion control with EDT scheduling.
-
-**Key Finding:** BBR optimized for high-latency WAN traffic performs poorly for low-latency
-intra-cluster communication. CUBIC better suited for sub-millisecond RTT pod-to-pod networking.
+[adr-007]: /docs/decisions/007-cubic-over-bbr-congestion-control.md
+[adr-008]: /docs/decisions/008-cilium-host-legacy-routing.md
 
 ## Timeline
 
@@ -262,9 +262,10 @@ routingMode: native
    incompatible with netkit datapath.
 
 2. **BIG TCP GSO/GRO Dependency:** `enableIPv4BIGTCP: true` requires Generic Segmentation Offload
-   (GSO) and Generic Receive Offload (GRO) enabled in NIC driver. Intel e1000e driver patches in
-   `talos/patches/global/machine-ethernet-tuning.yaml` disable GSO/GRO to work around GPU driver
-   issues. BIG TCP failed on every network operation.
+   (GSO) and Generic Receive Offload (GRO) enabled in NIC driver. Intel e1000e driver patches
+   (formerly `talos/patches/intel-nuc-e1000e/ethernet-tuning.yaml`, removed in commit `76551a4`
+   after NIC replacement) disabled GSO/GRO to work around GPU driver issues. BIG TCP failed on every
+   network operation.
 
 3. **MTU Misconception:** Initially assumed BIG TCP required jumbo frames (MTU >1500). Research
    clarified BIG TCP works with standard 1500 MTU but **requires** GSO/GRO offload features. Problem
@@ -322,7 +323,7 @@ bandwidthManager:
   enabled: true
   # bbr: false (omitted - defaults to CUBIC with EDT)
 bpf:
-  hostLegacyRouting: false  # Kept BPF routing (works fine with CUBIC)
+  hostLegacyRouting: false  # Was set to false here; later reverted to true in BGP migration (691bf49)
 ```
 
 ### Verification
@@ -470,20 +471,17 @@ GPU workloads.
 
 **Decision:** CUBIC provides better stability and performance for cluster networking profile.
 
-## Related Documentation
-
-- `plex-timeout-investigation.md`: Separate NFS architectural issues (Unraid SHFS cache misses, GPU
-  driver memory exhaustion)
-- Commit `6fc0793`: Initial BBR enablement via Talos sysctls
-- Commit `0d0492e`: Cilium Bandwidth Manager + BBR enablement (reverted)
-
 ## References
 
+- [ADR-007: Use CUBIC over BBR for intra-cluster networking][adr-007]
+- [ADR-008: Use hybrid BPF routing (hostLegacyRouting: true)][adr-008]
+- [Plex timeout investigation][plex-investigation] (separate NFS/GPU issues)
 - [Google BBR stuck-state discussion (bbr-dev)][bbr-stuck-state]
 - [Cilium Bandwidth Manager documentation][cilium-bwm]
 - [Isovalent BBR blog][isovalent-bbr]
 - [Red Hat KB 6998955: NFS nconnect performance][redhat-nconnect] (subscription required)
 
+[plex-investigation]: /docs/investigations/plex-timeout-investigation.md
 [bbr-stuck-state]: https://groups.google.com/g/bbr-dev/c/XUOKHJiAW80
 [cilium-bwm]: https://docs.cilium.io/en/stable/network/kubernetes/bandwidth-manager
 [isovalent-bbr]: https://isovalent.com/blog/post/accelerate-network-performance-with-cilium-bbr

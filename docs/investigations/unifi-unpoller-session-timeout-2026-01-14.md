@@ -1,21 +1,15 @@
-# UniFi Unpoller Session Timeout Investigation - 2026-01-14
+# UniFi Unpoller Session Timeout Investigation
 
-**Last Updated:** 2026-01-14
+- **Date:** 2026-01-14
+- **Status:** RESOLVED (unpoller later removed from cluster)
 
-**Status:** ROOT CAUSE IDENTIFIED - UNIFI SESSION EXPIRY
-
-## Executive Summary
+## Summary
 
 VMAlert `UnifiLinkSpeedDegraded1G` alerts were firing, resolving, and re-firing every 2 hours
-despite the underlying condition remaining true. Investigation revealed UniFi OS terminates API
-sessions every 2 hours, causing unpoller to briefly lose authentication and metrics to disappear.
-
-**PRIMARY CAUSE:** UniFi OS hardcoded 2-hour session timeout for username/password authentication.
-When session expires, unpoller gets 401 Unauthorized, metrics briefly disappear, VMAlert resets the
-`for` timer, and Alertmanager sends both "resolved" and "firing" notifications.
-
-**SOLUTION:** Switch unpoller from username/password to API key authentication. API keys don't have
-session expiry and provide stable, long-lived authentication.
+despite the underlying condition remaining true. Root cause: UniFi OS hardcoded 2-hour session
+timeout for username/password authentication. When the session expires, unpoller gets 401, metrics
+briefly disappear, VMAlert resets the `for` timer, and Alertmanager sends both "resolved" and
+"firing" notifications. Fix: switch to API key authentication (no session expiry).
 
 ## Symptoms
 
@@ -32,7 +26,7 @@ User observed in Pushover notifications (newest to oldest):
 
 Pattern: Alert fires and resolves within the same minute, then repeats exactly 2 hours later.
 
-## Root Cause Analysis
+## Investigation
 
 ### 1. Alert Timing Investigation
 
@@ -90,7 +84,13 @@ When the 401 occurs:
 7. Alert fires as a "new" alert
 8. Alertmanager sends both "resolved" (old identity) and "firing" (new identity) notifications
 
-## Solution
+## Root Cause
+
+UniFi OS expires username/password sessions every 2 hours (hardcoded, not configurable). When the
+session expires, unpoller fails one metrics fetch, causing a brief gap that resets VMAlert's `for`
+timer and triggers resolve/fire notification pairs.
+
+## Resolution
 
 ### Switch to API Key Authentication
 
@@ -133,11 +133,12 @@ This keeps the alert in firing state for 15 minutes after the condition becomes 
 preventing the flapping notifications. However, this is a workaround - API key auth is the proper
 fix.
 
-## GitHub Issue Reference
+## References
 
-- [unpoller/unpoller#765](https://github.com/unpoller/unpoller/issues/765): "UnPoller - API Key
-  (Early Access)" - Feature request that led to API key support. Discussion confirms session timeout
-  issues with username/password auth on UDM Pro devices.
+- [unpoller/unpoller#765][unpoller-765]: Feature request that led to API key support. Discussion
+  confirms session timeout issues with username/password auth on UDM Pro devices.
+
+[unpoller-765]: https://github.com/unpoller/unpoller/issues/765
 
 ## Key Commands Used
 
@@ -158,9 +159,3 @@ kubectl logs -n observability deploy/unpoller --since=6h | rg "401|error"
 ```bash
 ssh unifi "grep -E '03:54|05:54|07:55' /data/unifi-core/logs/nginx-access.log"
 ```
-
-## Document History
-
-| Date       | Changes                                                |
-|------------|--------------------------------------------------------|
-| 2026-01-14 | Initial investigation of 2-hour alert flapping pattern |

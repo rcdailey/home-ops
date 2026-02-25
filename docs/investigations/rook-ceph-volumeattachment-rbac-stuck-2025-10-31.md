@@ -1,4 +1,7 @@
-# Rook-Ceph VolumeAttachment RBAC Loop - 2025-10-31
+# Rook-Ceph VolumeAttachment RBAC Loop
+
+- **Date:** 2025-10-31
+- **Status:** RESOLVED
 
 ## Summary
 
@@ -259,9 +262,13 @@ However, this alone won't fix the stuck pod - kubelet restart is still required.
 - **Resolution**: Kubelet restart required on **both** affected nodes, confirming cluster-wide
   kubelet volume manager issue, not node-specific configuration problem
 
-## See Also
+## References
 
-- [Troubleshooting Rook-Ceph CSI Common
-  Issues](https://github.com/rook/rook/blob/master/Documentation/Troubleshooting/ceph-csi-common-issues.md)
-- [Kubernetes Volume Lifecycle
-  Documentation](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
+- [Rook-Ceph CSI common issues][rook-csi]
+- [Kubernetes volume lifecycle documentation][k8s-volumes]
+- [Kubernetes issue #120571][k8s-120571]: Volume state machine corruption after detach error
+
+[rook-csi]:
+    https://github.com/rook/rook/blob/master/Documentation/Troubleshooting/ceph-csi-common-issues.md
+[k8s-volumes]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+[k8s-120571]: https://github.com/kubernetes/kubernetes/issues/120571

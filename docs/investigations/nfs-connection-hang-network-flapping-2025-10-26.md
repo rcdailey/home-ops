@@ -1,24 +1,16 @@
-# NFS Connection Hang and Network Flapping Investigation - 2025-10-26
+# NFS Connection Hang and Network Flapping Investigation
 
-**Last Updated:** 2025-10-26
+- **Date:** 2025-10-26
+- **Status:** RESOLVED
 
-**Status:** ROOT CAUSE IDENTIFIED - DISK SPINDOWN
-
-## Executive Summary
+## Summary
 
 Plex streaming failure caused by Unraid array disk spindown breaking NFS connections to Kubernetes
-clients. Investigation initially suspected network flapping, but root cause confirmed as Unraid
-spinning down array disks after idle timeout, causing NFS server to terminate TCP connections with
-I/O errors.
-
-**PRIMARY CAUSE:** Unraid array disk spindown (1-hour idle timeout) → NFS exports on `/mnt/user/*`
-become unreadable → nfsd terminates client connections with ECONNRESET/EPIPE errors.
-
-**SECONDARY ISSUE (HISTORICAL):** Network interface flapping on nezuko eth1 (Intel X540-AT2) at 7:00
-AM documented in earlier investigation. Bonding has since been removed and static IP configured.
-
-**CRITICAL CONFIGURATION:** Default spin down delay set to 1 hour is incompatible with NFS exports
-from array disks. NFS clients experience 10+ minute outages during disk spinup cycles.
+clients. Root cause: Unraid spinning down array disks after 1-hour idle timeout causes NFS server to
+terminate TCP connections with ECONNRESET/EPIPE errors. Fix: disable array spindown in Unraid
+settings. Secondary issue (network interface flapping on nezuko eth1) was historical and already
+resolved by removing bonding and configuring static IP. from array disks. NFS clients experience 10+
+minute outages during disk spinup cycles.
 
 ## Incident Timeline
 
@@ -365,13 +357,3 @@ ssh nezuko "crontab -l"
 # Check for scheduled tasks
 ssh nezuko "ls -la /etc/cron.daily/ /etc/cron.hourly/"
 ```
-
-## Document History
-
-| Date       | Changes                                                |
-| ---------- | ------------------------------------------------------ |
-| 2025-10-26 | Initial investigation of NFS hang and network flapping |
-
-**Status:** Root cause RESOLVED - disk spindown confirmed. Network flapping was historical issue,
-resolved by bonding removal and static IP configuration. Current outage (Oct 26 18:42) definitively
-caused by 1-hour spindown timer.

@@ -1,23 +1,17 @@
 # OpenCloud Desktop OAuth Failure - IPv6 CNAME Chain Leak
 
-**Last Updated:** 2026-01-25
+- **Date:** 2026-01-25
+- **Status:** RESOLVED (original AdGuard fix superseded by Blocky migration; see [ADR-004][adr-004])
 
-**Status:** RESOLVED
-
-## Executive Summary
+## Summary
 
 OpenCloud Desktop OAuth authentication fails intermittently with "Network unreachable" when
-exchanging the authorization code for tokens. The OAuth callback to localhost succeeds, but the
-subsequent POST to `auth.domain.com/api/oidc/token` fails immediately (0ms) because the client
-attempts to connect via an unreachable IPv6 address.
+exchanging the authorization code for tokens. Root cause: UDMP forwards DNS queries for record types
+it doesn't have locally (AAAA, HTTPS) to upstream Cloudflare, which returns CNAME chains pointing to
+tunnel IPv6 addresses unreachable from the LAN. Original fix was AdGuard filtering rules; now
+handled natively by Blocky's `filterUnmappedTypes` default.
 
-**Root Cause:** UDMP forwards DNS queries for record types it doesn't have locally (AAAA, HTTPS) to
-upstream Cloudflare. Cloudflare returns CNAME chains pointing to the tunnel endpoint, which has an
-IPv6 address (`fd10:aec2:5dae::`) that is not routable from the LAN. systemd-resolved caches these
-CNAME/IPv6 responses and uses them for subsequent connections.
-
-**Fix:** Block AAAA and HTTPS DNS record types for `domain.com` at AdGuard Home before queries reach
-UDMP.
+[adr-004]: /docs/decisions/004-blocky-dns-migration.md
 
 ## Symptoms
 
@@ -253,13 +247,10 @@ pkexec resolvectl log-level info
 cat /tmp/OpenCloud-logdir/OpenCloud.log | tr -d '\0' | rg -i "token|unreachable|error"
 ```
 
-## Document History
+## References
 
-| Date       | Changes                                                        |
-|------------|----------------------------------------------------------------|
-| 2026-01-22 | Initial investigation, identified IPv6 as cause, temporary fix |
-| 2026-01-25 | Issue recurred, enabled debug logging                          |
-| 2026-01-25 | Root cause identified: HTTPS queries leaking CNAME via UDMP    |
-| 2026-01-25 | Solution implemented: block AAAA + HTTPS at AdGuard            |
+- [DNS architecture documentation][dns-arch]
+- [ADR-004: Blocky DNS migration][adr-004] (supersedes AdGuard-specific fix via
+  `filterUnmappedTypes`)
 
 [dns-arch]: /docs/architecture/dns-architecture.md
