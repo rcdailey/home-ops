@@ -1,35 +1,21 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/recyclarr/recyclarr/master/schemas/config-schema.json
-###################################################################################################
-# Recyclarr Configuration Template: SQP-1 (1080p)                                                 #
-# Updated: 2025-05-04                                                                             #
-# Documentation: https://recyclarr.dev                                                            #
-# Note: If you are using multiple profiles in a single instance, please read the following        #
-# documentation about file merging:                                                               #
-# https://recyclarr.dev/wiki/yaml/config-examples/#merge-single-instance                          #
-###################################################################################################
-
-# Instance Definition: https://recyclarr.dev/wiki/yaml/config-reference/basic/
 radarr:
   radarr-1080p:
     base_url: !env_var RADARR_BASE_URL http://radarr.media:7878
     api_key: !env_var RADARR_API_KEY
 
     delete_old_custom_formats: true
-    replace_existing_custom_formats: true
+
+    quality_definition:
+      type: sqp-streaming
 
     quality_profiles:
-    - name: SQP-1 (1080p)
-      # Uncomment the below line if you don't have access to top-tier indexers
-      # min_format_score: 10
+    - trash_id: 0896c29d74de619df168d23b98104b22 # [SQP] SQP-1 (1080p)
+      name: SQP-1 (1080p)
+      reset_unmatched_scores:
+        enabled: true
 
-    include:
-    # Comment out any of the following includes to disable them
-    - template: radarr-quality-definition-sqp-streaming
-    - template: radarr-quality-profile-sqp-1-1080p
-    - template: radarr-custom-formats-sqp-1-1080p
-
-    # Custom Formats: https://recyclarr.dev/wiki/yaml/config-reference/custom-formats/
     custom_formats:
     # Movie Versions
     - trash_ids:
