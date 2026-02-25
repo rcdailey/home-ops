@@ -61,4 +61,4 @@ structured SQL queries, enabling richer analysis through `blocky.py`.
 [blocky]: https://github.com/0xERR0R/blocky
 [hagezi]: https://github.com/hagezi/dns-blocklists
 [adr-002]: /docs/decisions/002-dns-server-architecture.md
-[opencloud-ipv6]: /docs/troubleshooting/opencloud-desktop-ipv6-auth-failure-2026-01-25.md
+[opencloud-ipv6]: /docs/investigations/opencloud-desktop-ipv6-auth-failure-2026-01-25.md

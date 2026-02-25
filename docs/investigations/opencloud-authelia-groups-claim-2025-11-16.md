@@ -1,17 +1,19 @@
-# OpenCloud Authelia Groups Claim Integration Issue
+# OpenCloud OIDC Groups Claim Integration
 
-**Date:** 2025-11-16 **Status:** PARTIALLY RESOLVED **Components:** OpenCloud 3.7.0, Authelia
-4.39.14
+- **Date:** 2025-11-16
+- **Status:** PARTIALLY RESOLVED (web client fixed; native apps still use hardcoded scopes)
 
-**Resolution:**
+## Summary
 
-- ✅ Web client: Fixed via `WEB_OIDC_SCOPE: "openid profile email groups"`
-- ⚠️ Native apps (Desktop/Android/iOS): UNRESOLVED - hardcoded scopes, no `groups` scope requested
+OpenCloud requires a groups/roles claim for role assignment, but OIDC providers only return claims
+for explicitly requested scopes. Web client fixed via `WEB_OIDC_SCOPE: "openid profile email
+groups"`. Native apps (Desktop/Android/iOS) have hardcoded scopes that do not include `groups`, so
+the groups claim is absent from their tokens. Workaround: use `oc_groups` custom claim via Pocket-ID
+(formerly Authelia) that appears in ID tokens regardless of requested scopes.
 
-## Problem Statement
+Originally investigated with Authelia; now using Pocket-ID (see [ADR-009][adr-009]).
 
-OpenCloud integration with Authelia OIDC fails with "no roles in user claims" error, preventing user
-login despite successful authentication.
+[adr-009]: /docs/decisions/009-opencloud-external-idp.md
 
 ## Symptoms
 

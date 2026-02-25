@@ -17,7 +17,7 @@ conditional:
 
 customDNS:
   # filterUnmappedTypes: true (default) prevents AAAA/HTTPS leak through UDMP
-  # See: docs/troubleshooting/opencloud-desktop-ipv6-auth-failure-2026-01-25.md
+  # See: docs/investigations/opencloud-desktop-ipv6-auth-failure-2026-01-25.md
   mapping:
     external.${SECRET_DOMAIN}: 192.168.50.73
     internal.${SECRET_DOMAIN}: 192.168.50.72

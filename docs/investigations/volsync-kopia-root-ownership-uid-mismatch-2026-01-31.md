@@ -2,9 +2,8 @@
 
 - **Date:** 2026-01-31
 - **Status:** RESOLVED
-- **Cause:** Namespace-level `privileged-movers` annotation forcing movers to run as root
 
-## Executive Summary
+## Summary
 
 Kopia mover pods were creating root-owned files (UID 0) on NFS despite having `runAsUser: 1000`
 configured in the moverSecurityContext. This caused permission denied errors when subsequent jobs
@@ -275,12 +274,3 @@ ssh nezuko "cat /etc/exports"
 # Fix permissions
 ssh nezuko "chown -R 1000:1000 /mnt/user/volsync"
 ```
-
-## Document History
-
-| Date       | Changes                                                       |
-|------------|---------------------------------------------------------------|
-| 2026-01-31 | Initial investigation, root-owned files discovered            |
-| 2026-02-01 | Comprehensive testing, storage namespace ruled out            |
-| 2026-02-01 | Root cause identified: privileged-movers on default namespace |
-| 2026-02-01 | Resolution: removed structurizr and annotation                |

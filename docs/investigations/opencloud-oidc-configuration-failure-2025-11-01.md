@@ -1,11 +1,16 @@
-# OpenCloud OIDC Configuration Failure - 2025-11-01
+# OpenCloud Built-In IdP Configuration Failure
+
+- **Date:** 2025-11-01
+- **Status:** ABANDONED (led to [ADR-009][adr-009]: use external IdP instead)
 
 ## Summary
 
-**COMPLETE FAILURE** - Attempted to deploy OpenCloud with built-in IdP in Kubernetes with external
-HTTPS gateway (Envoy). After 10+ configuration attempts over several hours, every approach resulted
-in either OIDC circular dependency, issuer mismatch, IdP crashes, or CSP violations. **None of the
-configurations worked.**
+Attempted to deploy OpenCloud with built-in IdP behind Envoy Gateway with TLS termination. After 10+
+configuration attempts over 4 hours, every approach failed due to fundamental architecture mismatch:
+built-in IdP requires direct HTTPS access, incompatible with gateway TLS termination. Led to the
+decision to use Pocket-ID as an external OIDC provider.
+
+[adr-009]: /docs/decisions/009-opencloud-external-idp.md
 
 ## Environment
 
@@ -782,20 +787,18 @@ configuration** for OpenCloud's built-in IdP behind an external HTTPS gateway wi
 - External URL creates circular dependency through gateway
 - Environment variable precedence overrides localhost defaults
 
-**Recommendation:** Use external IdP (Authelia, Keycloak) instead of built-in IdP for Kubernetes
-deployments with gateway TLS termination.
+**Resolution:** Use external IdP (Pocket-ID) instead of built-in IdP. See [ADR-009][adr-009].
 
 ## References
 
-- OpenCloud source: <https://github.com/opencloud-eu/opencloud>
-- bjw-s config:
-  <https://github.com/bjw-s-labs/home-ops/tree/main/kubernetes/apps/selfhosted/opencloud>
-- OpenCloud docs: <https://docs.opencloud.eu> (limited Kubernetes guidance)
-- Docker compose reference: <https://github.com/opencloud-eu/opencloud-compose>
+- [ADR-009: Use external IdP for OpenCloud][adr-009]
+- [OpenCloud source][opencloud-src]
+- [bjw-s OpenCloud config][bjw-s-opencloud]
+- [OpenCloud docs][opencloud-docs] (limited Kubernetes guidance)
+- [Docker compose reference][opencloud-compose]
 
----
-
-**Document Purpose:** Reference for future attempts - lists everything that DOESN'T work to avoid
-repeating failed configurations.
-
-**Last Updated:** 2025-11-01 (after 4 hours of failed attempts)
+[opencloud-src]: https://github.com/opencloud-eu/opencloud
+[bjw-s-opencloud]:
+    https://github.com/bjw-s-labs/home-ops/tree/main/kubernetes/apps/selfhosted/opencloud
+[opencloud-docs]: https://docs.opencloud.eu
+[opencloud-compose]: https://github.com/opencloud-eu/opencloud-compose

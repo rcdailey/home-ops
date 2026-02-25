@@ -1,9 +1,10 @@
-# VolSync Kopia S3 Prefix Research - Complete Investigation
+# VolSync Kopia S3 Prefix Research
 
-**Date:** 2025-10-04 **Status:** RESOLVED - Using shared repository pattern **Issue:** Initial
-attempts at per-app S3 prefix isolation failed due to trailing slash handling
+- **Date:** 2025-10-04
+- **Status:** RESOLVED (shared repository pattern adopted; later migrated from S3 to NFS in
+  `cd396e0`; see [ADR-006][adr-006])
 
-## Executive Summary
+## Summary
 
 Initial configuration attempts for VolSync Kopia backups using per-app S3 prefixes failed due to
 trailing slash stripping behavior in VolSync's entry.sh script. After multiple configuration
@@ -394,31 +395,16 @@ KOPIA_REPOSITORY: s3://volsync-${APP}/
 - Higher storage costs
 - More complex lifecycle management
 
-## Files Modified
-
-- `kubernetes/components/volsync/secret.yaml` - Simplified to shared repository pattern
-- `docs/memory-bank/volsync-kopia-s3-prefix-research.md` - This document
-- `docs/architecture/backup-strategy.md` - Architecture documentation
-
-## Commands for Investigation
-
-```bash
-# Check S3 bucket contents
-rclone tree garage:volsync-backups --max-depth 2
-
-# View volsync pod logs
-kubectl logs -n media volsync-src-prowlarr-<pod>
-
-# Check replicationsource status
-kubectl get replicationsources -A
-kubectl describe replicationsource <app> -n <namespace>
-
-# Git history search
-gh api 'repos/perfectra1n/volsync/commits?path=mover-kopia/entry.sh&per_page=100' --jq '.[] | "\(.sha[:7]) \(.commit.message)"'
-```
-
 ## References
 
-- Kopia S3 docs: <https://kopia.io/docs/reference/command-line/common/repository-create-s3/>
-- VolSync PR: <https://github.com/backube/volsync/pull/1723>
-- Relevant commit: <https://github.com/perfectra1n/volsync/commit/09ef3a7>
+- [ADR-006: Shared Kopia repository pattern][adr-006]
+- [Kopia S3 documentation][kopia-s3]
+- [VolSync Kopia PR #1723][volsync-pr]
+- [Trailing slash bug commit][trailing-slash]
+- [Backup strategy architecture][backup-strategy]
+
+[adr-006]: /docs/decisions/006-volsync-shared-kopia-repository.md
+[kopia-s3]: https://kopia.io/docs/reference/command-line/common/repository-create-s3/
+[volsync-pr]: https://github.com/backube/volsync/pull/1723
+[trailing-slash]: https://github.com/perfectra1n/volsync/commit/09ef3a7
+[backup-strategy]: /docs/architecture/backup-strategy.md

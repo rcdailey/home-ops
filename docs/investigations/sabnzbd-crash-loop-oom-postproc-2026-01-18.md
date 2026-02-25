@@ -1,10 +1,9 @@
 # SABnzbd Crash Loop - OOM and Post-Processing Failures
 
-**Last Updated:** 2026-01-18
+- **Date:** 2026-01-18
+- **Status:** RESOLVED (switched incomplete downloads to NFS; see [ADR-005][adr-005])
 
-**Status:** ROOT CAUSE IDENTIFIED - ACTIVE INVESTIGATION
-
-## Executive Summary
+## Summary
 
 SABnzbd experiencing recurring crash loops with two distinct failure modes:
 
@@ -292,19 +291,8 @@ Consider filing issues with sabnzbd/sabnzbd:
 3. **Postproc failure handling:** Mark jobs as failed after N consecutive failures instead of
    infinite retry loop.
 
-## Document History
+## References
 
-| Date       | Changes                                                                    |
-|------------|----------------------------------------------------------------------------|
-| 2026-01-18 | Initial investigation, root cause identified, cleanup performed            |
-| 2026-01-18 | NFS for incomplete tested and working, user reverted due to speed concerns |
-| 2026-01-18 | Second crash loop with different download, liveness probe timeout          |
-| 2026-01-18 | GitHub issues research completed, optimal probe config documented          |
+- [ADR-005: Use NFS for SABnzbd incomplete downloads][adr-005]
 
-## Future Investigation Notes
-
-_Add notes here as troubleshooting continues:_
-
-- [ ] Test Option 2 (generous probes + sabnzbd tuning) with 8Gi memory
-- [ ] Monitor download speeds with NFS incomplete to determine if 56 MB/s is acceptable
-- [ ] Consider filing upstream issue for decodetable memory optimization
+[adr-005]: /docs/decisions/005-sabnzbd-nfs-incomplete-downloads.md

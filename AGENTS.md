@@ -24,8 +24,8 @@ drift.
 ### Troubleshooting Approach
 
 1. **Query**: Gather symptoms via subagent (alerts, logs, events, pod status)
-2. **History**: `git log -p --follow --invert-grep --author="renovate" -- path/to/file.yaml`
-   for recent changes
+2. **History**: `git log -p --follow --invert-grep --author="renovate" -- path/to/file.yaml` for
+   recent changes
 3. **Analyze**: Read manifests, check CRD specs, verify dependencies
 4. **Research**: Subagent for reference repos, Context7, upstream docs
 5. **Fix**: Modify manifests to address root cause
@@ -185,18 +185,21 @@ Consistency patterns for maintainability and clarity.
   Runs on haiku-4-5 for cost efficiency. Use when evaluating Helm charts, comparing dedicated chart
   vs app-template adoption, or finding reference implementations.
 
-### Upstream Issue Writeups
+### Investigations
 
-When root cause analysis identifies an issue requiring upstream fixes (container images, charts,
-external projects):
+When documenting a debugging session:
 
-1. MUST load the `gh-gist` skill
-2. MUST read `docs/issues/TEMPLATE.md` for structure
-3. Create `docs/issues/{component}-{brief-description}.md` following the template
-4. Upload as a secret gist for sharing
+1. MUST read `docs/investigations/TEMPLATE.md` for structure
+2. Create `docs/investigations/{component}-{brief-description}-{YYYY-MM-DD}.md`
+3. Extract any durable design decisions into separate ADRs in `docs/decisions/`
+4. Cross-reference between investigation and ADR(s)
 
-Files in `docs/issues/*.md` are gitignored (except TEMPLATE.md). Gists are the sharing mechanism;
-local files are for iterative editing before upload.
+Investigation docs are historical snapshots, not living documents. If conclusions become stale due
+to infrastructure changes, the ADR supersession chain captures that; do not update old investigation
+docs.
+
+For upstream bug reports requiring gists, load the `gh-gist` skill. No local template or directory
+needed; gists are the sharing mechanism.
 
 ## Tier 3: Reference
 
@@ -234,10 +237,9 @@ kubernetes/apps/{namespace}/{app}/
 docs/
   architecture/       System design, rationale for technology choices
   decisions/          ADRs - read TEMPLATE.md before creating/editing
-  issues/             Upstream issue writeups (gitignored, shared via gists)
+  investigations/     Historical debugging journals (not prescriptive guides)
   memory-bank/        Ephemeral context, temporary workarounds (remove when stale)
   runbooks/           Step-by-step operational procedures
-  troubleshooting/    Historical investigations with root cause analysis
 ```
 
 - Namespace directories MUST match actual namespace names exactly
@@ -446,8 +448,8 @@ Scripts in `./scripts/` - use `--help` for usage:
 - Rook Ceph: Distributed block/filesystem storage across cluster nodes
 - NFS (Nezuko 192.168.1.58): Media (100Ti), Photos (10Ti)
 - Garage S3 (192.168.1.58:3900): Region garage, buckets: postgres-backups, bookstack-backups
-- Volsync: Kopia repository on NFS (Nezuko /mnt/user/volsync), shared single repository with
-  per-app isolation via snapshot identity
+- Volsync: Kopia repository on NFS (Nezuko /mnt/user/volsync), shared single repository with per-app
+  isolation via snapshot identity
 - CloudNativePG: Barman WAL archiving to s3://postgres-backups/{cluster}/
 - Ceph toolbox: kubectl exec -n rook-ceph deploy/rook-ceph-tools -- [ceph status | rbd COMMAND]
 

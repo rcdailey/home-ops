@@ -398,9 +398,9 @@ PostgreSQL cluster is managed by CloudNativePG (`blocky-postgres`).
   - `service.domain.com` -> CNAME -> `external.domain.com` (from HTTPRoutes)
   - `external.domain.com` -> CNAME -> `tunnel.cfargotunnel.com` (from DNSEndpoint CRD)
 
-DNSEndpoint CRDs targeting Cloudflare should carry the convention label
-`external-dns/provider: cloudflare`. This is not enforced by filtering (external-dns
-`--label-filter` is global across all sources) but establishes intent for future tooling.
+DNSEndpoint CRDs targeting Cloudflare should carry the convention label `external-dns/provider:
+cloudflare`. This is not enforced by filtering (external-dns `--label-filter` is global across all
+sources) but establishes intent for future tooling.
 
 **Why not split?** The `--namespace` flag is global in external-dns; it scopes all sources
 identically. Splitting CRD and gateway-httproute into separate instances requires a shared
@@ -529,5 +529,5 @@ HTTPRoutes with `parentRefs: internal` create records only locally:
 - **Zero-downtime migrations**: Enable seamless DNS provider switching
 - **Infrastructure separation**: Decouple dns-gateway service from dns-server applications
 
-[opencloud-ipv6]: /docs/troubleshooting/opencloud-desktop-ipv6-auth-failure-2026-01-25.md
+[opencloud-ipv6]: /docs/investigations/opencloud-desktop-ipv6-auth-failure-2026-01-25.md
 [cilium-27800]: https://github.com/cilium/cilium/issues/27800

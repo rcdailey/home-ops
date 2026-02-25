@@ -80,7 +80,8 @@ native clustering, or a new DNS server emerges with native HA, UI, and Kubernete
 - [adguardhome-sync GitHub][adguardhome-sync]
 - [Blocky DNS GitHub][blocky]
 
-[technitium-clustering]: https://blog.technitium.com/2025/11/understanding-clustering-and-how-to.html
+[technitium-clustering]:
+    https://blog.technitium.com/2025/11/understanding-clustering-and-how-to.html
 [technitium-v14]: https://blog.technitium.com/2025/11/technitium-dns-server-v14-released.html
 [adguardhome-sync]: https://github.com/bakito/adguardhome-sync
 [blocky]: https://github.com/0xERR0R/blocky
