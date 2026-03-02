@@ -18,7 +18,7 @@ on:
 env:
   REGISTRY: ghcr.io
   # renovate: datasource=github-releases depName=stacklok/toolhive
-  THV_VERSION: v0.10.0
+  THV_VERSION: v0.10.2
 
 jobs:
   discover:
