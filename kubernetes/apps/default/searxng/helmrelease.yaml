@@ -68,6 +68,35 @@ spec:
               readOnlyRootFilesystem: true
               capabilities:
                 drop: [ALL]
+          mcp:
+            image:
+              repository: isokoliuk/mcp-searxng
+              tag: 0.9.1
+            env:
+              SEARXNG_URL: http://localhost:8080
+              MCP_HTTP_PORT: &mcpPort 3000
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *mcpPort
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              # Different UID from SearXNG (977); node:lts-alpine has UID 1000
+              runAsUser: 1000
+              runAsGroup: 1000
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: [ALL]
         pod:
           securityContext:
             runAsUser: 977
@@ -82,6 +111,11 @@ spec:
         ports:
           http:
             port: *port
+      mcp:
+        controller: searxng
+        ports:
+          http:
+            port: *mcpPort
 
     route:
       app:
@@ -91,6 +125,21 @@ spec:
         - name: internal
           namespace: network
           sectionName: https
+        rules:
+        - backendRefs:
+          - name: searxng-app
+            port: *port
+      mcp:
+        hostnames:
+        - mcp-search.${SECRET_DOMAIN}
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: searxng-mcp
+            port: *mcpPort
 
     persistence:
       config-template:
@@ -115,6 +164,8 @@ spec:
         advancedMounts:
           searxng:
             app:
+            - path: /tmp
+            mcp:
             - path: /tmp
       # Writable certs dir allows update-ca-certificates to run with readOnlyRootFilesystem
       certs:

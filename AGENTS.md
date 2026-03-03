@@ -146,6 +146,9 @@ Consistency patterns for maintainability and clarity.
 - DNSEndpoint CRDs MUST carry `external-dns/provider: <provider>` label indicating which
   external-dns instance should manage them
 - NEVER create LoadBalancer without explicit user discussion
+- MCP sidecar routing: `mcp-{service-subdomain}.${SECRET_DOMAIN}` where `{service-subdomain}` is the
+  app's existing hostname prefix (e.g., SearXNG at `search.${SECRET_DOMAIN}` gets MCP endpoint at
+  `mcp-search.${SECRET_DOMAIN}`)
 - Route backendRefs: Use full service name (e.g., radarr-app), not identifier (e.g., app)
 - NEVER use wildcards for SecurityPolicy headers (always explicit headers)
 - NEVER specify explicit timeouts/intervals without justification (use Flux defaults)
