@@ -33,12 +33,6 @@
       minimumGroupSize: 2,
     },
     {
-      description: "ToolHive Group",
-      groupName: "ToolHive",
-      matchPackageNames: ["/toolhive/"],
-      minimumGroupSize: 2,
-    },
-    {
       // Groups Kubernetes version upgrades across mise (kubectl), tuppr, and talenv (kubelet)
       description: "Kubernetes Group",
       groupName: "Kubernetes",
