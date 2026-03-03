@@ -13,9 +13,13 @@ subagents (one per PR).
 
 ## Orchestration
 
-Launch one `general` subagent per PR. Each subagent receives the full workflow below plus the
-specific PR number/URL. Collect all subagent results, then present a unified summary grouped by
-category (breaking, deprecations, features, clean PRs).
+**Bulk mode** (no arguments): Launch one `explore` subagent per PR in parallel. Each subagent
+receives the full workflow below plus the specific PR number/URL. Explore agents are read-only and
+token-efficient; ideal for research across many PRs simultaneously. Collect all subagent results,
+then present a unified summary grouped by category (breaking, deprecations, features, clean PRs).
+
+**Single PR mode** (argument specifies a PR): Use a `general` subagent. General agents can both
+research and implement changes (step 6).
 
 ## Workflow (per PR)
 
