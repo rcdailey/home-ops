@@ -46,6 +46,16 @@
       automerge: false,
     },
     {
+      // Override pre-1.0 block: mcp-searxng follows semver despite 0.x versioning
+      description: "Auto-merge mcp-searxng minor and patch updates",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["isokoliuk/mcp-searxng"],
+      automerge: true,
+      automergeType: "pr",
+      matchUpdateTypes: ["minor", "patch"],
+      minimumReleaseAge: "5 days",
+    },
+    {
       description: "Auto-merge app-template chart updates",
       matchDatasources: ["docker"],
       matchPackageNames: ["/app-template/"],
