@@ -59,6 +59,13 @@ blocking:
       collector-pxzc5j78di.hsprotect.net
       *.bloomreach.co
       *.usablenet.com
+    social:
+    - |
+      discord.com
+      discordapp.com
+      *.discord.com
+      *.discordapp.com
+      *.discord.gg
   clientGroupsBlock:
     default:
     # Main LAN (192.168.1.0/24) + fallback
