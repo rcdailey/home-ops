@@ -63,8 +63,10 @@ blocking:
     - |
       discord.com
       discordapp.com
+      discordapp.net
       *.discord.com
       *.discordapp.com
+      *.discordapp.net
       *.discord.gg
   clientGroupsBlock:
     default:
