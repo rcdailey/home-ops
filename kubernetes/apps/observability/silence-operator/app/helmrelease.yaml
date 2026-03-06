@@ -10,15 +10,6 @@ spec:
     name: silence-operator
   interval: 30m
   maxHistory: 3
-  install:
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    crds: CreateReplace
-    remediation:
-      retries: 3
   values:
     alertmanagerAddress: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093
     networkPolicy:

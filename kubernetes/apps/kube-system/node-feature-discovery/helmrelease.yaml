@@ -9,16 +9,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: node-feature-discovery
-  install:
-    crds: CreateReplace
-    remediation:
-      retries: 3
   upgrade:
-    cleanupOnFail: true
-    crds: CreateReplace
     timeout: 10m
-    remediation:
-      retries: 3
   values:
     worker:
       tolerations:
