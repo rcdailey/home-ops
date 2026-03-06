@@ -2,7 +2,7 @@
 name: recyclarr-k8s
 services:
   recyclarr:
-    image: ghcr.io/recyclarr/recyclarr:7.5.2
+    image: ghcr.io/recyclarr/recyclarr:8.3.2
     user: "1000:1000"
     environment:
     - TZ=America/Chicago
