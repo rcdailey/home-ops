@@ -1,29 +1,20 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/recyclarr/recyclarr/master/schemas/config-schema.json
-###################################################################################################
-# Recyclarr Configuration Template: Anime Sonarr                                                  #
-# Updated: 2024-08-08                                                                             #
-# Documentation: https://recyclarr.dev                                                            #
-# Note: If you are using multiple profiles in a single instance, please read the following        #
-# documentation about file merging:                                                               #
-# https://recyclarr.dev/wiki/yaml/config-examples/#merge-single-instance                          #
-# This config file is for use with Sonarr V4 only                                                 #
-###################################################################################################
-
-# Instance Definition: https://recyclarr.dev/wiki/yaml/config-reference/basic/
 sonarr:
   sonarr-anime:
     base_url: !env_var SONARR_ANIME_BASE_URL http://sonarr-anime.media:8989
     api_key: !env_var SONARR_ANIME_API_KEY
 
     delete_old_custom_formats: true
-    replace_existing_custom_formats: true
 
-    include:
-    # Comment out any of the following includes to disable them
-    - template: sonarr-quality-definition-anime
-    - template: sonarr-v4-quality-profile-anime
-    - template: sonarr-v4-custom-formats-anime
+    quality_definition:
+      type: anime
+
+    quality_profiles:
+    - trash_id: 20e0fc959f1f1704bed501f23bdae76f # [Anime] Remux-1080p
+      name: Remux-1080p - Anime
+      reset_unmatched_scores:
+        enabled: true
 
     media_naming:
       series: plex-imdb
@@ -32,29 +23,9 @@ sonarr:
         rename: true
         anime: default
 
-    # Custom Formats: https://recyclarr.dev/wiki/yaml/config-reference/custom-formats/
     custom_formats:
     - trash_ids:
       - 026d5aadd1a6b4e550b134cb6c72b3ca # Uncensored
       assign_scores_to:
-      - name: Remux-1080p - Anime
+      - trash_id: 20e0fc959f1f1704bed501f23bdae76f
         score: 101 # Adjust scoring as desired
-
-    - trash_ids:
-      - b2550eb333d27b75833e25b8c2557b38 # 10bit
-      assign_scores_to:
-      - name: Remux-1080p - Anime
-        score: 0 # Adjust scoring as desired
-
-    - trash_ids:
-      - 418f50b10f1907201b6cfdf881f467b7 # Anime Dual Audio
-      assign_scores_to:
-      - name: Remux-1080p - Anime
-        score: 10 # Adjust scoring as desired
-
-    - trash_ids:
-      # Because fuck Netlix
-      # - 6d0d8de7b57e35518ac0308b0ddf404e # DV
-      - 9b27ab6498ec0f31a3353992e19434ca # DV (WEBDL)
-      assign_scores_to:
-      - name: Remux-1080p - Anime

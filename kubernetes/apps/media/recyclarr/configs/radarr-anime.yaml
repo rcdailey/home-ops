@@ -1,30 +1,21 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/recyclarr/recyclarr/master/schemas/config-schema.json
-###################################################################################################
-# Recyclarr Configuration Template: Anime Radarr                                                  #
-# Updated: 2024-08-08                                                                             #
-# Documentation: https://recyclarr.dev                                                            #
-# Note: If you are using multiple profiles in a single instance, please read the following        #
-# documentation about file merging:                                                               #
-# https://recyclarr.dev/wiki/yaml/config-examples/#merge-single-instance                          #
-###################################################################################################
-
-# Instance Definition: https://recyclarr.dev/wiki/yaml/config-reference/basic/
 radarr:
   radarr-anime:
     base_url: !env_var RADARR_ANIME_BASE_URL http://radarr-anime.media:7878
     api_key: !env_var RADARR_ANIME_API_KEY
 
     delete_old_custom_formats: true
-    replace_existing_custom_formats: true
 
-    include:
-    # Comment out any of the following includes to disable them
-    - template: radarr-quality-definition-movie
-    - template: radarr-quality-profile-anime
-    - template: radarr-custom-formats-anime
+    quality_definition:
+      type: movie
 
-    # Custom Formats: https://recyclarr.dev/wiki/yaml/config-reference/custom-formats/
+    quality_profiles:
+    - trash_id: 722b624f9af1e492284c4bc842153a38 # [Anime] Remux-1080p
+      name: Remux-1080p - Anime
+      reset_unmatched_scores:
+        enabled: true
+
     custom_formats:
     - trash_ids:
       - 064af5f084a0a24458cc8ecd3220f93f # Uncensored
