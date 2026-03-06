@@ -19,4 +19,9 @@ spec:
     alpnProtocols:
     - h2
     - http/1.1
+  # Extend stream idle timeout for SSE/streaming connections (MCP servers)
+  # Default 5m kills long-lived SSE streams during idle periods
+  timeout:
+    http:
+      streamIdleTimeout: 86400s
   tcpKeepalive: {}
