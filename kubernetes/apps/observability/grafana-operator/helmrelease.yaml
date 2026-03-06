@@ -9,15 +9,6 @@ spec:
     kind: OCIRepository
     name: grafana-operator
   interval: 1h
-  install:
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    crds: CreateReplace
-    cleanupOnFail: true
-    remediation:
-      retries: 3
   values:
     serviceMonitor:
       enabled: true

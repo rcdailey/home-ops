@@ -37,15 +37,6 @@ spec:
           - op: replace
             path: /spec/groups/0/rules/1/expr
             value: "count(up == 0) without(instance,pod,node) OR on() vector(0)"
-  install:
-    crds: CreateReplace
-    remediation:
-      retries: -1
-  upgrade:
-    cleanupOnFail: true
-    crds: CreateReplace
-    remediation:
-      retries: 3
   values:
     # Disable Grafana since we're using separate deployment
     grafana:
