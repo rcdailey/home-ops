@@ -20,6 +20,8 @@ spec:
   values:
     controllers:
       homepage:
+        replicas: 2
+        strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -53,6 +55,16 @@ spec:
                     httpHeaders:
                     - name: Host
                       value: localhost:3000
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 3000
+                    httpHeaders:
+                    - name: Host
+                      value: localhost:3000
             resources:
               requests:
                 cpu: 25m
@@ -67,6 +79,13 @@ spec:
               readOnlyRootFilesystem: false
 
     defaultPodOptions:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: homepage
       securityContext:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
