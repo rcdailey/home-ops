@@ -50,7 +50,7 @@
         "/talosctl/",
         "!/kubelet/",
       ],
-      commitMessageExtra: "( {{currentVersion}} ➔{{newVersion}} )",
+      commitMessageExtra: "( {{currentVersion}} ➜ {{newVersion}} )",
       minimumGroupSize: 2,
     },
   ],
