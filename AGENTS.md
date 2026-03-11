@@ -135,6 +135,9 @@ Consistency patterns for maintainability and clarity.
 - Startup: OMIT unless slow initialization requires extended startup time
 - Omit default values (initialDelaySeconds: 0, periodSeconds: 10, timeoutSeconds: 1,
   failureThreshold: 3)
+- When liveness and readiness end up identical (no heavier endpoint exists): use a YAML anchor
+  (`&probe` / `*probe`) to share the spec, and add a comment above `readiness:` explaining why no
+  distinct endpoint is available
 
 ### Security and Networking
 
