@@ -125,6 +125,20 @@ Consistency patterns for maintainability and clarity.
 - ALWAYS use America/Chicago (or equivalent representation) for timezone if needed.
 - SMTP: `smtp-relay.network:587` (no auth) - never configure app-specific SMTP credentials
 
+### Topology Spread
+
+The Talos scheduler is configured with a cluster-wide PodTopologySpread default: `ScheduleAnyway`,
+`maxSkew: 1`, `topologyKey: kubernetes.io/hostname`. All pods prefer spreading across nodes
+automatically.
+
+- NEVER add explicit `topologySpreadConstraints` unless `DoNotSchedule` is required
+- NEVER use `podAntiAffinity` for topology spreading (use `topologySpreadConstraints` instead)
+- `ScheduleAnyway` (scheduler default): best-effort spreading; pods may co-locate under resource
+  pressure. Sufficient for application-tier workloads.
+- `DoNotSchedule` (per-app override): strict spreading; pods stay Pending if they can't land on a
+  different node. Use for critical infrastructure where co-location defeats the purpose of HA (e.g.,
+  DNS servers, database operators)
+
 ### Health Probes
 
 - Probes default to off in app-template; only specify probes you need
@@ -390,9 +404,9 @@ flux reconcile hr NAME -n NAMESPACE --force --reset        # Clear retry backoff
 helm show values CHART
 helm template RELEASE CHART
 
-# Talos (one node at a time)
-just talos generate-config                    # After config changes, run once
-just talos apply-node IP=192.168.1.X          # Apply to each node sequentially
+# Talos (one node at a time, j2 templates render on-the-fly)
+just talos diff-config NODE                   # Preview changes before applying
+just talos apply-node NODE                    # Apply to each node sequentially
 talosctl SUBCOMMAND OPTIONS -n NODEIP         # -n toward end
 ```
 
