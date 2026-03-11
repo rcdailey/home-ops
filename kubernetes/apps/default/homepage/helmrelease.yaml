@@ -79,13 +79,6 @@ spec:
               readOnlyRootFilesystem: false
 
     defaultPodOptions:
-      topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-        labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: homepage
       securityContext:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
