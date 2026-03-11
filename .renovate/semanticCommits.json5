@@ -7,28 +7,28 @@
       semanticCommitType: "build",
       semanticCommitScope: "deps",
       commitMessagePrefix: "{{semanticCommitType}}({{semanticCommitScope}})!:",
-      commitMessageExtra: "( {{currentVersion}} ➔{{newVersion}} )"
+      commitMessageExtra: "( {{currentVersion}} ➜ {{newVersion}} )"
     },
     {
       matchUpdateTypes: ["minor"],
       labels: ["type/minor"],
       semanticCommitType: "build",
       semanticCommitScope: "deps",
-      commitMessageExtra: "( {{currentVersion}} ➔{{newVersion}} )"
+      commitMessageExtra: "( {{currentVersion}} ➜ {{newVersion}} )"
     },
     {
       matchUpdateTypes: ["patch"],
       labels: ["type/patch"],
       semanticCommitType: "build",
       semanticCommitScope: "deps",
-      commitMessageExtra: "( {{currentVersion}} ➔{{newVersion}} )"
+      commitMessageExtra: "( {{currentVersion}} ➜ {{newVersion}} )"
     },
     {
       matchUpdateTypes: ["digest"],
       labels: ["type/digest"],
       semanticCommitType: "build",
       semanticCommitScope: "deps",
-      commitMessageExtra: "( {{currentDigestShort}} ➔{{newDigestShort}} )"
+      commitMessageExtra: "( {{currentDigestShort}} ➜ {{newDigestShort}} )"
     },
     {
       matchDatasources: ["docker"],
