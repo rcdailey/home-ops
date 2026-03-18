@@ -95,7 +95,6 @@ blocking:
     - ads
     - threats
     - telemetry
-    - social
     192.168.4.0/24:
     # Guest VLAN
     - ads
