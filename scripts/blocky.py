@@ -548,13 +548,13 @@ def cmd_search(args: argparse.Namespace) -> int:
     where = build_where(time_range, domain=args.pattern)
 
     sql = f"""\
-SELECT client_ip, client_name, response_type,
+SELECT client_ip, client_name, question_name, response_type,
        COUNT(*) AS count,
        MIN(request_ts) AS first_seen,
        MAX(request_ts) AS last_seen
 FROM log_entries
 WHERE {where}
-GROUP BY client_ip, client_name, response_type
+GROUP BY client_ip, client_name, question_name, response_type
 ORDER BY last_seen DESC
 LIMIT {args.limit};"""
 
@@ -566,6 +566,7 @@ LIMIT {args.limit};"""
     columns = [
         "client_ip",
         "client_name",
+        "question_name",
         "response_type",
         "count",
         "first_seen",
@@ -590,10 +591,11 @@ LIMIT {args.limit};"""
         alignments.append("<")
         color_fns.append(None)
 
-    headers.extend(["Status", "Count", "First Seen", "Last Seen"])
-    alignments.extend(["<", ">", "<", "<"])
+    headers.extend(["Domain", "Status", "Count", "First Seen", "Last Seen"])
+    alignments.extend(["<", "<", ">", "<", "<"])
     color_fns.extend(
         [
+            None,
             lambda v: colorize(v, REASON_COLORS.get(v, "dim")),
             None,
             lambda v: colorize(v, "dim"),
@@ -608,6 +610,7 @@ LIMIT {args.limit};"""
             r.append(row["client_name"])
         r.extend(
             [
+                row["question_name"],
                 row["response_type"],
                 row["count"],
                 row["first_seen"][:19],
