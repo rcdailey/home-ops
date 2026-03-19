@@ -91,11 +91,9 @@ blocking:
     - telemetry
     - social
     192.168.7.0/24:
-    # Work VLAN
-    - ads
+    # Work VLAN (no ads blocking; causes false positives with SaaS tools)
     - threats
     - telemetry
-    - social
     192.168.4.0/24:
     # Guest VLAN
     - ads
