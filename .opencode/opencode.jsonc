@@ -51,6 +51,7 @@
       "flux uninstall*": "deny",
       "flux bootstrap*": "deny",
       "flux delete*": "deny",
+      "flux reconcile*": "deny",
 
       // flux - ASK (debugging/operations)
       "flux suspend*": "ask",
