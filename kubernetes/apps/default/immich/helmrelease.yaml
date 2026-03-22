@@ -85,9 +85,9 @@ spec:
               repository: ghcr.io/immich-app/immich-machine-learning
               tag: v2.6.1-openvino
             env:
-            # OpenVINO optimizations for Intel GPU ML
-            - name: OPENVINO_DEVICE
-              value: "GPU"
+            # FP16 halves compiled model blob size to fit iGPU sub-buffer limits (#25830)
+            - name: MACHINE_LEARNING_OPENVINO_PRECISION
+              value: FP16
             # Preload models at startup for faster first search
             - name: MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL
               value: ViT-SO400M-16-SigLIP2-384__webli
