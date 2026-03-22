@@ -118,6 +118,7 @@ spec:
   # Update strategy
   updateStrategy:
     type: ReplicasFirstPrimaryLast
+    autoUpdateDataPlane: true
 
   # Pod disruption budget
   podDisruptionBudget:
