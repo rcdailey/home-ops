@@ -27,8 +27,8 @@ spec:
         initContainers:
           config-setup:
             image:
-              repository: ghcr.io/gethomepage/homepage
-              tag: v1.11.0
+              repository: alpine
+              tag: latest
             command:
             - sh
             - -c
