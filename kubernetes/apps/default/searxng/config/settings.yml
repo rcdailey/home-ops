@@ -24,6 +24,8 @@ search:
   - json
   # Reduce default 1hr suspension on 429s so engines recover faster
   suspended_times:
+    SearxEngineCaptcha: 86400
+    SearxEngineAccessDenied: 86400
     SearxEngineTooManyRequests: 600
 
 # Connection pool tuning for concurrent API requests from agents.
@@ -111,6 +113,12 @@ engines:
 # Brave - cap request time to prevent slow 429 responses from blocking threads
 - name: brave
   timeout: 3.0
+
+# DuckDuckGo/Startpage - persistent CAPTCHA blocking with no workaround
+- name: duckduckgo
+  inactive: true
+- name: startpage
+  inactive: true
 
 # wikidata - slow, frequently times out, not useful for coding queries
 - name: wikidata
