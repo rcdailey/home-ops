@@ -10,3 +10,4 @@ resources:
 - ./external-dns/ks.yaml
 - ./dns-gateway/ks.yaml
 - ./blocky/ks.yaml
+- ./blocky-ui/ks.yaml
