@@ -120,6 +120,11 @@
       siteMonitor: http://opensprinkler.external:80
 
 - Infrastructure:
+  - Blocky:
+      icon: blocky
+      href: https://dns.${SECRET_DOMAIN}/
+      siteMonitor: http://blocky-ui.dns-private:3000
+
   - Headlamp:
       icon: kubernetes
       href: https://cluster.${SECRET_DOMAIN}/
