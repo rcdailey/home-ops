@@ -7,59 +7,58 @@ description: >-
 
 # Home Assistant API
 
-Interact with a Home Assistant instance via its REST API using a thin shell wrapper. No MCP server
-or additional dependencies required.
+Interact with a Home Assistant instance via its REST API using a Python CLI tool built on
+`homeassistant-api` SDK. No MCP server required.
 
 ## Context Efficiency Rules
 
 The HA instance has 1000+ entities and 60+ service domains. Unfiltered API responses will overwhelm
 context. These rules are mandatory:
 
-- **NEVER dump full collections.** Always filter with `jq` before outputting.
-- **Default limit is 20.** The `states` subcommand enforces this automatically. For raw queries,
-  apply `| .[:20]` to any array. Paginate with `.[20:40]` if the user needs more.
-- **Project to relevant fields.** The `states` subcommand projects to `{entity_id, state, name}`
-  automatically. For raw queries, never output full attribute objects unless investigating a
-  specific entity.
-- **Count before dumping.** When exploring an unknown collection via `raw`, run `| length` first.
-  If over 50, filter by domain or pattern before listing.
-- **Prefer subcommands over raw.** `states`, `attributes`, `config`, `template` handle projection,
-  limiting, and quoting automatically. Use `raw` only for endpoints without a subcommand.
-- **Write large results to /tmp.** If output exceeds ~100 lines, write to `/tmp/ha-*.json` and
-  grep/read selectively.
+- **NEVER dump full collections.** Subcommands handle projection and limiting automatically. For
+  `raw` queries, pipe through `jq` to filter before outputting.
+- **Default limit is 20.** The `states` subcommand enforces this. Use `-n` to adjust or `--all` to
+  remove (sparingly). For raw queries, apply `| .[:20]` to arrays.
+- **Prefer subcommands over raw.** `states`, `attributes`, `config`, `template`, `orient` handle
+  projection and formatting automatically. Use `raw` only for endpoints without a subcommand.
+- **Use orient first.** When starting work on any HA topic, run `orient` with relevant search terms
+  to discover all related entities, automations, and scripts in one call.
+- **Write large results to /tmp.** If output exceeds ~100 lines, redirect to `/tmp/ha-*.json` and
+  search with rg selectively.
 
 ## Tool
 
-`./scripts/hass-api.sh` wraps `curl` with authentication and JSON handling. Requires `SECRET_DOMAIN`
-and `HASS_TOKEN` environment variables (sourced from `.mise.local.toml`).
+`./scripts/hass-api.py` wraps the Home Assistant REST API. Requires `SECRET_DOMAIN` and `HASS_TOKEN`
+environment variables (sourced from `.mise.local.toml`). Depends on `homeassistant-api` (pip) and
+`aiohttp` (pip, for entity enable/disable only).
 
 ### Subcommands
 
 **states** -- list entities with built-in projection and limiting:
 
 ```bash
-hass-api.sh states                        # Domain summary (count per domain)
-hass-api.sh states light                  # List lights (default limit: 20)
-hass-api.sh states light -n 5             # List 5 lights
-hass-api.sh states light --all            # No limit (use sparingly)
-hass-api.sh states sensor.temperature     # Single entity full detail
+hass-api.py states                        # Domain summary (count per domain)
+hass-api.py states light                  # List lights (default limit: 20)
+hass-api.py states light -n 5             # List 5 lights
+hass-api.py states light --all            # No limit (use sparingly)
+hass-api.py states sensor.temperature     # Single entity full detail
 ```
 
 **template** -- render Jinja2 (handles JSON quoting internally):
 
 ```bash
-hass-api.sh template '{{ states("sensor.temperature") }}'
-hass-api.sh template '{{ state_attr("remote.nz7", "content_type") }}'
-hass-api.sh template '{{ is_state("light.office", "on") }}'
+hass-api.py template '{{ states("sensor.temperature") }}'
+hass-api.py template '{{ state_attr("remote.nz7", "content_type") }}'
+hass-api.py template '{{ is_state("light.office", "on") }}'
 ```
 
 **config** -- retrieve automation/script configuration:
 
 ```bash
-hass-api.sh config automation automation.my_automation   # By entity_id
-hass-api.sh config automation 85a1b949-...               # By UUID
-hass-api.sh config script script.my_script               # By entity_id
-hass-api.sh config script my_script                      # By slug
+hass-api.py config automation automation.my_automation   # By entity_id
+hass-api.py config automation 85a1b949-...               # By UUID
+hass-api.py config script script.my_script               # By entity_id
+hass-api.py config script my_script                      # By slug
 ```
 
 Automation configs use the UUID from `attributes.id`; the subcommand resolves entity_id to UUID
@@ -68,27 +67,38 @@ automatically. Script configs use the object_id slug (entity_id minus `script.` 
 **attributes** -- show entity attributes only:
 
 ```bash
-hass-api.sh attributes remote.harmony_media_room
-hass-api.sh attributes select.nz7_installation_mode
+hass-api.py attributes remote.harmony_media_room
+hass-api.py attributes select.nz7_installation_mode
 ```
+
+**orient** -- discover all entities, automations, and scripts related to a topic:
+
+```bash
+hass-api.py orient jvc nz7 harmony        # JVC projector system
+hass-api.py orient pool                    # Pool equipment
+hass-api.py orient "media room"            # Media room devices
+```
+
+Searches entity IDs, friendly names, and automation/script configs for matching terms. Outputs
+matching entities with current state, then full configs for related automations and scripts. Use
+this first when starting work on any HA topic.
 
 **entity** -- enable/disable entities via WebSocket API (requires `aiohttp`):
 
 ```bash
-hass-api.sh entity enable sensor.jvc_projector_hdr_mode
-hass-api.sh entity disable sensor.some_entity
+hass-api.py entity enable sensor.jvc_projector_hdr_mode
+hass-api.py entity disable sensor.some_entity
 ```
 
 **raw** -- direct API calls for everything else:
 
 ```bash
-hass-api.sh raw GET /api/services
-hass-api.sh raw POST /api/services/light/turn_on '{"entity_id":"light.office"}'
-echo '{"entity_id":"light.office"}' | hass-api.sh raw POST /api/services/light/turn_on -
+hass-api.py raw GET /api/services
+hass-api.py raw POST /api/services/light/turn_on '{"entity_id":"light.office"}'
+echo '{"entity_id":"light.office"}' | hass-api.py raw POST /api/services/light/turn_on -
 ```
 
-Body can be a JSON string, `-` for stdin, or omitted. Stdin is useful for complex JSON that would
-require shell escaping.
+Body can be a JSON string, `-` for stdin, or omitted.
 
 ## REST API Reference
 
@@ -122,15 +132,14 @@ Endpoints available via `raw` (subcommands cover the common ones above):
 
 The config endpoints accept POST to update existing configs. Workflow:
 
-1. Read current config: `hass-api.sh config automation <entity_id>` (save to /tmp)
+1. Read current config: `hass-api.py config automation <entity_id>` and redirect to /tmp
 2. Modify with `jq` and write to a new file
-3. Diff to verify only intended changes
-4. POST the updated JSON via stdin: `cat /tmp/fixed.json | hass-api.sh raw POST
-   /api/config/automation/config/<uuid> -`
-5. Verify: re-read the config to confirm the change persisted
+3. Diff original vs modified to verify only intended changes
+4. POST via stdin: `cat /tmp/fixed.json | hass-api.py raw POST /api/config/automation/config/<uuid>
+   -`
+5. Re-read the config to confirm the change persisted
 
-Always save the original to /tmp before modifying (backup). The POST replaces the entire config, so
-the payload must be the complete automation/script object.
+The POST replaces the entire config; the payload must be the complete object.
 
 ### Script Service Names
 
@@ -150,19 +159,19 @@ For operations without dedicated subcommands:
 
 ```bash
 # Service call
-hass-api.sh raw POST /api/services/light/turn_on \
+hass-api.py raw POST /api/services/light/turn_on \
   '{"entity_id": "light.living_room", "brightness": 128}'
 
 # Service field schema (what arguments does a service accept?)
-hass-api.sh raw GET /api/services \
+hass-api.py raw GET /api/services \
   | jq '.[] | select(.domain == "light") | .services.turn_on'
 
 # Recent history (single entity, minimal)
-hass-api.sh raw GET \
+hass-api.py raw GET \
   "/api/history/period?filter_entity_id=sensor.temp&minimal_response&no_attributes"
 
 # Find entities matching a pattern across domains
-hass-api.sh raw GET /api/states \
+hass-api.py raw GET /api/states \
   | jq '[.[] | select(.entity_id | test("jvc|projector"; "i"))
     | {entity_id, state, name: .attributes.friendly_name}]'
 ```
@@ -227,11 +236,11 @@ For API details beyond this quick reference, use Context7. Call `query-docs` dir
 
 When debugging entity or automation issues:
 
-1. Check entity state: `hass-api.sh states <entity_id>`
-2. Check attributes: `hass-api.sh attributes <entity_id>`
-3. Get automation/script config: `hass-api.sh config automation|script <id>`
-4. Render templates to test conditions: `hass-api.sh template '<jinja2>'`
-5. Check error log: `hass-api.sh raw GET /api/error_log` (returns plain text; write to /tmp and
+1. Check entity state: `hass-api.py states <entity_id>`
+2. Check attributes: `hass-api.py attributes <entity_id>`
+3. Get automation/script config: `hass-api.py config automation|script <id>`
+4. Render templates to test conditions: `hass-api.py template '<jinja2>'`
+5. Check error log: `hass-api.py raw GET /api/error_log` (returns plain text; write to /tmp and
    search with rg for relevant keywords)
-6. Check service fields: `hass-api.sh raw GET /api/services | jq '.[] | select(.domain == "X")'`
-7. Check history: `hass-api.sh raw GET "/api/history/period?filter_entity_id=X&minimal_response"`
+6. Check service fields: `hass-api.py raw GET /api/services | jq '.[] | select(.domain == "X")'`
+7. Check history: `hass-api.py raw GET "/api/history/period?filter_entity_id=X&minimal_response"`
