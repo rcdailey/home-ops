@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: solidnerd/bookstack
-              tag: 26.3.1
+              tag: 26.3.2
             env:
               TZ: America/Chicago
               APP_URL: https://wiki.${SECRET_DOMAIN}
