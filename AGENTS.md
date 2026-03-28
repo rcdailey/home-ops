@@ -422,18 +422,50 @@ Scripts in `./scripts/` - use `--help` for usage:
 - validate-vmrules.sh: VMRule syntax validation
 - icon-search.py: Search dashboard icons for Homepage services
 
-**Conventional commits (MANDATORY path-based):**
+**Conventional commits:**
+
+Type is determined by intent (what the change accomplishes), not by filename. Path patterns below
+identify unambiguous cases where a single type always applies; everything else requires reading the
+diff.
+
+The primary product of this repository is the cluster. `feat` and `fix` describe changes to the
+cluster's behavior (new apps, bug fixes, alert resolutions). Changes that only affect developer
+tooling, CI, or documentation are never `feat` or `fix` unless they accompany a cluster change in
+the same commit.
+
+Path-determined types (path alone decides):
 
 - ci: `.github/workflows/**`, `.justfiles/**`, .justfile
 - build: renovate.json5, `.renovate/**`
 - chore: .editorconfig, .gitignore, .yamllint.yaml, .markdownlint-cli2.yaml, .pre-commit-config.yaml
-- docs: `*.md`, `docs/**`, LICENSE, SECURITY.md, CODEOWNERS
-- feat (k8s): New apps/services (new kubernetes/apps/namespace/app/ directories)
-- fix (k8s): Bug fixes, crash loops, probe failures, resource issues, alert resolutions
-- refactor (k8s): Resource reorganization, no behavior change
-- feat/fix (scripts): Script capabilities/bug fixes
-- Breaking (type!:): API/CRD upgrades, incompatible Helm upgrades, storage migrations
-- Examples: fix(plex): resolve crash loop, feat(bookstack): add wiki documentation app
+- docs: `docs/**`, LICENSE, SECURITY.md, CODEOWNERS
+
+Intent-determined types (diff content decides):
+
+- `kubernetes/**`: feat (new app/service directory), fix (bug fixes, crash loops, probe failures,
+  resource issues, alert resolutions), refactor (reorganization, no behavior change)
+- `scripts/**`: chore (new script or capability), fix (bug fix that fixes cluster behavior)
+- `.opencode/**`: chore (new skill, agent, or command), fix (bug fix that fixes cluster behavior)
+- Root `*.md` (AGENTS.md, README.md, etc.): docs when prose-only; use the type matching the
+  co-changed domain when the markdown change accompanies code (e.g., adding a skill + its AGENTS.md
+  routing entry is chore, not docs)
+- Breaking (append `!` after scope): API/CRD upgrades, incompatible Helm upgrades, storage
+  migrations
+
+Scope format by domain:
+
+- `kubernetes/**`: app name from directory (e.g., `plex`, `bookstack`)
+- `scripts/**`: script name without extension (e.g., `hass-api`, `query-vm`)
+- `.opencode/**`: component name (e.g., skill name `home-assistant`, agent name `commit`)
+- `flux/**`, `talos/**`: component or subsystem name
+- Omit scope for repo-wide changes that span multiple domains
+
+Mixed-path commits: when a single commit spans multiple domains (e.g., a script + its AGENTS.md
+entry), use the type and scope of the primary change. The primary change is the one that provides
+the new behavior; supporting changes (docs updates, routing entries) are secondary.
+
+Examples: `fix(plex): resolve crash loop`, `feat(bookstack): add wiki documentation app`,
+`chore(home-assistant): add API integration skill`, `docs: update investigation template`
 
 ### Environment and Infrastructure
 
