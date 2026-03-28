@@ -238,6 +238,8 @@ repositories often as documentation.
 - bjw-s-labs/home-ops
 - buroa/k8s-gitops
 - m00nwtchr/homelab-cluster
+- dsluo/homelab
+- aclerici38/home-ops
 
 ### API Versions
 
