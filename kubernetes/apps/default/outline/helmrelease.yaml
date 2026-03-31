@@ -1,0 +1,167 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app outline
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      outline:
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.getoutline.com/outlinewiki/outline
+              tag: 1.6.1
+            env:
+              # Core
+              URL: https://docs.${SECRET_DOMAIN}
+              PORT: "8080"
+              ENABLE_UPDATES: "false"
+              WEB_CONCURRENCY: "1"
+              FILE_STORAGE: local
+              FILE_STORAGE_LOCAL_ROOT_DIR: /var/lib/outline/data
+              FILE_STORAGE_UPLOAD_MAX_SIZE: "26214400"
+              PGSSLMODE: disable
+              LOG_LEVEL: debug
+
+              # Database (CNPG auto-managed credentials)
+              DATABASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: outline-postgres-app
+                    key: uri
+              REDIS_URL: redis://outline-redis:6379
+              REDIS_COLLABORATION_URL: redis://outline-redis:6379
+
+              # OIDC authentication via Pocket ID
+              OIDC_CLIENT_ID: outline
+              OIDC_ISSUER_URL: https://auth.${SECRET_DOMAIN}
+              OIDC_DISPLAY_NAME: Pocket ID
+              OIDC_USERNAME_CLAIM: email
+              OIDC_SCOPES: openid profile email
+
+              # SMTP
+              SMTP_HOST: smtp-relay.network
+              SMTP_PORT: "587"
+              SMTP_FROM_EMAIL: outline@${SECRET_DOMAIN}
+              SMTP_SECURE: "false"
+
+            envFrom:
+            - secretRef:
+                name: outline-secret
+
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /_health
+                    port: 8080
+                  failureThreshold: 30
+                  periodSeconds: 5
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /_health
+                    port: 8080
+
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+
+      redis:
+        containers:
+          main:
+            image:
+              repository: public.ecr.aws/docker/library/redis
+              tag: 8.6.2
+            command: ["redis-server", "--save", "", "--appendonly", "no"]
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+
+    defaultPodOptions:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: 8080
+      redis:
+        controller: redis
+        ports:
+          http:
+            port: 6379
+
+    route:
+      app:
+        hostnames:
+        - docs.${SECRET_DOMAIN}
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: outline-app
+            port: 8080
+
+    persistence:
+      data:
+        existingClaim: *app
+        advancedMounts:
+          outline:
+            app:
+            - path: /var/lib/outline/data
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          outline:
+            app:
+            - path: /tmp
+      home:
+        type: emptyDir
+        advancedMounts:
+          outline:
+            app:
+            - path: /home/node
