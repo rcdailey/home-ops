@@ -27,6 +27,11 @@
       href: https://wiki.${SECRET_DOMAIN}/
       siteMonitor: http://bookstack.default:8080/status
 
+  - Outline:
+      icon: outline
+      href: https://docs.${SECRET_DOMAIN}/
+      siteMonitor: http://outline-app.default:8080/_health
+
   - OpenCloud:
       icon: mdi-cloud
       href: https://cloud.${SECRET_DOMAIN}/
