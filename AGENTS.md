@@ -194,6 +194,19 @@ automatically.
 - MUST hard-wrap at column 100
 - Blank line required between headings, lists, code blocks, and other elements
 
+**Outline vs docs/ boundary:** Outline (`docs.${SECRET_DOMAIN}`) is the household knowledge base for
+home maintenance, pool care, media room, homelab reference, and hobby documentation. Content lives
+in Outline when it changes independently of code, benefits from rich editing and search, or may be
+referenced by non-technical users. The `docs/` directory is for content tightly coupled to the
+codebase: ADRs, investigation journals, runbooks, and AGENTS.md directives that evolve through PRs
+alongside manifests. Litmus test: if the content needs PR review with code changes, it belongs in
+`docs/`; otherwise it belongs in Outline.
+
+**Outline MCP integration:** Outline exposes a built-in MCP endpoint at `docs.${SECRET_DOMAIN}/mcp`.
+Use the Outline MCP tools (search, read, create, update documents and collections) to manage Outline
+content directly. SHOULD proactively use Outline MCP tools when the user asks to create, update, or
+organize documentation that belongs in Outline per the boundary above.
+
 ### Skills
 
 - `dns-debug`: REQUIRED when diagnosing DNS issues, or investigating blocked domains
@@ -490,6 +503,7 @@ Examples: `fix(plex): resolve crash loop`, `feat(bookstack): add wiki documentat
 
 - Main subnet: 192.168.1.0/24
 - BGP subnet (Cilium LoadBalancers): 192.168.50.0/24
+- AT&T Fiber Gateway: BGW320-505 (IP passthrough to UDMP)
 - Gateway (Unifi UDMP): 192.168.1.1
 - Kubernetes API: 192.168.1.70
 - LoadBalancer IPs (Cilium IPAM): 192.168.50.71-.99 (infrastructure), 192.168.50.100+ (applications)
