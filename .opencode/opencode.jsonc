@@ -9,7 +9,36 @@
       "disabled": true
     }
   },
+  "mcp": {
+    // "outline": {
+    //   "type": "remote",
+    //   "url": "https://docs.{env:SECRET_DOMAIN}/mcp",
+    // },
+    "outline": {
+      "type": "local",
+      "command": ["uvx", "mcp-outline"],
+      "environment": {
+        "OUTLINE_API_URL": "https://docs.{env:SECRET_DOMAIN}/api",
+        "OUTLINE_API_KEY": "{env:OUTLINE_API_KEY}"
+      }
+    }
+  },
   "permission": {
+    // Disable built-in outline MCP until v1.7 adds fetch tool
+    "outline_*": "deny",
+
+    // Vortiago mcp-outline
+    "outline_*_comment*": "deny",
+    "outline_*_ai_*": "deny",
+    "outline_*_document*": "allow",
+    "outline_*_collection*": "allow",
+
+    // official MCP server flags (uncomment when 1.7 is released)
+    // "outline_fetch": "allow",
+    // "outline_*_document*": "allow",
+    // "outline_*_collection*": "allow",
+    // "outline_*_attachment*": "allow",
+
     "bash": {
       // kubectl - ALLOW (read-only inspection)
       "kubectl exec*": "allow",
