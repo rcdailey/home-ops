@@ -44,7 +44,6 @@
   "helm-values": {
     managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
   },
-  pinDigests: true,
   "pre-commit": {
     enabled: true,
   },
