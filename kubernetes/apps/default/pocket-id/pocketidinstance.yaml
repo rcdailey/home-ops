@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aclerici38/pocket-id-operator/refs/heads/main/dist/schemas/pocketidinstance_v1alpha1.json
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDInstance
+metadata:
+  name: pocket-id
+spec:
+  annotations:
+    reloader.stakater.com/auto: "true"
+  image: ghcr.io/pocket-id/pocket-id:v2.5.0
+  appUrl: https://auth.${SECRET_DOMAIN}
+  timezone: America/Chicago
+
+  encryptionKey:
+    valueFrom:
+      secretKeyRef:
+        name: pocket-id-secret
+        key: ENCRYPTION_KEY
+
+  persistence:
+    enabled: true
+    existingClaim: pocket-id
+
+  route:
+    enabled: true
+    parentRefs:
+    - name: external
+      namespace: network
+      sectionName: https
+    hostnames:
+    - auth.${SECRET_DOMAIN}
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  livenessProbe:
+    exec:
+      command: [/app/pocket-id, healthcheck]
+
+  podSecurityContext:
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+  containerSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]

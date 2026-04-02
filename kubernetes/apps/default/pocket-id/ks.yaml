@@ -26,3 +26,4 @@ spec:
   dependsOn:
   - name: global-config
     namespace: flux-system
+  - name: pocket-id-operator
