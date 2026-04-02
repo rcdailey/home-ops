@@ -20,9 +20,15 @@ spec:
   retryInterval: 1m
   timeout: 5m
   postBuild:
+    substitute:
+      APP: bentopdf
+      SUBDOMAIN: pdf
+      HTTPROUTE_NAME: bentopdf
+      APP_ICON_URL: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons@main/svg/bentopdf.svg
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
   dependsOn:
   - name: global-config
     namespace: flux-system
+  - name: pocket-id-operator
