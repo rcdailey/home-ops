@@ -272,7 +272,7 @@ retain:
 
 **Default namespace:**
 
-- bookstack
+- outline
 
 **Home namespace:**
 

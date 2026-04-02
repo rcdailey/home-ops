@@ -22,11 +22,6 @@
       href: https://tautulli.${SECRET_DOMAIN}/
       siteMonitor: http://tautulli.media:8181
 
-  - BookStack:
-      icon: bookstack
-      href: https://wiki.${SECRET_DOMAIN}/
-      siteMonitor: http://bookstack.default:8080/status
-
   - Outline:
       icon: outline
       href: https://docs.${SECRET_DOMAIN}/
