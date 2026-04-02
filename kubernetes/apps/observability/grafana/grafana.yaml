@@ -19,7 +19,9 @@ spec:
     auth.anonymous:
       enabled: "false"
     auth.basic:
-      enabled: "false"
+      # Required for grafana-operator API authentication.
+      # UI login form is hidden separately via auth.disable_login_form.
+      enabled: "true"
     date_formats:
       use_browser_locale: "true"
     explore:
