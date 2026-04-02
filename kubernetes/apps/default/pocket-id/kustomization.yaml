@@ -5,6 +5,6 @@ components:
 - ../../../components/volsync
 resources:
 - ./externalsecret.yaml
-- ./helmrelease.yaml
+- ./pocketidinstance.yaml
 - ./httproutefilter.yaml
 - ./pvc.yaml
