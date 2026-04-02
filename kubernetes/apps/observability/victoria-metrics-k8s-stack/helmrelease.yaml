@@ -471,6 +471,9 @@ spec:
       enabled: true
       operator:
         disable_prometheus_converter: false
+        # Sync ownerReferences from Prometheus objects to converted VM objects
+        # Without this, deleting a ServiceMonitor leaves orphaned VMServiceScrape resources
+        enable_converter_ownership: true
       serviceMonitor:
         enabled: true
       resources:
