@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: ${APP}
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: ${HTTPROUTE_NAME:=${APP}}
+  oidc:
+    provider:
+      issuer: https://auth.${SECRET_DOMAIN}
+    clientID: ${APP}
+    clientSecret:
+      name: ${APP}-oidc-credentials
+    redirectURL: https://${SUBDOMAIN:=${APP}}.${SECRET_DOMAIN}/oauth2/callback
+    logoutPath: /logout
