@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://github.com/aclerici38/pocket-id-operator/releases/latest/download/helmrelease_v2_pocket-id-operator.json
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pocket-id-operator
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: pocket-id-operator
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    instance:
+      enabled: false
