@@ -98,6 +98,9 @@ Consistency patterns for maintainability and clarity.
 - ALWAYS use reloader.stakater.com/auto: "true" for ALL apps (NEVER use targeted annotations)
 - ALWAYS use rootless containers (security requirement)
 - ALWAYS check existing applications before making changes
+- When removing, renaming, or restructuring an app, MUST run `rg "name|alias|keyword"` at repo root
+  to find all references (docs, AGENTS.md, Homepage, backup lists, S3 buckets, etc.) before
+  committing
 - PREFER YAML defaults by omission over explicit configuration (minimal config improves
   maintainability)
 - Add comments explaining WHY special approaches were needed (e.g., chart limitations, upstream
