@@ -517,7 +517,7 @@ Examples: `fix(plex): resolve crash loop`, `feat(bookstack): add wiki documentat
 
 - Rook Ceph: Distributed block/filesystem storage across cluster nodes
 - NFS (Nezuko 192.168.1.58): Media (100Ti), Photos (10Ti)
-- Garage S3 (192.168.1.58:3900): Region garage, buckets: postgres-backups, bookstack-backups
+- Garage S3 (192.168.1.58:3900): Region garage, buckets: postgres-backups
 - Volsync: Kopia repository on NFS (Nezuko /mnt/user/volsync), shared single repository with per-app
   isolation via snapshot identity
 - CloudNativePG: Barman WAL archiving to s3://postgres-backups/{cluster}/
