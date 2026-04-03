@@ -32,8 +32,7 @@ spec:
             command: ["/bin/sh", "-c"]
             args:
             - |
-              sed -e "s|%%GITHUB_TOKEN%%|$GITHUB_TOKEN|g" \
-                  -e "s|%%SECRET_KEY%%|$SECRET_KEY|g" \
+              sed -e "s|%%SECRET_KEY%%|$SECRET_KEY|g" \
                   -e "s|%%BRAVE_API_KEY%%|$BRAVE_API_KEY|g" \
                   -e "s|%%WOLFRAM_API_KEY%%|$WOLFRAM_API_KEY|g" \
                   /config-template/settings.yml > /config/settings.yml
@@ -45,7 +44,7 @@ spec:
           app:
             image:
               repository: ghcr.io/searxng/searxng
-              tag: 2026.1.30-ad42b553b
+              tag: 2026.4.3-c980fa1ef
             env:
               TZ: America/Chicago
               SEARXNG_BASE_URL: https://search.${SECRET_DOMAIN}
@@ -123,10 +122,3 @@ spec:
           searxng:
             app:
             - path: /tmp
-      # Writable certs dir allows update-ca-certificates to run with readOnlyRootFilesystem
-      certs:
-        type: emptyDir
-        advancedMounts:
-          searxng:
-            app:
-            - path: /etc/ssl/certs

@@ -56,6 +56,14 @@
       minimumReleaseAge: "5 days",
     },
     {
+      // Tag format: YYYY.M.DD-githash (e.g. 2026.4.3-c980fa1ef)
+      // Default versioning can't parse this; regex extracts date parts
+      description: "SearXNG date-based versioning",
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/searxng/searxng"],
+      versioning: "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>[a-f0-9]+)$",
+    },
+    {
       description: "Auto-merge app-template chart updates",
       matchDatasources: ["docker"],
       matchPackageNames: ["/app-template/"],
