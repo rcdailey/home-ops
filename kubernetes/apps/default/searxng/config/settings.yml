@@ -110,15 +110,43 @@ engines:
   disabled: false
   categories: [general, it]
 
-# Brave - cap request time to prevent slow 429 responses from blocking threads
+# --- Scraping engines disabled due to rate limiting / CAPTCHA ---
+# Google, Brave, DuckDuckGo, Startpage all detect SearXNG via TLS
+# fingerprinting and block regardless of request volume.
+- name: google
+  inactive: true
 - name: brave
-  timeout: 3.0
-
-# DuckDuckGo/Startpage - persistent CAPTCHA blocking with no workaround
+  inactive: true
 - name: duckduckgo
   inactive: true
 - name: startpage
   inactive: true
+
+# --- API-based replacements (immune to scraping detection) ---
+
+# Brave Search API: official REST API, free $5/mo credit (1000 queries)
+# Sign up: https://api-dashboard.search.brave.com/
+- name: braveapi
+  engine: braveapi
+  shortcut: brapi
+  api_key: "%%BRAVE_API_KEY%%"
+  categories: [general]
+
+# Wolfram Alpha: computational/factual queries via official API
+# API key: https://developer.wolframalpha.com/
+- name: wolfram alpha
+  engine: wolframalpha_api
+  shortcut: wa
+  api_key: "%%WOLFRAM_API_KEY%%"
+  disabled: false
+  categories: [general, science]
+
+# Semantic Scholar: academic CS/ML papers via official API (no key needed)
+- name: semantic scholar
+  engine: semantic_scholar
+  shortcut: se
+  disabled: false
+  categories: [general, it, science]
 
 # wikidata - slow, frequently times out, not useful for coding queries
 - name: wikidata
