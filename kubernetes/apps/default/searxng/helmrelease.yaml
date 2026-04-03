@@ -34,6 +34,8 @@ spec:
             - |
               sed -e "s|%%GITHUB_TOKEN%%|$GITHUB_TOKEN|g" \
                   -e "s|%%SECRET_KEY%%|$SECRET_KEY|g" \
+                  -e "s|%%BRAVE_API_KEY%%|$BRAVE_API_KEY|g" \
+                  -e "s|%%WOLFRAM_API_KEY%%|$WOLFRAM_API_KEY|g" \
                   /config-template/settings.yml > /config/settings.yml
               cp /config-template/limiter.toml /config/limiter.toml
             envFrom:
