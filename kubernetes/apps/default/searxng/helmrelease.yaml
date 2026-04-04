@@ -35,6 +35,7 @@ spec:
               sed -e "s|%%SECRET_KEY%%|$SECRET_KEY|g" \
                   -e "s|%%BRAVE_API_KEY%%|$BRAVE_API_KEY|g" \
                   -e "s|%%WOLFRAM_API_KEY%%|$WOLFRAM_API_KEY|g" \
+                  -e "s|%%REDDIT_CLIENT_ID%%|$REDDIT_CLIENT_ID|g" \
                   /config-template/settings.yml > /config/settings.yml
               cp /config-template/limiter.toml /config/limiter.toml
             envFrom:
@@ -106,6 +107,16 @@ spec:
           searxng:
             init-config:
             - path: /config-template
+              readOnly: true
+      # Custom Reddit engine with OAuth2 support overlaid onto built-in engine
+      reddit-engine:
+        type: configMap
+        name: searxng-config
+        advancedMounts:
+          searxng:
+            app:
+            - path: /usr/local/searxng/searx/engines/reddit.py
+              subPath: reddit.py
               readOnly: true
       config:
         type: emptyDir

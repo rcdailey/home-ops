@@ -10,5 +10,6 @@ configMapGenerator:
   files:
   - settings.yml=./config/settings.yml
   - limiter.toml=./config/limiter.toml
+  - reddit.py=./config/reddit.py
 generatorOptions:
   disableNameSuffixHash: true
