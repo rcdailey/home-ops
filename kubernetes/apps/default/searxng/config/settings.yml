@@ -123,6 +123,14 @@ engines:
 
 # --- API-based replacements (immune to scraping detection) ---
 
+# Reddit: OAuth2 via custom engine overlay (config/reddit.py) using
+# installed-client grant with personal registered app
+- name: reddit
+  engine: reddit
+  reddit_client_id: "%%REDDIT_CLIENT_ID%%"
+  categories: [general, social media]
+  weight: 1.5
+
 # Brave Search API: official REST API, free $5/mo credit (1000 queries)
 # Sign up: https://api-dashboard.search.brave.com/
 - name: braveapi
