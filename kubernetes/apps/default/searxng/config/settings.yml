@@ -31,8 +31,8 @@ search:
 # Connection pool tuning for concurrent API requests from agents.
 # Defaults: pool_connections=100, pool_maxsize=20, request_timeout=3.0
 outgoing:
-  # Allow slower engines to complete (github, stackoverflow can be slow)
-  request_timeout: 5.0
+  # Braveapi responds in <300ms; 3s is generous for API engines
+  request_timeout: 3.0
   # Increased for parallel requests from multiple agents
   pool_connections: 150
   pool_maxsize: 30
