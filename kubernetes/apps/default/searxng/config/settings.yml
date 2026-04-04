@@ -94,13 +94,10 @@ engines:
   engine: crates
   shortcut: crates
   disabled: false
-  timeout: 6.0
 - name: npm
   disabled: false
-  timeout: 6.0
 - name: codeberg
-  disabled: false
-  categories: [general, it, repos]
+  inactive: true
 - name: lobste.rs
   disabled: false
   categories: [general, it]
@@ -141,12 +138,9 @@ engines:
   api_key: "%%WOLFRAM_API_KEY%%"
   categories: [general, science]
 
-# Semantic Scholar: academic CS/ML papers via official API (no key needed)
+# Semantic Scholar: disabled due to consistent timeouts (~5s per query)
 - name: semantic scholar
-  engine: semantic_scholar
-  shortcut: se
-  disabled: false
-  categories: [general, it, science]
+  inactive: true
 
 # --- Disabled default engines (broken, slow, or irrelevant) ---
 - name: github code
