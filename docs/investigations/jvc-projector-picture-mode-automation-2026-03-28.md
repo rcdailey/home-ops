@@ -1,7 +1,7 @@
 # JVC projector picture mode automation broken after integration upgrade
 
 - **Date:** 2026-03-28
-- **Status:** PARTIALLY RESOLVED
+- **Status:** RESOLVED
 
 ## Summary
 
@@ -140,12 +140,19 @@ Three separate issues:
 - Updated all picture mode values to hyphenated format
 - Fixed script service name reference (`script.jvc_set_expected_picture_mode`)
 
-**Pending (HA 2026.4, expected April 1):**
+**Completed (HA 2026.4.1, April 4):**
 
-- `select.nz7_picture_mode` entity will be available
-- Rewrite script to use `select.select_option` instead of `remote.send_command`
-- Enable `select.nz7_picture_mode` entity (will be disabled by default)
-- Todoist reminder set for April 2 to follow up
+- Enabled `select.nz7_picture_mode` (disabled by integration by default)
+- Rewrote script to use `select.select_option` instead of `remote.send_command`
+- Updated condition checks to compare against `select.nz7_picture_mode` state (guarantees format
+  consistency with the option values)
+- Updated automation picture mode values from hyphenated (`user-4`, `frame-adapt-hdr`) to
+  underscored (`user_4`, `frame_adapt_hdr`) to match the select entity's option format
+
+Note: the `select` entity uses underscored values (`user_4`, `frame_adapt_hdr`) while the old
+`remote.send_command` path used hyphenated values (`user-4`, `frame-adapt-hdr`). The `sensor`
+entity's format is unverified (projector was off during the fix), so comparing against the `select`
+entity state avoids any format mismatch risk.
 
 ### Tooling built during this investigation
 
