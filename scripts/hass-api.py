@@ -55,10 +55,16 @@ DEFAULT_LIMIT = 20
 
 
 def cmd_states(args: argparse.Namespace) -> None:
+    from homeassistant_api.errors import EndpointNotFoundError
+
     with get_client() as client:
         if args.target and "." in args.target:
             # Full entity_id: single entity detail
-            state = client.get_state(entity_id=args.target)
+            try:
+                state = client.get_state(entity_id=args.target)
+            except EndpointNotFoundError:
+                print(f"Entity not found: {args.target}", file=sys.stderr)
+                sys.exit(1)
             print(json.dumps(state.model_dump(), indent=2, default=str))
             return
 
@@ -100,11 +106,20 @@ def cmd_template(args: argparse.Namespace) -> None:
 
 
 def cmd_config(args: argparse.Namespace) -> None:
+    from homeassistant_api.errors import EndpointNotFoundError
+
     with get_client() as client:
         if args.type == "automation":
             identifier = args.identifier
             if identifier.startswith("automation."):
-                state = client.get_state(entity_id=identifier)
+                try:
+                    state = client.get_state(entity_id=identifier)
+                except EndpointNotFoundError:
+                    print(
+                        f"Entity not found: {identifier}",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
                 identifier = state.attributes.get("id", "")
                 if not identifier:
                     print(
@@ -116,13 +131,31 @@ def cmd_config(args: argparse.Namespace) -> None:
             print(json.dumps(resp, indent=2))
         elif args.type == "script":
             slug = args.identifier.removeprefix("script.")
-            resp = client.request(f"config/script/config/{slug}")
+            try:
+                resp = client.request(f"config/script/config/{slug}")
+            except EndpointNotFoundError:
+                print(
+                    f"Script config not found for slug: {slug}",
+                    file=sys.stderr,
+                )
+                print(
+                    "Hint: the config slug may differ from the entity_id. "
+                    "Check GET /api/services filtered to 'script' domain.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
             print(json.dumps(resp, indent=2))
 
 
 def cmd_attributes(args: argparse.Namespace) -> None:
+    from homeassistant_api.errors import EndpointNotFoundError
+
     with get_client() as client:
-        state = client.get_state(entity_id=args.entity_id)
+        try:
+            state = client.get_state(entity_id=args.entity_id)
+        except EndpointNotFoundError:
+            print(f"Entity not found: {args.entity_id}", file=sys.stderr)
+            sys.exit(1)
         print(json.dumps(dict(state.attributes), indent=2, default=str))
 
 
@@ -170,7 +203,7 @@ def cmd_orient(args: argparse.Namespace) -> None:
             name = s.attributes.get("friendly_name", "")
             print(f"  {s.entity_id}: {s.state}  ({name})")
 
-        # Find related automations
+        # Fetch and search automation configs
         automations = [s for s in states if s.entity_id.startswith("automation.")]
         print("\n## Automations")
         found = False
@@ -193,12 +226,22 @@ def cmd_orient(args: argparse.Namespace) -> None:
         if not found:
             print("  (none found)")
 
-        # Find related scripts
-        scripts = [s for s in states if s.entity_id.startswith("script.")]
+        # Fetch and search script configs using service slugs (entity_id
+        # doesn't always match the config slug in HA)
+        try:
+            all_services = client.request("services")
+            script_slugs = [
+                slug
+                for svc in all_services
+                if svc.get("domain") == "script"
+                for slug in svc.get("services", {})
+                if slug not in ("reload", "turn_on", "turn_off", "toggle")
+            ]
+        except Exception:
+            script_slugs = []
         print("\n## Scripts")
         found = False
-        for s in scripts:
-            slug = s.entity_id.removeprefix("script.")
+        for slug in script_slugs:
             try:
                 config = client.request(f"config/script/config/{slug}")
             except Exception:
@@ -208,72 +251,69 @@ def cmd_orient(args: argparse.Namespace) -> None:
                 config_str
             ):
                 found = True
-                alias = config.get("alias", s.entity_id)
-                print(f"\n### {alias} ({s.entity_id})")
+                alias = config.get("alias", slug)
+                print(f"\n### {alias} (script.{slug})")
                 print(json.dumps(config, indent=2))
         if not found:
             print("  (none found)")
 
-        # Find related dashboard cards
-        async def search_dashboards(ws):
-            msg_id = 0
+    # Dashboard search via WebSocket (separate connection)
+    async def search_dashboards(ws):
+        msg_id = 0
 
-            async def ws_send(payload):
-                nonlocal msg_id
-                msg_id += 1
-                payload["id"] = msg_id
-                await ws.send_json(payload)
-                return await ws.receive_json()
+        async def ws_send(payload):
+            nonlocal msg_id
+            msg_id += 1
+            payload["id"] = msg_id
+            await ws.send_json(payload)
+            return await ws.receive_json()
 
-            # Get dashboard list
-            msg = await ws_send({"type": "lovelace/dashboards/list"})
-            dashboards = msg.get("result", [])
+        msg = await ws_send({"type": "lovelace/dashboards/list"})
+        dashboards = msg.get("result", [])
 
-            # Collect all dashboard configs (default + named)
-            configs = []
-            msg = await ws_send({"type": "lovelace/config"})
-            configs.append(("default", msg.get("result", {})))
-            for d in dashboards:
-                url_path = d.get("url_path")
-                if not url_path:
-                    continue
-                msg = await ws_send({"type": "lovelace/config", "url_path": url_path})
-                result = msg.get("result")
-                if isinstance(result, dict):
-                    configs.append((url_path, result))
+        configs = []
+        msg = await ws_send({"type": "lovelace/config"})
+        configs.append(("default", msg.get("result", {})))
+        for d in dashboards:
+            url_path = d.get("url_path")
+            if not url_path:
+                continue
+            msg = await ws_send({"type": "lovelace/config", "url_path": url_path})
+            result = msg.get("result")
+            if isinstance(result, dict):
+                configs.append((url_path, result))
 
-            # Search cards recursively for matching entity_ids or terms
-            hits = []
+        hits = []
 
-            def search(obj, path, dashboard_name, view_title):
-                if isinstance(obj, dict):
-                    entity = obj.get("entity", "")
-                    if isinstance(entity, str) and (
-                        entity in entity_ids or pattern.search(entity)
-                    ):
-                        name = obj.get("name", "")
-                        hits.append((dashboard_name, view_title, path, entity, name))
-                    for k, v in obj.items():
-                        search(v, f"{path}.{k}", dashboard_name, view_title)
-                elif isinstance(obj, list):
-                    for i, v in enumerate(obj):
-                        search(v, f"{path}[{i}]", dashboard_name, view_title)
+        def search_cards(obj, path, dashboard_name, view_title):
+            if isinstance(obj, dict):
+                entity = obj.get("entity", "")
+                if isinstance(entity, str) and (
+                    entity in entity_ids or pattern.search(entity)
+                ):
+                    name = obj.get("name", "")
+                    hits.append((dashboard_name, view_title, path, entity, name))
+                for k, v in obj.items():
+                    search_cards(v, f"{path}.{k}", dashboard_name, view_title)
+            elif isinstance(obj, list):
+                for i, v in enumerate(obj):
+                    search_cards(v, f"{path}[{i}]", dashboard_name, view_title)
 
-            for dash_name, config in configs:
-                for view in config.get("views", []):
-                    view_title = view.get("title", "(untitled)")
-                    search(view, "view", dash_name, view_title)
+        for dash_name, config in configs:
+            for view in config.get("views", []):
+                view_title = view.get("title", "(untitled)")
+                search_cards(view, "view", dash_name, view_title)
 
-            return hits
+        return hits
 
-        print("\n## Dashboard Cards")
-        hits = asyncio.run(ws_call(search_dashboards))
-        if hits:
-            for dash, view, path, entity, name in hits:
-                label = f"{name} ({entity})" if name else entity
-                print(f"  [{dash}] {view} > {label}")
-        else:
-            print("  (none found)")
+    print("\n## Dashboard Cards")
+    hits = asyncio.run(ws_call(search_dashboards))
+    if hits:
+        for dash, view, path, entity, name in hits:
+            label = f"{name} ({entity})" if name else entity
+            print(f"  [{dash}] {view} > {label}")
+    else:
+        print("  (none found)")
 
 
 def cmd_activity(args: argparse.Namespace) -> None:
@@ -310,6 +350,164 @@ def cmd_activity(args: argparse.Namespace) -> None:
         if message:
             parts.append(f"({message})")
         print("  ".join(parts))
+
+
+def cmd_logs(args: argparse.Namespace) -> None:
+    with get_client() as client:
+        log_text = client.request("error_log")
+
+    if not isinstance(log_text, str) or not log_text.strip():
+        print("(no log entries)")
+        return
+
+    # Parse log lines: HA logs start with "YYYY-MM-DD HH:MM:SS.sss LEVEL"
+    # Continuation lines (tracebacks, etc.) get attached to the previous entry.
+    log_pattern = re.compile(
+        r"^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\.\d+\s+(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+"
+    )
+    entries: list[tuple[str, str, str]] = []
+    for line in log_text.splitlines():
+        m = log_pattern.match(line)
+        if m:
+            entries.append((m.group(1), m.group(2), line[m.end() :]))
+        elif entries:
+            ts, level, text = entries[-1]
+            entries[-1] = (ts, level, text + "\n" + line)
+
+    if not entries:
+        print(log_text[:5000])
+        return
+
+    # Filter by severity
+    severity_order = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    min_idx = severity_order.index(args.level.upper())
+    allowed = set(severity_order[min_idx:])
+    entries = [(ts, lv, txt) for ts, lv, txt in entries if lv in allowed]
+
+    # Filter by grep pattern
+    if args.grep:
+        grep_re = re.compile(args.grep, re.IGNORECASE)
+        entries = [(ts, lv, txt) for ts, lv, txt in entries if grep_re.search(txt)]
+
+    # Apply tail limit
+    if args.n and len(entries) > args.n:
+        entries = entries[-args.n :]
+
+    if not entries:
+        print("(no matching entries)")
+        return
+
+    for ts, level, text in entries:
+        # Compact timestamp to just time portion for readability
+        time_part = ts.split(" ", 1)[1] if " " in ts else ts
+        print(f"{time_part} {level:8s} {text}")
+
+
+def cmd_repairs(args: argparse.Namespace) -> None:
+    async def handler(ws):
+        msg_id = 0
+
+        async def ws_send(payload):
+            nonlocal msg_id
+            msg_id += 1
+            payload["id"] = msg_id
+            await ws.send_json(payload)
+            return await ws.receive_json()
+
+        if args.action == "dismiss":
+            if not args.issue_id:
+                print("Error: issue_id required for dismiss", file=sys.stderr)
+                sys.exit(1)
+            # issue_id format: "domain/issue_id" or just search for it
+            parts = args.issue_id.split("/", 1)
+            if len(parts) == 2:
+                domain, issue_id = parts
+            else:
+                # Search for a matching issue
+                msg = await ws_send({"type": "repairs/list_issues"})
+                issues = msg.get("result", {}).get("issues", [])
+                matches = [i for i in issues if args.issue_id in i["issue_id"]]
+                if not matches:
+                    print(
+                        f"No repair matching: {args.issue_id}",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                if len(matches) > 1:
+                    print(
+                        f"Ambiguous, {len(matches)} matches:",
+                        file=sys.stderr,
+                    )
+                    for m in matches:
+                        print(
+                            f"  {m['domain']}/{m['issue_id']}",
+                            file=sys.stderr,
+                        )
+                    sys.exit(1)
+                domain = matches[0]["domain"]
+                issue_id = matches[0]["issue_id"]
+
+            msg = await ws_send(
+                {
+                    "type": "repairs/ignore_issue",
+                    "domain": domain,
+                    "issue_id": issue_id,
+                    "ignore": True,
+                }
+            )
+            if msg.get("success"):
+                print(f"Dismissed: {domain}/{issue_id}")
+            else:
+                err = msg.get("error", {})
+                print(
+                    f"Failed: {err.get('message', json.dumps(msg))}",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            return
+
+        # Default: list
+        msg = await ws_send({"type": "repairs/list_issues"})
+        issues = msg.get("result", {}).get("issues", [])
+        issues = [i for i in issues if not i.get("ignored")]
+
+        if not issues:
+            print("(no repairs)")
+            return
+
+        for i in issues:
+            sev = i["severity"].upper()
+            domain = i["domain"]
+            placeholders = i.get("translation_placeholders", {})
+            key = i.get("translation_key", "")
+
+            # Build a readable description from translation placeholders
+            desc = _repair_description(key, placeholders, i["issue_id"])
+            print(f"{sev:8s} {domain:20s} {desc}")
+
+    asyncio.run(ws_call(handler))
+
+
+def _repair_description(key: str, placeholders: dict, issue_id: str) -> str:
+    """Build a human-readable description from repair metadata."""
+    name = placeholders.get("name", "")
+    entity = placeholders.get("entity_id", "")
+    replacement = placeholders.get("replacement_entity_id", "")
+    service = placeholders.get("service", "")
+
+    if key == "service_not_found" and name and service:
+        return f"{name}: unknown service {service}"
+    if key == "deprecated_sensor" and entity and replacement:
+        return f"Deprecated {entity} (replace with {replacement})"
+    if key == "deprecated_sensor" and entity:
+        return f"Deprecated {entity}"
+
+    # Fallback: use whatever placeholders exist
+    if name:
+        return f"{name} ({key})"
+    if entity:
+        return f"{entity} ({key})"
+    return issue_id
 
 
 def cmd_raw(args: argparse.Namespace) -> None:
@@ -378,6 +576,37 @@ def main() -> None:
     p.add_argument("entities", nargs="+", help="Entity IDs to query")
     p.add_argument("--hours", type=float, default=1, help="Lookback hours (default: 1)")
 
+    # repairs
+    p = sub.add_parser("repairs", help="List or dismiss HA repair issues")
+    p.add_argument(
+        "action",
+        nargs="?",
+        default="list",
+        choices=["list", "dismiss"],
+        help="Action (default: list)",
+    )
+    p.add_argument(
+        "issue_id",
+        nargs="?",
+        help="For dismiss: domain/issue_id or substring to match",
+    )
+
+    # logs
+    p = sub.add_parser("logs", help="HA error log (parsed and filtered)")
+    p.add_argument("grep", nargs="?", help="Regex pattern to filter log messages")
+    p.add_argument(
+        "-l",
+        "--level",
+        default="WARNING",
+        help="Minimum severity: DEBUG, INFO, WARNING, ERROR, CRITICAL (default: WARNING)",
+    )
+    p.add_argument(
+        "-n",
+        type=int,
+        default=50,
+        help="Show last N matching entries (default: 50)",
+    )
+
     # raw
     p = sub.add_parser("raw", help="Direct API call")
     p.add_argument("method", help="HTTP method")
@@ -393,6 +622,8 @@ def main() -> None:
         "entity": cmd_entity,
         "orient": cmd_orient,
         "activity": cmd_activity,
+        "repairs": cmd_repairs,
+        "logs": cmd_logs,
         "raw": cmd_raw,
     }[args.command](args)
 

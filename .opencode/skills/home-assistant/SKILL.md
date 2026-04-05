@@ -10,6 +10,14 @@ description: >-
 Interact with a Home Assistant instance via its REST API using a Python CLI tool built on
 `homeassistant-api` SDK. No MCP server required.
 
+## Continuous Improvement (mandatory)
+
+`hass-api.py` and this skill are perpetual WIP. When using the script, you MUST fix problems and
+improve usability in real time as you observe them: change CLI interfaces, refactor internals, add
+error handling, restructure subcommands. Refactor mercilessly. If something is awkward, broken, or
+could be better, fix it now rather than working around it. Update this skill document whenever the
+script's behavior, subcommands, or usage patterns change.
+
 ## Context Efficiency Rules
 
 The HA instance has 1000+ entities and 60+ service domains. Unfiltered API responses will overwhelm
@@ -30,7 +38,7 @@ context. These rules are mandatory:
 
 `./scripts/hass-api.py` wraps the Home Assistant REST API. Requires `SECRET_DOMAIN` and `HASS_TOKEN`
 environment variables (sourced from `.mise.local.toml`). Depends on `homeassistant-api` (pip) and
-`aiohttp` (pip, for entity enable/disable only).
+`aiohttp` (pip, for WebSocket operations: `entity`, `orient`, `repairs`).
 
 ### Subcommands
 
@@ -62,7 +70,11 @@ hass-api.py config script my_script                      # By slug
 ```
 
 Automation configs use the UUID from `attributes.id`; the subcommand resolves entity_id to UUID
-automatically. Script configs use the object_id slug (entity_id minus `script.` prefix).
+automatically. Script configs use the config slug, which is the YAML key under `script:` in HA's
+config. This often matches the entity_id minus `script.` prefix, but not always (HA allows
+customizing entity_ids independently). If a lookup by entity_id fails, check `GET /api/services`
+filtered to `script` domain for the correct slug. Example: entity
+`script.set_expected_picture_modes` has service/slug `jvc_set_expected_picture_mode`.
 
 **attributes** -- show entity attributes only:
 
@@ -88,6 +100,27 @@ this first when starting work on any HA topic.
 ```bash
 hass-api.py entity enable sensor.jvc_projector_hdr_mode
 hass-api.py entity disable sensor.some_entity
+```
+
+**logs** -- parsed and filtered HA error log:
+
+```bash
+hass-api.py logs                          # Warnings+ (last 50)
+hass-api.py logs -l ERROR                 # Errors+ only
+hass-api.py logs jvc                      # Grep for "jvc" (case-insensitive)
+hass-api.py logs -l DEBUG -n 100          # Last 100 debug+ entries
+hass-api.py logs "automation.*failed"     # Regex pattern
+```
+
+Parses the raw `/api/error_log` text into structured entries with severity filtering and regex grep.
+Tracebacks are attached to their parent log entry. Default: WARNING+, last 50.
+
+**repairs** -- list and dismiss HA repair issues (via WebSocket):
+
+```bash
+hass-api.py repairs                       # List active (non-ignored) repairs
+hass-api.py repairs dismiss deprecated_sensor  # Dismiss by substring match
+hass-api.py repairs dismiss jvc_projector/full_issue_id  # Dismiss by domain/id
 ```
 
 **raw** -- direct API calls for everything else:
@@ -141,13 +174,6 @@ The config endpoints accept POST to update existing configs. Workflow:
 
 The POST replaces the entire config; the payload must be the complete object.
 
-### Script Service Names
-
-Script entity_ids and service names differ. The service name uses the config slug (the key under
-which the script is stored), not the entity_id. Check `GET /api/services` filtered to `script`
-domain to find the correct service name. Example: entity `script.set_expected_picture_modes` has
-service `script.jvc_set_expected_picture_mode`.
-
 ### Query Parameters (history)
 
 - `?filter_entity_id=sensor.x,sensor.y&minimal_response&no_attributes`
@@ -169,11 +195,6 @@ hass-api.py raw GET /api/services \
 # Recent history (single entity, minimal)
 hass-api.py raw GET \
   "/api/history/period?filter_entity_id=sensor.temp&minimal_response&no_attributes"
-
-# Find entities matching a pattern across domains
-hass-api.py raw GET /api/states \
-  | jq '[.[] | select(.entity_id | test("jvc|projector"; "i"))
-    | {entity_id, state, name: .attributes.friendly_name}]'
 ```
 
 ## Automation YAML Authoring
@@ -240,7 +261,7 @@ When debugging entity or automation issues:
 2. Check attributes: `hass-api.py attributes <entity_id>`
 3. Get automation/script config: `hass-api.py config automation|script <id>`
 4. Render templates to test conditions: `hass-api.py template '<jinja2>'`
-5. Check error log: `hass-api.py raw GET /api/error_log` (returns plain text; write to /tmp and
-   search with rg for relevant keywords)
-6. Check service fields: `hass-api.py raw GET /api/services | jq '.[] | select(.domain == "X")'`
-7. Check history: `hass-api.py raw GET "/api/history/period?filter_entity_id=X&minimal_response"`
+5. Check error log: `hass-api.py logs` or `hass-api.py logs <pattern>`
+6. Check repairs: `hass-api.py repairs` (separate from error log; shows UI repair issues)
+7. Check service fields: `hass-api.py raw GET /api/services | jq '.[] | select(.domain == "X")'`
+8. Check history: `hass-api.py raw GET "/api/history/period?filter_entity_id=X&minimal_response"`
