@@ -1,0 +1,48 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: home-assistant-postgres
+spec:
+  instances: 1
+
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+
+  bootstrap:
+    initdb:
+      database: home-assistant
+      owner: home-assistant
+
+  storage:
+    size: 10Gi
+    storageClass: ceph-block
+
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 1Gi
+
+  backup:
+    retentionPolicy: "30d"
+    target: "prefer-standby"
+    barmanObjectStore:
+      destinationPath: "s3://postgres-backups/home-assistant"
+      endpointURL: "http://garage.storage:3900"
+      s3Credentials:
+        accessKeyId:
+          name: home-assistant-s3-gs3ak
+          key: AWS_ACCESS_KEY
+        secretAccessKey:
+          name: home-assistant-s3-gs3ak
+          key: AWS_SECRET_KEY
+        region:
+          name: garage-s3-region
+          key: AWS_REGION
+      wal:
+        compression: "gzip"
+        maxParallel: 1
+      data:
+        compression: "gzip"
