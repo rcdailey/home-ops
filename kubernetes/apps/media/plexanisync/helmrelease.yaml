@@ -61,6 +61,15 @@ spec:
                 drop: ["ALL"]
 
     persistence:
+      config:
+        type: configMap
+        name: plexanisync-config
+        advancedMounts:
+          plexanisync:
+            app:
+            - path: /plexanisync/custom_mappings.yaml
+              subPath: custom_mappings.yaml
+              readOnly: true
       tmp:
         type: emptyDir
         advancedMounts:
