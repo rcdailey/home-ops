@@ -1,13 +1,15 @@
 ---
 esphome:
   name: emporiavue3
+  min_version: "2026.3.0"
 
 substitutions:
   display_name: EmpVu3
 
+# Migrated from digiblur/esphome-vue3 (stale since March 2024) to the
+# actively maintained upstream. PR #362 added variant support for Vue 3.
 external_components:
-#  - source: github://emporia-vue-local/esphome@dev
-- source: github://digiblur/esphome-vue3@dev
+- source: github://emporia-vue-local/esphome@dev
   components:
   - emporia_vue
 
@@ -16,6 +18,8 @@ esp32:
   framework:
     type: esp-idf
     version: recommended
+    advanced:
+      minimum_chip_revision: "3.1"
 
 preferences:
   # the default of 1min is far too short--flash chip is rated
@@ -38,11 +42,16 @@ wifi:
 
 captive_portal:
 
+# Vue 3 uses GPIO 5/18 (Vue 2 uses 21/22).
+# 400kHz + 1ms timeout per upstream PR #317 and ESPHome 2024.10+ requirements.
 i2c:
-  sda: 5
+  sda:
+    number: 5
+    ignore_strapping_warning: true
   scl: 18
   scan: false
-  frequency: 200kHz # recommended range is 50-200kHz
+  frequency: 400kHz
+  timeout: 1ms
   id: i2c_a
 
 switch:
@@ -50,8 +59,8 @@ switch:
   name: Restart
 
 time:
-- platform: sntp
-  id: sntp_time
+- platform: homeassistant
+  id: ha_time
 
 # these are called references in YAML. They allow you to reuse
 # this configuration in each sensor, while only defining it once
@@ -76,6 +85,7 @@ time:
 
 sensor:
 - platform: emporia_vue
+  variant: vue3
   i2c_id: i2c_a
   phases:
   # 40, leg 2
@@ -126,8 +136,8 @@ sensor:
   - {phase_id: phase_b, input: "12", power: {name: "CT12 Power: Media Fridge", id: cir12, filters: [*moving_avg, *pos]}}
   - {phase_id: phase_b, input: "13", power: {name: "CT13 Power: Garage GFI", id: cir13, filters: [*moving_avg, *pos]}}
   - {phase_id: phase_a, input: "14", power: {name: "CT14 Power: Media 20a", id: cir14, filters: [*moving_avg, *pos]},}
-  #- { phase_id: phase_b, input: "15", power: { name: "Circuit 15 Power", id: cir15, filters: [ *moving_avg, *pos ] } }
-  #- { phase_id: phase_a, input: "16", power: { name: "Circuit 16 Power", id: cir16, filters: [ *moving_avg, *pos ] } }
+  #- {phase_id: phase_b, input: "15", power: {name: "Circuit 15 Power", id: cir15, filters: [*moving_avg, *pos]}}
+  #- {phase_id: phase_a, input: "16", power: {name: "Circuit 16 Power", id: cir16, filters: [*moving_avg, *pos]}}
 - platform: template
   name: "Total Power"
   lambda: return id(phase_a_power).state + id(phase_b_power).state;
@@ -138,19 +148,20 @@ sensor:
   name: "Total Daily Energy"
   power_id: total_power
   accuracy_decimals: 0
-- {power_id: cir1, platform: total_daily_energy, accuracy_decimals: 0, name: "CT01 Usage: Subpanel Black"}
-- {power_id: cir2, platform: total_daily_energy, accuracy_decimals: 0, name: "CT02 Usage: Subpanel Red"}
-- {power_id: cir3, platform: total_daily_energy, accuracy_decimals: 0, name: "CT03 Usage: AC1"}
-- {power_id: cir4, platform: total_daily_energy, accuracy_decimals: 0, name: "CT04 Usage: AC2"}
-- {power_id: cir5, platform: total_daily_energy, accuracy_decimals: 0, name: "CT05 Usage: AC3"}
-- {power_id: cir6, platform: total_daily_energy, accuracy_decimals: 0, name: "CT06 Usage: Oven"}
-- {power_id: cir7, platform: total_daily_energy, accuracy_decimals: 0, name: "CT07 Usage: Dryer"}
-- {power_id: cir8, platform: total_daily_energy, accuracy_decimals: 0, name: "CT08 Usage: Pool Red"}
-- {power_id: cir9, platform: total_daily_energy, accuracy_decimals: 0, name: "CT09 Usage: Pool Black"}
-- {power_id: cir10, platform: total_daily_energy, accuracy_decimals: 0, name: "CT10 Usage: Server"}
-- {power_id: cir11, platform: total_daily_energy, accuracy_decimals: 0, name: "CT11 Usage: Ice Maker"}
-- {power_id: cir12, platform: total_daily_energy, accuracy_decimals: 0, name: "CT12 Usage: Media Fridge"}
-- {power_id: cir13, platform: total_daily_energy, accuracy_decimals: 0, name: "CT13 Usage: Garage GFI"}
-- {power_id: cir14, platform: total_daily_energy, accuracy_decimals: 0, name: "CT14 Usage: Media 20a",}
-#- { power_id: cir15, platform: total_daily_energy, accuracy_decimals: 0, name: "Circuit 15 Daily Energy" }
-#- { power_id: cir16, platform: total_daily_energy, accuracy_decimals: 0, name: "Circuit 16 Daily Energy" }
+  restore: false
+- {power_id: cir1, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT01 Usage: Subpanel Black"}
+- {power_id: cir2, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT02 Usage: Subpanel Red"}
+- {power_id: cir3, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT03 Usage: AC1"}
+- {power_id: cir4, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT04 Usage: AC2"}
+- {power_id: cir5, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT05 Usage: AC3"}
+- {power_id: cir6, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT06 Usage: Oven"}
+- {power_id: cir7, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT07 Usage: Dryer"}
+- {power_id: cir8, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT08 Usage: Pool Red"}
+- {power_id: cir9, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT09 Usage: Pool Black"}
+- {power_id: cir10, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT10 Usage: Server"}
+- {power_id: cir11, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT11 Usage: Ice Maker"}
+- {power_id: cir12, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT12 Usage: Media Fridge"}
+- {power_id: cir13, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT13 Usage: Garage GFI"}
+- {power_id: cir14, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "CT14 Usage: Media 20a",}
+#- {power_id: cir15, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "Circuit 15 Daily Energy"}
+#- {power_id: cir16, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "Circuit 16 Daily Energy"}

@@ -55,7 +55,7 @@ spec:
                 cpu: 10m
                 memory: 128Mi
               limits:
-                memory: 512Mi
+                memory: 2Gi
 
     defaultPodOptions:
       automountServiceAccountToken: false
@@ -89,6 +89,7 @@ spec:
             port: 6052
 
     persistence:
+      # ESPHome device configs, storage JSON, and build artifacts
       config:
         type: persistentVolumeClaim
         existingClaim: esphome
@@ -97,6 +98,7 @@ spec:
             app:
             - path: /config
 
+      # Git-managed device YAML overlaid into /config
       vue3-config:
         type: configMap
         name: esphome-config
@@ -106,6 +108,31 @@ spec:
             - path: /config/vue3.yaml
               subPath: vue3.yaml
               readOnly: true
+
+      # PlatformIO toolchains (~2GB); entrypoint redirects here when mounted
+      cache:
+        type: persistentVolumeClaim
+        existingClaim: esphome-cache
+        advancedMounts:
+          esphome:
+            app:
+            - path: /cache
+
+      # uv (Python package manager) cache used during firmware compilation
+      dot-cache:
+        type: emptyDir
+        advancedMounts:
+          esphome:
+            app:
+            - path: /.cache
+
+      # PlatformIO core state (appstate.json, telemetry)
+      platformio:
+        type: emptyDir
+        advancedMounts:
+          esphome:
+            app:
+            - path: /.platformio
 
       tmp:
         type: emptyDir
