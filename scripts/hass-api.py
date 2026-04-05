@@ -1,4 +1,11 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "homeassistant-api",
+#     "aiohttp",
+# ]
+# ///
 
 """Convenience wrapper for Home Assistant REST API calls."""
 
