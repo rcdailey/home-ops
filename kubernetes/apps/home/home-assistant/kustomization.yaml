@@ -6,4 +6,13 @@ components:
 - ../../../components/volsync
 resources:
 - ./helmrelease.yaml
+- ./postgres-cluster.yaml
+- ./postgres-scheduled-backup.yaml
 - ./pvc.yaml
+- ./s3.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+secretGenerator:
+- name: garage-s3-region
+  literals:
+  - AWS_REGION=garage

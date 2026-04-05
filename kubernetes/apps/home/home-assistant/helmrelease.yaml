@@ -26,6 +26,21 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
 
+        initContainers:
+          # Write recorder config referencing CNPG connection URI so HA
+          # can !include it without env var support in configuration.yaml
+          init-db-config:
+            image:
+              repository: alpine
+              tag: latest
+            command: ["sh", "-c", "echo \"db_url: $${RECORDER_DB_URL}\" > /config/recorder.yaml"]
+            env:
+              RECORDER_DB_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: home-assistant-postgres-app
+                    key: uri
+
         containers:
           app:
             image:
@@ -37,12 +52,18 @@ spec:
               HASS_HTTP_TRUSTED_PROXY_2: 192.168.50.0/24
               HASS_HTTP_TRUSTED_PROXY_3: 10.42.0.0/16
             probes:
-              liveness: &probes
+              liveness:
                 enabled: true
-              readiness: *probes
+                spec:
+                  httpGet:
+                    path: /manifest.json
+                    port: 8123
               startup:
                 enabled: true
                 spec:
+                  httpGet:
+                    path: /manifest.json
+                    port: 8123
                   failureThreshold: 30
             securityContext:
               allowPrivilegeEscalation: false
@@ -103,6 +124,8 @@ spec:
         existingClaim: home-assistant-rwx
         advancedMounts:
           home-assistant:
+            init-db-config:
+            - path: /config
             app:
             - path: /config
 
