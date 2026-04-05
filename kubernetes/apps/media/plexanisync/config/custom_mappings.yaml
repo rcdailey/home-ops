@@ -1,0 +1,4 @@
+---
+remote-urls:
+- https://raw.githubusercontent.com/RickDB/PlexAniSync-Custom-Mappings/main/series-tmdb.en.yaml
+- https://raw.githubusercontent.com/RickDB/PlexAniSync-Custom-Mappings/main/movies-tmdb.en.yaml

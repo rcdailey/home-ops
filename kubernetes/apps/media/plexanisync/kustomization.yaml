@@ -5,3 +5,9 @@ kind: Kustomization
 resources:
 - ./externalsecret.yaml
 - ./helmrelease.yaml
+configMapGenerator:
+- name: plexanisync-config
+  files:
+  - custom_mappings.yaml=./config/custom_mappings.yaml
+generatorOptions:
+  disableNameSuffixHash: true
