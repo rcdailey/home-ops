@@ -119,6 +119,11 @@
       href: https://sprinkler.${SECRET_DOMAIN}/
       siteMonitor: http://opensprinkler.external:80
 
+  - VS Code:
+      icon: vscode
+      href: https://code.${SECRET_DOMAIN}/
+      siteMonitor: http://code-server.home:8080
+
 - Infrastructure:
   - Blocky:
       icon: blocky
@@ -134,11 +139,6 @@
       icon: pocket-id
       href: https://auth.${SECRET_DOMAIN}/
       siteMonitor: http://pocket-id.default:1411
-
-  - VS Code:
-      icon: vscode
-      href: https://code.${SECRET_DOMAIN}/
-      siteMonitor: http://code-server.home:8080
 
   - Unraid:
       icon: unraid
