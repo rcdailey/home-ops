@@ -42,11 +42,13 @@
     "bash": {
       // kubectl - ALLOW (read-only inspection)
       "kubectl exec*": "allow",
+      "kubectl exec* rm *": "ask",
 
       // kubectl - DENY (hard block, GitOps only)
       "kubectl apply*": "deny",
       "kubectl apply -f /tmp/*": "ask", // allow for adhoc testing
       "kubectl create*": "deny",
+      "kubectl create job*--from=cronjob*": "allow",
       "kubectl edit*": "deny",
       "kubectl replace*": "deny",
       "kubectl label*": "deny",
