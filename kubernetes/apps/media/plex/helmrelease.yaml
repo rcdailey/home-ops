@@ -42,6 +42,7 @@ spec:
               # Covers 192.168.0.0-31.255, excludes 192.168.50.0/24 (Kubernetes BGP/LoadBalancer
               # subnet) to prevent plex.{SECRET_DOMAIN} from being treated as local network traffic
               PLEX_PREFERENCE_2: "LanNetworksBandwidth=192.168.0.0/19"
+              PLEX_PREFERENCE_3: "LanNetworks=192.168.0.0/19"
 
             probes:
               liveness:
