@@ -215,6 +215,7 @@ organize documentation that belongs in Outline per the boundary above.
 - `dns-debug`: REQUIRED when diagnosing DNS issues, or investigating blocked domains
 - `home-assistant`: REQUIRED when interacting with Home Assistant (entity queries, service calls,
   automation authoring/debugging)
+- `outline-cli`: REQUIRED when using the `ol` CLI for Outline wiki operations
 - `renovate`: REQUIRED when creating, modifying, or auditing Renovate configuration
 
 ### Agents
