@@ -2378,14 +2378,14 @@ const authUrl = `https://auth.example.com/authorize?` +
 
 #### Flow Decision Matrix
 
-| Client Type         | Can Keep Secret? | User Involved? | Recommended Flow        |
-| ------------------- | ---------------- | -------------- | ----------------------- |
-| Server-side web app | ✅ Yes            | ✅ Yes          | Authorization Code      |
-| SPA (React, Vue)    | ❌ No             | ✅ Yes          | Auth Code + PKCE        |
-| Native mobile app   | ❌ No             | ✅ Yes          | Auth Code + PKCE        |
-| Desktop app         | ❌ No             | ✅ Yes          | Auth Code + PKCE        |
-| Service/daemon      | ✅ Yes            | ❌ No           | Client Credentials      |
-| Legacy SPA          | ❌ No             | ✅ Yes          | ⚠️ Implicit (deprecated) |
+| Client Type         | Can Keep Secret? | User Involved? | Recommended Flow       |
+| ------------------- | ---------------- | -------------- | ---------------------- |
+| Server-side web app | Yes              | Yes            | Authorization Code     |
+| SPA (React, Vue)    | No               | Yes            | Auth Code + PKCE       |
+| Native mobile app   | No               | Yes            | Auth Code + PKCE       |
+| Desktop app         | No               | Yes            | Auth Code + PKCE       |
+| Service/daemon      | Yes              | No             | Client Credentials     |
+| Legacy SPA          | No               | Yes            | Implicit (deprecated)  |
 
 </details>
 
