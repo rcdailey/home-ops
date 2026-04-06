@@ -9,20 +9,6 @@
       "disabled": true
     }
   },
-  "mcp": {
-    // "outline": {
-    //   "type": "remote",
-    //   "url": "https://docs.{env:SECRET_DOMAIN}/mcp",
-    // },
-    "outline": {
-      "type": "local",
-      "command": ["uvx", "mcp-outline"],
-      "environment": {
-        "OUTLINE_API_URL": "https://docs.{env:SECRET_DOMAIN}/api",
-        "OUTLINE_API_KEY": "{env:OUTLINE_API_KEY}"
-      }
-    }
-  },
   "permission": {
     // Disable built-in outline MCP until v1.7 adds fetch tool
     "outline_*": "deny",
