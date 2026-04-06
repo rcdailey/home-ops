@@ -38,7 +38,7 @@ context. These rules are mandatory:
 
 `./scripts/hass-api.py` wraps the Home Assistant REST API. Requires `SECRET_DOMAIN` and `HASS_TOKEN`
 environment variables (sourced from `.mise.local.toml`). Depends on `homeassistant-api` (pip) and
-`aiohttp` (pip, for WebSocket operations: `entity`, `orient`, `repairs`).
+`aiohttp` (pip, for WebSocket operations: `entity`, `orient`, `repairs`, `area`).
 
 ### Subcommands
 
@@ -114,6 +114,59 @@ hass-api.py logs "automation.*failed"     # Regex pattern
 
 Parses the raw `/api/error_log` text into structured entries with severity filtering and regex grep.
 Tracebacks are attached to their parent log entry. Default: WARNING+, last 50.
+
+**history** -- entity state history with statistics:
+
+```bash
+hass-api.py history sensor.temperature             # Last 24h (default), head/tail
+hass-api.py history sensor.x sensor.y --from 48    # Multiple entities, 48h back
+hass-api.py history sensor.x --from 2h --summary   # Min/max/first/last/resets
+hass-api.py history sensor.x --from 2026-04-01T00:00:00 --to 2026-04-02T00:00:00
+hass-api.py history sensor.x --from 24 -n 20       # Show 20 head + 20 tail entries
+hass-api.py history sensor.x --from 24 --json      # Raw JSON output
+```
+
+`--from` accepts hours (number or `Nh`) or ISO timestamps. `--summary` shows min/max/first/last and
+detects value resets (>50% drop). Default output shows head/tail entries with `...` for skipped
+middle. Requests use `minimal_response` and `no_attributes` to minimize payload.
+
+**activity** -- entity logbook timeline:
+
+```bash
+hass-api.py activity sensor.total_power           # Last 1 hour (default)
+hass-api.py activity light.office --hours 24      # Last 24 hours
+hass-api.py activity sensor.x sensor.y            # Multiple entities
+```
+
+Shows timestamped state changes from the HA logbook for the specified entities.
+
+**area** -- manage areas and entity area assignments (via WebSocket):
+
+```bash
+hass-api.py area list                                 # All areas
+hass-api.py area get sensor.ct10_power_server         # Entity's area assignment
+hass-api.py area set sensor.ct10_power_server server_room    # Assign entity to area
+hass-api.py area set "sensor.a,sensor.b" "Media Room"        # Batch assign (comma-separated)
+hass-api.py area create "Upstairs"                    # Create a new area
+```
+
+Area resolution accepts area_id or display name (case-insensitive). Entity-level area overrides the
+device-inherited area. Batch set accepts comma-separated entity IDs in a single quoted argument.
+
+**energy** -- energy dashboard configuration (via WebSocket):
+
+```bash
+hass-api.py energy                        # Show current config (readable)
+hass-api.py energy get --json             # Raw JSON output
+hass-api.py energy validate               # Check for broken entity references
+hass-api.py energy set device.add sensor.x_daily_energy       # Add device sensor
+hass-api.py energy set device.remove sensor.x_daily_energy    # Remove device sensor
+hass-api.py energy set device.replace "sensor.old=sensor.new" # Replace entity reference
+```
+
+Reads/writes the Energy dashboard preferences via `energy/get_prefs` and `energy/save_prefs`
+WebSocket messages. The `set` action does read-modify-write (fetches current prefs, applies the
+change, saves back). `validate` calls `energy/validate` to detect broken entity references.
 
 **repairs** -- list and dismiss HA repair issues (via WebSocket):
 
