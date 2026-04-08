@@ -6,6 +6,11 @@ metadata:
   labels:
     grafana.internal/instance: grafana
 spec:
+  # Managed explicitly so Renovate can track upgrades. The operator patches this
+  # field with its built-in default on first reconcile and never updates it again,
+  # so omitting it from the manifest pins Grafana to whatever version was current
+  # at CR creation time.
+  version: "12.4.2"
   # Disable operator's default securityContext so our custom one (UID 1000) applies.
   # Required for correct file ownership on operator-managed PVC.
   disableDefaultSecurityContext: All

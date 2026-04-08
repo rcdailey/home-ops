@@ -1,17 +1,24 @@
 ---
 sources:
+  # Opt-in collection: only pods explicitly labeled are watched.
+  # Filtering happens at the apiserver watch level (Vector never lists
+  # unlabeled pods), so write amplification stays proportional to the
+  # number of labeled pods, not cluster-wide pod count.
+  #
+  # To opt a pod in, add label: observability.home-ops/logs=true
+  # For Rook-managed pods, set this via CephCluster.spec.labels.<daemon>.
   k8s:
     type: kubernetes_logs
-    # Memory optimization: Use API server cache instead of etcd
     use_apiserver_cache: true
-    # Exclude high-volume, low-value namespaces
-    exclude_paths_glob_patterns:
-    - /var/log/pods/rook-ceph_*/**
-    - /var/log/pods/kube-system_*/**
-    - /var/log/pods/flux-system_*/**
-    - /var/log/pods/cert-manager_*/**
-    # Exclude rotated/compressed log files (only watch current logs)
-    - "**/*.gz"
-    - "**/*.log.[0-9]*"
+    extra_label_selector: "observability.home-ops/logs=true"
+  # Talos service logs (machine.logging.destinations) and kernel messages
+  # (KmsgLogConfig) arrive as JSON Lines over TCP. Each node's Talos pushes
+  # to localhost:6170 which reaches this pod via hostNetwork.
+  talos:
+    type: socket
+    address: 0.0.0.0:6170
+    mode: tcp
+    decoding:
+      codec: json
   internal_metrics:
     type: internal_metrics

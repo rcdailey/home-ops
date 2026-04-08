@@ -1,0 +1,51 @@
+# Parser for Talos Linux service logs and kernel messages (kmsg).
+# Both arrive as JSON Lines via machine.logging.destinations (services)
+# and KmsgLogConfig (kernel). The .node field is pre-set by the
+# talos_enrich transform before this parser runs.
+
+# Normalize message
+msg = del(.msg)
+.message = if msg != null { to_string(msg) ?? "" } else { "" }
+
+# Service logs carry talos-time (RFC3339); kernel logs have only a
+# monotonic clock which is not useful as an absolute timestamp.
+ts_raw = del(."talos-time")
+if ts_raw != null {
+  ts, err = parse_timestamp(to_string(ts_raw) ?? "", format: "%+")
+  if err == null {
+    .timestamp = ts
+  }
+}
+
+# Normalize level: service logs use talos-level, kernel logs use priority
+talos_level = del(."talos-level")
+priority = del(.priority)
+if talos_level != null {
+  .level = downcase(to_string(talos_level) ?? "info")
+} else if priority != null {
+  .level = downcase(to_string(priority) ?? "info")
+} else {
+  .level = "info"
+}
+
+# Source identification
+service = del(."talos-service")
+facility = del(.facility)
+if service != null {
+  .app = to_string(service) ?? "talos"
+  .log_type = "talos-service"
+} else if facility != null {
+  .app = "kernel"
+  .log_type = "talos-kernel"
+  .kernel_facility = to_string(facility) ?? ""
+} else {
+  .app = "talos"
+  .log_type = "talos"
+}
+
+# Preserve kernel sequence for ordering; drop monotonic clock (not useful
+# without boot-time correlation)
+del(.clock)
+
+# Clean up metadata that adds no investigation value
+del(.caller)

@@ -218,12 +218,6 @@ organize documentation that belongs in Outline per the boundary above.
 - `outline-cli`: REQUIRED when using the `ol` CLI for Outline wiki operations
 - `renovate`: REQUIRED when creating, modifying, or auditing Renovate configuration
 
-### Agents
-
-- `app-scout`: SHOULD delegate app discovery and market share research (app-scout.sh + octocode).
-  Runs on haiku-4-5 for cost efficiency. Use when evaluating Helm charts, comparing dedicated chart
-  vs app-template adoption, or finding reference implementations.
-
 ### Investigations
 
 When documenting a debugging session:
@@ -542,6 +536,13 @@ Examples: `fix(plex): resolve crash loop`, `feat(bookstack): add wiki documentat
 # Raw PromQL
 ./scripts/query-vm.py query 'up{job="kubelet"}'
 ./scripts/query-vm.py query 'rate(http_requests_total[5m])' --from 1h --step 5m
+
+# Point-in-time investigation (--at interprets as local time, default window 10m)
+./scripts/query-vm.py query 'etcd_server_is_leader' --at 2026-04-09T16:19:45
+./scripts/query-vm.py query 'some_metric' --at 2026-04-09T16:19:45 --window 20m --step 30s
+
+# Sparse metrics (hide all-zero series)
+./scripts/query-vm.py query 'ceph_pg_scrubbing' --from 1h --hide-zero
 
 # Discovery
 ./scripts/query-vm.py labels                  # All label names
