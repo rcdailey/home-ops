@@ -10,8 +10,15 @@ if .app == null && .kubernetes.pod_name != null {
 }
 .namespace = .kubernetes.pod_namespace
 
-# Remove entire pod_labels object to eliminate 51+ feature.node.* labels
-.kubernetes = del(.kubernetes.pod_labels)
+# Strip metadata bloat: node_labels alone carry 100+ feature.node.kubernetes.io/*
+# entries that inflate per-event memory ~10x. Identity fields (.app, .namespace)
+# were already extracted above; what's left in .kubernetes is bookkeeping.
+del(.kubernetes.pod_labels)
+del(.kubernetes.node_labels)
+del(.kubernetes.namespace_labels)
+del(.kubernetes.pod_annotations)
+del(.kubernetes.pod_ips)
+del(.kubernetes.container_image_id)
 
 # Try to parse JSON logs and merge into root event
 parsed, err = parse_json(._msg)

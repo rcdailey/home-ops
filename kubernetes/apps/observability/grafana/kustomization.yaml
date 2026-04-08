@@ -14,5 +14,16 @@ configMapGenerator:
   - container-memory-usage.json=dashboards/container-memory-usage.json
   options:
     disableNameSuffixHash: true
+    labels:
+      app.kubernetes.io/managed-by: grafana-operator
+    annotations:
+      kustomize.toolkit.fluxcd.io/substitute: disabled
+- name: ceph-etcd-incident-overview-dashboard
+  files:
+  - ceph-etcd-incident-overview.json=dashboards/ceph-etcd-incident-overview.json
+  options:
+    disableNameSuffixHash: true
+    labels:
+      app.kubernetes.io/managed-by: grafana-operator
     annotations:
       kustomize.toolkit.fluxcd.io/substitute: disabled

@@ -1,0 +1,166 @@
+[
+  {
+    "name": "service-log-info",
+    "input": {
+      "msg": "[talos] apply config request: immediate true, on reboot false",
+      "talos-level": "info",
+      "talos-service": "machined",
+      "talos-time": "2026-04-08T10:48:49.294858021Z"
+    },
+    "expect": {
+      "message": "[talos] apply config request: immediate true, on reboot false",
+      "level": "info",
+      "app": "machined",
+      "log_type": "talos-service",
+      "timestamp": "2026-04-08T10:48:49.294858021Z"
+    }
+  },
+  {
+    "name": "service-log-warn",
+    "input": {
+      "msg": "[talos] task startAllServices (1/1): waiting for 6 services",
+      "talos-level": "warn",
+      "talos-service": "machined",
+      "talos-time": "2026-04-08T16:53:21.325869800Z"
+    },
+    "expect": {
+      "message": "[talos] task startAllServices (1/1): waiting for 6 services",
+      "level": "warn",
+      "app": "machined",
+      "log_type": "talos-service"
+    }
+  },
+  {
+    "name": "service-log-etcd-error",
+    "input": {
+      "msg": "health check failed",
+      "talos-level": "warning",
+      "talos-service": "etcd",
+      "talos-time": "2026-04-08T12:05:30.987654321Z",
+      "error": "context deadline exceeded"
+    },
+    "expect": {
+      "message": "health check failed",
+      "level": "warning",
+      "app": "etcd",
+      "log_type": "talos-service",
+      "error": "context deadline exceeded"
+    }
+  },
+  {
+    "name": "kernel-ceph-warning",
+    "input": {
+      "clock": 9001234,
+      "facility": "kern",
+      "msg": "libceph: mon2 (2)10.43.167.156:3300 socket closed (con state OPEN)",
+      "priority": "warning",
+      "seq": 4521
+    },
+    "expect": {
+      "message": "libceph: mon2 (2)10.43.167.156:3300 socket closed (con state OPEN)",
+      "level": "warning",
+      "app": "kernel",
+      "log_type": "talos-kernel",
+      "kernel_facility": "kern",
+      "seq": 4521
+    }
+  },
+  {
+    "name": "kernel-ceph-error",
+    "input": {
+      "clock": 9001236,
+      "facility": "kern",
+      "msg": "libceph: connect (2)10.43.111.18:3300 error -1",
+      "priority": "err",
+      "seq": 4523
+    },
+    "expect": {
+      "message": "libceph: connect (2)10.43.111.18:3300 error -1",
+      "level": "err",
+      "app": "kernel",
+      "log_type": "talos-kernel",
+      "kernel_facility": "kern",
+      "seq": 4523
+    }
+  },
+  {
+    "name": "kernel-nvme-timeout",
+    "input": {
+      "clock": 1200000,
+      "facility": "kern",
+      "msg": "nvme nvme0: I/O 42 (op 0x1) QID 3 timeout, aborting",
+      "priority": "err",
+      "seq": 8001
+    },
+    "expect": {
+      "message": "nvme nvme0: I/O 42 (op 0x1) QID 3 timeout, aborting",
+      "level": "err",
+      "app": "kernel",
+      "log_type": "talos-kernel",
+      "kernel_facility": "kern"
+    }
+  },
+  {
+    "name": "kernel-pcie-aer",
+    "input": {
+      "clock": 1200001,
+      "facility": "kern",
+      "msg": "pcieport 0000:00:1d.0: AER: Corrected error received: 0000:02:00.0",
+      "priority": "warning",
+      "seq": 8002
+    },
+    "expect": {
+      "message": "pcieport 0000:00:1d.0: AER: Corrected error received: 0000:02:00.0",
+      "level": "warning",
+      "app": "kernel",
+      "log_type": "talos-kernel"
+    }
+  },
+  {
+    "name": "hybrid-kernel-with-talos-fields",
+    "input": {
+      "clock": 6252819,
+      "facility": "user",
+      "msg": "[talos] task startAllServices (1/1): waiting for 6 services",
+      "priority": "warning",
+      "seq": 711,
+      "talos-level": "warn",
+      "talos-time": "2026-04-08T16:53:21.325869800Z"
+    },
+    "expect": {
+      "message": "[talos] task startAllServices (1/1): waiting for 6 services",
+      "level": "warn",
+      "app": "kernel",
+      "log_type": "talos-kernel",
+      "kernel_facility": "user",
+      "seq": 711
+    }
+  },
+  {
+    "name": "unknown-source-fallback",
+    "input": {
+      "msg": "some unknown event"
+    },
+    "expect": {
+      "message": "some unknown event",
+      "level": "info",
+      "app": "talos",
+      "log_type": "talos"
+    }
+  },
+  {
+    "name": "caller-field-cleaned",
+    "input": {
+      "msg": "starting service",
+      "talos-level": "info",
+      "talos-service": "apid",
+      "talos-time": "2026-04-08T08:00:00Z",
+      "caller": "pkg/grpc/server.go:42"
+    },
+    "expect": {
+      "message": "starting service",
+      "app": "apid",
+      "log_type": "talos-service"
+    }
+  }
+]

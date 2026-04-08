@@ -11,6 +11,13 @@ Examples:
   %(prog)s query 'up{job="kubelet"}'
   %(prog)s query 'rate(http_requests_total[5m])' --from 24h --step 5m
 
+  # Point-in-time investigation (--at interprets as local time)
+  %(prog)s query 'etcd_server_is_leader' --at 2026-04-09T16:19:45
+  %(prog)s query 'some_metric' --at 2026-04-09T16:19:45 --window 20m --step 30s
+
+  # Sparse metrics (hide all-zero series)
+  %(prog)s query 'ceph_pg_scrubbing' --from 1h --hide-zero
+
   # Discovery
   %(prog)s labels                    # List all label names
   %(prog)s labels namespace          # List values for 'namespace' label
@@ -83,7 +90,27 @@ class TimeRange:
 
     @classmethod
     def from_args(cls, args: argparse.Namespace) -> "TimeRange":
-        """Create TimeRange from parsed arguments."""
+        """Create TimeRange from parsed arguments.
+
+        Supports --at for point-in-time investigation, which expands to a
+        symmetric window around the given timestamp (default 10 minutes).
+        """
+        at = getattr(args, "time_at", None)
+        if at:
+            window = getattr(args, "window", "10m")
+            half_sec = cls._duration_to_seconds(window) // 2
+            at_dt = datetime.fromisoformat(at)
+            if at_dt.tzinfo is None:
+                at_dt = at_dt.astimezone()  # Treat naive as local time
+            at_utc = at_dt.astimezone(timezone.utc)
+            start_dt = at_utc - timedelta(seconds=half_sec)
+            end_dt = at_utc + timedelta(seconds=half_sec)
+            # VictoriaMetrics interprets naive timestamps as UTC
+            fmt = "%Y-%m-%dT%H:%M:%S"
+            return cls(
+                start=start_dt.strftime(fmt),
+                end=end_dt.strftime(fmt),
+            )
         return cls(
             start=getattr(args, "time_from", None),
             end=getattr(args, "time_to", None),
@@ -159,13 +186,16 @@ class TimeRange:
 
 
 def add_time_args(
-    parser: argparse.ArgumentParser, default_start: str | None = None
+    parser: argparse.ArgumentParser,
+    default_start: str | None = None,
+    support_at: bool = False,
 ) -> None:
     """Add standard --from/--to time range arguments to a parser.
 
     Args:
         parser: The argument parser to add arguments to.
         default_start: Default value for --from. None means current/instant mode.
+        support_at: If True, add --at and --window for point-in-time investigation.
     """
     parser.add_argument(
         "--from",
@@ -180,6 +210,19 @@ def add_time_args(
         metavar="TIME",
         help="End time (default: now)",
     )
+    if support_at:
+        parser.add_argument(
+            "--at",
+            dest="time_at",
+            metavar="TIMESTAMP",
+            help="Investigate around a specific time (ISO timestamp); expands to symmetric window",
+        )
+        parser.add_argument(
+            "--window",
+            default="10m",
+            metavar="DURATION",
+            help="Window size for --at (default: 10m)",
+        )
 
 
 def colorize(text: str, color: str) -> str:
@@ -243,9 +286,87 @@ def format_labels(labels: dict[str, str], exclude: set[str] | None = None) -> li
     return [f"{k}={v}" for k, v in labels.items() if k not in exclude]
 
 
-def format_timestamp(ts: float) -> str:
-    """Format Unix timestamp as ISO string."""
-    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def format_timestamp(ts: float, local: bool = False) -> str:
+    """Format Unix timestamp as human-readable string.
+
+    Args:
+        ts: Unix timestamp.
+        local: If True, display in local time without timezone suffix.
+    """
+    dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+    if local:
+        dt = dt.astimezone()
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# Labels that are always noise in investigation output
+_NOISE_LABELS = frozenset(
+    {
+        "__name__",
+        "container",
+        "endpoint",
+        "job",
+        "namespace",
+        "pod",
+        "prometheus",
+        "service",
+    }
+)
+
+# Labels to drop when a better human-readable equivalent exists
+_REDUNDANT_LABEL_PAIRS = {
+    "instance": "nodename",  # drop instance when nodename present
+}
+
+
+def compact_labels(metric: dict[str, str]) -> str:
+    """Format metric labels, omitting noise and redundant labels.
+
+    Drops common infrastructure labels, and prefers human-readable names
+    (e.g., nodename over instance). Returns just the value when only one
+    distinguishing label remains.
+    """
+    interesting = {k: v for k, v in metric.items() if k not in _NOISE_LABELS}
+    # Drop redundant labels when their readable equivalent exists
+    for drop_key, keep_key in _REDUNDANT_LABEL_PAIRS.items():
+        if drop_key in interesting and keep_key in interesting:
+            del interesting[drop_key]
+    if not interesting:
+        # Fall back to full labels if everything was noise
+        interesting = {k: v for k, v in metric.items() if k != "__name__"}
+    if len(interesting) == 1:
+        return next(iter(interesting.values()))
+    return ", ".join(f"{k}={v}" for k, v in interesting.items())
+
+
+def format_value(val: str) -> str:
+    """Format a numeric value string for readable output.
+
+    Reduces excessive decimal precision while preserving meaningful digits.
+    Integer-valued floats display as integers. Small values keep enough
+    precision to be meaningful.
+    """
+    try:
+        f = float(val)
+    except (ValueError, TypeError):
+        return val
+    if f != f:  # NaN
+        return "NaN"
+    if abs(f) == float("inf"):
+        return val
+    # Integer-valued
+    if f == int(f) and abs(f) < 1e15:
+        return str(int(f))
+    # Adaptive precision: more digits for small numbers
+    abs_f = abs(f)
+    if abs_f >= 100:
+        return f"{f:.1f}"
+    if abs_f >= 1:
+        return f"{f:.3f}"
+    if abs_f >= 0.001:
+        return f"{f:.4f}"
+    return f"{f:.6f}"
 
 
 def container_stats(
@@ -394,24 +515,116 @@ def cmd_query(args: argparse.Namespace) -> None:
         print(colorize("No results", "yellow"))
         return
 
-    print(colorize(f"Result type: {result_type}, {len(results)} series\n", "blue"))
+    hide_zero = getattr(args, "hide_zero", False)
+    if hide_zero and result_type == "matrix":
+        original_count = len(results)
+        results = [
+            r for r in results if any(float(val) != 0 for _, val in r.get("values", []))
+        ]
+        hidden = original_count - len(results)
+        suffix = f" ({hidden} all-zero series hidden)" if hidden else ""
+        if not results:
+            print(
+                colorize(
+                    f"No results (all {original_count} series were zero)", "yellow"
+                )
+            )
+            return
+    else:
+        suffix = ""
 
-    for r in results[:20]:
-        metric = r.get("metric", {})
-        labels = ", ".join(f"{k}={v}" for k, v in metric.items())
-        if result_type == "matrix":
-            values = r.get("values", [])
-            print(f"{{{labels}}}")
-            for ts, val in values[:10]:
-                print(f"  {ts}: {val}")
-            if len(values) > 10:
-                print(f"  ... ({len(values)} total points)")
-        else:
+    print(
+        colorize(f"Result type: {result_type}, {len(results)} series{suffix}\n", "blue")
+    )
+
+    max_series = 20
+
+    if result_type == "matrix":
+        _print_matrix(results[:max_series])
+    else:
+        for r in results[:max_series]:
+            metric = r.get("metric", {})
+            labels = compact_labels(metric)
             value = r.get("value", [None, "N/A"])
-            print(f"{{{labels}}} => {value[1]}")
+            print(f"{{{labels}}} => {format_value(value[1])}")
 
-    if len(results) > 20:
-        print(colorize(f"\n... {len(results) - 20} more series", "yellow"))
+    if len(results) > max_series:
+        print(colorize(f"\n... {len(results) - max_series} more series", "yellow"))
+
+
+def _print_matrix(results: list[dict[str, Any]]) -> None:
+    """Print matrix results in a compact columnar format.
+
+    Prints the date once as a header, then uses time-only columns.
+    Each series gets one row with its label and aligned values.
+    """
+    if not results:
+        return
+
+    max_points = 50
+
+    # Collect all timestamps across series (use first series as reference)
+    all_values = results[0].get("values", [])
+    if not all_values:
+        return
+
+    timestamps = [float(ts) for ts, _ in all_values[:max_points]]
+    if not timestamps:
+        return
+
+    # Build time headers, printing date only when it changes
+    prev_date = ""
+    time_headers: list[str] = []
+    date_header = ""
+    for ts in timestamps:
+        dt = datetime.fromtimestamp(ts, tz=timezone.utc).astimezone()
+        date_str = dt.strftime("%Y-%m-%d")
+        time_str = dt.strftime("%H:%M:%S")
+        if date_str != prev_date:
+            date_header = date_str
+            prev_date = date_str
+        time_headers.append(time_str)
+
+    # Build compact labels for each series
+    series_labels: list[str] = []
+    for r in results:
+        series_labels.append(compact_labels(r.get("metric", {})))
+
+    # Calculate column width from values (find widest formatted value)
+    col_width = 8  # minimum width for HH:MM:SS
+    for r in results:
+        for _, val in r.get("values", [])[:max_points]:
+            col_width = max(col_width, len(format_value(val)))
+    col_width += 1  # padding
+
+    label_width = max(len(lb) for lb in series_labels) if series_labels else 0
+    label_width = max(label_width, 5)  # minimum
+
+    # Print date header
+    print(colorize(f"Date: {date_header}", "blue"))
+
+    # Print time header row
+    header = " " * label_width + " | "
+    header += " ".join(h.rjust(col_width) for h in time_headers)
+    print(header)
+
+    # Print separator
+    print("-" * len(header))
+
+    # Print each series as one row
+    for i, r in enumerate(results):
+        values = r.get("values", [])
+        # Build a lookup from timestamp to value
+        val_map = {float(ts): val for ts, val in values[:max_points]}
+        row = series_labels[i].ljust(label_width) + " | "
+        row += " ".join(
+            format_value(val_map.get(ts, "")).rjust(col_width) for ts in timestamps
+        )
+        print(row)
+
+    total_points = len(results[0].get("values", []))
+    if total_points > max_points:
+        print(f"... ({total_points} total points, showing first {max_points})")
 
 
 def cmd_labels(args: argparse.Namespace) -> None:
@@ -738,7 +951,12 @@ def main() -> None:
     p.add_argument(
         "--step", default="1m", help="Step interval for range queries (default: 1m)"
     )
-    add_time_args(p)
+    p.add_argument(
+        "--hide-zero",
+        action="store_true",
+        help="Hide series where all values are zero (useful for sparse metrics)",
+    )
+    add_time_args(p, support_at=True)
 
     # labels
     p = subparsers.add_parser("labels", help="List labels or label values")

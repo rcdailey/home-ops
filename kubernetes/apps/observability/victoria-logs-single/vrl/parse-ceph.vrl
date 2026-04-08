@@ -1,0 +1,75 @@
+# Ceph daemon log parser
+#
+# Target format (stderr output from Rook-managed Ceph daemons):
+#   debug <timestamp> <thread_id_hex>  <ceph_level> <subsystem_and_message>
+#
+# The leading "debug" token is Ceph's stream marker for the dout channel,
+# not a severity. All mon daemon stderr lines carry this prefix after
+# mon_cluster_log_level=info silenced the separate cluster/audit channel
+# forwarding that used "cluster <ts>..." / "audit <ts>..." prefixes.
+#
+# Example lines:
+#   debug 2026-04-08T03:08:19.456+0000 7f8b4c0a1700  1 mon.j@0(leader).paxos(paxos active c 12345..12400) collect
+#   debug 2026-04-08T03:08:25.123+0000 7f1a2b3c4d00  5 rocksdb: [db/compaction/compaction_job.cc:1658] compacted
+#   debug 2026-04-08T03:08:28.456+0000 7f8b4c0a1700  0 mon.j@0(leader) e42 my_rank is now 0 (was 0)
+#
+# The numeric token after the thread id is Ceph's dout *verbosity* level,
+# not a syslog severity. dout(N) emits when the subsystem's log level is
+# >= N, so lower numbers are simply "more likely to be visible" (e.g.
+# dout(0) = always on). Mapping it to syslog severity produces nonsense
+# like "mgr stat" admin-socket polls being tagged as errors. We capture
+# it as .ceph_verbosity for debugging and leave .level at "info" unless
+# a real severity signal is present in the body (see below).
+
+# Enrichment (match the default parser's field layout)
+.app = .kubernetes.pod_labels.app
+if .app == null {
+  .app = .kubernetes.pod_labels."app.kubernetes.io/name"
+}
+.namespace = .kubernetes.pod_namespace
+
+# Preserve Rook-assigned daemon identity for easier querying
+if exists(.kubernetes.pod_labels.ceph_daemon_id) {
+  .ceph_daemon_id = .kubernetes.pod_labels.ceph_daemon_id
+}
+if exists(.kubernetes.pod_labels.ceph_daemon_type) {
+  .ceph_daemon_type = .kubernetes.pod_labels.ceph_daemon_type
+}
+
+# Strip metadata bloat: node_labels alone carry 100+ feature.node.kubernetes.io/*
+# entries that inflate per-event memory ~10x and push Vector OOM on mon-hosting
+# nodes. Keep only identity fields useful for querying.
+del(.kubernetes.pod_labels)
+del(.kubernetes.node_labels)
+del(.kubernetes.namespace_labels)
+del(.kubernetes.pod_annotations)
+del(.kubernetes.pod_ips)
+del(.kubernetes.container_image_id)
+
+# Parse the Ceph log line. The leading "debug " stream marker is optional
+# to stay tolerant of any lines that slip through without it (startup
+# banners, crash dumps, kernel-side libceph messages).
+parsed, err = parse_regex(.message, r'^(?:debug\s+)?(?P<ts>\S+)\s+(?P<thread_id>[0-9a-f]{12,16})\s+(?P<verbosity>-?\d+)\s+(?P<body>.*)$')
+
+if err == null {
+  .timestamp = parsed.ts
+  .thread_id = parsed.thread_id
+  .ceph_verbosity = to_int(parsed.verbosity) ?? 0
+  .message = parsed.body
+}
+
+# Default everything parsed (or not) to info. Ceph dout verbosity is not
+# severity, and the channel lines that would carry real severity tokens
+# are mostly silenced by mon_cluster_log_level=info. We override below
+# only when a concrete severity signal is present.
+.level = "info"
+
+# If a channel line did slip through (cluster/audit/cephadm log_channel
+# forwarding at warn/err), honor the bracketed severity token. Example:
+#   log_channel(cluster) log [WRN] : Health check failed: ...
+#   log_channel(cluster) log [ERR] : Health check failed: ...
+if match(string!(.message), r'log_channel\([^)]+\) log \[ERR\]') {
+  .level = "error"
+} else if match(string!(.message), r'log_channel\([^)]+\) log \[WRN\]') {
+  .level = "warn"
+}

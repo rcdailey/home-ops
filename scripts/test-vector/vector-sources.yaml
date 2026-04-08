@@ -1,7 +1,24 @@
+---
 sources:
   k8s:
     type: stdin
     decoding:
       codec: json
+  # Read Talos test samples as raw lines; the talos_json_parse transform
+  # below decodes JSON to match the production socket source behavior.
+  talos_raw:
+    type: file
+    include:
+    - /vector-data-dir/talos-samples.jsonl
+    read_from: beginning
   internal_metrics:
     type: internal_metrics
+
+transforms:
+  # Test-only shim: production uses a socket source named "talos" with JSON
+  # decoding. This transform provides the same interface (name + parsed fields)
+  # so the production talos_enrich transform chains from it unchanged.
+  talos:
+    type: remap
+    inputs: [talos_raw]
+    source: . = parse_json!(string!(.message))

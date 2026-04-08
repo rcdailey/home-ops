@@ -1,0 +1,111 @@
+[
+  {
+    "name": "mon-paxos-info",
+    "input": {
+      "message": "2026-04-08T03:08:19.456+0000 7f8b4c0a1700  1 mon.j@0(leader).paxos(paxos active c 12345..12400) collect",
+      "kubernetes": {
+        "pod_labels": {
+          "app.kubernetes.io/name": "rook-ceph-mon",
+          "ceph_daemon_id": "j",
+          "ceph_daemon_type": "mon"
+        },
+        "pod_namespace": "rook-ceph",
+        "pod_name": "rook-ceph-mon-j-abc123"
+      }
+    },
+    "expect": {
+      "message": "mon.j@0(leader).paxos(paxos active c 12345..12400) collect",
+      "level": "warn",
+      "ceph_level": 1,
+      "thread_id": "7f8b4c0a1700",
+      "timestamp": "2026-04-08T03:08:19.456+0000",
+      "ceph_daemon_id": "j",
+      "ceph_daemon_type": "mon",
+      "app": "rook-ceph-mon",
+      "namespace": "rook-ceph"
+    }
+  },
+  {
+    "name": "mon-error-critical",
+    "input": {
+      "message": "2026-04-08T03:08:20.123+0000 7f8b4c0a1700  0 mon.j@0(leader) e42 my_rank is now 0 (was 0)",
+      "kubernetes": {
+        "pod_labels": {
+          "app.kubernetes.io/name": "rook-ceph-mon",
+          "ceph_daemon_id": "j",
+          "ceph_daemon_type": "mon"
+        },
+        "pod_namespace": "rook-ceph",
+        "pod_name": "rook-ceph-mon-j-abc123"
+      }
+    },
+    "expect": {
+      "message": "mon.j@0(leader) e42 my_rank is now 0 (was 0)",
+      "level": "error",
+      "ceph_level": 0,
+      "thread_id": "7f8b4c0a1700",
+      "app": "rook-ceph-mon",
+      "namespace": "rook-ceph"
+    }
+  },
+  {
+    "name": "rocksdb-debug",
+    "input": {
+      "message": "2026-04-08T03:08:21.789+0000 7f1a2b3c4d00 10 rocksdb: [db/compaction/compaction_job.cc:1658] compacted",
+      "kubernetes": {
+        "pod_labels": {
+          "app.kubernetes.io/name": "rook-ceph-mon",
+          "ceph_daemon_id": "j",
+          "ceph_daemon_type": "mon"
+        },
+        "pod_namespace": "rook-ceph",
+        "pod_name": "rook-ceph-mon-j-abc123"
+      }
+    },
+    "expect": {
+      "message": "rocksdb: [db/compaction/compaction_job.cc:1658] compacted",
+      "level": "debug",
+      "ceph_level": 10,
+      "thread_id": "7f1a2b3c4d00"
+    }
+  },
+  {
+    "name": "ms-info-level-5",
+    "input": {
+      "message": "2026-04-08T03:08:22.000+0000 7f8b4c0a1700  5 mon.j@0 e42 ms_dispatch mgrbeacon",
+      "kubernetes": {
+        "pod_labels": {
+          "app.kubernetes.io/name": "rook-ceph-mon",
+          "ceph_daemon_id": "j",
+          "ceph_daemon_type": "mon"
+        },
+        "pod_namespace": "rook-ceph",
+        "pod_name": "rook-ceph-mon-j-abc123"
+      }
+    },
+    "expect": {
+      "message": "mon.j@0 e42 ms_dispatch mgrbeacon",
+      "level": "info",
+      "ceph_level": 5
+    }
+  },
+  {
+    "name": "unparseable-fallback",
+    "input": {
+      "message": "*** Caught signal (Aborted) ***",
+      "kubernetes": {
+        "pod_labels": {
+          "app.kubernetes.io/name": "rook-ceph-mon",
+          "ceph_daemon_id": "j",
+          "ceph_daemon_type": "mon"
+        },
+        "pod_namespace": "rook-ceph",
+        "pod_name": "rook-ceph-mon-j-abc123"
+      }
+    },
+    "expect": {
+      "message": "*** Caught signal (Aborted) ***",
+      "level": "info"
+    }
+  }
+]
