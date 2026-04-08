@@ -1,3 +1,4 @@
+---
 services:
   vector:
     image: timberio/vector:0.54.0-alpine
@@ -5,18 +6,24 @@ services:
     stdin_open: true
     tty: false
     volumes:
-    # Production config files (read-only)
+    # Production transforms (read-only)
     - ../../kubernetes/apps/observability/victoria-logs-single/vector/vector-transforms.yaml:/etc/vector/vector-transforms.yaml:ro
-    - ../../kubernetes/apps/observability/victoria-logs-single/vrl:/etc/vector/vrl:ro
-    # Test config files (read-only)
+    # Production VRL files bind-mounted flat into /etc/vector/ to match the
+    # projected-volume layout used in the cluster (chart mounts both
+    # existingConfigMaps into /etc/vector/ as a merged directory).
+    - ../../kubernetes/apps/observability/victoria-logs-single/vrl/parse-default.vrl:/etc/vector/parse-default.vrl:ro
+    - ../../kubernetes/apps/observability/victoria-logs-single/vrl/parse-ceph.vrl:/etc/vector/parse-ceph.vrl:ro
+    # Test-specific source and sink (stdin/console) for local pipeline testing
     - ./vector-sources.yaml:/etc/vector/vector-sources.yaml:ro
     - ./vector-sinks.yaml:/etc/vector/vector-sinks.yaml:ro
     # Data directory (read-write)
     - ./vector-data:/vector-data-dir
+    # Use explicit --config per file to avoid loading the image's default
+    # /etc/vector/vector.yaml (which ships with demo_logs source).
     command:
     - --config
-    - /etc/vector/vector-transforms.yaml
-    - --config
     - /etc/vector/vector-sources.yaml
+    - --config
+    - /etc/vector/vector-transforms.yaml
     - --config
     - /etc/vector/vector-sinks.yaml

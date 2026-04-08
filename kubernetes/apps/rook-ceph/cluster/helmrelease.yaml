@@ -68,8 +68,46 @@ spec:
           osd_recovery_sleep_ssd: "0.025"
           # Lower priority vs client I/O (default=3, client ops default to 63)
           osd_recovery_op_priority: "2"
+          # Raise cluster/audit log channel threshold from default "debug" so
+          # mon stderr stops emitting pgmap DBG and admin-socket audit DBG
+          # spam. Governs both "cluster" and "audit" channels with a single
+          # knob (Ceph v19 Squid removed the per-channel level options).
+          # Keeps [INF] health transitions and election events, which are the
+          # signal the ceph-mon-quorum-loss investigation cares about.
+          # Ref: https://docs.ceph.com/en/latest/rados/troubleshooting/log-and-debug/#monitors
+          mon_cluster_log_level: info
+          # Quiet rocksdb compaction/file-deletion chatter from mon stderr.
+          # Default is 4/5 which emits every sst file delete event from the
+          # mon's store.db. Drop output level to 1 (keep memory ring at 5
+          # for post-crash dumps). Compaction progress is not useful for
+          # mon quorum incident analysis.
+          debug_rocksdb: 1/5
+          # Disable the LogMonitor's cluster-log stderr forwarder. Rook
+          # starts mon daemons with --default-mon-cluster-log-to-stderr=true
+          # (see rook/pkg/operator/ceph/config/defaults.go), which causes
+          # every cluster/audit channel entry to be written to stderr a
+          # second time in the "cluster <ts> mon.X ..." / "audit <ts> ..."
+          # format, on top of the dout trace ("debug <ts> ... log_channel(X)
+          # log [Y] : ...") that log_to_stderr already emits. Roughly 20%
+          # of mon stderr lines were exact consecutive duplicates of this
+          # forwarder output. Disabling it at the central config store
+          # overrides Rook's --default- cmdline flag and leaves the dout
+          # stream as the single source of truth, which is also the only
+          # format our VRL parser matches. Rook's mon health check uses
+          # `ceph status` + admin socket, not log scraping, so removing the
+          # forwarder output has no operator-side impact. Upstream cephadm
+          # recommends the same setting when file logging is enabled.
+          # Ref: ceph/doc/cephadm/operations.rst ("logged twice")
+          mon_cluster_log_to_stderr: "false"
       cleanupPolicy:
         wipeDevicesFromOtherClusters: false
+      # Opt mon pods into Vector log collection via label gate.
+      # See kubernetes/apps/observability/victoria-logs-single/ for the
+      # collector config. Only mon daemons are labeled for now; extend to
+      # mgr/osd later if the incident signal requires it.
+      labels:
+        mon:
+          observability.home-ops/logs: "true"
       mon:
         count: 3
         allowMultiplePerNode: false

@@ -5,57 +5,53 @@ api:
   address: 0.0.0.0:8686
   playground: true
 
-# Global configuration for memory optimization
+# Release metric memory for components that churn labels
 expire_metrics_secs: 600
 
 transforms:
-  # Default parser for all apps (fallback)
+  # Route Ceph daemon logs (mon/mgr/osd) to the Ceph-specific parser.
+  # Everything else falls through to the default parser.
+  ceph_filter:
+    type: filter
+    inputs: [k8s]
+    condition:
+      type: vrl
+      source: |
+        exists(.kubernetes.pod_labels.ceph_daemon_type) ||
+          starts_with(string(.kubernetes.pod_labels."app.kubernetes.io/name") ?? "", "rook-ceph")
+
+  ceph_parser:
+    type: remap
+    inputs: [ceph_filter]
+    file: /etc/vector/parse-ceph.vrl
+
+  # Drop Rook operator admin-socket polling noise. Ceph's LogChannel emits
+  # a dout trace at level 0 every time an audit entry is dispatched, before
+  # the channel threshold check runs. This means mon_cluster_log_level
+  # cannot silence these lines; they bypass it by design (see Ceph
+  # src/common/LogClient.cc). The traces carry no investigation value;
+  # they just prove Rook is polling mon_status / osd dump / mgr stat /
+  # fs dump on the usual reconcile loop.
+  ceph_noise_filter:
+    type: filter
+    inputs: [ceph_parser]
+    condition:
+      type: vrl
+      source: |
+        msg = string(.message) ?? ""
+        !contains(msg, "log_channel(audit) log [DBG]")
+
+  # Default fallback for any opt-in pod that isn't Ceph.
+  default_filter:
+    type: filter
+    inputs: [k8s]
+    condition:
+      type: vrl
+      source: |
+        !(exists(.kubernetes.pod_labels.ceph_daemon_type) ||
+          starts_with(string(.kubernetes.pod_labels."app.kubernetes.io/name") ?? "", "rook-ceph"))
+
   default_parser:
     type: remap
-    inputs: [k8s]
-    file: /etc/vector/vrl/parse-default.vrl
-
-  # Filter for kometa logs
-  kometa_filter:
-    type: filter
-    inputs: [k8s]
-    condition:
-      type: vrl
-      source: |
-        .kubernetes.pod_labels."app.kubernetes.io/name" == "kometa" && .kubernetes.container_name == "app"
-
-  # Custom parser for kometa
-  kometa_parser:
-    type: remap
-    inputs: [kometa_filter]
-    file: /etc/vector/vrl/parse-kometa.vrl
-
-  # Filter for qbittorrent logs
-  qbittorrent_filter:
-    type: filter
-    inputs: [k8s]
-    condition:
-      type: vrl
-      source: |
-        .kubernetes.pod_labels."app.kubernetes.io/name" == "qbittorrent"
-
-  # Custom parser for qbittorrent
-  qbittorrent_parser:
-    type: remap
-    inputs: [qbittorrent_filter]
-    file: /etc/vector/vrl/parse-qbittorrent.vrl
-
-  # Filter for cloudflare-tunnel logs
-  cloudflare_tunnel_filter:
-    type: filter
-    inputs: [k8s]
-    condition:
-      type: vrl
-      source: |
-        .kubernetes.pod_labels."app.kubernetes.io/name" == "cloudflare-tunnel"
-
-  # Custom parser for cloudflare-tunnel
-  cloudflare_tunnel_parser:
-    type: remap
-    inputs: [cloudflare_tunnel_filter]
-    file: /etc/vector/vrl/parse-cloudflare-tunnel.vrl
+    inputs: [default_filter]
+    file: /etc/vector/parse-default.vrl

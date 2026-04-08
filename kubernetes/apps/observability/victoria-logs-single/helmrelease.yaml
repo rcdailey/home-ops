@@ -81,11 +81,32 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
 
-    # Disable centralized Vector DaemonSet log collection
-    # WHY: Opt-in approach - use sidecar pattern for application-specific logs (e.g., Plex)
-    # This eliminates continuous writes to VictoriaLogs from cluster-wide log collection
+    # Vector DaemonSet with label-gated opt-in collection.
+    # Only pods carrying observability.home-ops/logs=true are watched; filtering
+    # happens at the apiserver watch level via extra_label_selector in the
+    # kubernetes_logs source, so unlabeled pods are never listed or tailed.
+    # Config and VRL files come from two Kustomize-generated ConfigMaps
+    # (see kustomization.yaml). Both are projected into /etc/vector/ by the
+    # chart; Vector's --config-dir ignores non-YAML files, so .vrl files sit
+    # alongside YAML config safely.
     vector:
-      enabled: false
+      enabled: true
+      existingConfigMaps:
+      - victoria-logs-vector-config
+      - victoria-logs-vector-vrl
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
+      resources:
+        limits:
+          # Steady-state usage is ~20Mi but Vector hits a startup hump on
+          # mon-hosting nodes while catching up on checkpointed backlog and
+          # opening file watchers. 512Mi was not enough to absorb the spike;
+          # 1Gi covers it with headroom. Memory limits cap, not reserve, so
+          # the extra ceiling costs nothing during steady state.
+          memory: 1Gi
+        requests:
+          cpu: 20m
+          memory: 128Mi
 
     # Service monitor for metrics
     serviceMonitor:

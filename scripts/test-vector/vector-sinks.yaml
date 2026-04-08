@@ -1,10 +1,9 @@
+---
 sinks:
   test_console:
     type: console
     inputs:
+    - ceph_parser
     - default_parser
-    - kometa_parser
-    - qbittorrent_parser
-    - cloudflare_tunnel_parser
     encoding:
       codec: json

@@ -8,23 +8,19 @@ sinks:
   vlogs:
     type: elasticsearch
     inputs:
+    - ceph_noise_filter
     - default_parser
-    - kometa_parser
-    - qbittorrent_parser
-    - cloudflare_tunnel_parser
     mode: bulk
     api_version: v8
     compression: gzip
     healthcheck:
       enabled: false
-    # Buffer configuration for memory optimization
     buffer:
       type: memory
       max_events: 10000
       when_full: drop_newest
-    # Batch settings for memory efficiency
     batch:
-      max_bytes: 1048576 # 1MB
+      max_bytes: 1048576
       timeout_secs: 5
     request:
       headers:
