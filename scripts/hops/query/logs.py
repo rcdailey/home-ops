@@ -16,7 +16,7 @@ from typing import Any
 import click
 
 from hops._format import info
-from hops._runner import run
+from hops._runner import kubectl_json, run
 
 VL_URL = "http://victoria-logs-single.observability:9428"
 
@@ -244,6 +244,60 @@ def build_query_from_filters(
     return query
 
 
+_VECTOR_OPT_IN_LABEL = "observability.home-ops/logs"
+_VECTOR_SIDECAR_NAME = "vector"
+
+
+def _has_vector_sidecar(pod_spec: dict) -> bool:
+    """Check if the pod spec includes a Vector sidecar container."""
+    for container_list in ("containers", "initContainers"):
+        for c in pod_spec.get(container_list, []):
+            if c.get("name") == _VECTOR_SIDECAR_NAME:
+                return True
+    return False
+
+
+def _require_vector_collection(app: str) -> None:
+    """Verify the app exists and Vector is collecting its logs (via daemonset
+    opt-in label or a sidecar container) before querying VictoriaLogs. Exits
+    with an error if the workload is missing or uncollected, so callers never
+    waste a query on logs that don't exist."""
+    for resource in ["deployments", "statefulsets", "daemonsets", "cronjobs", "jobs"]:
+        data = kubectl_json(resource)
+        for item in data.get("items", []):
+            meta = item.get("metadata", {})
+            if meta.get("name") != app:
+                continue
+
+            # Found the workload; get pod template
+            tmpl = item.get("spec", {})
+            if resource == "cronjobs":
+                tmpl = tmpl.get("jobTemplate", {}).get("spec", {})
+            pod_tmpl = tmpl.get("template", {})
+            labels = pod_tmpl.get("metadata", {}).get("labels", {})
+            pod_spec = pod_tmpl.get("spec", {})
+
+            # Path 1: daemonset collection via opt-in label
+            if labels.get(_VECTOR_OPT_IN_LABEL) == "true":
+                return
+            # Path 2: Vector sidecar container
+            if _has_vector_sidecar(pod_spec):
+                return
+
+            ns = meta.get("namespace", "unknown")
+            info(
+                f"error: {app} (namespace: {ns}) has no Vector log collection; "
+                "add pod label "
+                f'"{_VECTOR_OPT_IN_LABEL}=true" for daemonset collection '
+                "or a Vector sidecar container"
+            )
+            info("hint: use 'hops app logs' for immediate kubectl-based access")
+            raise SystemExit(1)
+
+    info(f"error: no workload named {app!r} found in cluster")
+    raise SystemExit(1)
+
+
 # --- Click commands ---
 
 
@@ -292,6 +346,8 @@ def query_cmd(
         raise SystemExit(1)
 
     if has_filters:
+        if app:
+            _require_vector_collection(app)
         query = build_query_from_filters(app, namespace, pod, container, level, search)
     elif logsql:
         query = logsql
