@@ -539,7 +539,7 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 ./scripts/hops.py app list [NAMESPACE]         # Running workloads (deploy/sts/ds)
 ./scripts/hops.py app pods APP [-n NS]         # Pod status, restarts, node
 ./scripts/hops.py app events [NS] [--all]      # Non-Normal events (--all for Normal too)
-./scripts/hops.py app logs APP [-n NS]         # Pod logs (prefer query logs for Vector apps)
+./scripts/hops.py app logs APP [-n NS] [-c CT]  # Pod logs (prefer query logs for Vector apps)
 ./scripts/hops.py app resources APP [-n NS]    # CPU/memory usage vs requests/limits
 ./scripts/hops.py app secrets [NS]             # ExternalSecret sync status
 
@@ -578,8 +578,10 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 ./scripts/hops.py query logs query --app plex -n 10
 ./scripts/hops.py query logs query --app kometa --level error -n 20
 ./scripts/hops.py query logs query '{app="nginx"} AND error' --start 5m
-./scripts/hops.py query logs stats 'error | stats by(level) count(*)'
+./scripts/hops.py query logs stats 'QUERY | stats by(field) count(*)' --start 1h
+./scripts/hops.py query logs stats-range 'QUERY | stats by(f) count(*)' --start 6h --step 1h
 ./scripts/hops.py query logs hits 'error' --start 3h --step 1h
+./scripts/hops.py query logs fields '*'          # List field names from results
 
 # DNS (Blocky query logs, port of blocky.py; requires dns-debug skill)
 ./scripts/hops.py dns search <domain> -f 24h
