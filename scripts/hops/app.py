@@ -195,12 +195,14 @@ def events(namespace: str | None, show_all: bool, limit: int):
 @click.option(
     "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
 )
+@click.option("-c", "--container", default=None, help="Container name (default: all)")
 @click.option("--since", default="1h", help="Time window (default: 1h)")
 @click.option("--lines", default=50, help="Max lines to show")
 @click.option("--previous", is_flag=True, help="Show previous container logs")
 def logs(
     app: str,
     namespace: str | None,
+    container: str | None,
     since: str,
     lines: int,
     previous: bool,
@@ -243,6 +245,10 @@ def logs(
         f"--since={since}",
         f"--tail={lines}",
     ]
+    if container:
+        args.extend(["-c", container])
+    else:
+        args.append("--all-containers")
     if previous:
         args.append("--previous")
 
@@ -255,7 +261,8 @@ def logs(
     output = result.stdout.strip()
     if output:
         info("note: prefer 'hops query logs' for apps with Vector support")
-        info(f"--- {pod} (last {lines} lines, since {since}) ---")
+        container_hint = f", container={container}" if container else ""
+        info(f"--- {pod} (last {lines} lines, since {since}{container_hint}) ---")
         print(output)
     else:
         info(f"No logs from {pod} in the last {since}")
