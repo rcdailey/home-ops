@@ -5,7 +5,7 @@ from __future__ import annotations
 import click
 
 from hops._format import info, kv, table, truncate
-from hops._runner import run, run_json
+from hops._runner import run_json
 
 
 @click.group()
@@ -173,30 +173,3 @@ def kustomization(name: str, namespace: str | None):
         pairs.append((ctype, f"{cstatus} - {truncate(msg, 100)}" if msg else cstatus))
 
     kv(pairs)
-
-
-@cli.command("test")
-@click.argument("path", default="kubernetes/flux/cluster")
-def flux_test(path: str):
-    """Run flux-local test on the cluster configuration."""
-    result = run(
-        [
-            "uvx",
-            "flux-local",
-            "test",
-            "--enable-helm",
-            "--all-namespaces",
-            "--path",
-            path,
-        ],
-        timeout=300,
-        check=False,
-    )
-    if result.stdout:
-        print(result.stdout.rstrip())
-    if result.stderr:
-        print(result.stderr.rstrip())
-    if result.returncode != 0:
-        raise SystemExit(result.returncode)
-    else:
-        info("flux-local test completed successfully")
