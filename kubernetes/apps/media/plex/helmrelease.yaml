@@ -75,7 +75,7 @@ spec:
               capabilities:
                 drop: ["ALL"]
 
-          vector-sidecar:
+          vector:
             image:
               repository: timberio/vector
               tag: 0.54.0-alpine
@@ -112,7 +112,7 @@ spec:
           plex:
             app:
             - path: /config
-            vector-sidecar:
+            vector:
             - path: /config
               readOnly: true
 
@@ -139,7 +139,7 @@ spec:
           plex:
             app:
             - path: /config/Library/Application Support/Plex Media Server/Logs
-            vector-sidecar:
+            vector:
             - path: /config/Library/Application Support/Plex Media Server/Logs
               readOnly: true
 
@@ -158,7 +158,7 @@ spec:
         name: plex-vector-config
         advancedMounts:
           plex:
-            vector-sidecar:
+            vector:
             - path: /etc/vector
               readOnly: true
 
@@ -166,7 +166,7 @@ spec:
         existingClaim: plex-vector-data
         advancedMounts:
           plex:
-            vector-sidecar:
+            vector:
             - path: /var/lib/vector
 
     route:
