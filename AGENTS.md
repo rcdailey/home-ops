@@ -212,15 +212,6 @@ Use the Outline MCP tools (search, read, create, update documents and collection
 content directly. SHOULD proactively use Outline MCP tools when the user asks to create, update, or
 organize documentation that belongs in Outline per the boundary above.
 
-### Skills
-
-- `hops`: REQUIRED when adding, modifying, or debugging `hops` CLI commands
-- `dns-debug`: REQUIRED when diagnosing DNS issues, or investigating blocked domains
-- `home-assistant`: REQUIRED when interacting with Home Assistant (entity queries, service calls,
-  automation authoring/debugging)
-- `outline-cli`: REQUIRED when using the `ol` CLI for Outline wiki operations
-- `renovate`: REQUIRED when creating, modifying, or auditing Renovate configuration
-
 ### Investigations
 
 When documenting a debugging session:
@@ -233,9 +224,6 @@ When documenting a debugging session:
 Investigation docs are historical snapshots, not living documents. If conclusions become stale due
 to infrastructure changes, the ADR supersession chain captures that; do not update old investigation
 docs.
-
-For upstream bug reports requiring gists, load the `gh-gist` skill. No local template or directory
-needed; gists are the sharing mechanism.
 
 ## Tier 3: Reference
 
