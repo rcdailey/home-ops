@@ -216,6 +216,28 @@ spec:
         requests:
           cpu: 10m
           memory: 16Mi
+      vmScrape:
+        spec:
+          endpoints:
+          - port: metrics
+            metricRelabelConfigs:
+            - action: drop
+              source_labels: [mountpoint]
+              regex: "/var/lib/kubelet/pods.+"
+            # Enrich disk metrics with human-readable purpose labels
+            # sda = Talos system disk (SATA), nvme0n1 = Ceph OSD (NVMe) on all nodes
+            - source_labels: [device]
+              regex: sda
+              target_label: disk_purpose
+              replacement: talos-system
+            - source_labels: [device]
+              regex: nvme0n1
+              target_label: disk_purpose
+              replacement: ceph-osd
+            - source_labels: [device]
+              regex: rbd.+
+              target_label: disk_purpose
+              replacement: ceph-rbd
 
     # Kube-state-metrics
     kube-state-metrics:
