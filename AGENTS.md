@@ -190,6 +190,10 @@ automatically.
 - VRL regex: Prefer non-greedy `.*?` over greedy `.*`
 - Sidecar pattern: Regular containers for Deployments, initContainers with restartPolicy: Always for
   Jobs/CronJobs
+- Vector log collection uses two paths: (1) daemonset collection via pod label
+  `observability.home-ops/logs=true`, or (2) a Vector sidecar container for apps that need custom
+  log parsing (e.g., file-based logs). Both paths deliver to VictoriaLogs.
+- Vector sidecar containers MUST be named `vector` (not `vector-sidecar` or other variants)
 
 ### Documentation
 
