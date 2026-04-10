@@ -37,8 +37,8 @@ def _age_str(timestamp: str | None) -> str:
 
 
 def _find_namespace(app_name: str) -> str | None:
-    """Try to find the namespace for an app by searching deployments, statefulsets, daemonsets."""
-    for resource in ["deployments", "statefulsets", "daemonsets"]:
+    """Try to find the namespace for an app by searching all workload types."""
+    for resource in ["deployments", "statefulsets", "daemonsets", "cronjobs", "jobs"]:
         data = kubectl_json(resource)
         for item in data.get("items", []):
             name = item.get("metadata", {}).get("name", "")
@@ -55,9 +55,15 @@ def cli():
 @cli.command("list")
 @click.argument("namespace", required=False)
 def list_apps(namespace: str | None):
-    """Running workloads (Deployments, StatefulSets, DaemonSets)."""
+    """Running workloads (Deployments, StatefulSets, DaemonSets, CronJobs)."""
     rows = []
-    for kind in ["deployments", "statefulsets", "daemonsets"]:
+    kind_labels = {
+        "deployments": "D",
+        "statefulsets": "S",
+        "daemonsets": "DS",
+        "cronjobs": "CJ",
+    }
+    for kind in kind_labels:
         data = kubectl_json(kind, namespace=namespace)
         for item in data.get("items", []):
             meta = item.get("metadata", {})
@@ -66,21 +72,22 @@ def list_apps(namespace: str | None):
                 continue
             name = meta.get("name", "")
             status = item.get("status", {})
-            ready = status.get("readyReplicas", 0) or 0
-            desired = (
-                status.get("replicas", 0)
-                or item.get("spec", {}).get("replicas", 0)
-                or 0
-            )
-            k = kind[0].upper()  # D/S/D
-            if kind == "statefulsets":
-                k = "S"
-            elif kind == "daemonsets":
-                k = "DS"
+            k = kind_labels[kind]
+
+            if kind == "cronjobs":
+                active = len(status.get("active", []))
+                suspended = item.get("spec", {}).get("suspend", False)
+                ready_str = "suspended" if suspended else f"{active} active"
             else:
-                k = "D"
+                ready = status.get("readyReplicas", 0) or 0
+                desired = (
+                    status.get("replicas", 0)
+                    or item.get("spec", {}).get("replicas", 0)
+                    or 0
+                )
+                ready_str = f"{ready}/{desired}"
+
             age_str = _age_str(meta.get("creationTimestamp"))
-            ready_str = f"{ready}/{desired}"
             rows.append([ns, name, k, ready_str, age_str])
 
     rows.sort(key=lambda r: (r[0], r[1]))
