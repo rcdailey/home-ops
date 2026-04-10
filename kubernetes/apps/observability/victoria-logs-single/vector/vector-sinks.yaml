@@ -10,7 +10,7 @@ sinks:
     inputs:
     - ceph_noise_filter
     - default_parser
-    - talos_parser
+    - talos_noise_filter
     mode: bulk
     api_version: v8
     compression: gzip
