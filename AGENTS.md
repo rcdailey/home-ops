@@ -511,6 +511,20 @@ Examples: `fix(plex): resolve crash loop`, `feat(bookstack): add wiki documentat
 - Control plane: hanekawa (192.168.1.63), marin (192.168.1.59), sakura (192.168.1.62)
 - Workers: lucy (192.168.1.54), nami (192.168.1.50)
 
+**Node storage devices:**
+
+Every node has two physical drives: `sda` (SATA, Talos system disk) and `nvme0n1` (NVMe, Ceph OSD).
+When interpreting disk metrics, `sda` is always the OS disk and `nvme0n1` is always the Ceph data
+disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical disks).
+
+| Node     | sda (Talos)           | nvme0n1 (Ceph OSD)               |
+| -------- | --------------------- | -------------------------------- |
+| hanekawa | Samsung 870 EVO 250GB | Samsung 970 EVO Plus 1TB (OSD.5) |
+| marin    | Samsung 870 EVO 250GB | Samsung 970 EVO Plus 1TB (OSD.2) |
+| sakura   | Samsung 870 EVO 250GB | Samsung 970 EVO Plus 1TB (OSD.4) |
+| lucy     | SanDisk SDSSDH32 2TB  | Crucial P3 2TB (OSD.3)           |
+| nami     | Crucial BX500 2TB     | Samsung 990 PRO 2TB (OSD.0)      |
+
 **Storage backends:**
 
 - Rook Ceph: Distributed block/filesystem storage across cluster nodes
