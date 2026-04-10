@@ -93,6 +93,10 @@ spec:
           http:
             port: *port
 
+    defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
+
     route:
       app:
         hostnames:
