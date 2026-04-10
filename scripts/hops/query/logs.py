@@ -15,7 +15,7 @@ from typing import Any
 
 import click
 
-from hops._format import info
+from hops._format import info, table
 from hops._runner import kubectl_json, run
 
 VL_URL = "http://victoria-logs-single.observability:9428"
@@ -86,8 +86,18 @@ class VictoriaLogsClient:
                     pass
         return logs
 
-    def query_stats(self, query: str, time: str | None = None) -> Any:
+    def query_stats(
+        self,
+        query: str,
+        start: str | None = None,
+        end: str | None = None,
+        time: str | None = None,
+    ) -> Any:
         params: dict[str, str] = {"query": query}
+        if start:
+            params["start"] = start
+        if end:
+            params["end"] = end
         if time:
             params["time"] = time
         return self._post_json("/select/logsql/stats_query", params)
@@ -370,14 +380,140 @@ def query_cmd(
     info(f"\nTotal: {len(logs)} log entries")
 
 
+def _format_metric_label(metric: dict[str, str]) -> str:
+    """Compact label string from a stats metric dict."""
+    filtered = {k: v for k, v in metric.items() if k != "__name__"}
+    if not filtered:
+        return "(all)"
+    if len(filtered) == 1:
+        return next(iter(filtered.values())) or "(empty)"
+    return ", ".join(f"{k}={v}" for k, v in filtered.items())
+
+
+def _format_ts(ts: str | float) -> str:
+    """Format a timestamp (ISO string or epoch) to HH:MM."""
+    if isinstance(ts, str):
+        try:
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            return dt.strftime("%H:%M")
+        except (ValueError, TypeError):
+            return str(ts)
+    try:
+        dt = datetime.fromtimestamp(float(ts), tz=datetime.now().astimezone().tzinfo)
+        return dt.strftime("%H:%M")
+    except (ValueError, TypeError, OSError):
+        return str(ts)
+
+
+def _print_vector(results: list[dict]) -> None:
+    """Format Prometheus-style vector results as a table."""
+    if not results:
+        info("No results")
+        return
+    rows = []
+    for r in results:
+        label = _format_metric_label(r.get("metric", {}))
+        val = r.get("value", [None, "N/A"])
+        try:
+            v = float(val[1])
+            value_str = str(int(v)) if v == int(v) else f"{v:.2f}"
+        except (ValueError, TypeError, IndexError):
+            value_str = str(val[1]) if len(val) > 1 else "N/A"
+        rows.append([label, value_str])
+    stat_name = results[0].get("metric", {}).get("__name__", "VALUE")
+    table(["METRIC", stat_name], rows)
+
+
+def _print_matrix_table(results: list[dict]) -> None:
+    """Format Prometheus-style matrix results as a time-series table."""
+    if not results:
+        info("No results")
+        return
+
+    # Collect all timestamps across all series
+    all_ts: list[float] = []
+    for r in results:
+        for ts, _ in r.get("values", []):
+            all_ts.append(float(ts))
+    all_ts = sorted(set(all_ts))
+
+    if not all_ts:
+        info("No data points")
+        return
+
+    # Limit columns for readability
+    max_cols = 12
+    if len(all_ts) > max_cols:
+        # Sample evenly
+        step = len(all_ts) // max_cols
+        sampled = all_ts[::step][:max_cols]
+        info(f"({len(all_ts)} points, showing {len(sampled)} samples)")
+    else:
+        sampled = all_ts
+
+    time_headers = [_format_ts(ts) for ts in sampled]
+    headers = ["METRIC"] + time_headers
+
+    rows = []
+    for r in results:
+        label = _format_metric_label(r.get("metric", {}))
+        val_map = {float(ts): val for ts, val in r.get("values", [])}
+        cells = []
+        for ts in sampled:
+            raw = val_map.get(ts)
+            if raw is None:
+                cells.append("-")
+            else:
+                try:
+                    v = float(raw)
+                    cells.append(str(int(v)) if v == int(v) else f"{v:.2f}")
+                except (ValueError, TypeError):
+                    cells.append(str(raw))
+        rows.append([label] + cells)
+
+    table(headers, rows)
+
+
+def _print_hits_table(data: dict) -> None:
+    """Format VictoriaLogs hits response as a time-series table."""
+    hit_list = data.get("hits", [])
+    if not hit_list:
+        info("No hits")
+        return
+
+    for hit in hit_list:
+        fields = hit.get("fields", {})
+        timestamps = hit.get("timestamps", [])
+        values = hit.get("values", [])
+        total = hit.get("total", sum(values))
+
+        if fields:
+            label = ", ".join(f"{k}={v}" for k, v in fields.items())
+        else:
+            label = "(all)"
+
+        info(f"{label}  total={total}")
+        if timestamps:
+            rows = []
+            for ts, val in zip(timestamps, values):
+                rows.append([_format_ts(ts), str(val)])
+            table(["TIME", "COUNT"], rows)
+
+
 @cli.command()
 @click.argument("query")
-@click.option("--end", help="Timestamp for the query")
-def stats(query: str, end: str | None):
+@click.option("--start", help="Start time (e.g., 5m, 1h, ISO timestamp)")
+@click.option("--end", help="End time")
+@click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
+def stats(query: str, start: str | None, end: str | None, json_mode: bool):
     """Query log statistics (requires stats pipe in query)."""
     client = VictoriaLogsClient()
-    result = client.query_stats(query, time=end)
-    print(json.dumps(result, indent=2))
+    result = client.query_stats(query, start=start, end=end)
+    if json_mode:
+        print(json.dumps(result, indent=2))
+        return
+    results = result.get("data", {}).get("result", [])
+    _print_vector(results)
 
 
 @cli.command("stats-range")
@@ -385,11 +521,18 @@ def stats(query: str, end: str | None):
 @click.option("--start", help="Start time")
 @click.option("--end", help="End time")
 @click.option("--step", default="1h", help="Aggregation interval")
-def stats_range(query: str, start: str | None, end: str | None, step: str):
+@click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
+def stats_range(
+    query: str, start: str | None, end: str | None, step: str, json_mode: bool
+):
     """Query log statistics over a time range."""
     client = VictoriaLogsClient()
     result = client.query_stats_range(query, start=start, end=end, step=step)
-    print(json.dumps(result, indent=2))
+    if json_mode:
+        print(json.dumps(result, indent=2))
+        return
+    results = result.get("data", {}).get("result", [])
+    _print_matrix_table(results)
 
 
 @cli.command()
@@ -398,15 +541,24 @@ def stats_range(query: str, start: str | None, end: str | None, step: str):
 @click.option("--end", help="End time")
 @click.option("--step", default="1h", help="Time bucket size")
 @click.option("--field", multiple=True, help="Group by field (repeatable)")
+@click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
 def hits(
-    query: str, start: str | None, end: str | None, step: str, field: tuple[str, ...]
+    query: str,
+    start: str | None,
+    end: str | None,
+    step: str,
+    field: tuple[str, ...],
+    json_mode: bool,
 ):
     """Query hit statistics over time."""
     client = VictoriaLogsClient()
     result = client.query_hits(
         query, start=start, end=end, step=step, field=list(field) if field else None
     )
-    print(json.dumps(result, indent=2))
+    if json_mode:
+        print(json.dumps(result, indent=2))
+        return
+    _print_hits_table(result)
 
 
 @cli.command()
