@@ -65,7 +65,11 @@ class TimeRange:
     ) -> TimeRange:
         if time_at:
             half_sec = cls._duration_to_seconds(window) // 2
-            at_dt = datetime.fromisoformat(time_at)
+            at_dt = (
+                datetime.now(tz=timezone.utc)
+                if time_at == "now"
+                else datetime.fromisoformat(time_at)
+            )
             if at_dt.tzinfo is None:
                 at_dt = at_dt.astimezone()
             at_utc = at_dt.astimezone(timezone.utc)

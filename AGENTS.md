@@ -561,7 +561,6 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 ./scripts/hops.py flux status                  # Problems only (unhealthy ks/hr)
 ./scripts/hops.py flux hr NAME [-n NS]         # Detailed HelmRelease status
 ./scripts/hops.py flux ks NAME [-n NS]         # Detailed Kustomization status
-./scripts/hops.py flux test [PATH]             # flux-local build test
 
 # Metrics (VictoriaMetrics, port of query-vm.py)
 ./scripts/hops.py query metrics cpu NS 'POD.*' CONTAINER
