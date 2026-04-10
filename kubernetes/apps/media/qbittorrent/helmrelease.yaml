@@ -123,6 +123,8 @@ spec:
     defaultPodOptions:
       labels:
         observability.home-ops/logs: "true"
+      annotations:
+        vector.dev/exclude-containers: "gluetun,port-forward"
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
