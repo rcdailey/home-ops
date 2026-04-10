@@ -11,13 +11,10 @@
   },
   "permission": {
     "bash": {
-      // kubectl - ALLOW (read-only inspection)
-      "kubectl exec*": "allow",
-      "kubectl exec* rm *": "ask",
-
-      // kubectl - DENY (hard block, GitOps only)
+      // kubectl: catch-all ask, deny GitOps-breaking mutations
+      "kubectl *": "ask",
       "kubectl apply*": "deny",
-      "kubectl apply -f /tmp/*": "ask", // allow for adhoc testing
+      "kubectl apply -f /tmp/*": "ask",
       "kubectl create*": "deny",
       "kubectl create job*--from=cronjob*": "allow",
       "kubectl edit*": "deny",
@@ -28,16 +25,8 @@
       "kubectl uncordon*": "deny",
       "kubectl port-forward*": "deny",
 
-      // kubectl - ASK (sometimes needed, prompt for approval)
-      "kubectl delete*": "ask",
-      "kubectl patch*": "ask",
-      "kubectl rollout*": "ask",
-      "kubectl rollout history*": "allow",
-      "kubectl scale*": "ask",
-      "kubectl annotate*": "ask",
-      "kubectl drain*": "ask",
-
-      // talosctl - DENY (infrastructure mutations)
+      // talosctl: catch-all ask, deny infrastructure mutations
+      "talosctl *": "ask",
       "talosctl apply-config*": "deny",
       "talosctl upgrade*": "deny",
       "talosctl reset*": "deny",
@@ -48,25 +37,22 @@
       "talosctl bootstrap*": "deny",
       "talosctl kubeconfig*": "deny",
 
-      // flux - DENY (infrastructure mutations)
+      // flux: catch-all ask, deny infrastructure mutations
+      "flux *": "ask",
       "flux install*": "deny",
       "flux uninstall*": "deny",
       "flux bootstrap*": "deny",
       "flux delete*": "deny",
       "flux reconcile*": "deny",
 
-      // flux - ASK (debugging/operations)
-      "flux suspend*": "ask",
-      "flux resume*": "ask",
-
-      // helm - DENY (bypasses GitOps)
+      // helm: catch-all ask, deny GitOps-bypassing mutations
+      "helm *": "ask",
       "helm install*": "deny",
       "helm upgrade*": "deny",
       "helm uninstall*": "deny",
       "helm rollback*": "deny",
 
-      // task/just - DENY (infrastructure operations)
-      "task *": "deny",
+      // others: complete deny
       "just *": "deny"
     }
   }
