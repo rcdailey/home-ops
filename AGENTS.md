@@ -33,22 +33,24 @@ drift.
 
 Recurring issues indicate incomplete root cause analysis.
 
-**Token-efficient kubectl patterns:**
+**All cluster queries MUST use `hops` commands** (`./scripts/hops.py`). Direct use of kubectl,
+talosctl, helm, flux, and other cluster CLIs is prohibited except when `hops` lacks the needed
+functionality (see escape hatch below). `hops` produces LLM-optimized, token-compact output by
+design; raw CLI output wastes context on noise the LLM has to parse and discard.
 
-- Use `--no-headers`, `-o name`, `| head -n 50` for large result sets
-- Pipe verbose output through `rg` to extract relevant lines
-- Write to /tmp for iteration: `kubectl describe pod foo -n bar > /tmp/pod.txt` then grep multiple
-  times
-- Use label selectors, field selectors, jsonpath to reduce output
-- Avoid `kubectl get all`, unfiltered logs, full resource dumps
+**`hops` escape hatch:** `hops` is not feature-complete. When a command you need does not exist,
+produces too much or too little output, or has a bug: (1) load the `hops` skill, (2) update or add
+the command, (3) test the updated command, (4) use it to continue your original task. Do not work
+around gaps by falling back to raw CLIs; fix the tool instead. If the gap is too complex to fix
+inline, document it as a TODO in the relevant hops source file and fall back to the raw CLI for that
+specific operation only.
 
-**Ephemeral test pods** (connectivity/DNS/network debugging):
+**Ephemeral debug pods** (connectivity/DNS/network debugging):
 
 ```bash
-kubectl run dns-test --rm -i --restart=Never --image=busybox:stable -- nslookup kubernetes.default
+./scripts/hops.py debug dns kubernetes.default
+./scripts/hops.py debug curl http://service.namespace:8080/health
 ```
-
-MUST use `--rm --restart=Never`. MUST NOT deploy services or use privileged contexts.
 
 ### Storage, Volumes, and Resource Patterns
 
@@ -212,6 +214,7 @@ organize documentation that belongs in Outline per the boundary above.
 
 ### Skills
 
+- `hops`: REQUIRED when adding, modifying, or debugging `hops` CLI commands
 - `dns-debug`: REQUIRED when diagnosing DNS issues, or investigating blocked domains
 - `home-assistant`: REQUIRED when interacting with Home Assistant (entity queries, service calls,
   automation authoring/debugging)
@@ -425,15 +428,11 @@ just talos apply-node NODE                    # Apply to each node sequentially
 talosctl SUBCOMMAND OPTIONS -n NODEIP         # -n toward end
 ```
 
-Scripts in `./scripts/` - use `--help` for usage:
+Standalone scripts in `./scripts/` (not part of hops):
 
-- blocky.py: Blocky DNS query log analysis (requires `dns-debug` skill)
-- query-vm.py: VictoriaMetrics queries, alerts, discovery
-- query-victorialogs.py: Log queries
-- ceph.sh: Ceph commands via rook-ceph-tools
 - test-vector-config.py: Vector VRL validation (required for Vector changes)
-- validate-vmrules.sh: VMRule syntax validation
 - icon-search.py: Search dashboard icons for Homepage services
+- hass-api.py: Home Assistant API wrapper (requires `home-assistant` skill)
 
 **Conventional commits:**
 
@@ -468,7 +467,7 @@ Intent-determined types (diff content decides):
 Scope format by domain:
 
 - `kubernetes/**`: app name from directory (e.g., `plex`, `bookstack`)
-- `scripts/**`: script name without extension (e.g., `hass-api`, `query-vm`)
+- `scripts/**`: script name without extension (e.g., `hass-api`, `hops`)
 - `.opencode/**`: component name (e.g., skill name `home-assistant`, agent name `commit`)
 - `flux/**`, `talos/**`: component or subsystem name
 - Omit scope for repo-wide changes that span multiple domains
@@ -533,51 +532,84 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 - Volsync: Kopia repository on NFS (Nezuko /mnt/user/volsync), shared single repository with per-app
   isolation via snapshot identity
 - CloudNativePG: Barman WAL archiving to s3://postgres-backups/{cluster}/
-- Ceph toolbox: kubectl exec -n rook-ceph deploy/rook-ceph-tools -- [ceph status | rbd COMMAND]
+- Ceph toolbox: `./scripts/hops.py storage ceph status` (or `osd`, `io`)
 
 **Intel GPU support:**
 
 - DRA via ResourceClaimTemplate with deviceClassName: gpu.intel.com
 - OpenVINO: Set OPENVINO_DEVICE: GPU for hardware acceleration
 
-**query-vm.py reference** (use `--json` before subcommand for machine output):
+**`hops` quick reference** (run `./scripts/hops.py <domain> --help` for full options):
 
 ```bash
-# Container metrics (namespace, pod-regex, container; default --from 7d)
-./scripts/query-vm.py cpu media 'plex.*' plex
-./scripts/query-vm.py memory default 'homepage.*' app --from 24h
+# App diagnostics (the debugging powerhouse)
+./scripts/hops.py app diagnose APP [-n NS]    # Composite: flux + pods + events + logs
+./scripts/hops.py app list [NAMESPACE]         # Running workloads (deploy/sts/ds)
+./scripts/hops.py app pods APP [-n NS]         # Pod status, restarts, node
+./scripts/hops.py app events [NS] [--all]      # Non-Normal events (--all for Normal too)
+./scripts/hops.py app logs APP [-n NS]         # Pod logs (prefer query logs for Vector apps)
+./scripts/hops.py app resources APP [-n NS]    # CPU/memory usage vs requests/limits
+./scripts/hops.py app secrets [NS]             # ExternalSecret sync status
 
-# Raw PromQL
-./scripts/query-vm.py query 'up{job="kubelet"}'
-./scripts/query-vm.py query 'rate(http_requests_total[5m])' --from 1h --step 5m
+# Node information
+./scripts/hops.py node list                    # All nodes: name, IP, role, status
+./scripts/hops.py node disks [NODE]            # Physical disk inventory
+./scripts/hops.py node status [NODE]           # Conditions, resource pressure, top pods
 
-# Point-in-time investigation (--at interprets as local time, default window 10m)
-./scripts/query-vm.py query 'etcd_server_is_leader' --at 2026-04-09T16:19:45
-./scripts/query-vm.py query 'some_metric' --at 2026-04-09T16:19:45 --window 20m --step 30s
+# Storage
+./scripts/hops.py storage ceph status          # Health, PGs, OSDs, capacity
+./scripts/hops.py storage ceph osd             # OSD table with latency/usage
+./scripts/hops.py storage ceph io              # I/O rates, scrub progress
+./scripts/hops.py storage pvcs [NS]            # PVC status table
 
-# Sparse metrics (hide all-zero series)
-./scripts/query-vm.py query 'ceph_pg_scrubbing' --from 1h --hide-zero
+# Flux GitOps
+./scripts/hops.py flux status                  # Problems only (unhealthy ks/hr)
+./scripts/hops.py flux hr NAME [-n NS]         # Detailed HelmRelease status
+./scripts/hops.py flux ks NAME [-n NS]         # Detailed Kustomization status
+./scripts/hops.py flux test [PATH]             # flux-local build test
 
-# Discovery
-./scripts/query-vm.py labels                  # All label names
-./scripts/query-vm.py labels namespace        # Values for label
-./scripts/query-vm.py metrics --filter cpu    # Find metrics by pattern
+# Metrics (VictoriaMetrics, port of query-vm.py)
+./scripts/hops.py query metrics cpu NS 'POD.*' CONTAINER
+./scripts/hops.py query metrics memory NS 'POD.*' CONTAINER --from 24h
+./scripts/hops.py query metrics query 'up{job="kubelet"}'
+./scripts/hops.py query metrics query 'PROMQL' --from 1h --step 5m
+./scripts/hops.py query metrics query 'METRIC' --at 2026-04-09T16:19:45
+./scripts/hops.py query metrics query 'METRIC' --from 1h --hide-zero
+./scripts/hops.py query metrics labels [NAME]  # Label names or values
+./scripts/hops.py query metrics metrics -f cpu  # Find metrics by pattern
+./scripts/hops.py query metrics alerts          # Firing alerts
+./scripts/hops.py query metrics alerts --from 24h  # Historical alerts
+./scripts/hops.py query metrics alert NAME      # Alert details
+./scripts/hops.py query metrics rules           # All alert rules
 
-# Alerts (current state from vmalert)
-./scripts/query-vm.py alerts                  # Firing (excludes Watchdog/InfoInhibitor)
-./scripts/query-vm.py alerts --state all      # All states
-./scripts/query-vm.py alert <name>            # Detail for specific alert
-./scripts/query-vm.py rules                   # All alert rules
+# Logs (VictoriaLogs, port of query-victorialogs.py)
+./scripts/hops.py query logs query --app plex -n 10
+./scripts/hops.py query logs query --app kometa --level error -n 20
+./scripts/hops.py query logs query '{app="nginx"} AND error' --start 5m
+./scripts/hops.py query logs stats 'error | stats by(level) count(*)'
+./scripts/hops.py query logs hits 'error' --start 3h --step 1h
 
-# Alerts (historical from VictoriaMetrics)
-./scripts/query-vm.py alerts --from 24h       # Alerts that fired in period
-./scripts/query-vm.py alert <name> --from 24h # Historical alert details with firing periods
+# DNS (Blocky query logs, port of blocky.py; requires dns-debug skill)
+./scripts/hops.py dns search <domain> -f 24h
+./scripts/hops.py dns logs -c <client> -f 1h
+./scripts/hops.py dns blocked -c <client> -f 1h
+./scripts/hops.py dns test <domain> [-c <vlan>]
+
+# Debug (ephemeral pods, self-cleaning)
+./scripts/hops.py debug dns kubernetes.default
+./scripts/hops.py debug curl http://service.namespace:8080/health
+
+# Backup
+./scripts/hops.py backup kopia snapshot list
+
+# Validation
+./scripts/hops.py validate vmrules [PATH]
 ```
 
-**Diagnostic PromQL recipes** (use with `query` subcommand, replace NS/POD/C):
+**Diagnostic PromQL recipes** (use with `query metrics query`, replace NS/POD/C):
 
 ```promql
-# Restarts (raw counter; query first to avoid increase() counter-reset confusion)
+# Restarts (raw counter)
 kube_pod_container_status_restarts_total{namespace="NS",pod=~"POD.*"}
 
 # OOMKilled pods
@@ -589,7 +621,7 @@ kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff",namespace="NS
 # Exit code (137=SIGKILL/OOM, 143=SIGTERM, 1=app error)
 kube_pod_container_status_last_terminated_exitcode{namespace="NS",pod=~"POD.*"}
 
-# CPU throttling % (requires CPU limits set)
+# CPU throttling %
 sum(increase(container_cpu_cfs_throttled_periods_total{namespace="NS",pod=~"POD.*",container="C"}[1h])) / sum(increase(container_cpu_cfs_periods_total{namespace="NS",pod=~"POD.*",container="C"}[1h])) * 100
 ```
 

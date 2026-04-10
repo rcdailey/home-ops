@@ -13,32 +13,32 @@ domain.
 
 ## Tool
 
-`./scripts/blocky.py` queries the `log_entries` table in the Blocky CNPG PostgreSQL cluster via
+`./scripts/hops.py dns` queries the `log_entries` table in the Blocky CNPG PostgreSQL cluster via
 `kubectl exec`.
 
-Run `./scripts/blocky.py --help` for full usage.
+Run `./scripts/hops.py dns --help` for full usage.
 
 ### Quick Reference
 
 ```bash
 # Search: who queried a domain recently?
-./scripts/blocky.py search homedepot -f 24h
+./scripts/hops.py dns search homedepot -f 24h
 
 # Logs: all queries from a specific client (by IP, name, or VLAN)
-./scripts/blocky.py logs -c 192.168.3.40 -f 1h
-./scripts/blocky.py logs -c pixel -f 1h
+./scripts/hops.py dns logs -c 192.168.3.40 -f 1h
+./scripts/hops.py dns logs -c pixel -f 1h
 
 # Blocked: only blocked queries for a client
-./scripts/blocky.py blocked -c 192.168.3.40 -f 1h
+./scripts/hops.py dns blocked -c 192.168.3.40 -f 1h
 
 # Combine filters
-./scripts/blocky.py logs -c 192.168.3.40 -d homedepot -f 2h
+./scripts/hops.py dns logs -c 192.168.3.40 -d homedepot -f 2h
 
 # VLAN shorthand (lan, iot, kids, guest, work, cameras)
-./scripts/blocky.py blocked -c kids -f 24h
+./scripts/hops.py dns blocked -c kids -f 24h
 
 # Machine-readable
-./scripts/blocky.py -j blocked -c 192.168.3.40
+./scripts/hops.py dns blocked --json -c 192.168.3.40
 ```
 
 The `-c/--client` flag accepts: partial IP, partial device name (from reverse DNS), CIDR notation,
@@ -49,12 +49,12 @@ or VLAN name. All matching is case-insensitive.
 When a user reports "website X is broken" or "app Y is not working":
 
 1. **Identify the device.** If the user names a specific device, use `-c` with the device name to
-   target it directly: `./scripts/blocky.py blocked -c pixel -f 1h`. NEVER assume a VLAN based on
+   target it directly: `./scripts/hops.py dns blocked -c pixel -f 1h`. NEVER assume a VLAN based on
    the app or use case; always confirm or search. If the device is unknown, search for the domain to
-   find it: `./scripts/blocky.py search <domain> -f 24h` and pick the client with the most recent
+   find it: `./scripts/hops.py dns search <domain> -f 24h` and pick the client with the most recent
    `last_seen` timestamp.
 
-2. **Get blocked queries for that client** to find the offending domain: `./scripts/blocky.py
+2. **Get blocked queries for that client** to find the offending domain: `./scripts/hops.py dns
    blocked -c <ip-or-name> -f 1h` The blocked domain is often not the main site but a subdomain
    (API, CDN, auth service).
 
@@ -64,8 +64,8 @@ When a user reports "website X is broken" or "app Y is not working":
 4. **Determine the fix** (see Remediation below).
 
 5. **After pushing the fix**, Flux applies the change and Blocky reloads automatically (reloader
-   annotation). Verify resolution: `./scripts/blocky.py logs -c <ip-or-name> -d <domain> -f 5m` The
-   domain should now show `RESOLVED` or `CACHED` instead of `BLOCKED`.
+   annotation). Verify resolution: `./scripts/hops.py dns logs -c <ip-or-name> -d <domain> -f 5m`
+   The domain should now show `RESOLVED` or `CACHED` instead of `BLOCKED`.
 
 ## Remediation
 
@@ -112,7 +112,7 @@ Read `kubernetes/apps/dns-private/blocky/data/config.yaml` for current:
 ## Unimplemented Subcommands
 
 The following subcommands were deferred. If you need one during diagnosis, implement it in
-`./scripts/blocky.py` following the patterns of the existing subcommands, then update this skill
+`./scripts/hops.py dns` following the patterns of the existing subcommands, then update this skill
 file to move it from this list to the Quick Reference section above.
 
 - **top-domains**: Top queried domains by count. Flags: `-f`, `-c`, `-l`. GROUP BY `question_name`,

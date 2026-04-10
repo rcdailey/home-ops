@@ -1,6 +1,16 @@
 # Ceph OSD Operations
 
-Manage Ceph OSDs in Rook-managed clusters. Use `./scripts/ceph.sh` wrapper for all commands.
+Manage Ceph OSDs in Rook-managed clusters. Use `hops` for read-only status checks and `kubectl exec`
+for mutations:
+
+```bash
+# Read-only (use hops)
+./scripts/hops.py storage ceph status
+./scripts/hops.py storage ceph osd
+
+# Mutations (kubectl exec directly)
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph <command>
+```
 
 ## Table of Contents
 
@@ -18,36 +28,36 @@ data.
 1. Mark OSD out to begin data migration.
 
    ```bash
-   ./scripts/ceph.sh osd out {osd-num}
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd out {osd-num}
    ```
 
 2. Monitor data migration. Wait until PG count reaches 0 (1-2 hours depending on data size).
 
    ```bash
-   watch -n 10 "./scripts/ceph.sh osd df tree | rg 'osd.{osd-num}'"
-   ./scripts/ceph.sh status
+   watch -n 10 "kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd df tree | rg 'osd.{osd-num}'"
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status
    ```
 
 3. Verify safe to destroy. Do not proceed until this returns success.
 
    ```bash
-   ./scripts/ceph.sh osd safe-to-destroy osd.{osd-num}
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd safe-to-destroy osd.{osd-num}
    ```
 
 4. Remove OSD from cluster.
 
    ```bash
-   ./scripts/ceph.sh osd down {osd-num}
-   ./scripts/ceph.sh osd crush remove osd.{osd-num}
-   ./scripts/ceph.sh auth del osd.{osd-num}
-   ./scripts/ceph.sh osd rm {osd-num}
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd down {osd-num}
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd crush remove osd.{osd-num}
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph auth del osd.{osd-num}
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd rm {osd-num}
    ```
 
 5. Update configuration. Remove `devicePathFilter` entry from
    `kubernetes/apps/rook-ceph/cluster/helmrelease.yaml`:
 
    ```bash
-   ./scripts/test-flux-local.sh
+   ./scripts/hops.py flux test
    pre-commit run --files kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
    git add kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
    git commit -m "chore(rook-ceph): remove OSD.{osd-num} from cluster"
@@ -57,8 +67,8 @@ data.
 6. Verify removal.
 
    ```bash
-   ./scripts/ceph.sh osd tree
-   ./scripts/ceph.sh status
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd tree
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status
    ```
 
 ## Adding an OSD
@@ -86,7 +96,7 @@ data.
    Validate and apply:
 
    ```bash
-   ./scripts/test-flux-local.sh
+   ./scripts/hops.py flux test
    pre-commit run --files kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
    git add kubernetes/apps/rook-ceph/cluster/helmrelease.yaml
    git commit -m "feat(rook-ceph): add OSD on {node-hostname}"
@@ -98,34 +108,34 @@ data.
 
    ```bash
    kubectl get pods -n rook-ceph -w | rg osd
-   ./scripts/ceph.sh osd tree
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd tree
    ```
 
 4. Monitor rebalancing. Rebalancing takes 2-4 hours depending on cluster size.
 
    ```bash
-   watch -n 5 "./scripts/ceph.sh status"
-   ./scripts/ceph.sh osd df tree
+   watch -n 5 "kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status"
+   kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd df tree
    ```
 
 ## Common Commands
 
 ```bash
 # Cluster status
-./scripts/ceph.sh status
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph status
 
 # List OSDs
-./scripts/ceph.sh osd tree
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd tree
 
 # OSD utilization
-./scripts/ceph.sh osd df tree
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd df tree
 
 # PG status
-./scripts/ceph.sh pg stat
-./scripts/ceph.sh pg dump | rg active+clean | wc -l
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph pg stat
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph pg dump | rg active+clean | wc -l
 
 # Watch cluster
-./scripts/ceph.sh -w
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph -w
 ```
 
 ## Troubleshooting
@@ -135,8 +145,8 @@ data.
 Check for stuck PGs or full OSDs:
 
 ```bash
-./scripts/ceph.sh pg dump | rg -v active+clean
-./scripts/ceph.sh osd df
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph pg dump | rg -v active+clean
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd df
 ```
 
 ### OSD Won't Start
@@ -146,7 +156,7 @@ Check logs:
 ```bash
 kubectl logs -n rook-ceph -l app=rook-ceph-osd --tail=100
 kubectl logs -n rook-ceph -l app=rook-ceph-operator --tail=100
-./scripts/ceph.sh device ls
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph device ls
 ```
 
 ### Rebalancing Too Slow
@@ -154,13 +164,13 @@ kubectl logs -n rook-ceph -l app=rook-ceph-operator --tail=100
 Temporarily increase concurrent backfills:
 
 ```bash
-./scripts/ceph.sh tell osd.* injectargs '--osd-max-backfills 2'
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph tell osd.* injectargs '--osd-max-backfills 2'
 ```
 
 Reset to default after rebalancing:
 
 ```bash
-./scripts/ceph.sh tell osd.* injectargs '--osd-max-backfills 1'
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph tell osd.* injectargs '--osd-max-backfills 1'
 ```
 
 ## References
