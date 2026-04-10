@@ -193,6 +193,9 @@ automatically.
 - Vector log collection uses two paths: (1) daemonset collection via pod label
   `observability.home-ops/logs=true`, or (2) a Vector sidecar container for apps that need custom
   log parsing (e.g., file-based logs). Both paths deliver to VictoriaLogs.
+- Multi-container pods: use `vector.dev/exclude-containers` pod annotation (comma-separated
+  container names) to skip noisy sidecar logs. The daemonset collects all containers by default;
+  exclude VPN tunnels, port-forward helpers, and other infrastructure sidecars.
 - Vector sidecar containers MUST be named `vector` (not `vector-sidecar` or other variants)
 
 ### Documentation
