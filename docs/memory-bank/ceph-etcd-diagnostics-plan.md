@@ -90,6 +90,12 @@ Scope grew substantially during implementation. Final shape:
   v0.48.1 changelog via Context7). Rook polls the mon admin socket continuously for
   `mon_status`, `osd dump`, `mgr stat`, and `fs dump`, each generating two of these
   traces (`dispatch` and `finished`), so without the filter they dominate the stream.
+- `talos_noise_filter` transform (same file), wired between `talos_parser` and the
+  vlogs sink. Drops Talos machined gRPC access logs (`machined OK
+  [/machine.MachineService/...]` and `machined/authz/authorizer authorized`) that
+  Prometheus metric scraping generates at ~1.2k/min. These can't be suppressed at
+  the Talos source (no gRPC access log filtering knob). etcd health check failures,
+  kernel messages, and other service logs pass through unaffected.
 
 **Removed:**
 
@@ -186,9 +192,15 @@ constant write tax.
 
 **Completed:**
 
-- Added `debug_mon: 1/5`, `debug_paxos: 1/5`, `debug_ms: 1/5` to
-  `cephConfig.global` in `rook-ceph/cluster/helmrelease.yaml` (alongside the
-  existing `debug_rocksdb: 1/5` from Section 1).
+- Added `debug_mon: 1/5`, `debug_paxos: 1/5` to `cephConfig.global` in
+  `rook-ceph/cluster/helmrelease.yaml` (alongside the existing
+  `debug_rocksdb: 1/5` from Section 1).
+- `debug_ms` changed from `1/5` to `0/5`. Verbosity 1 generated ~5k lines/min
+  of messenger chatter (paxos leases, mgr beacons, route forwarding) that wrote
+  to the Talos system disk via containerd log capture, counterproductive when
+  investigating write contention. Verbosity 0 still emits connection errors and
+  state changes. The in-memory ring buffer (level 5) preserves full detail for
+  crash dumps.
 - The `X/Y` syntax is verbosity (not severity): X is verbosity written to disk
   (stderr), Y is verbosity held in the in-memory ring buffer. Higher number = more
   verbose. The ring buffer dumps on crash/assertion, giving detailed context around

@@ -95,10 +95,17 @@ spec:
           # the in-memory ring buffer which gets dumped on crash/assertion.
           # Runtime toggle for active incidents:
           #   ceph tell mon.* config set debug_paxos 10/20
+          #   ceph tell mon.* config set debug_ms 5/10
           #   (revert after window closes)
           debug_mon: 1/5
           debug_paxos: 1/5
-          debug_ms: 1/5
+          # Messenger at 0/5: verbosity 1 generates ~5k lines/min of paxos
+          # lease, mgr beacon, and route-forwarding chatter that writes to
+          # the Talos system disk via containerd log capture. Counterproductive
+          # when investigating write contention. Level 0 still emits state
+          # changes and connection errors; level 5 ring buffer preserves
+          # detail for crash dumps.
+          debug_ms: 0/5
           # Disable the LogMonitor's cluster-log stderr forwarder. Rook
           # starts mon daemons with --default-mon-cluster-log-to-stderr=true
           # (see rook/pkg/operator/ceph/config/defaults.go), which causes
