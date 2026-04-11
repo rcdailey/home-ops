@@ -154,6 +154,15 @@ Note: the `select` entity uses underscored values (`user_4`, `frame_adapt_hdr`) 
 entity's format is unverified (projector was off during the fix), so comparing against the `select`
 entity state avoids any format mismatch risk.
 
+**Pending (pyjvcprojector 2.0.5, expected HA 2026.5):**
+
+- Filed [pyjvcprojector#9][pyjvc-9] for a missing `"F"` (NONE) mapping in the CS20221 HDR command
+  spec. The projector sends `"F"` when no HDR signal is active, and the integration logs
+  `Command Hdr (IFHR) received unmapped value 'F'` on every poll cycle. Not
+  functionality-breaking (the select entity works fine), but noisy.
+- Fixed in pyjvcprojector 2.0.5. [PR #167450][pr-bump] bumped the dependency in HA core and
+  merged to `dev` on April 6. No backport label, so this lands in 2026.5.
+
 ### Tooling built during this investigation
 
 - `scripts/hass-api.py`: Python CLI for HA REST/WebSocket API with subcommands: `states`,
@@ -169,6 +178,8 @@ entity state avoids any format mismatch risk.
 - [PR #160739: Bump pyjvcprojector to 2.0.0][pr-2.0]
 - [iloveicedgreentea/jvc_homeassistant (abandoned HACS integration)][hacs-old]
 - [SteveEasley/homeassistant_jvc_projector (2.0 HACS beta)][hacs-new]
+- [pyjvcprojector#9: Missing HDR "F" (NONE) mapping for CS20221][pyjvc-9]
+- [PR #167450: Bump pyjvcprojector to 2.0.5][pr-bump]
 
 [avs-thread]:
     https://www.avsforum.com/threads/jvc-projectors-home-assistant-integration-official-thread.3252498/
@@ -178,3 +189,5 @@ entity state avoids any format mismatch risk.
 [pr-2.0]: https://github.com/home-assistant/core/pull/160739
 [hacs-old]: https://github.com/iloveicedgreentea/jvc_homeassistant
 [hacs-new]: https://github.com/SteveEasley/homeassistant_jvc_projector
+[pyjvc-9]: https://github.com/SteveEasley/pyjvcprojector/issues/9
+[pr-bump]: https://github.com/home-assistant/core/pull/167450
