@@ -42,6 +42,12 @@ spec:
         # Replaced with threshold-based NodeDiskSpaceLow/Critical alerts in observability vmrule
         CephNodeDiskspaceWarning:
           disabled: true
+        # Upstream default for: 30s fires on brief scrape gaps and transient mon restarts
+        # 5m filters noise while still catching genuine mon failures in a 3-mon cluster
+        CephMonDownQuorumAtRisk:
+          for: 5m
+        CephMonDown:
+          for: 5m
         # Relax PG imbalance threshold for mixed-size OSDs (2x 1.8TiB + 3x 932GiB)
         # Larger OSDs receive proportionally more PGs by design; default 30% fires constantly
         CephPGImbalance:
