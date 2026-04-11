@@ -37,6 +37,7 @@ scripts/hops/
   _runner.py             Subprocess runner (JSON, JSONL, kubectl helpers)
   _format.py             Tables, key-value, truncation (no color, no unicode)
   _nodes.py              Node name/IP resolution (cached per session)
+  _workload.py           Workload resolution (exact name > app label > suffix match)
   node.py                hops node (list, disks, status)
   storage.py             hops storage (ceph status/osd/io, pvcs, disks)
   app.py                 hops app (list, pods, events, logs, resources, secrets, diagnose)

@@ -8,6 +8,7 @@ import click
 
 from hops._format import age, info, section, table, truncate
 from hops._runner import kubectl_json, run, run_json
+from hops._workload import Workload, resolve_app
 
 # Namespaces to skip in list/events when no namespace is specified
 _SYSTEM_NS = frozenset(
@@ -36,15 +37,13 @@ def _age_str(timestamp: str | None) -> str:
         return "?"
 
 
-def _find_namespace(app_name: str) -> str | None:
-    """Try to find the namespace for an app by searching all workload types."""
-    for resource in ["deployments", "statefulsets", "daemonsets", "cronjobs", "jobs"]:
-        data = kubectl_json(resource)
-        for item in data.get("items", []):
-            name = item.get("metadata", {}).get("name", "")
-            if name == app_name:
-                return item["metadata"]["namespace"]
-    return None
+def _resolve(app_name: str, namespace: str | None) -> Workload:
+    """Resolve app name to a workload or exit with error."""
+    wl = resolve_app(app_name, namespace)
+    if not wl:
+        info(f"error: could not find app {app_name!r}")
+        raise SystemExit(1)
+    return wl
 
 
 @click.group()
@@ -101,19 +100,15 @@ def list_apps(namespace: str | None):
 )
 def pods(app: str, namespace: str | None):
     """Pods for a specific app with status, restarts, node, age."""
-    if not namespace:
-        namespace = _find_namespace(app)
-    if not namespace:
-        info(f"error: could not find app {app!r}")
-        raise SystemExit(1)
+    wl = _resolve(app, namespace)
 
-    data = kubectl_json("pods", namespace=namespace)
+    data = kubectl_json("pods", namespace=wl.namespace)
     rows = []
     for item in data.get("items", []):
         meta = item.get("metadata", {})
         name = meta.get("name", "")
-        # Match pods belonging to the app (prefix match covers deploy/sts suffixes)
-        if not name.startswith(app):
+        # Match pods belonging to the resolved workload
+        if not name.startswith(wl.name):
             continue
         spec = item.get("spec", {})
         status = item.get("status", {})
@@ -137,7 +132,7 @@ def pods(app: str, namespace: str | None):
         rows.append([name, node, phase, str(restarts), age_str])
 
     if not rows:
-        info(f"No pods found for {app!r} in {namespace}")
+        info(f"No pods found for {wl.name!r} in {wl.namespace}")
         return
     table(["POD", "NODE", "STATUS", "RESTARTS", "AGE"], rows)
 
@@ -211,23 +206,19 @@ def logs(
 
     Prefer 'hops query logs' for apps with VictoriaLogs/Vector support.
     """
-    if not namespace:
-        namespace = _find_namespace(app)
-    if not namespace:
-        info(f"error: could not find app {app!r}")
-        raise SystemExit(1)
+    wl = _resolve(app, namespace)
 
     # Find matching pods
-    data = kubectl_json("pods", namespace=namespace)
+    data = kubectl_json("pods", namespace=wl.namespace)
     matching = []
     for item in data.get("items", []):
         name = item["metadata"]["name"]
-        if name.startswith(app):
+        if name.startswith(wl.name):
             phase = item.get("status", {}).get("phase", "")
             matching.append((name, phase))
 
     if not matching:
-        info(f"No pods found for {app!r} in {namespace}")
+        info(f"No pods found for {wl.name!r} in {wl.namespace}")
         return
 
     # Prefer Running pods
@@ -241,7 +232,7 @@ def logs(
         "logs",
         pod,
         "-n",
-        namespace,
+        wl.namespace,
         f"--since={since}",
         f"--tail={lines}",
     ]
@@ -275,30 +266,34 @@ def logs(
 )
 def resources(app: str, namespace: str | None):
     """Pod resource usage vs requests/limits for an app."""
-    if not namespace:
-        namespace = _find_namespace(app)
-    if not namespace:
-        info(f"error: could not find app {app!r}")
-        raise SystemExit(1)
+    wl = _resolve(app, namespace)
 
     # Get pod specs for requests/limits
-    spec_data = kubectl_json("pods", namespace=namespace)
+    spec_data = kubectl_json("pods", namespace=wl.namespace)
     pod_specs: dict[str, list[dict]] = {}
     for item in spec_data.get("items", []):
         name = item["metadata"]["name"]
-        if name.startswith(app):
+        if name.startswith(wl.name):
             containers = item.get("spec", {}).get("containers", [])
             pod_specs[name] = containers
 
     if not pod_specs:
-        info(f"No pods found for {app!r} in {namespace}")
+        info(f"No pods found for {wl.name!r} in {wl.namespace}")
         return
 
     # Get current usage from metrics API (kubectl top --containers)
     usage_map: dict[str, dict[str, dict]] = {}
     try:
         result = run(
-            ["kubectl", "top", "pods", "-n", namespace, "--no-headers", "--containers"],
+            [
+                "kubectl",
+                "top",
+                "pods",
+                "-n",
+                wl.namespace,
+                "--no-headers",
+                "--containers",
+            ],
             timeout=15,
             check=False,
         )
@@ -307,7 +302,7 @@ def resources(app: str, namespace: str | None):
                 parts = line.split()
                 if len(parts) >= 4:
                     pname, cname, cpu, mem = parts[0], parts[1], parts[2], parts[3]
-                    if pname.startswith(app):
+                    if pname.startswith(wl.name):
                         usage_map.setdefault(pname, {})[cname] = {
                             "cpu": cpu,
                             "memory": mem,
@@ -415,25 +410,21 @@ def diagnose(app: str, namespace: str | None):
 
     Single command replacing 5+ separate kubectl/flux calls.
     """
-    if not namespace:
-        namespace = _find_namespace(app)
-    if not namespace:
-        info(f"error: could not find app {app!r}")
-        raise SystemExit(1)
+    wl = _resolve(app, namespace)
 
     # 1. Flux Kustomization + HelmRelease
     section("FLUX")
-    _diagnose_flux(app, namespace)
+    _diagnose_flux(app, wl.namespace)
 
     # 2. Pods
     section("PODS")
-    pod_data = kubectl_json("pods", namespace=namespace)
+    pod_data = kubectl_json("pods", namespace=wl.namespace)
     pod_rows = []
     restart_details = []
     for item in pod_data.get("items", []):
         meta = item.get("metadata", {})
         name = meta.get("name", "")
-        if not name.startswith(app):
+        if not name.startswith(wl.name):
             continue
         spec = item.get("spec", {})
         status = item.get("status", {})
@@ -468,7 +459,7 @@ def diagnose(app: str, namespace: str | None):
     if pod_rows:
         table(["POD", "NODE", "STATUS", "RESTARTS", "AGE"], pod_rows)
     else:
-        info(f"No pods found for {app!r}")
+        info(f"No pods found for {wl.name!r}")
 
     # Restart details
     if restart_details:
@@ -482,13 +473,13 @@ def diagnose(app: str, namespace: str | None):
             )
 
     # 3. Events (non-Normal, filtered to app)
-    section(f"EVENTS (non-Normal, {namespace})")
+    section(f"EVENTS (non-Normal, {wl.namespace})")
     events_args = [
         "kubectl",
         "get",
         "events",
         "-n",
-        namespace,
+        wl.namespace,
         "--sort-by=.lastTimestamp",
         "-o",
         "json",
@@ -502,7 +493,7 @@ def diagnose(app: str, namespace: str | None):
             continue
         obj = e.get("involvedObject", {})
         obj_name = obj.get("name", "")
-        if obj_name.startswith(app):
+        if obj_name.startswith(wl.name):
             app_events.append(e)
 
     app_events = app_events[-20:]  # Last 20
@@ -524,13 +515,21 @@ def diagnose(app: str, namespace: str | None):
     matching_pods = [
         item
         for item in pod_data.get("items", [])
-        if item["metadata"]["name"].startswith(app)
+        if item["metadata"]["name"].startswith(wl.name)
         and item.get("status", {}).get("phase") == "Running"
     ]
     if matching_pods:
         pod_name = matching_pods[0]["metadata"]["name"]
         result = run(
-            ["kubectl", "logs", pod_name, "-n", namespace, "--since=1h", "--tail=20"],
+            [
+                "kubectl",
+                "logs",
+                pod_name,
+                "-n",
+                wl.namespace,
+                "--since=1h",
+                "--tail=20",
+            ],
             timeout=15,
             check=False,
         )
