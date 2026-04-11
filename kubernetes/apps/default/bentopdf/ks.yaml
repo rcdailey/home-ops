@@ -24,7 +24,6 @@ spec:
       APP: bentopdf
       SUBDOMAIN: pdf
       HTTPROUTE_NAME: bentopdf
-      APP_ICON_URL: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons@main/svg/bentopdf.svg
     substituteFrom:
     - kind: Secret
       name: cluster-secrets
