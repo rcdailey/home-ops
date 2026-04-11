@@ -32,3 +32,20 @@ spec:
   configMapRef:
     name: ceph-etcd-incident-overview-dashboard
     key: ceph-etcd-incident-overview.json
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: etcd
+spec:
+  allowCrossNamespaceImport: true
+  folder: General
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  configMapRef:
+    name: etcd-dashboard
+    key: etcd.json
