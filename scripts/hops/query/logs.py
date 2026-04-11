@@ -9,14 +9,14 @@ from __future__ import annotations
 import json
 import sys
 import urllib.parse
-import urllib.request
 from datetime import datetime
 from typing import Any
 
 import click
 
 from hops._format import info, table
-from hops._runner import kubectl_json, run
+from hops._runner import run
+from hops._workload import resolve_app
 
 VL_URL = "http://victoria-logs-single.observability:9428"
 
@@ -271,40 +271,34 @@ def _require_vector_collection(app: str) -> None:
     """Verify the app exists and Vector is collecting its logs (via daemonset
     opt-in label or a sidecar container) before querying VictoriaLogs. Exits
     with an error if the workload is missing or uncollected, so callers never
-    waste a query on logs that don't exist."""
-    for resource in ["deployments", "statefulsets", "daemonsets", "cronjobs", "jobs"]:
-        data = kubectl_json(resource)
-        for item in data.get("items", []):
-            meta = item.get("metadata", {})
-            if meta.get("name") != app:
-                continue
+    waste a query on logs that don't exist.
 
-            # Found the workload; get pod template
-            tmpl = item.get("spec", {})
-            if resource == "cronjobs":
-                tmpl = tmpl.get("jobTemplate", {}).get("spec", {})
-            pod_tmpl = tmpl.get("template", {})
-            labels = pod_tmpl.get("metadata", {}).get("labels", {})
-            pod_spec = pod_tmpl.get("spec", {})
+    Uses cascading workload resolution (exact name > app label > suffix) so
+    subchart workloads like victoria-logs-single-vector are found when the
+    user queries by app label name (e.g., --app vector).
+    """
+    wl = resolve_app(app)
+    if not wl:
+        info(f"error: no workload matching {app!r} found in cluster")
+        raise SystemExit(1)
 
-            # Path 1: daemonset collection via opt-in label
-            if labels.get(_VECTOR_OPT_IN_LABEL) == "true":
-                return
-            # Path 2: Vector sidecar container
-            if _has_vector_sidecar(pod_spec):
-                return
+    labels = wl.pod_labels()
+    pod_spec = wl.pod_spec()
 
-            ns = meta.get("namespace", "unknown")
-            info(
-                f"error: {app} (namespace: {ns}) has no Vector log collection; "
-                "add pod label "
-                f'"{_VECTOR_OPT_IN_LABEL}=true" for daemonset collection '
-                "or a Vector sidecar container"
-            )
-            info("hint: use 'hops app logs' for immediate kubectl-based access")
-            raise SystemExit(1)
+    # Path 1: daemonset collection via opt-in label
+    if labels.get(_VECTOR_OPT_IN_LABEL) == "true":
+        return
+    # Path 2: Vector sidecar container
+    if _has_vector_sidecar(pod_spec):
+        return
 
-    info(f"error: no workload named {app!r} found in cluster")
+    info(
+        f"error: {wl.name} (namespace: {wl.namespace}) has no Vector log collection; "
+        "add pod label "
+        f'"{_VECTOR_OPT_IN_LABEL}=true" for daemonset collection '
+        "or a Vector sidecar container"
+    )
+    info("hint: use 'hops app logs' for immediate kubectl-based access")
     raise SystemExit(1)
 
 
