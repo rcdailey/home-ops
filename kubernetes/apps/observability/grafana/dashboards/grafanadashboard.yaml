@@ -29,8 +29,6 @@ spec:
   datasources:
   - datasourceName: VictoriaMetrics
     inputName: DS_PROMETHEUS
-  - datasourceName: VictoriaLogs
-    inputName: DS_VICTORIALOGS
   configMapRef:
     name: ceph-etcd-incident-overview-dashboard
     key: ceph-etcd-incident-overview.json
