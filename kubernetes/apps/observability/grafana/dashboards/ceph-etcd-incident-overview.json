@@ -509,7 +509,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "topk_avg(5, sum by (workload, container) (label_replace(label_replace(sum by (pod, container) (rate(container_fs_writes_bytes_total{node=~\"$node\", container!=\"\", container!=\"POD\"}[$__rate_interval])), \"workload\", \"$1\", \"pod\", \"(.*)\"), \"workload\", \"$1\", \"pod\", \"(.+)-[a-f0-9]{7,10}-[a-z0-9]{5}$\")))",
+          "expr": "topk_avg(10, sum by (workload, container) (label_replace(label_replace(sum by (pod, container) (rate(container_fs_writes_bytes_total{node=~\"$node\", namespace!=\"rook-ceph\", container!=\"\", container!=\"POD\"}[$__rate_interval])), \"workload\", \"$1\", \"pod\", \"(.*)\"), \"workload\", \"$1\", \"pod\", \"(.+)-[a-f0-9]{7,10}-[a-z0-9]{5}$\")))",
           "legendFormat": "{{workload}} / {{container}}",
           "refId": "A"
         }
@@ -543,7 +543,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "topk_avg(5, sum by (workload, container) (label_replace(label_replace(sum by (pod, container) (rate(container_cpu_usage_seconds_total{node=~\"$node\", container!=\"\", container!=\"POD\"}[$__rate_interval])), \"workload\", \"$1\", \"pod\", \"(.*)\"), \"workload\", \"$1\", \"pod\", \"(.+)-[a-f0-9]{7,10}-[a-z0-9]{5}$\")))",
+          "expr": "topk_avg(10, sum by (workload, container) (label_replace(label_replace(sum by (pod, container) (rate(container_cpu_usage_seconds_total{node=~\"$node\", container!=\"\", container!=\"POD\"}[$__rate_interval])), \"workload\", \"$1\", \"pod\", \"(.*)\"), \"workload\", \"$1\", \"pod\", \"(.+)-[a-f0-9]{7,10}-[a-z0-9]{5}$\")))",
           "legendFormat": "{{workload}} / {{container}}",
           "refId": "A"
         }
