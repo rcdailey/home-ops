@@ -18,20 +18,6 @@ spec:
     disableWait: true # Don't wait for resources - prevents deadlock when DaemonSet can't start
     remediation:
       retries: 3
-  # WHY: The wrapper chart passes podHostNetwork to the Vector subchart but not
-  # dnsPolicy. Without ClusterFirstWithHostNet, hostNetwork pods use the node's
-  # DNS resolver and can't reach cluster service names (breaks the vlogs sink).
-  # Upstream: https://github.com/VictoriaMetrics/helm-charts/issues/2800
-  postRenderers:
-  - kustomize:
-      patches:
-      - target:
-          kind: DaemonSet
-          name: victoria-logs-single-vector
-        patch: |
-          - op: add
-            path: /spec/template/spec/dnsPolicy
-            value: ClusterFirstWithHostNet
   values:
     server:
       enabled: true
@@ -111,6 +97,7 @@ spec:
       # hostNetwork lets Talos reach the socket source at localhost:6170.
       # Each node's machined and kmsg forwarder push JSON Lines to this port.
       podHostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containerPorts:
       - name: prom-exporter
         containerPort: 9090
