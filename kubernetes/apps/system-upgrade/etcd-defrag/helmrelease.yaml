@@ -20,8 +20,8 @@ spec:
         serviceAccount:
           identifier: etcd-defrag
         cronjob:
-          # Run daily at 2 AM
-          schedule: "0 2 * * *"
+          # Run weekly Sunday at 2 AM
+          schedule: "0 2 * * 0"
           backoffLimit: 0
           concurrencyPolicy: Forbid
           successfulJobsHistory: 0
@@ -75,7 +75,8 @@ spec:
             - --cacert=/certs/ca.crt
             - --cert=/certs/admin.crt
             - --key=/certs/admin.key
-            - --defrag-rule=dbQuotaUsage > 0.5 || dbSizeFree > 100*1024*1024
+            # Only defrag when quota pressure is high AND significant space is reclaimable
+            - --defrag-rule=dbQuotaUsage > 0.8 && dbSizeFree > 500*1024*1024
             - --move-leader
             - --wait-between-defrags=30s
             - --etcd-storage-quota-bytes=2147483648
