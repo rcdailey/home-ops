@@ -7,7 +7,6 @@ metadata:
 spec:
   name: ${APP}
   clientID: ${APP}
-  logoUrl: ${APP_ICON_URL}
   launchUrl: https://${SUBDOMAIN:=${APP}}.${SECRET_DOMAIN}
   callbackUrls:
   - https://${SUBDOMAIN:=${APP}}.${SECRET_DOMAIN}/oauth2/callback
