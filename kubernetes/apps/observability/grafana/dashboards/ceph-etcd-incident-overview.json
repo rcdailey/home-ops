@@ -54,7 +54,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "etcd_server_is_leader{job=\"kube-etcd\"} * on(instance) group_left(nodename) node_uname_info",
+          "expr": "label_replace(etcd_server_is_leader{job=\"kube-etcd\"}, \"node_ip\", \"$1\", \"instance\", \"(.*):.*\") * on(node_ip) group_left(nodename) label_replace(node_uname_info, \"node_ip\", \"$1\", \"instance\", \"(.*):.*\")",
           "legendFormat": "{{nodename}}",
           "refId": "A"
         }
