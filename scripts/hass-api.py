@@ -516,6 +516,115 @@ def _repair_description(key: str, placeholders: dict, issue_id: str) -> str:
     return issue_id
 
 
+def cmd_dashboard(args: argparse.Namespace) -> None:
+    def _collect_cards(view: dict) -> list[dict]:
+        """Recursively collect all cards from a view, flattening nested stacks."""
+        cards = []
+        for card in view.get("cards", []):
+            cards.append(card)
+            # Recurse into stack-type cards
+            if card.get("type") in (
+                "vertical-stack",
+                "horizontal-stack",
+                "grid",
+                "custom:layout-card",
+            ):
+                cards.extend(_collect_cards(card))
+            # sections-based views nest cards under "sections"
+            for section in card.get("sections", []):
+                cards.extend(_collect_cards(section))
+        # Also handle top-level sections (HA 2024+ section view)
+        for section in view.get("sections", []):
+            cards.extend(_collect_cards(section))
+        return cards
+
+    async def handler(send):
+        if args.action == "list":
+            msg = await send({"type": "lovelace/dashboards/list"})
+            dashboards = msg.get("result", [])
+            print(f"  {'URL Path':20s} {'Title':25s} {'Mode':10s}")
+            print(f"  {'-' * 20} {'-' * 25} {'-' * 10}")
+            # Default dashboard first
+            print(f"  {'(default)':20s} {'Overview':25s} {'storage':10s}")
+            for d in sorted(dashboards, key=lambda x: x.get("url_path", "")):
+                url = d.get("url_path", "")
+                title = d.get("title", "(untitled)")
+                mode = d.get("mode", "?")
+                print(f"  {url:20s} {title:25s} {mode:10s}")
+            return
+
+        if args.action == "resources":
+            msg = await send({"type": "lovelace/resources"})
+            resources = msg.get("result", [])
+            if not resources:
+                print("(no lovelace resources)")
+                return
+            for r in resources:
+                rtype = r.get("type", "?")
+                url = r.get("url", "")
+                print(f"  [{rtype:6s}] {url}")
+            return
+
+        if args.action == "get":
+            payload = {"type": "lovelace/config"}
+            if args.url_path:
+                payload["url_path"] = args.url_path
+            msg = await send(payload)
+            if not msg.get("success"):
+                print(f"Error: {_ws_error(msg)}", file=sys.stderr)
+                sys.exit(1)
+            print(json.dumps(msg["result"], indent=2))
+            return
+
+        if args.action == "cards":
+            payload = {"type": "lovelace/config"}
+            if args.url_path:
+                payload["url_path"] = args.url_path
+            msg = await send(payload)
+            if not msg.get("success"):
+                print(f"Error: {_ws_error(msg)}", file=sys.stderr)
+                sys.exit(1)
+            config = msg["result"]
+            all_cards = []
+            for view in config.get("views", []):
+                view_title = view.get("title", view.get("path", "(untitled)"))
+                for card in _collect_cards(view):
+                    card_type = card.get("type", "?")
+                    if args.type and args.type not in card_type:
+                        continue
+                    entity = card.get("entity", "")
+                    name = card.get("name", card.get("title", ""))
+                    all_cards.append(
+                        {
+                            "view": view_title,
+                            "type": card_type,
+                            "name": name,
+                            "entity": entity,
+                            "config": card,
+                        }
+                    )
+
+            if not all_cards:
+                label = f" matching '{args.type}'" if args.type else ""
+                print(f"(no cards{label})")
+                return
+
+            if args.json:
+                print(json.dumps([c["config"] for c in all_cards], indent=2))
+                return
+
+            for c in all_cards:
+                parts = [c["type"]]
+                if c["name"]:
+                    parts.append(c["name"])
+                if c["entity"]:
+                    parts.append(c["entity"])
+                print(f"  [{c['view']}] {' | '.join(parts)}")
+            return
+
+    asyncio.run(ws_call(handler))
+
+
 def cmd_area(args: argparse.Namespace) -> None:
     async def handler(send):
         if args.action == "list":
@@ -994,6 +1103,26 @@ def main() -> None:
     )
     p.add_argument("--json", action="store_true", help="Raw JSON output")
 
+    # dashboard
+    p = sub.add_parser(
+        "dashboard", help="Inspect Lovelace dashboards, cards, resources"
+    )
+    p.add_argument(
+        "action",
+        choices=["list", "get", "cards", "resources"],
+        help="list: dashboards, get: full config, cards: card summary, resources: JS/CSS",
+    )
+    p.add_argument(
+        "url_path",
+        nargs="?",
+        help="Dashboard URL path (omit for default/Overview dashboard)",
+    )
+    p.add_argument(
+        "--type",
+        help="Filter cards by type substring (e.g., bubble-card, custom:bubble-card)",
+    )
+    p.add_argument("--json", action="store_true", help="Raw JSON output (cards action)")
+
     # area
     p = sub.add_parser("area", help="View or set entity area assignments")
     p.add_argument(
@@ -1041,6 +1170,7 @@ def main() -> None:
         "repairs": cmd_repairs,
         "logs": cmd_logs,
         "history": cmd_history,
+        "dashboard": cmd_dashboard,
         "area": cmd_area,
         "energy": cmd_energy,
         "raw": cmd_raw,
