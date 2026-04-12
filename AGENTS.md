@@ -80,8 +80,7 @@ specific operation only.
 - **NEVER use raw ConfigMap resources** - ALWAYS use configMapGenerator in kustomization.yaml with
   files from config/ subdirectory
 - **NEVER inline VRL source in vector.yaml** - Separate VRL file required for testing and validation
-- **ALWAYS include test data for VRL validation** - Use ./scripts/test-vector-config.py for
-  validation
+- **ALWAYS include test data for VRL validation** - Use ./scripts/test-vrl.py for validation
 
 ### Scaling
 
@@ -272,6 +271,7 @@ docs/
   decisions/          ADRs - read TEMPLATE.md before creating/editing
   investigations/     Historical debugging journals (not prescriptive guides)
   memory-bank/        Ephemeral context, temporary workarounds (remove when stale)
+  reference/          Standalone reference material (OIDC patterns, protocol guides)
   runbooks/           Step-by-step operational procedures
 ```
 
@@ -291,7 +291,7 @@ docs/
 Copy patterns from exemplary apps rather than using synthetic templates. These apps follow all Tier
 1 and Tier 2 conventions:
 
-**Canonical example (start here):** `kubernetes/apps/default/bookstack/`
+**Canonical example (start here):** `kubernetes/apps/default/donetick/`
 
 - Complete app-template implementation with all best practices
 - Files: ks.yaml, kustomization.yaml, helmrelease.yaml, pvc.yaml, externalsecret.yaml
@@ -425,7 +425,7 @@ talosctl SUBCOMMAND OPTIONS -n NODEIP         # -n toward end
 
 Standalone scripts in `./scripts/` (not part of hops):
 
-- test-vector-config.py: Vector VRL validation (required for Vector changes)
+- test-vrl.py: Vector VRL validation (required for Vector changes)
 - icon-search.py: Search dashboard icons for Homepage services
 - hass-api.py: Home Assistant API wrapper (requires `home-assistant` skill)
 
