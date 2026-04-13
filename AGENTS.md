@@ -121,15 +121,10 @@ Consistency patterns for maintainability and clarity.
 
 The Talos scheduler is configured with a cluster-wide PodTopologySpread default: `ScheduleAnyway`,
 `maxSkew: 1`, `topologyKey: kubernetes.io/hostname`. All pods prefer spreading across nodes
-automatically.
-
-- NEVER add explicit `topologySpreadConstraints` unless `DoNotSchedule` is required
-- NEVER use `podAntiAffinity` for topology spreading (use `topologySpreadConstraints` instead)
-- `ScheduleAnyway` (scheduler default): best-effort spreading; pods may co-locate under resource
-  pressure. Sufficient for application-tier workloads.
-- `DoNotSchedule` (per-app override): strict spreading; pods stay Pending if they can't land on a
-  different node. Use for critical infrastructure where co-location defeats the purpose of HA (e.g.,
-  DNS servers, database operators)
+automatically. NEVER add explicit `topologySpreadConstraints` unless `DoNotSchedule` is required;
+NEVER use `podAntiAffinity` for topology spreading. `ScheduleAnyway` (the scheduler default) is
+sufficient for application-tier workloads. `DoNotSchedule` is for critical infrastructure where
+co-location defeats the purpose of HA (e.g., DNS servers, database operators).
 
 ### Health Probes
 
@@ -385,35 +380,10 @@ For apps requiring Intel GPU acceleration:
 **GitOps flow:** Modify manifests -> User commits/pushes -> Flux auto-applies -> Optional just
 reconcile
 
-**User-only commands** (blocked by permission rules for agents; the user runs these manually):
-
-```bash
-# Setup
-mise trust .mise.toml && mise install
-
-# Reconcile cluster
-just reconcile
-
-# Flux operations
-flux reconcile hr NAME -n NAMESPACE --force
-flux reconcile hr NAME -n NAMESPACE --force --with-source  # Refresh source
-flux reconcile hr NAME -n NAMESPACE --force --reset        # Clear retry backoff
-
-# Helm (check values before configuring)
-helm show values CHART
-helm template RELEASE CHART
-
-# Talos (one node at a time, j2 templates render on-the-fly)
-just talos diff-config NODE                   # Preview changes before applying
-just talos apply-node NODE                    # Apply to each node sequentially
-talosctl SUBCOMMAND OPTIONS -n NODEIP         # -n toward end
-```
-
-Standalone scripts in `./scripts/` (not part of hops):
-
-- test-vrl.py: Vector VRL validation (required for Vector changes)
-- icon-search.py: Search dashboard icons for Homepage services
-- hass-api.py: Home Assistant API wrapper (requires `home-assistant` skill)
+**User-only commands** (agents MUST NOT run these): `just reconcile`, `flux reconcile`, `helm show
+values`/`helm template`, `just talos diff-config`/`just talos apply-node`, `talosctl`. Standalone
+scripts: `./scripts/test-vrl.py` (VRL validation), `./scripts/icon-search.py` (dashboard icons),
+`./scripts/hass-api.py` (Home Assistant API).
 
 **Conventional commits:**
 
@@ -515,97 +485,8 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 - CloudNativePG: Barman WAL archiving to s3://postgres-backups/{cluster}/
 - Ceph toolbox: `./scripts/hops.py storage ceph status` (or `osd`, `io`)
 
-**Intel GPU support:**
-
-- DRA via ResourceClaimTemplate with deviceClassName: gpu.intel.com
-- OpenVINO: Set OPENVINO_DEVICE: GPU for hardware acceleration
-
-**`hops` quick reference** (run `./scripts/hops.py <domain> --help` for full options):
-
-```bash
-# App diagnostics (the debugging powerhouse)
-./scripts/hops.py app diagnose APP [-n NS]    # Composite: flux + pods + events + logs
-./scripts/hops.py app list [NAMESPACE]         # Running workloads (deploy/sts/ds)
-./scripts/hops.py app pods APP [-n NS]         # Pod status, restarts, node
-./scripts/hops.py app events [NS] [--all]      # Non-Normal events (--all for Normal too)
-./scripts/hops.py app logs APP [-n NS] [-c CT]  # Pod logs (prefer query logs for Vector apps)
-./scripts/hops.py app resources APP [-n NS]    # CPU/memory usage vs requests/limits
-./scripts/hops.py app secrets [NS]             # ExternalSecret sync status
-
-# Node information
-./scripts/hops.py node list                    # All nodes: name, IP, role, status
-./scripts/hops.py node disks [NODE]            # Physical disk inventory
-./scripts/hops.py node status [NODE]           # Conditions, resource pressure, top pods
-
-# Storage
-./scripts/hops.py storage ceph status          # Health, PGs, OSDs, capacity
-./scripts/hops.py storage ceph osd             # OSD table with latency/usage
-./scripts/hops.py storage ceph io              # I/O rates, scrub progress
-./scripts/hops.py storage pvcs [NS]            # PVC status table
-
-# Flux GitOps
-./scripts/hops.py flux status                  # Problems only (unhealthy ks/hr)
-./scripts/hops.py flux hr NAME [-n NS]         # Detailed HelmRelease status
-./scripts/hops.py flux ks NAME [-n NS]         # Detailed Kustomization status
-
-# Metrics (VictoriaMetrics, port of query-vm.py)
-./scripts/hops.py query metrics cpu NS 'POD.*' CONTAINER
-./scripts/hops.py query metrics memory NS 'POD.*' CONTAINER --from 24h
-./scripts/hops.py query metrics query 'up{job="kubelet"}'
-./scripts/hops.py query metrics query 'PROMQL' --from 1h --step 5m
-./scripts/hops.py query metrics query 'METRIC' --at 2026-04-09T16:19:45
-./scripts/hops.py query metrics query 'METRIC' --from 1h --hide-zero
-./scripts/hops.py query metrics labels [NAME]  # Label names or values
-./scripts/hops.py query metrics metrics -f cpu  # Find metrics by pattern
-./scripts/hops.py query metrics alerts          # Firing alerts
-./scripts/hops.py query metrics alerts --from 24h  # Historical alerts
-./scripts/hops.py query metrics alert NAME      # Alert details
-./scripts/hops.py query metrics rules           # All alert rules
-
-# Logs (VictoriaLogs, port of query-victorialogs.py)
-./scripts/hops.py query logs query --app plex -n 10
-./scripts/hops.py query logs query --app kometa --level error -n 20
-./scripts/hops.py query logs query '{app="nginx"} AND error' --start 5m
-./scripts/hops.py query logs stats 'QUERY | stats by(field) count(*)' --start 1h
-./scripts/hops.py query logs stats-range 'QUERY | stats by(f) count(*)' --start 6h --step 1h
-./scripts/hops.py query logs hits 'error' --start 3h --step 1h
-./scripts/hops.py query logs fields '*'          # List field names from results
-
-# DNS (Blocky query logs, port of blocky.py; requires dns-debug skill)
-./scripts/hops.py dns search <domain> -f 24h
-./scripts/hops.py dns logs -c <client> -f 1h
-./scripts/hops.py dns blocked -c <client> -f 1h
-./scripts/hops.py dns test <domain> [-c <vlan>]
-
-# Debug (ephemeral pods, self-cleaning)
-./scripts/hops.py debug dns kubernetes.default
-./scripts/hops.py debug curl http://service.namespace:8080/health
-
-# Backup
-./scripts/hops.py backup kopia snapshot list
-
-# Validation
-./scripts/hops.py validate vmrules [PATH]
-```
-
-**Diagnostic PromQL recipes** (use with `query metrics query`, replace NS/POD/C):
-
-```promql
-# Restarts (raw counter)
-kube_pod_container_status_restarts_total{namespace="NS",pod=~"POD.*"}
-
-# OOMKilled pods
-kube_pod_container_status_last_terminated_reason{reason="OOMKilled",namespace="NS"}
-
-# CrashLoopBackOff pods
-kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff",namespace="NS"}
-
-# Exit code (137=SIGKILL/OOM, 143=SIGTERM, 1=app error)
-kube_pod_container_status_last_terminated_exitcode{namespace="NS",pod=~"POD.*"}
-
-# CPU throttling %
-sum(increase(container_cpu_cfs_throttled_periods_total{namespace="NS",pod=~"POD.*",container="C"}[1h])) / sum(increase(container_cpu_cfs_periods_total{namespace="NS",pod=~"POD.*",container="C"}[1h])) * 100
-```
+**`hops` CLI:** Run `./scripts/hops.py --help` for domains, `./scripts/hops.py <domain> --help` for
+commands. Key entry point for debugging: `./scripts/hops.py app diagnose APP [-n NS]`.
 
 ### New App Checklist
 
