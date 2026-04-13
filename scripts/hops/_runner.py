@@ -41,20 +41,24 @@ def run_json(
     args: list[str],
     *,
     timeout: int = 30,
+    quiet: bool = False,
 ) -> Any:
     """Run a subprocess and parse stdout as JSON.
 
     Returns the parsed object. On failure, prints error and exits.
+    When quiet=True, suppresses error output (for probe-style lookups).
     """
     result = run(args, timeout=timeout, check=False)
     if result.returncode != 0:
-        msg = (result.stderr or result.stdout or "").strip().split("\n")[0]
-        print(f"error: {args[0]} failed: {msg}", file=sys.stderr)
+        if not quiet:
+            msg = (result.stderr or result.stdout or "").strip().split("\n")[0]
+            print(f"error: {args[0]} failed: {msg}", file=sys.stderr)
         sys.exit(1)
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError as exc:
-        print(f"error: failed to parse JSON from {args[0]}: {exc}", file=sys.stderr)
+        if not quiet:
+            print(f"error: failed to parse JSON from {args[0]}: {exc}", file=sys.stderr)
         sys.exit(1)
 
 

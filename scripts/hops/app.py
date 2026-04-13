@@ -408,17 +408,53 @@ def secrets(namespace: str | None):
 def diagnose(app: str, namespace: str | None):
     """Composite diagnostic: Flux status, pods, events, logs, restarts.
 
-    Single command replacing 5+ separate kubectl/flux calls.
+    Works for both workload apps (Deployments, etc.) and gateway-only apps
+    (external services proxied via Backend/Service + HTTPRoute).
     """
-    wl = _resolve(app, namespace)
+    wl = resolve_app(app, namespace)
+
+    # Determine effective namespace: from workload, or from gateway resource lookup
+    ns = wl.namespace if wl else _find_gateway_namespace(app, namespace)
+    if not ns:
+        info(f"error: could not find app {app!r}")
+        raise SystemExit(1)
 
     # 1. Flux Kustomization + HelmRelease
     section("FLUX")
-    _diagnose_flux(app, wl.namespace)
+    _diagnose_flux(app, ns)
 
-    # 2. Pods
+    if wl:
+        _diagnose_workload(wl, ns)
+    else:
+        _diagnose_gateway(app, ns)
+
+    # Events (non-Normal, filtered to app)
+    _diagnose_events(app, ns)
+
+
+def _find_gateway_namespace(app: str, namespace: str | None) -> str | None:
+    """Find the namespace of a gateway-only app (Backend or Service + HTTPRoute)."""
+    for resource in ("backends.gateway.envoyproxy.io", "services"):
+        try:
+            args = ["kubectl", "get", resource, app, "-o", "json"]
+            if namespace:
+                args.extend(["-n", namespace])
+            else:
+                args.append("--all-namespaces")
+            data = run_json(args, timeout=10, quiet=True)
+            # Single resource response
+            ns = data.get("metadata", {}).get("namespace")
+            if ns:
+                return ns
+        except SystemExit:
+            continue
+    return None
+
+
+def _diagnose_workload(wl: Workload, ns: str):
+    """Diagnose a workload-based app: pods, restarts, logs."""
     section("PODS")
-    pod_data = kubectl_json("pods", namespace=wl.namespace)
+    pod_data = kubectl_json("pods", namespace=ns)
     pod_rows = []
     restart_details = []
     for item in pod_data.get("items", []):
@@ -435,7 +471,6 @@ def diagnose(app: str, namespace: str | None):
         restarts = 0
         for cs in status.get("containerStatuses", []):
             restarts += cs.get("restartCount", 0)
-            # Collect restart details
             if cs.get("restartCount", 0) > 0:
                 last = cs.get("lastState", {}).get("terminated", {})
                 if last:
@@ -449,7 +484,6 @@ def diagnose(app: str, namespace: str | None):
                         }
                     )
 
-            # Check waiting state
             waiting = cs.get("state", {}).get("waiting", {})
             if waiting:
                 phase = waiting.get("reason", phase)
@@ -461,7 +495,6 @@ def diagnose(app: str, namespace: str | None):
     else:
         info(f"No pods found for {wl.name!r}")
 
-    # Restart details
     if restart_details:
         info("")
         info("Restart details:")
@@ -472,28 +505,190 @@ def diagnose(app: str, namespace: str | None):
                 f"({rd['finished']} ago)"
             )
 
-    # 3. Events (non-Normal, filtered to app)
-    section(f"EVENTS (non-Normal, {wl.namespace})")
+    # Recent logs
+    section("LOGS (recent)")
+    matching_pods = [
+        item
+        for item in pod_data.get("items", [])
+        if item["metadata"]["name"].startswith(wl.name)
+        and item.get("status", {}).get("phase") == "Running"
+    ]
+    if matching_pods:
+        pod_name = matching_pods[0]["metadata"]["name"]
+        result = run(
+            [
+                "kubectl",
+                "logs",
+                pod_name,
+                "-n",
+                ns,
+                "--since=1h",
+                "--tail=20",
+            ],
+            timeout=15,
+            check=False,
+        )
+        output = (result.stdout or "").strip()
+        if output:
+            print(output)
+        else:
+            info("(no recent logs)")
+    else:
+        info("(no running pods)")
+
+
+def _diagnose_gateway(app: str, ns: str):
+    """Diagnose a gateway-only app: Backend/Service + HTTPRoute status."""
+    # Backend (Envoy Gateway)
+    section("BACKEND")
+    backend_found = False
+    try:
+        data = run_json(
+            [
+                "kubectl",
+                "get",
+                "backends.gateway.envoyproxy.io",
+                app,
+                "-n",
+                ns,
+                "-o",
+                "json",
+            ],
+            timeout=10,
+            quiet=True,
+        )
+        backend_found = True
+        spec = data.get("spec", {})
+        endpoints = spec.get("endpoints", [])
+        tls = spec.get("tls", {})
+        endpoint_strs = []
+        for ep in endpoints:
+            ip_spec = ep.get("ip", {})
+            fqdn_spec = ep.get("fqdn", {})
+            if ip_spec:
+                endpoint_strs.append(
+                    f"{ip_spec.get('address', '?')}:{ip_spec.get('port', '?')}"
+                )
+            elif fqdn_spec:
+                endpoint_strs.append(
+                    f"{fqdn_spec.get('hostname', '?')}:{fqdn_spec.get('port', '?')}"
+                )
+        info(f"Backend: {app}")
+        info(f"  endpoints: {', '.join(endpoint_strs) if endpoint_strs else '(none)'}")
+        if tls:
+            skip = tls.get("insecureSkipVerify", False)
+            info(f"  tls: insecureSkipVerify={skip}")
+        _print_conditions(data)
+    except SystemExit:
+        pass
+
+    # Service + Endpoints (headless external service pattern)
+    if not backend_found:
+        try:
+            svc_data = run_json(
+                ["kubectl", "get", "service", app, "-n", ns, "-o", "json"],
+                timeout=10,
+                quiet=True,
+            )
+            ports = svc_data.get("spec", {}).get("ports", [])
+            port_strs = [f"{p.get('name', '?')}:{p.get('port', '?')}" for p in ports]
+            info(f"Service: {app}")
+            info(f"  ports: {', '.join(port_strs)}")
+
+            # Check endpoints
+            try:
+                ep_data = run_json(
+                    ["kubectl", "get", "endpoints", app, "-n", ns, "-o", "json"],
+                    timeout=10,
+                    quiet=True,
+                )
+                subsets = ep_data.get("subsets", [])
+                addrs = []
+                for s in subsets:
+                    for a in s.get("addresses", []):
+                        ep_ports = [str(p.get("port", "?")) for p in s.get("ports", [])]
+                        addrs.append(f"{a.get('ip', '?')}:{','.join(ep_ports)}")
+                info(f"  endpoints: {', '.join(addrs) if addrs else '(none)'}")
+            except SystemExit:
+                info("  endpoints: (not found)")
+        except SystemExit:
+            info(f"No Backend or Service found for {app!r}")
+
+    # HTTPRoute
+    section("HTTPROUTE")
+    try:
+        route_data = run_json(
+            ["kubectl", "get", "httproute", app, "-n", ns, "-o", "json"],
+            timeout=10,
+            quiet=True,
+        )
+        spec = route_data.get("spec", {})
+        hostnames = spec.get("hostnames", [])
+        info(f"HTTPRoute: {app}")
+        info(f"  hostnames: {', '.join(hostnames) if hostnames else '(none)'}")
+
+        # Show backend refs
+        for i, rule in enumerate(spec.get("rules", [])):
+            refs = rule.get("backendRefs", [])
+            for ref in refs:
+                kind = ref.get("kind", "Service")
+                name = ref.get("name", "?")
+                port = ref.get("port", "?")
+                info(f"  backendRef: {kind}/{name}:{port}")
+
+        # Parent status (accepted/resolved conditions from gateway)
+        parents = route_data.get("status", {}).get("parents", [])
+        for parent in parents:
+            gw = parent.get("parentRef", {}).get("name", "?")
+            info(f"  gateway: {gw}")
+            for cond in parent.get("conditions", []):
+                ctype = cond.get("type", "?")
+                cstatus = cond.get("status", "?")
+                reason = cond.get("reason", "")
+                msg = cond.get("message", "")
+                status_str = "yes" if cstatus == "True" else "no"
+                detail = f" ({reason}: {truncate(msg, 80)})" if msg else ""
+                info(f"    {ctype}: {status_str}{detail}")
+    except SystemExit:
+        info(f"HTTPRoute {app!r} not found in {ns}")
+
+
+def _print_conditions(data: dict):
+    """Print status conditions from a resource, if any."""
+    conditions = data.get("status", {}).get("conditions", [])
+    if not conditions:
+        return
+    for cond in conditions:
+        ctype = cond.get("type", "?")
+        cstatus = cond.get("status", "?")
+        msg = cond.get("message", "")
+        status_str = "yes" if cstatus == "True" else "no"
+        detail = f": {truncate(msg, 80)}" if msg else ""
+        info(f"  {ctype}: {status_str}{detail}")
+
+
+def _diagnose_events(app: str, ns: str):
+    """Show non-Normal events filtered to an app name."""
+    section(f"EVENTS (non-Normal, {ns})")
     events_args = [
         "kubectl",
         "get",
         "events",
         "-n",
-        wl.namespace,
+        ns,
         "--sort-by=.lastTimestamp",
         "-o",
         "json",
     ]
     events_data = run_json(events_args, timeout=30)
     event_items = events_data.get("items", [])
-    # Filter to app-related objects and non-Normal
     app_events = []
     for e in event_items:
         if e.get("type", "Normal") == "Normal":
             continue
         obj = e.get("involvedObject", {})
         obj_name = obj.get("name", "")
-        if obj_name.startswith(wl.name):
+        if obj_name.startswith(app):
             app_events.append(e)
 
     app_events = app_events[-20:]  # Last 20
@@ -510,37 +705,6 @@ def diagnose(app: str, namespace: str | None):
     else:
         info("(none)")
 
-    # 4. Recent logs (last 20 lines, prefer errors/warnings)
-    section("LOGS (recent)")
-    matching_pods = [
-        item
-        for item in pod_data.get("items", [])
-        if item["metadata"]["name"].startswith(wl.name)
-        and item.get("status", {}).get("phase") == "Running"
-    ]
-    if matching_pods:
-        pod_name = matching_pods[0]["metadata"]["name"]
-        result = run(
-            [
-                "kubectl",
-                "logs",
-                pod_name,
-                "-n",
-                wl.namespace,
-                "--since=1h",
-                "--tail=20",
-            ],
-            timeout=15,
-            check=False,
-        )
-        output = (result.stdout or "").strip()
-        if output:
-            print(output)
-        else:
-            info("(no recent logs)")
-    else:
-        info("(no running pods)")
-
 
 def _diagnose_flux(app: str, namespace: str):
     """Show Flux Kustomization and HelmRelease status for an app."""
@@ -551,6 +715,7 @@ def _diagnose_flux(app: str, namespace: str):
             ks_data = run_json(
                 ["kubectl", "get", "kustomization", app, "-n", ks_ns, "-o", "json"],
                 timeout=10,
+                quiet=True,
             )
             ks_status = _flux_ready_status(ks_data)
             info(f"Kustomization: {app}  {ks_status}")
@@ -566,6 +731,7 @@ def _diagnose_flux(app: str, namespace: str):
         hr_data = run_json(
             ["kubectl", "get", "helmrelease", app, "-n", namespace, "-o", "json"],
             timeout=10,
+            quiet=True,
         )
         hr_status = _flux_ready_status(hr_data)
         info(f"HelmRelease:   {app}  {hr_status}")
