@@ -12,14 +12,10 @@ drift.
 - **NEVER run git commit/push without explicit user request** - GitOps requires user commits for
   accountability. This includes using the commit subagent. Always wait for explicit "commit"
   request.
-- **NEVER use kubectl apply/create/patch** - Bypasses GitOps, creates configuration drift. Use
-  manifest changes only.
-- **NEVER use kubectl delete as a fix** - Deleting resources (jobs, pods, PVCs) treats symptoms, not
-  causes. Find the manifest issue and fix it. Exception: cleanup after root cause is fixed.
+- **NEVER delete resources as a fix** - Deleting jobs, pods, or PVCs treats symptoms, not causes.
+  Find the manifest issue and fix it. Exception: cleanup after root cause is fixed.
 - **NEVER adjust health probes to fix failures** - Probes detect problems, they don't cause them.
   Investigate WHY the probe fails (resource exhaustion, slow startup, missing deps).
-- **Cluster investigation is read-only** - NEVER use kubectl apply/create/delete/patch, helm
-  install/upgrade/uninstall, flux suspend/resume, or talosctl apply-config/upgrade/reboot/reset.
 
 ### Troubleshooting Approach
 
@@ -44,13 +40,6 @@ the command, (3) test the updated command, (4) use it to continue your original 
 around gaps by falling back to raw CLIs; fix the tool instead. If the gap is too complex to fix
 inline, document it as a TODO in the relevant hops source file and fall back to the raw CLI for that
 specific operation only.
-
-**Ephemeral debug pods** (connectivity/DNS/network debugging):
-
-```bash
-./scripts/hops.py debug dns kubernetes.default
-./scripts/hops.py debug curl http://service.namespace:8080/health
-```
 
 ### Storage, Volumes, and Resource Patterns
 
@@ -85,7 +74,6 @@ specific operation only.
 ### Scaling
 
 - KEDA ScaledObjects create HPAs that continuously enforce replica counts
-- Manual `kubectl scale` is overridden by KEDA HPA when trigger is active
 - To manually scale: pause ScaledObject first (`autoscaling.keda.sh/paused: "true"` annotation)
 
 ## Tier 2: Conventions
@@ -161,8 +149,6 @@ automatically.
 
 - OIDC client IDs: Hardcode as app name in env vars (not secret); only client secret needs Infisical
 - HTTPRoute ONLY for all routing (never Ingress)
-- NEVER use kubectl port-forward under ANY circumstances (alternatives: kubectl exec, debug pods,
-  HTTPRoute exposure)
 - NEVER configure External-DNS on HTTPRoutes (Gateways only)
 - DNSEndpoint CRDs MUST carry `external-dns/provider: <provider>` label indicating which
   external-dns instance should manage them
@@ -399,7 +385,7 @@ For apps requiring Intel GPU acceleration:
 **GitOps flow:** Modify manifests -> User commits/pushes -> Flux auto-applies -> Optional just
 reconcile
 
-**Commands:**
+**User-only commands** (blocked by permission rules for agents; the user runs these manually):
 
 ```bash
 # Setup
