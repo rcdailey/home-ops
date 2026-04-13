@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Correlated view of etcd, Ceph mon, apiserver, and node health for incident investigation",
+  "description": "Proves etcd disk bottleneck: consumer SATA fsync latency causes leader instability, apiserver slowness, and Ceph mon quorum loss",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
@@ -10,18 +10,69 @@
   "links": [],
   "panels": [
     {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "etcd leader",
+      "description": "Which etcd member holds the Raft leadership over time. Purple = follower, green = leader. A healthy cluster shows one continuous green bar per member with no transitions. Each color change is a leader election caused by the current leader failing to heartbeat in time (because fsync is too slow).",
+      "type": "state-timeline",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "id": 20,
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-RdYlGr" },
+          "custom": {
+            "fillOpacity": 70,
+            "insertNulls": false,
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "purple", "index": 0, "text": "follower" },
+                "1": { "color": "green", "index": 1, "text": "LEADER" }
+              },
+              "type": "value"
+            }
+          ],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "alignValue": "center",
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "label_replace(etcd_server_is_leader{job=\"kube-etcd\"}, \"node_ip\", \"$1\", \"instance\", \"(.*):.*\") * on(node_ip) group_left(nodename) label_replace(node_uname_info, \"node_ip\", \"$1\", \"instance\", \"(.*):.*\")",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
       "id": 100,
-      "title": "Cluster Health",
+      "title": "Disk Performance (The Proof)",
       "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "etcd WAL fsync p99",
-      "description": "99th percentile WAL fsync latency per etcd member. Spikes correlate with disk pressure or I/O contention.",
+      "title": "WAL fsync p99",
+      "description": "How long each WAL fsync takes. This is THE metric. Every etcd write must fsync to disk before it can be acknowledged. Consumer SATA SSDs (like Samsung 870 EVO) lack power-loss capacitors, so every fsync waits for data to reach physical media: 10-15ms typical, spiking to 50ms+. Enterprise SSDs with capacitors do this in <1ms because they can acknowledge as soon as data hits battery-backed cache. The yellow/red zones show where your drives should NOT be, but always are.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
       "id": 1,
       "fieldConfig": {
         "defaults": {
@@ -30,20 +81,19 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
-            "fillOpacity": 10,
-            "gradientMode": "scheme",
+            "fillOpacity": 0,
             "spanNulls": false,
             "axisBorderShow": false,
-            "axisSoftMax": 0.05,
-            "thresholdsStyle": { "mode": "dashed" }
+            "axisSoftMax": 0.025,
+            "thresholdsStyle": { "mode": "area" }
           },
           "color": { "mode": "palette-classic" },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.01 },
-              { "color": "red", "value": 0.05 }
+              { "color": "#EAB839", "value": 0.005 },
+              { "color": "red", "value": 0.01 }
             ]
           }
         },
@@ -51,7 +101,7 @@
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }
       },
       "targets": [
         {
@@ -64,11 +114,56 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "apiserver latency p99",
-      "description": "99th percentile latency for non-streaming API requests (excludes WATCH/CONNECT). Broken down by API server instance to identify which member is affected.",
+      "title": "Backend commit p99",
+      "description": "How long boltdb (etcd's storage engine) takes to commit a transaction to disk. This includes the fsync of the database file itself (separate from the WAL fsync). Spikes here are often worse than WAL fsync because boltdb commits are larger writes. Your cluster regularly hits 25-30ms with spikes to 800ms+. Enterprise SSDs bring this under 10ms.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
       "id": 2,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "axisSoftMax": 0.1,
+            "thresholdsStyle": { "mode": "area" }
+          },
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "#EAB839", "value": 0.025 },
+              { "color": "red", "value": 0.1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket{job=\"kube-etcd\"}[$__rate_interval]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "Disk write latency: sda (etcd) vs nvme (Ceph)",
+      "description": "Average time per write operation for each physical device on control plane nodes. sda is the SATA SSD where etcd lives (Talos system disk). nvme0n1 is the NVMe where Ceph OSD lives. The gap between the two lines IS the problem: SATA is 2-4x slower per write. etcd needs the fast disk, but it's on the slow one. This panel proves the bottleneck is hardware, not software.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+      "id": 3,
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -77,95 +172,41 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
-            "fillOpacity": 10,
-            "gradientMode": "scheme",
+            "fillOpacity": 0,
             "spanNulls": false,
             "axisBorderShow": false,
-            "axisSoftMax": 1,
-            "thresholdsStyle": { "mode": "dashed" }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.5 },
-              { "color": "red", "value": 1 }
-            ]
+            "axisSoftMax": 0.01,
+            "thresholdsStyle": { "mode": "off" }
           }
         },
         "overrides": []
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }
       },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, sum by (le, instance) (rate(apiserver_request_duration_seconds_bucket{verb!~\"WATCH|CONNECT\", job=\"apiserver\"}[$__rate_interval])))",
-          "legendFormat": "{{instance}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "Ceph mon quorum",
-      "description": "Number of mons in quorum. Healthy = 3. Drop to 2 means one mon lost; drop to 1 means quorum lost and Ceph stalls writes.",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
-      "id": 3,
-      "fieldConfig": {
-        "defaults": {
-          "min": 0,
-          "max": 3,
-          "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "green" },
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 30,
-            "spanNulls": false,
-            "axisBorderShow": false,
-            "thresholdsStyle": { "mode": "dashed" }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 2 },
-              { "color": "green", "value": 3 }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "count(ceph_mon_quorum_status == 1)",
-          "legendFormat": "mons in quorum",
+          "expr": "rate(node_disk_write_time_seconds_total{device=~\"sda|nvme0n1\"}[$__rate_interval]) / rate(node_disk_writes_completed_total{device=~\"sda|nvme0n1\"}[$__rate_interval]) * on(instance) group_left(nodename) node_uname_info{nodename=~\"$node\"}",
+          "legendFormat": "{{nodename}} / {{device}}",
           "refId": "A"
         }
       ]
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
       "id": 101,
-      "title": "etcd Internals",
+      "title": "etcd Stability (The Damage)",
       "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "etcd leader changes",
-      "description": "Count of leader elections per interval. Each bar = one election event. Frequent changes indicate network partitions or resource starvation.",
+      "title": "Slow applies",
+      "description": "Raft proposals that took >100ms to apply. A healthy cluster with enterprise SSDs shows near zero. Your cluster shows 300-600 PER HOUR because every apply involves a disk fsync, and your consumer SATA SSDs can't keep up. This is the most damning metric: it means etcd is constantly falling behind on processing writes. When this spikes higher (1000+), you get leader elections and apiserver timeouts.",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 10 },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 15 },
       "id": 4,
       "fieldConfig": {
         "defaults": {
@@ -178,50 +219,14 @@
             "lineWidth": 1,
             "fillOpacity": 50,
             "axisBorderShow": false,
-            "axisSoftMax": 3
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "increase(etcd_server_leader_changes_seen_total{job=\"kube-etcd\"}[$__rate_interval])",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "etcd slow applies",
-      "description": "Count of raft proposals that took longer than 100ms to apply. High values indicate the etcd leader is under I/O or CPU pressure. Key diagnostic for apiserver latency spikes.",
-      "type": "timeseries",
-      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 10 },
-      "id": 15,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "min": 0,
-          "decimals": 0,
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "bars",
-            "lineWidth": 1,
-            "fillOpacity": 50,
-            "axisBorderShow": false,
             "axisSoftMax": 10,
-            "thresholdsStyle": { "mode": "dashed" }
+            "thresholdsStyle": { "mode": "area" }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 5 },
+              { "color": "#EAB839", "value": 5 },
               { "color": "red", "value": 20 }
             ]
           }
@@ -243,11 +248,56 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "etcd proposals pending",
-      "description": "Raft proposals waiting to be committed. Sustained non-zero indicates leader cannot commit (quorum loss or slow followers).",
+      "title": "Leader changes",
+      "description": "Count of leader elections per interval. Should be zero (per buroa's cluster: 'never'). Each bar is a leadership transfer caused by the current leader's heartbeat timing out, which happens when fsync takes so long that etcd can't respond to peers in time. Even one change causes brief API unavailability; rapid changes cause cascading pod restarts across the cluster.",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 10 },
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 15 },
       "id": 5,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 50,
+            "axisBorderShow": false,
+            "axisSoftMax": 3,
+            "thresholdsStyle": { "mode": "area" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 3 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "increase(etcd_server_leader_changes_seen_total{job=\"kube-etcd\"}[$__rate_interval])",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "Proposals pending",
+      "description": "Raft proposals waiting to be committed. This is the backlog. Sustained non-zero means the leader can't commit fast enough (because fsync is slow). During incidents this spikes as writes queue up waiting for disk. Drops back to zero once the fsync pressure passes and the leader catches up.",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 15 },
+      "id": 6,
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -256,9 +306,18 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "axisBorderShow": false,
-            "axisSoftMax": 50
+            "axisSoftMax": 50,
+            "thresholdsStyle": { "mode": "area" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "#EAB839", "value": 5 },
+              { "color": "red", "value": 50 }
+            ]
           }
         },
         "overrides": []
@@ -278,11 +337,11 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "etcd peer round-trip p99",
-      "description": "99th percentile network latency between etcd peers. High values indicate network issues between control plane nodes.",
+      "title": "Peer round-trip p99",
+      "description": "Network latency between etcd members. This panel rules out the network hypothesis. If this is low (<5ms) while WAL fsync is high (>10ms), the bottleneck is definitively disk, not network. Your peer RTT is consistently <2ms, confirming the problem is local disk I/O, not inter-node communication.",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 10 },
-      "id": 6,
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 15 },
+      "id": 7,
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -291,17 +350,17 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "axisBorderShow": false,
-            "axisSoftMax": 0.1,
-            "thresholdsStyle": { "mode": "dashed" }
+            "axisSoftMax": 0.01,
+            "thresholdsStyle": { "mode": "area" }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.05 },
-              { "color": "red", "value": 0.1 }
+              { "color": "#EAB839", "value": 0.005 },
+              { "color": "red", "value": 0.01 }
             ]
           }
         },
@@ -322,99 +381,84 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
       "id": 102,
-      "title": "Resource Pressure (PSI)",
+      "title": "Cluster Impact (The Blast Radius)",
       "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "CPU pressure (some)",
-      "description": "Percentage of time at least one task is waiting for CPU. High values indicate CPU saturation.",
+      "title": "apiserver latency p99",
+      "description": "99th percentile latency for non-streaming API requests. This is the downstream effect of slow etcd. Every API write (pod creation, lease renewal, configmap update) must wait for etcd to fsync before the apiserver can respond. When fsync takes 15ms+ baseline with 50ms+ spikes, apiserver latency follows. During severe incidents this reaches 5-25 seconds, which is why leader-elected controllers lose their leases (hardcoded 5-second timeout).",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 18 },
-      "id": 7,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "axisBorderShow": false,
-            "axisSoftMax": 50
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rate(node_pressure_cpu_waiting_seconds_total[$__rate_interval]) * 100 * on (instance) group_left (nodename) node_uname_info{nodename=~\"$node\"}",
-          "legendFormat": "{{nodename}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "Memory pressure (some)",
-      "description": "Percentage of time at least one task is waiting for memory. More sensitive than 'full stall'; catches partial pressure before total system stall.",
-      "type": "timeseries",
-      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 18 },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 23 },
       "id": 8,
       "fieldConfig": {
         "defaults": {
-          "unit": "percent",
+          "unit": "s",
           "min": 0,
           "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
-            "fillOpacity": 10,
+            "fillOpacity": 0,
+            "spanNulls": false,
             "axisBorderShow": false,
-            "axisSoftMax": 5
+            "axisSoftMax": 1,
+            "thresholdsStyle": { "mode": "area" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "#EAB839", "value": 0.5 },
+              { "color": "red", "value": 1 }
+            ]
           }
         },
         "overrides": []
       },
       "options": {
         "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }
       },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rate(node_pressure_memory_waiting_seconds_total[$__rate_interval]) * 100 * on (instance) group_left (nodename) node_uname_info{nodename=~\"$node\"}",
-          "legendFormat": "{{nodename}}",
+          "expr": "histogram_quantile(0.99, sum by (le, instance) (rate(apiserver_request_duration_seconds_bucket{verb!~\"WATCH|CONNECT\", job=\"apiserver\"}[$__rate_interval])))",
+          "legendFormat": "{{instance}}",
           "refId": "A"
         }
       ]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "I/O pressure (some)",
-      "description": "Percentage of time at least one task is waiting for I/O. Correlates with disk saturation affecting etcd and Ceph. More sensitive than 'full stall'; a 4-5% spike here can trigger etcd slow applies.",
+      "title": "Ceph mon quorum",
+      "description": "Number of Ceph monitors in quorum. Healthy = 3. Drops correlate with the same host-level disturbance that causes etcd slowness: when a control plane node's SATA disk stalls, both etcd and the co-located Ceph mon on that node suffer simultaneously. The mon can't respond to Paxos heartbeats in time and gets voted out of quorum. This is a symptom of the same root cause, not an independent problem.",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 18 },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 23 },
       "id": 9,
       "fieldConfig": {
         "defaults": {
-          "unit": "percent",
           "min": 0,
-          "color": { "mode": "palette-classic" },
+          "max": 3,
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "green" },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
-            "fillOpacity": 10,
+            "fillOpacity": 30,
+            "spanNulls": false,
             "axisBorderShow": false,
-            "axisSoftMax": 10
+            "thresholdsStyle": { "mode": "area" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "#EAB839", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
           }
         },
         "overrides": []
@@ -426,222 +470,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rate(node_pressure_io_waiting_seconds_total[$__rate_interval]) * 100 * on (instance) group_left (nodename) node_uname_info{nodename=~\"$node\"}",
-          "legendFormat": "{{nodename}}",
+          "expr": "count(ceph_mon_quorum_status == 1)",
+          "legendFormat": "mons in quorum",
           "refId": "A"
         }
       ]
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
-      "id": 106,
-      "title": "Disk I/O (CP Nodes)",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "Disk device utilization",
-      "description": "Fraction of time each physical disk is busy (0-1). Shows per-device I/O contention on CP nodes. sda is the Talos system disk (etcd, kubelet, containerd); nvme is the Ceph OSD. A spike on sda concurrent with etcd slow applies confirms direct I/O contention on etcd's own device.",
-      "type": "timeseries",
-      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 26 },
-      "id": 16,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "axisBorderShow": false,
-            "axisSoftMax": 0.5
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rate(node_disk_io_time_seconds_total{device=~\"sd.*|nvme.*\"}[$__rate_interval]) * on (instance) group_left (nodename) node_uname_info{nodename=~\"$node\"}",
-          "legendFormat": "{{nodename}} / {{device}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 33 },
-      "id": 104,
-      "title": "Workload Impact (CP Nodes)",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "Top disk writers (CP nodes)",
-      "description": "Top 5 workloads by disk write rate on control plane nodes. Identifies workloads competing with etcd and Ceph mons for I/O.",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 34 },
-      "id": 12,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "Bps",
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 20,
-            "stacking": { "mode": "none" },
-            "axisBorderShow": false
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "topk_avg(10, sum by (workload, container) (label_replace(label_replace(sum by (pod, container) (rate(container_fs_writes_bytes_total{node=~\"$node\", namespace!=\"rook-ceph\", container!=\"\", container!=\"POD\"}[$__rate_interval])), \"workload\", \"$1\", \"pod\", \"(.*)\"), \"workload\", \"$1\", \"pod\", \"(.+)-[a-f0-9]{7,10}-[a-z0-9]{5}$\")))",
-          "legendFormat": "{{workload}} / {{container}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "Top CPU consumers (CP nodes)",
-      "description": "Top 5 workloads by CPU usage on control plane nodes. Identifies workloads competing with etcd and Ceph mons for CPU.",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 34 },
-      "id": 13,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 20,
-            "stacking": { "mode": "none" },
-            "axisBorderShow": false
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "topk_avg(10, sum by (workload, container) (label_replace(label_replace(sum by (pod, container) (rate(container_cpu_usage_seconds_total{node=~\"$node\", container!=\"\", container!=\"POD\"}[$__rate_interval])), \"workload\", \"$1\", \"pod\", \"(.*)\"), \"workload\", \"$1\", \"pod\", \"(.+)-[a-f0-9]{7,10}-[a-z0-9]{5}$\")))",
-          "legendFormat": "{{workload}} / {{container}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 42 },
-      "id": 103,
-      "title": "Logs",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "${DS_VICTORIALOGS}" },
-      "title": "etcd logs",
-      "description": "etcd service logs from Talos. Shows 'apply request took too long' warnings during slow applies and leader election messages.",
-      "type": "logs",
-      "gridPos": { "h": 10, "w": 8, "x": 0, "y": 43 },
-      "id": 10,
-      "options": {
-        "showTime": true,
-        "wrapLogMessage": true,
-        "sortOrder": "Descending",
-        "enableLogDetails": true
-      },
-      "targets": [
-        {
-          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "${DS_VICTORIALOGS}" },
-          "editorMode": "code",
-          "expr": "{app=\"etcd\"} AND (level:warning OR level:warn OR _msg:\"elected leader\" OR _msg:\"lost leader\")",
-          "queryType": "instant",
-          "maxLines": 500,
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "${DS_VICTORIALOGS}" },
-      "title": "Ceph logs",
-      "description": "Ceph mon/OSD/MDS logs from rook-ceph namespace. All levels shown for context during incidents.",
-      "type": "logs",
-      "gridPos": { "h": 10, "w": 8, "x": 8, "y": 43 },
-      "id": 17,
-      "options": {
-        "showTime": true,
-        "wrapLogMessage": true,
-        "sortOrder": "Descending",
-        "enableLogDetails": true
-      },
-      "targets": [
-        {
-          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "${DS_VICTORIALOGS}" },
-          "editorMode": "code",
-          "expr": "{namespace=\"rook-ceph\"}",
-          "queryType": "instant",
-          "maxLines": 500,
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "${DS_VICTORIALOGS}" },
-      "title": "Kernel messages",
-      "description": "Kernel ring buffer (dmesg) from all nodes via Talos KmsgLogConfig.",
-      "type": "logs",
-      "gridPos": { "h": 10, "w": 8, "x": 16, "y": 43 },
-      "id": 11,
-      "options": {
-        "showTime": true,
-        "wrapLogMessage": true,
-        "sortOrder": "Descending",
-        "enableLogDetails": true
-      },
-      "targets": [
-        {
-          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "${DS_VICTORIALOGS}" },
-          "editorMode": "code",
-          "expr": "{app=\"kernel\"}",
-          "queryType": "instant",
-          "maxLines": 500,
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 53 },
-      "id": 105,
-      "title": "Pod Health",
-      "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "title": "Container restarts",
-      "description": "Cluster-wide container restarts (all causes: OOM, liveness probe failure, crash, SIGKILL). Empty when healthy. Spikes correlate with infrastructure stress in rows above.",
+      "description": "Cluster-wide container restarts from all causes. This is the user-visible symptom. During etcd slowness, leader-elected controllers can't renew their leases within the 5-second timeout and get restarted. The pattern is distinctive: many unrelated controllers restart at the same time, which is the signal that the problem is infrastructure (etcd/disk), not any individual app.",
       "type": "timeseries",
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 54 },
-      "id": 14,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 23 },
+      "id": 10,
       "fieldConfig": {
         "defaults": {
           "unit": "short",

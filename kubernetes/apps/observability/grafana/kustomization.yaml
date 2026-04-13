@@ -27,3 +27,12 @@ configMapGenerator:
       app.kubernetes.io/managed-by: grafana-operator
     annotations:
       kustomize.toolkit.fluxcd.io/substitute: disabled
+- name: etcd-dashboard
+  files:
+  - etcd.json=dashboards/etcd.json
+  options:
+    disableNameSuffixHash: true
+    labels:
+      app.kubernetes.io/managed-by: grafana-operator
+    annotations:
+      kustomize.toolkit.fluxcd.io/substitute: disabled
