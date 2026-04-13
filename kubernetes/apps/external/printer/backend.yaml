@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/backend_v1alpha1.json
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: Backend
+metadata:
+  name: printer
+spec:
+  endpoints:
+  - ip:
+      address: 192.168.1.40
+      port: 443
+  tls:
+    insecureSkipVerify: true
