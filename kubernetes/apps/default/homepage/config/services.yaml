@@ -160,11 +160,6 @@
       href: http://192.168.1.53/
       ping: 192.168.1.53
 
-  - CUPS Print Server:
-      icon: cups
-      href: http://192.168.1.52:631/
-      ping: 192.168.1.52
-
   - Printer:
       icon: brother
       href: https://printer.${SECRET_DOMAIN}/
