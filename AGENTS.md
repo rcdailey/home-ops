@@ -380,9 +380,10 @@ For apps requiring Intel GPU acceleration:
 **GitOps flow:** Modify manifests -> User commits/pushes -> Flux auto-applies -> Optional just
 reconcile
 
-**User-only commands** (agents MUST NOT run these): `just reconcile`, `flux reconcile`, `helm show
-values`/`helm template`, `just talos diff-config`/`just talos apply-node`, `talosctl`. Standalone
-scripts: `./scripts/test-vrl.py` (VRL validation), `./scripts/icon-search.py` (dashboard icons),
+**User-only commands** (agents MUST NOT run these): `just reconcile`, `flux reconcile`, `helm
+template`, `just talos diff-config`/`just talos apply-node`, `talosctl`. Use `hops flux values` and
+`hops flux defaults` instead of `helm show values`/`helm get values`. Standalone scripts:
+`./scripts/test-vrl.py` (VRL validation), `./scripts/icon-search.py` (dashboard icons),
 `./scripts/hass-api.py` (Home Assistant API).
 
 **Conventional commits:**
@@ -486,7 +487,8 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 - Ceph toolbox: `./scripts/hops.py storage ceph status` (or `osd`, `io`)
 
 **`hops` CLI:** Run `./scripts/hops.py --help` for domains, `./scripts/hops.py <domain> --help` for
-commands. Key entry point for debugging: `./scripts/hops.py app diagnose APP [-n NS]`.
+commands. Key entry point for debugging: `./scripts/hops.py app diagnose APP [-n NS]` (works for
+both workload apps and gateway-only external services).
 
 ### New App Checklist
 
