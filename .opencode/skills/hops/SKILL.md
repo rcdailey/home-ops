@@ -41,7 +41,7 @@ scripts/hops/
   node.py                hops node (list, disks, status)
   storage.py             hops storage (ceph status/osd/io, pvcs, disks)
   app.py                 hops app (list, pods, events, logs, resources, secrets, diagnose)
-  flux.py                hops flux (status, hr, ks, test)
+  flux.py                hops flux (status, hr, ks, test, values, defaults)
   debug.py               hops debug (dns, curl; ephemeral pods)
   query/                 hops query (metrics, logs)
     __init__.py
