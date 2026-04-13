@@ -37,6 +37,8 @@ spec:
       envoyGateway:
         gateway:
           controllerName: gateway.envoyproxy.io/gatewayclass-controller
+        extensionApis:
+          enableBackend: true
         provider:
           kubernetes:
             envoyService:
