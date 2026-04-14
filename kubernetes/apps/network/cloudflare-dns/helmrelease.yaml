@@ -28,11 +28,12 @@ spec:
           name: cloudflare-dns-secret
           key: api-token
     extraArgs:
-    - --cloudflare-dns-records-per-page=1000
+    - --cloudflare-dns-records-per-page=5000
     - --cloudflare-proxied
     - --crd-source-apiversion=externaldns.k8s.io/v1alpha1
     - --crd-source-kind=DNSEndpoint
     - --gateway-name=external
+    - --zone-id-filter=a4c8686f819a8bb98c874518b1f7df02
     sources: ["crd", "gateway-httproute"]
     triggerLoopOnEvent: true
     policy: sync
