@@ -233,9 +233,11 @@ def logs(
         pod,
         "-n",
         wl.namespace,
-        f"--since={since}",
         f"--tail={lines}",
     ]
+    # --since is meaningless for previous logs (bounded by container lifetime)
+    if not previous:
+        args.append(f"--since={since}")
     if container:
         args.extend(["-c", container])
     else:
@@ -535,6 +537,37 @@ def _diagnose_workload(wl: Workload, ns: str):
             info("(no recent logs)")
     else:
         info("(no running pods)")
+
+    # Previous crash logs (auto-shown when restarts detected)
+    if restart_details and matching_pods:
+        section("LOGS (previous crash)")
+        pod_name = matching_pods[0]["metadata"]["name"]
+        # Show previous logs for each container that restarted
+        shown = False
+        for rd in restart_details:
+            container_name = rd["container"]
+            result = run(
+                [
+                    "kubectl",
+                    "logs",
+                    pod_name,
+                    "-n",
+                    ns,
+                    "-c",
+                    container_name,
+                    "--previous",
+                    "--tail=30",
+                ],
+                timeout=15,
+                check=False,
+            )
+            output = (result.stdout or "").strip()
+            if output:
+                info(f"--- {container_name} (previous, last 30 lines) ---")
+                print(output)
+                shown = True
+        if not shown:
+            info("(no previous logs available)")
 
 
 def _diagnose_gateway(app: str, ns: str):
