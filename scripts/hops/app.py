@@ -46,6 +46,40 @@ def _resolve(app_name: str, namespace: str | None) -> Workload:
     return wl
 
 
+def _find_running_pod(wl: Workload) -> str:
+    """Find a running pod for a workload, or exit with error."""
+    data = kubectl_json("pods", namespace=wl.namespace)
+    matching = []
+    for item in data.get("items", []):
+        name = item["metadata"]["name"]
+        if name.startswith(wl.name):
+            phase = item.get("status", {}).get("phase", "")
+            matching.append((name, phase))
+
+    if not matching:
+        info(f"error: no pods found for {wl.name!r} in {wl.namespace}")
+        raise SystemExit(1)
+
+    pod = next(
+        (name for name, phase in matching if phase == "Running"),
+        None,
+    )
+    if not pod:
+        info(f"error: no running pods for {wl.name!r} in {wl.namespace}")
+        raise SystemExit(1)
+    return pod
+
+
+def _exec_stderr(stderr: str) -> str:
+    """Clean kubectl exec stderr by removing informational lines."""
+    lines = [
+        ln
+        for ln in stderr.strip().splitlines()
+        if not ln.startswith("Defaulted container")
+    ]
+    return "\n".join(lines).strip()
+
+
 @click.group()
 def cli():
     """Application listing, logs, and diagnostics."""
@@ -207,25 +241,7 @@ def logs(
     Prefer 'hops query logs' for apps with VictoriaLogs/Vector support.
     """
     wl = _resolve(app, namespace)
-
-    # Find matching pods
-    data = kubectl_json("pods", namespace=wl.namespace)
-    matching = []
-    for item in data.get("items", []):
-        name = item["metadata"]["name"]
-        if name.startswith(wl.name):
-            phase = item.get("status", {}).get("phase", "")
-            matching.append((name, phase))
-
-    if not matching:
-        info(f"No pods found for {wl.name!r} in {wl.namespace}")
-        return
-
-    # Prefer Running pods
-    pod = next(
-        (name for name, phase in matching if phase == "Running"),
-        matching[0][0],
-    )
+    pod = _find_running_pod(wl)
 
     args = [
         "kubectl",
@@ -432,6 +448,87 @@ def diagnose(app: str, namespace: str | None):
 
     # Events (non-Normal, filtered to app)
     _diagnose_events(app, ns)
+
+
+@cli.command("ls")
+@click.argument("app")
+@click.argument("path")
+@click.option(
+    "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
+)
+@click.option("-c", "--container", default=None, help="Container name")
+def ls_path(app: str, path: str, namespace: str | None, container: str | None):
+    """List files at a path inside an app container."""
+    wl = _resolve(app, namespace)
+    pod = _find_running_pod(wl)
+    args = ["kubectl", "exec", pod, "-n", wl.namespace]
+    if container:
+        args.extend(["-c", container])
+    args.extend(["--", "ls", "-la", path])
+    result = run(args, timeout=15, check=False)
+    if result.returncode != 0:
+        stderr = _exec_stderr(result.stderr or "")
+        info(f"error: {stderr}" if stderr else f"error: ls failed in {pod}")
+        raise SystemExit(1)
+    output = (result.stdout or "").strip()
+    if output:
+        print(output)
+
+
+@cli.command("cat")
+@click.argument("app")
+@click.argument("path")
+@click.option(
+    "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
+)
+@click.option("-c", "--container", default=None, help="Container name")
+@click.option("--lines", default=200, help="Max lines to show (default: 200)")
+def cat_file(
+    app: str, path: str, namespace: str | None, container: str | None, lines: int
+):
+    """Read a file from inside an app container."""
+    wl = _resolve(app, namespace)
+    pod = _find_running_pod(wl)
+    args = ["kubectl", "exec", pod, "-n", wl.namespace]
+    if container:
+        args.extend(["-c", container])
+    args.extend(["--", "head", "-n", str(lines), path])
+    result = run(args, timeout=15, check=False)
+    if result.returncode != 0:
+        stderr = _exec_stderr(result.stderr or "")
+        info(f"error: {stderr}" if stderr else f"error: cat failed in {pod}")
+        raise SystemExit(1)
+    output = (result.stdout or "").strip()
+    if output:
+        print(output)
+
+
+@cli.command("du")
+@click.argument("app")
+@click.argument("path")
+@click.option(
+    "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
+)
+@click.option("-c", "--container", default=None, help="Container name")
+@click.option("-d", "--depth", default=1, help="Directory depth (default: 1)", type=int)
+def du_path(
+    app: str, path: str, namespace: str | None, container: str | None, depth: int
+):
+    """Disk usage at a path inside an app container."""
+    wl = _resolve(app, namespace)
+    pod = _find_running_pod(wl)
+    args = ["kubectl", "exec", pod, "-n", wl.namespace]
+    if container:
+        args.extend(["-c", container])
+    args.extend(["--", "du", "-h", f"-d{depth}", path])
+    result = run(args, timeout=30, check=False)
+    if result.returncode != 0:
+        stderr = _exec_stderr(result.stderr or "")
+        info(f"error: {stderr}" if stderr else f"error: du failed in {pod}")
+        raise SystemExit(1)
+    output = (result.stdout or "").strip()
+    if output:
+        print(output)
 
 
 def _find_gateway_namespace(app: str, namespace: str | None) -> str | None:
