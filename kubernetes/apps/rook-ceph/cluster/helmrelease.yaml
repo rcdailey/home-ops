@@ -42,6 +42,13 @@ spec:
         # Replaced with threshold-based NodeDiskSpaceLow/Critical alerts in observability vmrule
         CephNodeDiskspaceWarning:
           disabled: true
+        # Disable predict_linear pool growth alert - same false positive pattern as above
+        # One of the two mgr replicas produces pathological predictions when its 2d history
+        # window is sparse (post-restart/failover), while the pool itself sits near 0% used.
+        # Threshold-based CephPoolNearFull/CephPoolFull/CephPoolBackfillFull plus custom
+        # CephPoolHighUsage/CephPoolCriticalUsage already cover real capacity concerns.
+        CephPoolGrowthWarning:
+          disabled: true
         # Upstream default for: 30s fires on brief scrape gaps and transient mon restarts
         # 5m filters noise while still catching genuine mon failures in a 3-mon cluster
         CephMonDownQuorumAtRisk:
