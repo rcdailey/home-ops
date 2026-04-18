@@ -384,7 +384,7 @@ reconcile
 template`, `just talos diff-config`/`just talos apply-node`, `talosctl`. Use `hops flux values` and
 `hops flux defaults` instead of `helm show values`/`helm get values`. Standalone scripts:
 `./scripts/test-vrl.py` (VRL validation), `./scripts/icon-search.py` (dashboard icons),
-`./scripts/hass-api.py` (Home Assistant API).
+`./scripts/hass.py` (Home Assistant API).
 
 **Conventional commits:**
 
@@ -419,7 +419,7 @@ Intent-determined types (diff content decides):
 Scope format by domain:
 
 - `kubernetes/**`: app name from directory (e.g., `plex`, `bookstack`)
-- `scripts/**`: script name without extension (e.g., `hass-api`, `hops`)
+- `scripts/**`: script name without extension (e.g., `hass`, `hops`)
 - `.opencode/**`: component name (e.g., skill name `home-assistant`, agent name `commit`)
 - `flux/**`, `talos/**`: component or subsystem name
 - Omit scope for repo-wide changes that span multiple domains

@@ -22,7 +22,7 @@ Commands that fail the test (stay standalone):
 - Pure utility scripts (icon search, YAML annotation, git hooks)
 - Dev tooling (Vector testing, pre-commit hooks)
 
-Ceph passes (storage infrastructure). Blocky DNS passes (cluster DNS infrastructure). hass-api fails
+Ceph passes (storage infrastructure). Blocky DNS passes (cluster DNS infrastructure). hass fails
 (application-level automation).
 
 ## Architecture
