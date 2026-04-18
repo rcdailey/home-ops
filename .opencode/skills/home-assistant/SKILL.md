@@ -1,8 +1,14 @@
 ---
 name: home-assistant
 description: >-
-  Use when querying Home Assistant entity states, calling services, managing automations,
-  debugging devices, or authoring automation YAML
+  Use when querying or mutating Home Assistant via `./scripts/hass.py` (entity states, attributes,
+  templates, history, logbook, areas, energy dashboard, Lovelace dashboards, automations, scripts,
+  repairs, registry entries); authoring, editing, or debugging HA automation/script YAML or Jinja
+  templates; inspecting entities, devices, integrations, or areas on the HA instance at
+  `home.${SECRET_DOMAIN}`; firing events or calling services. Triggers on phrases like "check HA",
+  "Home Assistant entity", "trigger this automation", "what's the state of sensor.X", "run the
+  script", "HA template", or any edit under `scripts/hass/`. Do NOT use for unrelated
+  smart-home/IoT platforms.
 ---
 
 # Home Assistant API

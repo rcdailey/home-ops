@@ -1,8 +1,14 @@
 ---
 name: outline-cli
 description: >-
-  Use when searching, reading, creating, or managing Outline wiki documents and collections
-  via the ol CLI tool
+  Use when searching, reading, creating, updating, moving, archiving, or deleting Outline wiki
+  documents and collections via the `ol` CLI (`@doist/outline-cli`, installed via mise); managing
+  the household knowledge base at `docs.${SECRET_DOMAIN}`; scripting bulk document operations
+  with `--json`/`--ndjson`; authenticating or updating the CLI. Triggers on phrases like "search
+  the wiki", "create an Outline doc", "update the Outline page", "list collections", "move this
+  doc", or any invocation of the `ol` command. Do NOT use for content that belongs in the repo
+  `docs/` directory (ADRs, investigations, runbooks, AGENTS.md directives) per the Outline vs
+  docs/ boundary.
 ---
 
 # Outline CLI (ol)
