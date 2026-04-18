@@ -194,10 +194,9 @@ codebase: ADRs, investigation journals, runbooks, and AGENTS.md directives that 
 alongside manifests. Litmus test: if the content needs PR review with code changes, it belongs in
 `docs/`; otherwise it belongs in Outline.
 
-**Outline MCP integration:** Outline exposes a built-in MCP endpoint at `docs.${SECRET_DOMAIN}/mcp`.
-Use the Outline MCP tools (search, read, create, update documents and collections) to manage Outline
-content directly. SHOULD proactively use Outline MCP tools when the user asks to create, update, or
-organize documentation that belongs in Outline per the boundary above.
+**Outline access:** Manage Outline content through the `ol` CLI (`@doist/outline-cli`, installed via
+mise). See the `outline-cli` skill for commands. SHOULD proactively use `ol` when the user asks to
+create, update, search, or organize documentation that belongs in Outline per the boundary above.
 
 ### Investigations
 
@@ -211,6 +210,19 @@ When documenting a debugging session:
 Investigation docs are historical snapshots, not living documents. If conclusions become stale due
 to infrastructure changes, the ADR supersession chain captures that; do not update old investigation
 docs.
+
+### Skills
+
+Repo-scoped skills live under `.opencode/skills/`. Per-skill triggers (RFC 2119):
+
+- `dns-debug`: MUST load when diagnosing DNS resolution failures, investigating Blocky-blocked
+  domains, debugging "site X is broken" reports, or editing `kubernetes/apps/dns-private/blocky/`.
+- `home-assistant`: MUST load when querying Home Assistant state, firing automations/scripts,
+  editing HA automation or script YAML, or working with `./scripts/hass.py` and `scripts/hass/`.
+- `hops`: MUST load when adding, modifying, or debugging commands in `scripts/hops/` (per the Tier 1
+  `hops` escape hatch). MUST NOT load to merely run existing `hops` commands.
+- `outline-cli`: MUST load when creating, updating, searching, moving, or deleting Outline wiki
+  content via the `ol` CLI.
 
 ## Tier 3: Reference
 

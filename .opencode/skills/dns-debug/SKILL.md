@@ -1,8 +1,14 @@
 ---
 name: dns-debug
 description: >-
-  Use when diagnosing DNS issues, investigating blocked domains, or debugging website connectivity
-  problems reported by users
+  Use when diagnosing DNS resolution failures, investigating blocked domains, debugging website or
+  app connectivity problems reported by users, querying Blocky DNS query logs, or editing Blocky
+  allowlist/denylist configuration in `kubernetes/apps/dns-private/blocky/`. Covers
+  `./scripts/hops.py dns` subcommands (`search`, `logs`, `blocked`, `test`) and the `log_entries`
+  table in the Blocky CNPG cluster. Triggers on phrases like "site X is broken", "DNS isn't
+  working", "why is this domain blocked", "check Blocky logs", "allowlist this domain", or any
+  edit to `blocky/data/config.yaml`. Do NOT use for authoritative/external-dns troubleshooting
+  (different providers, different tooling).
 ---
 
 # DNS Debugging

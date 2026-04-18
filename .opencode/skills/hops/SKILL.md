@@ -1,7 +1,14 @@
 ---
 name: hops
 description: >-
-  Use when adding, modifying, or debugging hops CLI commands in scripts/hops/
+  Use when adding, modifying, debugging, refactoring, or reviewing `hops` CLI commands and domain
+  modules in `scripts/hops/` and `scripts/hops.py`; creating new subcommands, click groups, or
+  output formatters; changing subprocess helpers (`_runner.py`, `_format.py`, `_nodes.py`,
+  `_workload.py`); extending cluster introspection coverage (node, storage, app, flux, query,
+  debug, dns, backup, validate). Triggers on phrases like "add a hops command", "fix hops
+  output", "new hops domain", "extend hops", the `hops` escape hatch in AGENTS.md, or any edit to
+  files under `scripts/hops/`. Do NOT use for simply running existing `hops` commands during
+  diagnosis (no skill needed) or for non-cluster/app-specific scripts (e.g., `hass.py`).
 ---
 
 # hops CLI Development
