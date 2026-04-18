@@ -1,0 +1,13 @@
+[project]
+name = "hass"
+version = "0.1.0"
+description = "LLM-optimized Home Assistant API wrapper"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.1",
+    "homeassistant-api",
+    "aiohttp",
+]
+
+[project.scripts]
+hass = "hass.cli:cli"
