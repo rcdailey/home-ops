@@ -371,6 +371,11 @@ spec:
     kubeApiServer:
       enabled: true
 
+    # jobLabel: app.kubernetes.io/component
+    # Chart v0.74 stopped emitting a literal `jobLabel` label on these Services, so the previous
+    # `jobLabel: jobLabel` config fell back to the service name and broke built-in alert rules
+    # like KubeControllerManagerDown which match on job="kube-controller-manager". The standard
+    # app.kubernetes.io/component label now carries the bare component name the rules expect.
     kubeControllerManager:
       enabled: true
       endpoints: []
@@ -382,7 +387,7 @@ spec:
           component: kube-controller-manager
       vmScrape:
         spec:
-          jobLabel: jobLabel
+          jobLabel: app.kubernetes.io/component
           namespaceSelector:
             matchNames:
             - kube-system
@@ -405,7 +410,7 @@ spec:
           component: kube-scheduler
       vmScrape:
         spec:
-          jobLabel: jobLabel
+          jobLabel: app.kubernetes.io/component
           namespaceSelector:
             matchNames:
             - kube-system
@@ -429,7 +434,7 @@ spec:
       vmScrape:
         enabled: true
         spec:
-          jobLabel: jobLabel
+          jobLabel: app.kubernetes.io/component
           namespaceSelector:
             matchNames:
             - kube-system
