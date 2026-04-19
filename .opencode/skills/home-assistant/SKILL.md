@@ -115,9 +115,13 @@ hass.py logs                              # Warnings+ (last 50)
 hass.py logs -l ERROR                     # Errors+ only
 hass.py logs jvc                          # Grep for "jvc" (case-insensitive)
 hass.py logs -l DEBUG -n 100              # Last 100 debug+ entries
+hass.py logs --full                       # Disable duplicate squashing
 ```
 
-Severity filter plus optional regex grep. Tracebacks stay attached to their parent entry.
+Severity filter plus optional regex grep. Tracebacks stay attached to their parent entry. By
+default, entries with identical bodies (recurring tracebacks from flapping integrations) are
+squashed to one line with occurrence count and `first..last` timestamp range, collapsing the
+traceback to `headline | final exception line`. Pass `--full` to print every entry verbatim.
 
 **history** -- entity state history with statistics:
 
