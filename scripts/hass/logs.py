@@ -1,8 +1,9 @@
-"""HA error log with severity filtering and regex grep."""
+"""HA error log with severity filtering, regex grep, and duplicate squashing."""
 
 from __future__ import annotations
 
 import re
+from collections import OrderedDict
 
 import click
 
@@ -12,6 +13,24 @@ _SEVERITY = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 _LOG_LINE = re.compile(
     r"^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\.\d+\s+(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s+"
 )
+
+
+def _time_part(ts: str) -> str:
+    return ts.split(" ", 1)[1] if " " in ts else ts
+
+
+def _body_summary(text: str) -> str:
+    """Headline (first line) plus last non-empty line for traceback exceptions."""
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        return text
+    head = lines[0]
+    if len(lines) == 1:
+        return head
+    tail = lines[-1].strip()
+    if tail == head.strip():
+        return head
+    return f"{head}  |  {tail}"
 
 
 @click.command()
@@ -26,8 +45,18 @@ _LOG_LINE = re.compile(
 @click.option(
     "-n", "tail", type=int, default=50, help="Show last N entries (default: 50)"
 )
-def cli(grep_pattern: str | None, level: str, tail: int) -> None:
-    """Parse /api/error_log, filter by severity, optional regex grep."""
+@click.option(
+    "--full",
+    is_flag=True,
+    help="Disable duplicate squashing; print every entry body in full",
+)
+def cli(grep_pattern: str | None, level: str, tail: int, full: bool) -> None:
+    """Parse /api/error_log, filter by severity, optional regex grep.
+
+    By default, entries with identical bodies (common for recurring tracebacks)
+    are squashed: body is shown once with an occurrence count and timestamp
+    range. Pass --full to see every entry verbatim.
+    """
     with get_client() as client:
         log_text = client.request("error_log")
 
@@ -63,6 +92,26 @@ def cli(grep_pattern: str | None, level: str, tail: int) -> None:
         click.echo("(no matching entries)")
         return
 
+    if full:
+        for ts, lvl, text in entries:
+            click.echo(f"{_time_part(ts)} {lvl:8s} {text}")
+        return
+
+    # Squash duplicates: key=(level, body). Preserve first-occurrence order.
+    groups: OrderedDict[tuple[str, str], list[str]] = OrderedDict()
     for ts, lvl, text in entries:
-        time_part = ts.split(" ", 1)[1] if " " in ts else ts
-        click.echo(f"{time_part} {lvl:8s} {text}")
+        groups.setdefault((lvl, text), []).append(ts)
+
+    squashed = sum(1 for tss in groups.values() if len(tss) > 1)
+    for (lvl, text), tss in groups.items():
+        if len(tss) == 1:
+            click.echo(f"{_time_part(tss[0])} {lvl:8s} {text}")
+            continue
+        first, last = _time_part(tss[0]), _time_part(tss[-1])
+        summary = _body_summary(text)
+        click.echo(f"{first}..{last} {lvl:8s} (x{len(tss)}) {summary}")
+
+    if squashed:
+        click.echo(
+            f"\n({squashed} duplicate group(s) squashed; pass --full for verbatim output)"
+        )

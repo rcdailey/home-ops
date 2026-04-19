@@ -27,13 +27,20 @@ def cli(entities: tuple[str, ...], hours: float) -> None:
         click.echo("(no activity found)")
         return
 
+    # Include date in the timestamp when the window spans more than ~1 day,
+    # otherwise bare HH:MM:SS is ambiguous across day boundaries.
+    show_date = hours > 24
     for e in entries:
         d = e.model_dump() if hasattr(e, "model_dump") else vars(e)
         ts = str(d.get("when", ""))
+        # when is ISO-8601; split date and time halves
+        date_part, time_part = "", ts
         if "T" in ts:
-            ts = ts.split("T")[1][:8]
+            date_part, _, time_part = ts.partition("T")
         elif " " in ts:
-            ts = ts.split(" ")[1][:8]
+            date_part, _, time_part = ts.partition(" ")
+        time_part = time_part[:8]
+        ts = f"{date_part} {time_part}" if show_date and date_part else time_part
         name = d.get("name", d.get("entity_id", ""))
         state = d.get("state", "")
         message = d.get("message", "")
