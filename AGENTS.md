@@ -41,6 +41,21 @@ around gaps by falling back to raw CLIs; fix the tool instead. If the gap is too
 inline, document it as a TODO in the relevant hops source file and fall back to the raw CLI for that
 specific operation only.
 
+**`hops` stewardship obligation:** The escape hatch handles missing capability. The no-passthrough
+rule (`hops` commands MUST embody investigative workflows, not reformat single CLI calls) requires
+active stewardship. While running existing `hops` commands during diagnosis, if any of the following
+signals appear, MUST load the `hops` skill and act on them within the current session. MUST NOT
+defer the fix to a follow-up session.
+
+- A command's output is barely more useful than the raw kubectl/talosctl/flux call it wraps
+- You instinctively reach for a second command to fetch context the first should have included
+- A resolver rejects an edge case (orphan pod, terminated workload, fuzzy name) the caller would
+  reasonably expect to work
+- You catch yourself repeating a sequence of `hops` calls that should be a single command
+
+These signals are fix triggers, not curiosities. Acting on them while unrelated work is fresh in
+context is cheaper than a future audit.
+
 ### Storage, Volumes, and Resource Patterns
 
 - **RWO volumes MUST use strategy: Recreate** - RollingUpdate causes Multi-Attach errors during pod
@@ -220,7 +235,8 @@ Repo-scoped skills live under `.opencode/skills/`. Per-skill triggers (RFC 2119)
 - `home-assistant`: MUST load when querying Home Assistant state, firing automations/scripts,
   editing HA automation or script YAML, or working with `./scripts/hass.py` and `scripts/hass/`.
 - `hops`: MUST load when adding, modifying, or debugging commands in `scripts/hops/` (per the Tier 1
-  `hops` escape hatch). MUST NOT load to merely run existing `hops` commands.
+  `hops` escape hatch) OR when the Tier 1 stewardship signals appear during diagnosis. MUST NOT load
+  to merely run existing `hops` commands when no signals are present.
 - `outline-cli`: MUST load when creating, updating, searching, moving, or deleting Outline wiki
   content via the `ol` CLI.
 
@@ -499,8 +515,13 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 - Ceph toolbox: `./scripts/hops.py storage ceph status` (or `osd`, `io`)
 
 **`hops` CLI:** Run `./scripts/hops.py --help` for domains, `./scripts/hops.py <domain> --help` for
-commands. Key entry point for debugging: `./scripts/hops.py app diagnose APP [-n NS]` (works for
-both workload apps and gateway-only external services).
+commands. Key entry points for debugging: `./scripts/hops.py app diagnose APP [-n NS]` (workload or
+gateway-only scope, flux status + pods + events + recent logs) and `./scripts/hops.py app pod APP
+[-n NS]` (per-pod drill-down with container state machine, previous-termination table, auto-fetched
+crash logs, and pod-scoped event timeline). Use `app pod` whenever a specific pod misbehaves
+(crashloops, startup races, image pull failures, terminated Jobs). Both accept workload names, app
+labels, pod-name prefixes, or full pod names, including orphan pods whose parent workload has been
+deleted (TTL'd Jobs, manually removed controllers).
 
 ### New App Checklist
 
