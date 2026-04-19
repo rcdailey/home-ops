@@ -11,8 +11,6 @@
   },
   "permission": {
     "bash": {
-      // kubectl: catch-all ask, deny GitOps-breaking mutations
-      "kubectl *": "ask",
       "kubectl apply*": "deny",
       "kubectl apply -f /tmp/*": "ask",
       "kubectl create*": "deny",
@@ -25,8 +23,6 @@
       "kubectl uncordon*": "deny",
       "kubectl port-forward*": "deny",
 
-      // talosctl: catch-all ask, deny infrastructure mutations
-      "talosctl *": "ask",
       "talosctl apply-config*": "deny",
       "talosctl upgrade*": "deny",
       "talosctl reset*": "deny",
@@ -37,16 +33,12 @@
       "talosctl bootstrap*": "deny",
       "talosctl kubeconfig*": "deny",
 
-      // flux: catch-all ask, deny infrastructure mutations
-      "flux *": "ask",
       "flux install*": "deny",
       "flux uninstall*": "deny",
       "flux bootstrap*": "deny",
       "flux delete*": "deny",
       "flux reconcile*": "deny",
 
-      // helm: catch-all ask, deny GitOps-bypassing mutations
-      "helm *": "ask",
       "helm install*": "deny",
       "helm upgrade*": "deny",
       "helm uninstall*": "deny",
