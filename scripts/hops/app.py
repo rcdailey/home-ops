@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import click
 
-from hops._format import age, info, section, table, truncate
+from hops._format import age, info, kv, section, table, truncate
 from hops._runner import kubectl_json, run, run_json
 from hops._workload import Workload, resolve_app
 
@@ -38,7 +38,13 @@ def _age_str(timestamp: str | None) -> str:
 
 
 def _resolve(app_name: str, namespace: str | None) -> Workload:
-    """Resolve app name to a workload or exit with error."""
+    """Resolve app name to a workload or exit with error.
+
+    Used by exec-based commands that require a live parent controller
+    (ls/cat/du/resources). Commands that operate on pods directly
+    should use `_resolve_pods` instead so they survive TTL'd Jobs and
+    other orphan-pod cases.
+    """
     wl = resolve_app(app_name, namespace)
     if not wl:
         info(f"error: could not find app {app_name!r}")
@@ -46,28 +52,77 @@ def _resolve(app_name: str, namespace: str | None) -> Workload:
     return wl
 
 
-def _find_running_pod(wl: Workload) -> str:
-    """Find a running pod for a workload, or exit with error."""
-    data = kubectl_json("pods", namespace=wl.namespace)
-    matching = []
-    for item in data.get("items", []):
-        name = item["metadata"]["name"]
-        if name.startswith(wl.name):
-            phase = item.get("status", {}).get("phase", "")
-            matching.append((name, phase))
+def _resolve_pods(name: str, namespace: str | None) -> tuple[str, list[dict]]:
+    """Resolve a name to pods, newest-first, across workload and orphan cases.
 
-    if not matching:
-        info(f"error: no pods found for {wl.name!r} in {wl.namespace}")
+    Strategy (in order):
+    1. Try workload resolution. If it matches, return its pods.
+    2. Fall back to pod-name lookup: exact match or name prefix.
+       Handles pods whose parent workload has been deleted (Job TTL,
+       manual workload removal, etc.) but whose pod objects still exist.
+
+    Returns (effective_namespace, pods). Exits with a single-line error
+    if nothing matches.
+    """
+    wl = resolve_app(name, namespace)
+    if wl:
+        data = kubectl_json("pods", namespace=wl.namespace)
+        pods = [
+            p
+            for p in data.get("items", [])
+            if p["metadata"]["name"].startswith(wl.name)
+        ]
+        pods.sort(
+            key=lambda p: p["metadata"].get("creationTimestamp", ""),
+            reverse=True,
+        )
+        if pods:
+            return wl.namespace, pods
+        # Workload exists but has no pods yet (rare; treat as error below).
+
+    data = kubectl_json("pods", namespace=namespace)
+    orphans = [
+        p
+        for p in data.get("items", [])
+        if p["metadata"]["name"] == name or p["metadata"]["name"].startswith(f"{name}-")
+    ]
+    if not orphans:
+        scope = f" in {namespace}" if namespace else ""
+        info(f"error: no workload or pod matching {name!r}{scope}")
         raise SystemExit(1)
 
-    pod = next(
-        (name for name, phase in matching if phase == "Running"),
-        None,
+    orphans.sort(
+        key=lambda p: p["metadata"].get("creationTimestamp", ""),
+        reverse=True,
     )
-    if not pod:
-        info(f"error: no running pods for {wl.name!r} in {wl.namespace}")
-        raise SystemExit(1)
-    return pod
+    effective_ns = orphans[0]["metadata"]["namespace"]
+    return effective_ns, orphans
+
+
+def _pick_pod_for_logs(pods: list[dict]) -> dict:
+    """Pick the best pod for reading logs from a candidate list.
+
+    Prefers Running (live logs), then Succeeded, then Failed, then any.
+    Input list must be newest-first; stable sort preserves that within a
+    phase tier.
+    """
+    phase_priority = {"Running": 0, "Succeeded": 1, "Failed": 2}
+    return sorted(
+        pods,
+        key=lambda p: phase_priority.get(p.get("status", {}).get("phase", ""), 3),
+    )[0]
+
+
+def _find_running_pod(wl: Workload) -> str:
+    """Find a Running pod for a workload (for exec). Exits if none."""
+    data = kubectl_json("pods", namespace=wl.namespace)
+    for p in data.get("items", []):
+        if p["metadata"]["name"].startswith(wl.name) and (
+            p.get("status", {}).get("phase") == "Running"
+        ):
+            return p["metadata"]["name"]
+    info(f"error: no running pods for {wl.name!r} in {wl.namespace}")
+    raise SystemExit(1)
 
 
 def _exec_stderr(stderr: str) -> str:
@@ -240,19 +295,22 @@ def logs(
 
     Prefer 'hops query logs' for apps with VictoriaLogs/Vector support.
     """
-    wl = _resolve(app, namespace)
-    pod = _find_running_pod(wl)
+    ns, pods_list = _resolve_pods(app, namespace)
+    chosen = _pick_pod_for_logs(pods_list)
+    pod = chosen["metadata"]["name"]
+    phase = chosen.get("status", {}).get("phase", "?")
+    terminated = phase in ("Succeeded", "Failed")
 
     args = [
         "kubectl",
         "logs",
         pod,
         "-n",
-        wl.namespace,
+        ns,
         f"--tail={lines}",
     ]
-    # --since is meaningless for previous logs (bounded by container lifetime)
-    if not previous:
+    # --since is meaningless for --previous or terminated pods (bounded by container lifetime).
+    if not previous and not terminated:
         args.append(f"--since={since}")
     if container:
         args.extend(["-c", container])
@@ -271,10 +329,176 @@ def logs(
     if output:
         info("note: prefer 'hops query logs' for apps with Vector support")
         container_hint = f", container={container}" if container else ""
-        info(f"--- {pod} (last {lines} lines, since {since}{container_hint}) ---")
+        scope = "since boot" if terminated else f"since {since}"
+        info(f"--- {pod} [{phase}] (last {lines} lines, {scope}{container_hint}) ---")
         print(output)
     else:
-        info(f"No logs from {pod} in the last {since}")
+        window = "in this container" if terminated else f"in the last {since}"
+        info(f"No logs from {pod} [{phase}] {window}")
+
+
+@cli.command("pod")
+@click.argument("app")
+@click.option(
+    "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
+)
+@click.option(
+    "--name",
+    "pod_name",
+    default=None,
+    help="Specific pod name (default: most recent)",
+)
+@click.option(
+    "--events/--no-events", default=True, help="Include event timeline (default: on)"
+)
+def pod_detail(app: str, namespace: str | None, pod_name: str | None, events: bool):
+    """Detailed pod state: phase, container timings, event timeline.
+
+    Replaces 'kubectl describe pod' for diagnosing per-pod lifecycle issues
+    (startup races, image pull delays, crash-then-succeed patterns). Shows
+    both Normal and Warning events sorted by lastTimestamp.
+    """
+    ns, pods = _resolve_pods(app, namespace)
+    if pod_name:
+        pods = [p for p in pods if p["metadata"]["name"] == pod_name]
+    if not pods:
+        target = pod_name or app
+        info(f"error: no pods matching {target!r} in {ns}")
+        raise SystemExit(1)
+    pod = pods[0]
+    meta = pod["metadata"]
+    spec = pod.get("spec", {})
+    status = pod.get("status", {})
+    name = meta["name"]
+
+    # Summary
+    section("POD")
+    kv(
+        [
+            ("name", name),
+            ("namespace", ns),
+            ("node", spec.get("nodeName", "?")),
+            ("phase", status.get("phase", "?")),
+            ("age", _age_str(meta.get("creationTimestamp"))),
+        ]
+    )
+
+    # Containers (init + regular). Each container has a state (running/waiting/terminated)
+    # plus lastState for prior runs. We surface whichever is informative.
+    init_statuses = status.get("initContainerStatuses", [])
+    container_statuses = status.get("containerStatuses", [])
+    all_statuses = [("init", cs) for cs in init_statuses] + [
+        ("app", cs) for cs in container_statuses
+    ]
+    if all_statuses:
+        section("CONTAINERS")
+        rows = []
+        for kind, cs in all_statuses:
+            cname = cs.get("name", "?")
+            restarts = cs.get("restartCount", 0)
+            state = cs.get("state", {})
+            state_str, detail = _format_container_state(state)
+            rows.append([kind, cname, str(restarts), state_str, detail])
+        table(["KIND", "CONTAINER", "RESTARTS", "STATE", "DETAIL"], rows)
+
+        # Previous termination details (for containers that restarted).
+        # Auto-fetch --previous logs for each so the caller sees crash output
+        # inline, not after a second command.
+        restarted = [
+            cs for _, cs in all_statuses if cs.get("lastState", {}).get("terminated")
+        ]
+        if restarted:
+            info("")
+            info("Previous terminations:")
+            table(
+                ["CONTAINER", "EXIT", "REASON", "FINISHED"],
+                [
+                    [
+                        cs.get("name", "?"),
+                        str(cs["lastState"]["terminated"].get("exitCode", "?")),
+                        cs["lastState"]["terminated"].get("reason", "?"),
+                        _age_str(cs["lastState"]["terminated"].get("finishedAt")),
+                    ]
+                    for cs in restarted
+                ],
+            )
+            section("PREVIOUS LOGS")
+            for cs in restarted:
+                cname = cs.get("name", "?")
+                prev = run(
+                    [
+                        "kubectl",
+                        "logs",
+                        name,
+                        "-n",
+                        ns,
+                        "-c",
+                        cname,
+                        "--previous",
+                        "--tail=30",
+                    ],
+                    timeout=15,
+                    check=False,
+                )
+                out = (prev.stdout or "").strip()
+                info(f"--- {cname} (previous, last 30 lines) ---")
+                print(out if out else "(none available)")
+
+    # Events scoped to this specific pod
+    if events:
+        section("EVENTS (pod-scoped)")
+        ev_data = run_json(
+            [
+                "kubectl",
+                "get",
+                "events",
+                "-n",
+                ns,
+                "--field-selector",
+                f"involvedObject.name={name}",
+                "--sort-by=.lastTimestamp",
+                "-o",
+                "json",
+            ],
+            timeout=15,
+        )
+        items = ev_data.get("items", [])
+        if not items:
+            info("(none)")
+        else:
+            rows = []
+            for e in items:
+                rows.append(
+                    [
+                        _age_str(e.get("lastTimestamp") or e.get("eventTime")),
+                        e.get("type", "?"),
+                        e.get("reason", "?"),
+                        f"x{e.get('count', 1)}" if e.get("count", 1) > 1 else "",
+                        truncate(e.get("message", ""), 100),
+                    ]
+                )
+            table(["AGE", "TYPE", "REASON", "#", "MESSAGE"], rows)
+
+
+def _format_container_state(state: dict) -> tuple[str, str]:
+    """Summarize a containerStatus.state dict as (label, detail)."""
+    if "running" in state:
+        started = state["running"].get("startedAt")
+        return "Running", f"started {_age_str(started)} ago" if started else ""
+    if "terminated" in state:
+        t = state["terminated"]
+        parts = [f"exit={t.get('exitCode', '?')}"]
+        if t.get("reason"):
+            parts.append(t["reason"])
+        if t.get("finishedAt"):
+            parts.append(f"finished {_age_str(t['finishedAt'])} ago")
+        return "Terminated", " ".join(parts)
+    if "waiting" in state:
+        w = state["waiting"]
+        reason = w.get("reason", "Waiting")
+        msg = w.get("message", "")
+        return reason, truncate(msg, 80) if msg else ""
+    return "?", ""
 
 
 @cli.command()
