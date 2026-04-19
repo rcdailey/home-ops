@@ -704,6 +704,65 @@ def _alert_current(name: str, json_mode: bool) -> None:
         for k, v in annotations.items():
             print(f"  {k}: {v}")
 
+    # Auto-diagnose absent() expressions: the typical failure mode is label
+    # drift where the metric exists but under a different label value. Show
+    # the caller what IS present for the base metric so the mismatch is
+    # immediately visible instead of requiring a follow-up count-by query.
+    debug = _analyze_absent_expression(alert.get("expression", ""))
+    if debug:
+        print("\nRoot cause analysis (absent() expression):")
+        kv(debug, indent=2)
+
+
+_ABSENT_RE = re.compile(r"absent(?:_over_time)?\(\s*([a-zA-Z_:][\w:]*)\s*\{([^}]*)\}")
+_LABEL_PAIR_RE = re.compile(r'(\w+)\s*(?:=|=~)\s*"([^"]*)"')
+
+
+def _analyze_absent_expression(expression: str) -> list[tuple[str, str]]:
+    """For `absent(metric{k=v,...})` expressions, return diagnostic rows.
+
+    Queries the base metric grouped by each expected label and reports what
+    actual values exist. When the alert fires, this surfaces the mismatch
+    (e.g., expected job="kube-controller-manager", present job values
+    include "victoria-metrics-k8s-stack-kube-controller-manager") in a
+    single call instead of requiring a manual count-by follow-up.
+    """
+    m = _ABSENT_RE.search(expression)
+    if not m:
+        return []
+    metric, labels_str = m.group(1), m.group(2)
+    label_pairs = _LABEL_PAIR_RE.findall(labels_str)
+    if not label_pairs:
+        return []
+
+    rows: list[tuple[str, str]] = []
+    for key, expected in label_pairs:
+        data = query_vm("/api/v1/query", {"query": f"count by ({key}) ({metric})"})
+        results = data.get("data", {}).get("result", [])
+        present = sorted(
+            {r.get("metric", {}).get(key, "") for r in results if r.get("metric")}
+        )
+        rows.append((f"Expected {key}", expected))
+        if not present:
+            rows.append(
+                (f"Present {key} values", f"(none; metric {metric!r} has no series)")
+            )
+        elif expected in present:
+            # The expected label IS present but the alert still fires; likely
+            # a different selector or a stale vmalert cache. Surface both.
+            rows.append(
+                (
+                    f"Present {key} values",
+                    f"includes {expected!r} (check other selectors or vmalert delay)",
+                )
+            )
+        else:
+            preview = ", ".join(present[:8])
+            if len(present) > 8:
+                preview += f", ... ({len(present) - 8} more)"
+            rows.append((f"Present {key} values", preview))
+    return rows
+
 
 def _alert_historical(name: str, time_range: TimeRange, json_mode: bool) -> None:
     duration = time_range.to_duration()
