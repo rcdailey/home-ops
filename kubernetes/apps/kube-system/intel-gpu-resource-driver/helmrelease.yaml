@@ -26,3 +26,9 @@ spec:
     kubeletPlugin:
       nodeSelector:
         feature.node.kubernetes.io/custom-intel-gpu: "true"
+      # Chart 0.10.0 flipped this default to true, which requires a separate
+      # xpumd DaemonSet (intel/xpumanager) we don't deploy. Without xpumd the
+      # kubelet-plugin panics trying to dial /run/xpumd/intelxpuinfo.sock.
+      # Upstream's raw YAML manifest also ships with this disabled.
+      healthMonitoring:
+        enabled: false
