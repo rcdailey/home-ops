@@ -78,7 +78,7 @@ spec:
           vector:
             image:
               repository: timberio/vector
-              tag: 0.54.0-alpine
+              tag: 0.55.0-alpine
             env:
               TZ: America/Chicago
               VECTOR_CONFIG_PATH: /etc/vector/vector.yaml
