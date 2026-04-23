@@ -9,3 +9,10 @@ resources:
 - ./helmrelease.yaml
 - ./pvc.yaml
 - ./externalsecret.yaml
+configMapGenerator:
+- name: qbittorrent-scripts
+  files:
+  - port-forward-up.sh=./config/port-forward-up.sh
+  - port-forward-down.sh=./config/port-forward-down.sh
+generatorOptions:
+  disableNameSuffixHash: true
