@@ -38,6 +38,8 @@ spec:
               VPN_SERVICE_PROVIDER: protonvpn
               VPN_TYPE: wireguard
               VPN_PORT_FORWARDING: on
+              VPN_PORT_FORWARDING_UP_COMMAND: "/scripts/port-forward-up.sh {{`{{PORT}}`}} {{`{{VPN_INTERFACE}}`}}"
+              VPN_PORT_FORWARDING_DOWN_COMMAND: /scripts/port-forward-down.sh
               PORT_FORWARD_ONLY: on
               FIREWALL_INPUT_PORTS: 8080
               # Pod and service CIDRs from talos/talconfig.yaml - allows cluster traffic
@@ -47,6 +49,18 @@ spec:
             envFrom:
             - secretRef:
                 name: qbittorrent-secret
+            # Restart gluetun when ProtonVPN port forwarding dies (known NAT-PMP
+            # renewal bug: gluetun clears the port file and never recovers)
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command: ["sh", "-c", "port=$(cat /tmp/gluetun/forwarded_port 2>/dev/null); [ -n \"$port\" ] && [ \"$port\" != \"0\" ]"]
+                  initialDelaySeconds: 60
+                  periodSeconds: 60
+                  failureThreshold: 3
             restartPolicy: Always
             securityContext:
               privileged: true
@@ -89,31 +103,6 @@ spec:
                 drop:
                 - ALL
 
-          port-forward:
-            image:
-              repository: ghcr.io/bjw-s-labs/gluetun-qb-port-sync
-              tag: 0.0.4@sha256:14ce24f2e054abf06f695f35c8c33612e49d6d0fe80a33896403d85b09a9d329
-            env:
-              GLUETUN_CONTROL_SERVER_HOST: localhost
-              GLUETUN_CONTROL_SERVER_PORT: 8000
-              QBITTORRENT_HOST: localhost
-              QBITTORRENT_WEBUI_PORT: *port
-              CRON_ENABLED: true
-              CRON_SCHEDULE: "*/5 * * * *"
-              LOG_TIMESTAMP: false
-            envFrom:
-            - secretRef:
-                name: qbittorrent-secret
-            securityContext:
-              runAsUser: 1000
-              runAsGroup: 1000
-              runAsNonRoot: true
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                - ALL
-
     service:
       app:
         ports:
@@ -124,7 +113,7 @@ spec:
       labels:
         observability.home-ops/logs: "true"
       annotations:
-        vector.dev/exclude-containers: "gluetun,port-forward"
+        vector.dev/exclude-containers: gluetun
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -139,13 +128,6 @@ spec:
         advancedMounts:
           qbittorrent:
             app:
-            - path: /config
-
-      empty-config:
-        type: emptyDir
-        advancedMounts:
-          qbittorrent:
-            port-forward:
             - path: /config
 
       tmp:
@@ -170,6 +152,15 @@ spec:
           qbittorrent:
             app:
             - path: /media
+
+      scripts:
+        type: configMap
+        name: qbittorrent-scripts
+        defaultMode: 0755
+        advancedMounts:
+          qbittorrent:
+            gluetun:
+            - path: /scripts
 
       tun:
         type: hostPath
