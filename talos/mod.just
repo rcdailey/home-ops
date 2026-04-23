@@ -48,8 +48,8 @@ diff-config node="":
     ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
     just talos render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin --dry-run
 
-[doc('Apply Talos config to a node')]
-apply-node node="":
+[doc('Apply Talos config to a node (pass --insecure for maintenance mode)')]
+apply-node node="" *flags="":
     #!/usr/bin/env bash
     set -euo pipefail
     node="{{node}}"
@@ -58,7 +58,7 @@ apply-node node="":
     fi
     ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
     just log info "Applying config to $node ($ip)..."
-    just talos render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin
+    just talos render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin {{flags}}
 
 [doc('Generate schematic ID from Talos factory')]
 gen-schematic-id:
