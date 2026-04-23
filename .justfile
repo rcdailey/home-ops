@@ -25,5 +25,10 @@ log level msg *args:
     @echo "[{{level}}] {{msg}}" {{args}}
 
 [private]
+ensure-login:
+    @infisical run --env=prod --path=/bootstrap -- true </dev/null 2>/dev/null || infisical login --domain="https://app.infisical.com"
+
+[private]
 template file *args:
+    @just ensure-login
     infisical run --env=prod --path=/bootstrap -- minijinja-cli "{{ file }}" {{ args }}

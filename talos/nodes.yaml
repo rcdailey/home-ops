@@ -14,7 +14,7 @@ nodes:
     ip: 192.168.1.59
     mac: "6c:1f:f7:28:66:bf"
     controller: true
-    disk_model: "Samsung SSD 870"
+    disk_model: "INTEL SSDSC2BA40"
   sakura:
     ip: 192.168.1.62
     mac: "6c:1f:f7:28:71:82"
@@ -25,5 +25,4 @@ nodes:
     ip: 192.168.1.63
     mac: "6c:1f:f7:28:71:08"
     controller: true
-    disk_model: "Samsung SSD 870"
-    disk_size: "<= 300GB"
+    disk_model: "INTEL SSDSC2BA40"

@@ -18,7 +18,7 @@ kubectl access.
 | Node     | Role          | IP           | Current disk (sda)     |
 | -------- | ------------- | ------------ | ---------------------- |
 | hanekawa | control plane | 192.168.1.63 | INTEL SSDSC2BA40 400GB |
-| marin    | control plane | 192.168.1.59 | Samsung 870 EVO 250GB  |
+| marin    | control plane | 192.168.1.59 | INTEL SSDSC2BA40 400GB |
 | sakura   | control plane | 192.168.1.62 | Samsung 870 EVO 250GB  |
 | lucy     | worker        | 192.168.1.54 | SanDisk SDSSDH32 2TB   |
 | nami     | worker        | 192.168.1.50 | Crucial BX500 2TB      |
