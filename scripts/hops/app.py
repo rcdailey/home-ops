@@ -845,6 +845,7 @@ def _diagnose_workload(wl: Workload, ns: str):
                 pod_name,
                 "-n",
                 ns,
+                "--all-containers",
                 "--since=1h",
                 "--tail=20",
             ],
@@ -1045,19 +1046,55 @@ def _diagnose_events(app: str, ns: str):
         if obj_name.startswith(app):
             app_events.append(e)
 
-    app_events = app_events[-20:]  # Last 20
-    if app_events:
+    # Deduplicate events with identical messages, keeping the most recent.
+    # Strip trailing "Last Helm logs:" blocks before comparing (timestamps vary).
+    def _dedup_key(msg: str) -> str:
+        idx = msg.find("\n\nLast Helm logs:")
+        return msg[:idx] if idx != -1 else msg
+
+    seen_keys: dict[str, int] = {}
+    deduped: list[dict] = []
+    for e in reversed(app_events):
+        key = _dedup_key(e.get("message", ""))
+        if key not in seen_keys:
+            seen_keys[key] = 0
+            deduped.append(e)
+        seen_keys[key] += 1
+    deduped.reverse()
+    deduped = deduped[-20:]
+
+    if deduped:
         event_rows = []
-        for e in app_events:
+        for e in deduped:
             reason = e.get("reason", "?")
             obj = e.get("involvedObject", {})
             obj_str = f"{obj.get('kind', '?')}/{obj.get('name', '?')}"
-            msg = truncate(e.get("message", ""), 100)
+            msg = _compact_event_message(e.get("message", ""))
             last_seen = _age_str(e.get("lastTimestamp"))
-            event_rows.append([last_seen, reason, obj_str, msg])
-        table(["AGE", "REASON", "OBJECT", "MESSAGE"], event_rows)
+            count = seen_keys.get(_dedup_key(e.get("message", "")), 1)
+            count_str = f"x{count}" if count > 1 else ""
+            event_rows.append([last_seen, reason, obj_str, count_str, msg])
+        table(["AGE", "REASON", "OBJECT", "#", "MESSAGE"], event_rows)
     else:
         info("(none)")
+
+
+def _compact_event_message(msg: str) -> str:
+    """Shorten verbose Helm template error chains to the actionable tail."""
+    # Helm template errors have a deeply nested "error calling include:" chain
+    # where only the final segment is actionable.
+    if "error calling include:" in msg or "error calling tpl:" in msg:
+        # Find the last colon-separated clause which has the real error
+        for marker in ("error calling tpl:", "error calling include:"):
+            idx = msg.rfind(marker)
+            if idx != -1:
+                tail = msg[idx:].strip()
+                # Prefix so context isn't lost
+                prefix = msg[:80].split(":")[0] if len(msg) > 200 else ""
+                if prefix:
+                    return f"{prefix}: ... {tail}"
+                return tail
+    return msg
 
 
 def _diagnose_flux(app: str, namespace: str):
@@ -1101,6 +1138,6 @@ def _flux_ready_status(data: dict) -> str:
             status = "Ready" if cond.get("status") == "True" else "Not Ready"
             msg = cond.get("message", "")
             if msg and status == "Not Ready":
-                return f"{status}: {truncate(msg, 100)}"
+                return f"{status}: {_compact_event_message(msg)}"
             return status
     return "Unknown"
