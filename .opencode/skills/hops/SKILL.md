@@ -49,7 +49,7 @@ scripts/hops/
   storage.py             hops storage (ceph status/osd/io, pvcs, disks)
   app.py                 hops app (list, pods, pod, events, logs, resources, secrets, diagnose, ls, cat, du)
   flux.py                hops flux (status, hr, ks, test, values, defaults)
-  debug.py               hops debug (dns, curl; ephemeral pods)
+  debug.py               hops debug (dns, curl, route; ephemeral pods + gateway diagnostics)
   query/                 hops query (metrics, logs)
     __init__.py
     metrics.py           VictoriaMetrics (port of query-vm.py)
