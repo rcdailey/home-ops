@@ -58,7 +58,7 @@ spec:
                 cpu: 100m
                 memory: 256Mi
               limits:
-                memory: 4Gi
+                memory: 8Gi
               claims:
               - name: gpu
 
