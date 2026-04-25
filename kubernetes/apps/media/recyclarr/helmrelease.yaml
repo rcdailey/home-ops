@@ -26,6 +26,8 @@ spec:
           reloader.stakater.com/auto: "true"
 
         pod:
+          labels:
+            observability.home-ops/logs: "true"
           restartPolicy: Never
           securityContext:
             runAsUser: 1000
