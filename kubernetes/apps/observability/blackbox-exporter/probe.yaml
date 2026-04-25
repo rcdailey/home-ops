@@ -5,6 +5,7 @@ kind: Probe
 metadata:
   name: nfs-tcp
 spec:
+  jobName: nfs_probe
   interval: 5s
   module: tcp_connect
   prober:

@@ -134,7 +134,7 @@ cluster:
       enable-aggregator-routing: "true"
       # Enable MutatingAdmissionPolicy for VolSync NFS volume injection
       # Requires both feature gate and runtime-config (beta feature in K8s 1.34)
-      feature-gates: MutatingAdmissionPolicy=true
+      feature-gates: HPAScaleToZero=true,MutatingAdmissionPolicy=true
       runtime-config: admissionregistration.k8s.io/v1beta1=true
     certSANs:
       - 127.0.0.1
@@ -221,6 +221,8 @@ bondMode: active-backup
 mtu: 1500
 addresses:
   - address: {{ n.ip }}/24
+# gateway-only route implies default route (0.0.0.0/0); BondConfig uses "destination"
+# not "network" (that field is for v1alpha1 NetworkConfig, a different schema)
 routes:
   - gateway: 192.168.1.1
 {% if n.controller %}

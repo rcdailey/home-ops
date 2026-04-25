@@ -88,8 +88,10 @@ context is cheaper than a future audit.
 
 ### Scaling
 
-- KEDA ScaledObjects create HPAs that continuously enforce replica counts
-- To manually scale: pause ScaledObject first (`autoscaling.keda.sh/paused: "true"` annotation)
+- NFS-dependent apps use native HPAs with external metrics (probe_success from prometheus-adapter)
+  to scale 0-1 based on NFS availability
+- The nfs-scaler kustomize component creates HPAs with minReplicas: 0, maxReplicas: 1
+- Requires HPAScaleToZero feature gate enabled in kube-apiserver
 
 ## Tier 2: Conventions
 
