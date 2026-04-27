@@ -19,8 +19,7 @@ nodes:
     ip: 192.168.1.62
     mac: "6c:1f:f7:28:71:82"
     controller: true
-    disk_model: "Samsung SSD 870"
-    disk_size: "<= 300GB"
+    disk_model: "INTEL SSDSC2BA40"
   hanekawa:
     ip: 192.168.1.63
     mac: "6c:1f:f7:28:71:08"
