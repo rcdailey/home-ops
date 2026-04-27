@@ -19,7 +19,7 @@ kubectl access.
 | -------- | ------------- | ------------ | ---------------------- |
 | hanekawa | control plane | 192.168.1.63 | INTEL SSDSC2BA40 400GB |
 | marin    | control plane | 192.168.1.59 | INTEL SSDSC2BA40 400GB |
-| sakura   | control plane | 192.168.1.62 | Samsung 870 EVO 250GB  |
+| sakura   | control plane | 192.168.1.62 | INTEL SSDSC2BA40 400GB |
 | lucy     | worker        | 192.168.1.54 | SanDisk SDSSDH32 2TB   |
 | nami     | worker        | 192.168.1.50 | Crucial BX500 2TB      |
 
