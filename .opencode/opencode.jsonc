@@ -32,6 +32,8 @@
       "talosctl edit*": "deny",
       "talosctl bootstrap*": "deny",
       "talosctl kubeconfig*": "deny",
+      "talosctl etcd forfeit-leadership*": "deny",
+      "talosctl etcd remove-member*": "deny",
 
       "flux install*": "deny",
       "flux uninstall*": "deny",

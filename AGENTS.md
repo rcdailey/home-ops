@@ -411,10 +411,14 @@ For apps requiring Intel GPU acceleration:
 reconcile
 
 **User-only commands** (agents MUST NOT run these): `just reconcile`, `flux reconcile`, `helm
-template`, `just talos diff-config`/`just talos apply-node`, `talosctl`. Use `hops flux values` and
-`hops flux defaults` instead of `helm show values`/`helm get values`. Standalone scripts:
+template`, `just talos diff-config`/`just talos apply-node`. Use `hops flux values` and `hops flux
+defaults` instead of `helm show values`/`helm get values`. Standalone scripts:
 `./scripts/test-vrl.py` (VRL validation), `./scripts/icon-search.py` (dashboard icons),
 `./scripts/hass.py` (Home Assistant API).
+
+**talosctl access:** Read-only diagnostic subcommands (`get`, `version`, `services`, `dmesg`,
+`logs`, `health`, `inspect`, `time`, `etcd members`, `etcd status`, `etcd snapshot`, `netstat`) are
+permitted for agents. Mutating subcommands are denied via permissions.
 
 **Conventional commits:**
 
@@ -498,13 +502,13 @@ Every node has two physical drives: `sda` (SATA, Talos system disk) and `nvme0n1
 When interpreting disk metrics, `sda` is always the OS disk and `nvme0n1` is always the Ceph data
 disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical disks).
 
-| Node     | sda (Talos)           | nvme0n1 (Ceph OSD)               |
-| -------- | --------------------- | -------------------------------- |
-| hanekawa | Intel S3700 400GB     | Samsung 970 EVO Plus 1TB (OSD.5) |
-| marin    | Intel S3700 400GB     | Samsung 970 EVO Plus 1TB (OSD.2) |
-| sakura   | Samsung 870 EVO 250GB | Samsung 970 EVO Plus 1TB (OSD.4) |
-| lucy     | SanDisk SDSSDH32 2TB  | Crucial P3 2TB (OSD.3)           |
-| nami     | Crucial BX500 2TB     | Samsung 990 PRO 2TB (OSD.0)      |
+| Node     | sda (Talos)          | nvme0n1 (Ceph OSD)               |
+| -------- | -------------------- | -------------------------------- |
+| hanekawa | Intel S3700 400GB    | Samsung 970 EVO Plus 1TB (OSD.5) |
+| marin    | Intel S3700 400GB    | Samsung 970 EVO Plus 1TB (OSD.2) |
+| sakura   | Intel S3700 400GB    | Samsung 970 EVO Plus 1TB (OSD.4) |
+| lucy     | SanDisk SDSSDH32 2TB | Crucial P3 2TB (OSD.3)           |
+| nami     | Crucial BX500 2TB    | Samsung 990 PRO 2TB (OSD.0)      |
 
 **Storage backends:**
 
