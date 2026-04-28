@@ -18,7 +18,7 @@ configMapGenerator:
       app.kubernetes.io/managed-by: grafana-operator
     annotations:
       kustomize.toolkit.fluxcd.io/substitute: disabled
-- name: ceph-etcd-incident-overview-dashboard
+- name: cp-disk-correlation-dashboard
   files:
   - ceph-etcd-incident-overview.json=dashboards/ceph-etcd-incident-overview.json
   options:
