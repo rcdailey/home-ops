@@ -4,12 +4,12 @@ nodes:
     ip: 192.168.1.54
     mac: "6c:1f:f7:28:71:b4"
     controller: false
-    disk_model: "SanDisk SDSSDH32"
+    disk_model: MK0400GCTZA
   nami:
     ip: 192.168.1.50
     mac: "6c:1f:f7:28:71:b8"
     controller: false
-    disk_model: "CT2000BX500SSD1"
+    disk_model: MK0400GCTZA
   marin:
     ip: 192.168.1.59
     mac: "6c:1f:f7:28:66:bf"

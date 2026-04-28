@@ -507,8 +507,8 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 | hanekawa | Intel S3700 400GB    | Samsung 970 EVO Plus 1TB (OSD.5) |
 | marin    | Intel S3700 400GB    | Samsung 970 EVO Plus 1TB (OSD.2) |
 | sakura   | Intel S3700 400GB    | Samsung 970 EVO Plus 1TB (OSD.4) |
-| lucy     | SanDisk SDSSDH32 2TB | Crucial P3 2TB (OSD.3)           |
-| nami     | Crucial BX500 2TB    | Samsung 990 PRO 2TB (OSD.0)      |
+| lucy     | Intel S3700 400GB    | Crucial P3 2TB (OSD.3)           |
+| nami     | Intel S3700 400GB    | Samsung 990 PRO 2TB (OSD.0)      |
 
 **Storage backends:**
 
