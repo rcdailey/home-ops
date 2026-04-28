@@ -5,7 +5,11 @@ description: Prime session with drive diagnostic knowledge for SSD/HDD testing
 Prime the session for drive diagnostics. Verify tooling is installed and functional, then load
 reference material so the session can respond to testing instructions without guesswork.
 
-Arguments: $ARGUMENTS (unused; context is injected unconditionally)
+Arguments: "$ARGUMENTS"
+
+If arguments are provided, they describe the use case (e.g., "testing replacement Talos system
+drives" or "verifying used HDDs for NAS"). Use this context to prioritize tests and frame the
+assessment. If empty, wait for the user to describe the scenario after preflight.
 
 ## 1. Preflight: Tool Installation and Capabilities
 
@@ -79,8 +83,8 @@ privilege escalation. If any check fails, report clearly and stop.
 The JMS578 bridge has a buggy UAS (USB Attached SCSI) driver implementation that causes severe
 issues under load: multi-second read stalls, 30-second IO outliers (matching the SCSI command
 timeout), and completely broken fdatasync (FLUSH CACHE passthrough fails). Symptoms: sequential
-reads at ~34 MB/s instead of ~400 MB/s, `uas_eh_abort_handler` floods in `dmesg`, and fdatasync
-tests completing 1 IO in 30 seconds.
+reads far below the drive's rated throughput, `uas_eh_abort_handler` floods in `dmesg`, and
+fdatasync tests completing 1 IO in 30 seconds.
 
 **Fix: disable UAS and force BOT (Bulk-Only Transport) mode.**
 
@@ -89,7 +93,8 @@ into the initramfs. The preflight check verifies BOT mode is active. If `Driver=
 the persistent config (e.g., after an OS reinstall), stop and tell the user; this requires a
 one-time system reconfiguration.
 
-If test results show sequential reads under 100 MB/s, fdatasync completing fewer than 10 IOs in 30
+If test results show sequential reads far below the drive's rated spec (e.g., SSD at ~34 MB/s
+instead of ~400 MB/s, or HDD at single-digit MB/s), fdatasync completing fewer than 10 IOs in 30
 seconds, or latency outliers near 30 seconds, check `dmesg` for `uas_eh_abort_handler`; these are
 UAS symptoms, not drive defects.
 
@@ -117,6 +122,19 @@ usbjmicron`; that is for older JMicron chips (JM20329/JM20336).
 The JMS578 has a known firmware issue translating 512e drives to 4Kn. This affects capacity
 reporting and alignment but does not affect diagnostic reads. Performance numbers over USB are
 bottlenecked by USB 3.0 (~430 MB/s sequential ceiling); do not judge throughput specs over USB.
+
+### USB Bridge IO Contention (fio)
+
+The JMS578 bridge is a single-channel USB-to-SATA translator. Running multiple fio jobs concurrently
+(e.g., parallel tool calls for sequential read + random read + fdatasync) forces all IO through one
+bottleneck. Symptoms: fdatasync outliers of 3-10 seconds, random 4K IOPS dropping 5x, bimodal
+latency distributions where half the IOs complete normally and half stall for ~90ms. These artifacts
+look like media or firmware defects but disappear when tests run in isolation.
+
+The QD32 random 4K test is also unreliable over USB even without contention. The bridge batches and
+reorders commands, producing bimodal latency (fast batch vs slow batch) that does not reflect the
+drive's native random IO capability. Use QD1 for random read/write tests over USB; QD32 is only
+meaningful on native SATA.
 
 ### fio Cache Warnings
 
@@ -173,22 +191,31 @@ smartctl -a /dev/sdX
 - `9` Power_On_Hours: context for wear assessment
 - `12` Power_Cycle_Count: low count suggests datacenter life
 
-**SSD-specific (Intel DC series):**
+**SSD-specific:**
 
-- `170/232` Available_Reservd_Space: spare block pool; threshold is 10
-- `171` Program_Fail_Count: must be 0
-- `172` Erase_Fail_Count: must be 0
-- `233` Media_Wearout_Indicator: 0 = fresh, increases toward 100 (failure)
-- `226` Workld_Media_Wear_Indic: Intel's internal wear metric
-- `234` Thermal_Throttle: event count; nonzero means thermal issues
+Vendor-specific attribute IDs vary; interpret based on the model family smartctl identifies. The
+Device Statistics log (`Percentage Used Endurance Indicator`) is standardized across vendors and
+more reliable than raw attribute values. Key concerns:
+
+- Spare block pool (Intel `170/232`, Samsung `177`): remaining reserve capacity
+- Program/Erase fail counts (Intel `171/172`): must be 0
+- Wear indicator (Intel `233`, Samsung `177`, generic `231`): endurance consumed
+- Thermal throttle events: nonzero means thermal issues in the drive's history
+- Total LBAs Written (`241`): cross-reference with rated TBW for endurance assessment
 
 **HDD-specific:**
 
-- `10` Spin_Retry_Count: must be 0
+- `10` Spin_Retry_Count: must be 0; motor or power issues
 - `196` Reallocated_Event_Count: reallocation attempts
 - `198` Offline_Uncorrectable: bad sectors found during offline scan
+- `240` Head_Flying_Hours: operational time context (some drives use this instead of `9`)
+- `194` Temperature_Celsius: HDDs are more temperature-sensitive than SSDs; sustained >45C
+  accelerates wear
 
 ### Performance Tests (fio)
+
+Select tests based on the drive type and intended use case. Not every test is relevant for every
+scenario; the agent should choose which tests to run based on context.
 
 ```bash
 # Sequential read (throughput ceiling)
@@ -201,26 +228,35 @@ fio --name=seq-write --filename=/dev/sdX --rw=write --bs=1M \
     --ioengine=libaio --iodepth=32 --direct=1 --size=4G \
     --runtime=30 --time_based
 
-# Random 4K read IOPS
+# Random 4K read IOPS (use QD1 over USB; QD32 only on native SATA)
 fio --name=rand-read-4k --filename=/dev/sdX --rw=randread --bs=4k \
-    --ioengine=libaio --iodepth=32 --direct=1 --size=1G \
+    --ioengine=libaio --iodepth=1 --direct=1 --size=1G \
     --runtime=30 --time_based --readonly
 
-# Random 4K write IOPS
+# Random 4K write IOPS (use QD1 over USB; QD32 only on native SATA)
 fio --name=rand-write-4k --filename=/dev/sdX --rw=randwrite --bs=4k \
-    --ioengine=libaio --iodepth=32 --direct=1 --size=1G \
+    --ioengine=libaio --iodepth=1 --direct=1 --size=1G \
     --runtime=30 --time_based
 
-# Sync write latency (etcd WAL fsync pattern; most important for Talos drives)
+# Sync write latency (fsync-heavy workloads: databases, etcd, journaling filesystems)
 fio --name=sync-write-4k --filename=/dev/sdX --rw=randwrite --bs=4k \
     --ioengine=sync --fdatasync=1 --iodepth=1 --direct=1 --size=512M \
     --runtime=30 --time_based
 ```
 
-The fdatasync test is the single most important test for etcd/Talos system drives. etcd warns at
-10ms WAL fsync p99; good enterprise SSDs should be well under 1ms. Over USB (even with BOT mode),
-expect ~10ms of bridge overhead on p99; a drive showing p50 under 0.5ms and p99 under 15ms over USB
-is healthy and will be well under 1ms p99 on native SATA.
+**Interpreting results by drive type:**
+
+- **SSD sequential**: enterprise SATA SSDs typically reach 400-550 MB/s read, 200-500 MB/s write.
+  Consumer SSDs vary widely. Over USB, expect a ~430 MB/s ceiling.
+- **HDD sequential**: 7200 RPM drives typically reach 150-250 MB/s (outer tracks) declining toward
+  80-120 MB/s (inner tracks). 5400 RPM drives are ~20% slower.
+- **SSD random 4K**: enterprise SSDs deliver 10K-90K IOPS native; over USB at QD1 expect 2K-5K
+  (bridge overhead dominates).
+- **HDD random 4K**: mechanical seek limits HDDs to 75-200 IOPS regardless of interface. Low numbers
+  here are normal, not defects.
+- **fdatasync**: critical for databases and journaling workloads. Enterprise SSDs should be well
+  under 1ms p99 on native SATA. HDDs are typically 2-8ms p99 (rotational latency). Over USB, add
+  ~5-10ms of bridge overhead to both.
 
 ### Surface Scan (HDD or suspect SSD)
 
@@ -242,7 +278,8 @@ When reporting results, evaluate:
 1. **Health**: SMART overall status, error counters (all must be zero)
 2. **Wear**: media wearout, write endurance consumed vs rated, power-on hours
 3. **Performance**: compare against drive's rated specs (discount USB overhead)
-4. **Consistency**: latency percentiles (p99, p99.9); spikes indicate dying cells or firmware bugs
+4. **Consistency**: latency percentiles (p99, p99.9); spikes indicate degradation (dying NAND cells
+   for SSDs, mechanical issues for HDDs) or firmware bugs
 5. **Verdict**: keep, return, or test further (with reasoning)
 
 ## Rules
@@ -252,4 +289,8 @@ When reporting results, evaluate:
 - MUST check `getcap` before assuming smartctl/fio have the needed capabilities
 - MUST note when USB bottleneck affects results vs native SATA expectations
 - MUST NOT run badblocks destructive mode without explicit user confirmation
-- Report raw numbers with context (rated specs, USB ceiling, etcd thresholds)
+- MUST run fio tests sequentially over USB (never parallel tool calls); the JMS578 bridge serializes
+  all IO and concurrent tests produce contention artifacts that mimic drive defects
+- MUST use iodepth=1 for random 4K tests over USB; QD32 produces bimodal latency from bridge command
+  batching that does not reflect native drive capability
+- Report raw numbers with context (rated specs, USB ceiling, use-case thresholds)
