@@ -64,14 +64,16 @@ spec:
           resources:
             requests:
               storage: 30Gi
-          # OpenEBS hostPath provisioner for ephemeral metrics storage
-          # WHY: Avoid Ceph write amplification from frequent metric writes
+          # WHY: openebs-hostpath avoids Ceph write amplification from frequent metric writes
           storageClassName: openebs-hostpath
-        # Pin to lucy node - NVMe storage required for sustained write performance
-        # Nami's Crucial BX500 SATA SSD has severe latency spikes (6-38s at p99.99) causing deadlocks
-        # Lucy's Crucial P3 NVMe has DRAM cache and significantly better sustained performance
-        nodeSelector:
-          kubernetes.io/hostname: lucy
+        # Pin to worker nodes for openebs-hostpath (avoid controlplane etcd contention)
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
         resources:
           limits:
             memory: 4Gi
