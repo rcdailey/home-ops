@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Proves etcd disk bottleneck: consumer SATA fsync latency causes leader instability, apiserver slowness, and Ceph mon quorum loss",
+  "description": "Correlate etcd fsync and disk latency spikes with API write pressure, disk utilization, and downstream cluster effects on control plane nodes",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
@@ -12,9 +12,9 @@
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "title": "etcd leader",
-      "description": "Which etcd member holds the Raft leadership over time. Purple = follower, green = leader. A healthy cluster shows one continuous green bar per member with no transitions. Each color change is a leader election caused by the current leader failing to heartbeat in time (because fsync is too slow).",
+      "description": "Which etcd member holds Raft leadership. Stable = one continuous green bar per member with no transitions.",
       "type": "state-timeline",
-      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
       "id": 20,
       "fieldConfig": {
         "defaults": {
@@ -62,17 +62,17 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
       "id": 100,
-      "title": "Disk Performance (The Proof)",
+      "title": "etcd Disk Latency",
       "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "title": "WAL fsync p99",
-      "description": "How long each WAL fsync takes. This is THE metric. Every etcd write must fsync to disk before it can be acknowledged. Consumer SATA SSDs (like Samsung 870 EVO) lack power-loss capacitors, so every fsync waits for data to reach physical media: 10-15ms typical, spiking to 50ms+. Enterprise SSDs with capacitors do this in <1ms because they can acknowledge as soon as data hits battery-backed cache. The yellow/red zones show where your drives should NOT be, but always are.",
+      "description": "Time per WAL fsync (irate for spike fidelity). Every etcd write must fsync before acknowledgment. Spikes here correlate with disk saturation or write pressure from API activity.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
       "id": 1,
       "fieldConfig": {
         "defaults": {
@@ -106,8 +106,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket{job=\"kube-etcd\"}[$__rate_interval]))",
-          "legendFormat": "{{pod}}",
+          "expr": "histogram_quantile(0.99, sum by (instance, le) (irate(etcd_disk_wal_fsync_duration_seconds_bucket{job=\"kube-etcd\"}[$__rate_interval])))",
+          "legendFormat": "{{instance}}",
           "refId": "A"
         }
       ]
@@ -115,9 +115,9 @@
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "title": "Backend commit p99",
-      "description": "How long boltdb (etcd's storage engine) takes to commit a transaction to disk. This includes the fsync of the database file itself (separate from the WAL fsync). Spikes here are often worse than WAL fsync because boltdb commits are larger writes. Your cluster regularly hits 25-30ms with spikes to 800ms+. Enterprise SSDs bring this under 10ms.",
+      "description": "Time for boltdb to commit a transaction (irate for spike fidelity). Larger writes than WAL fsync; spikes here indicate sustained write pressure on the etcd database file.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
       "id": 2,
       "fieldConfig": {
         "defaults": {
@@ -151,19 +151,141 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket{job=\"kube-etcd\"}[$__rate_interval]))",
-          "legendFormat": "{{pod}}",
+          "expr": "histogram_quantile(0.99, sum by (instance, le) (irate(etcd_disk_backend_commit_duration_seconds_bucket{job=\"kube-etcd\"}[$__rate_interval])))",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 101,
+      "title": "Disk Activity (sda)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "sda I/O utilization",
+      "description": "Percentage of time the system disk is busy handling I/O. 100% means the disk is saturated; fsync latency will spike regardless of individual write size. Compare timing with WAL fsync spikes above.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 14 },
+      "id": 30,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "thresholdsStyle": { "mode": "area" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "#EAB839", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rate(node_disk_io_time_seconds_total{device=\"sda\"}[$__rate_interval]) * 100 * on(instance) group_left(nodename) node_uname_info{nodename=~\"$node\"}",
+          "legendFormat": "{{nodename}}",
           "refId": "A"
         }
       ]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "Disk write latency: sda (etcd) vs nvme (Ceph)",
-      "description": "Average time per write operation for each physical device on control plane nodes. sda is the SATA SSD where etcd lives (Talos system disk). nvme0n1 is the NVMe where Ceph OSD lives. The gap between the two lines IS the problem: SATA is 2-4x slower per write. etcd needs the fast disk, but it's on the slow one. This panel proves the bottleneck is hardware, not software.",
+      "title": "sda write IOPS",
+      "description": "Write operations per second on the system disk. High IOPS with low utilization = fast disk keeping up. High IOPS with high utilization = disk saturated by write volume.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
-      "id": 3,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 14 },
+      "id": 31,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "iops",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "spanNulls": false,
+            "axisBorderShow": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rate(node_disk_writes_completed_total{device=\"sda\"}[$__rate_interval]) * on(instance) group_left(nodename) node_uname_info{nodename=~\"$node\"}",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "sda write throughput",
+      "description": "Bytes written per second to the system disk. Distinguishes 'many small writes' (high IOPS, low throughput) from 'few large writes' (low IOPS, high throughput). Large writes from log rotation or containerd can spike fsync latency even at moderate IOPS.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 },
+      "id": 32,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "spanNulls": false,
+            "axisBorderShow": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rate(node_disk_written_bytes_total{device=\"sda\"}[$__rate_interval]) * on(instance) group_left(nodename) node_uname_info{nodename=~\"$node\"}",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "sda avg write latency",
+      "description": "Average time per completed write operation. Complements the p99 etcd histograms above with a device-level view. When this rises but IOPS stays flat, the disk itself is struggling (thermal throttling, wear). When this rises with IOPS, the disk is simply overloaded.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "id": 33,
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -176,7 +298,15 @@
             "spanNulls": false,
             "axisBorderShow": false,
             "axisSoftMax": 0.01,
-            "thresholdsStyle": { "mode": "off" }
+            "thresholdsStyle": { "mode": "area" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "#EAB839", "value": 0.005 },
+              { "color": "red", "value": 0.01 }
+            ]
           }
         },
         "overrides": []
@@ -188,25 +318,223 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rate(node_disk_write_time_seconds_total{device=~\"sda|nvme0n1\"}[$__rate_interval]) / rate(node_disk_writes_completed_total{device=~\"sda|nvme0n1\"}[$__rate_interval]) * on(instance) group_left(nodename) node_uname_info{nodename=~\"$node\"}",
-          "legendFormat": "{{nodename}} / {{device}}",
+          "expr": "rate(node_disk_write_time_seconds_total{device=\"sda\"}[$__rate_interval]) / rate(node_disk_writes_completed_total{device=\"sda\"}[$__rate_interval]) * on(instance) group_left(nodename) node_uname_info{nodename=~\"$node\"}",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "sda I/O queue depth",
+      "description": "Weighted average number of I/O operations in flight. Values above 1 mean the disk has a backlog; writes are queuing behind each other. Correlate with fsync latency: queue depth > 2 almost always means etcd is waiting in line behind other I/O.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "id": 34,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "thresholdsStyle": { "mode": "area" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "#EAB839", "value": 2 },
+              { "color": "red", "value": 4 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rate(node_disk_io_time_weighted_seconds_total{device=\"sda\"}[$__rate_interval]) * on(instance) group_left(nodename) node_uname_info{nodename=~\"$node\"}",
+          "legendFormat": "{{nodename}}",
           "refId": "A"
         }
       ]
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
-      "id": 101,
-      "title": "etcd Stability (The Damage)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
+      "id": 102,
+      "title": "Write Pressure Sources",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "API write rate by resource",
+      "description": "Mutating API requests (POST/PUT/PATCH/DELETE) grouped by resource type. Shows what is generating etcd writes: leases, events, endpoints, configmaps, etc. Lease renewals are typically the dominant source; spikes in other resources point to specific workloads.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
+      "id": 40,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 30,
+            "spanNulls": false,
+            "axisBorderShow": false,
+            "stacking": { "mode": "normal" }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"] }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (resource) (rate(apiserver_request_total{verb=~\"POST|PUT|PATCH|DELETE\", job=\"apiserver\"}[$__rate_interval]))",
+          "legendFormat": "{{resource}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "etcd object operations",
+      "description": "Rate of put, delete, and range operations in etcd's MVCC store. Puts correlate directly with WAL fsync pressure. A spike in puts without a matching API write spike suggests internal Kubernetes bookkeeping (leader election, endpoint slice updates).",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
+      "id": 41,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "spanNulls": false,
+            "axisBorderShow": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (instance) (rate(etcd_mvcc_put_total{job=\"kube-etcd\"}[$__rate_interval]))",
+          "legendFormat": "put {{instance}}",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (instance) (rate(etcd_mvcc_delete_total{job=\"kube-etcd\"}[$__rate_interval]))",
+          "legendFormat": "delete {{instance}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "API write rate by verb",
+      "description": "Mutating API requests broken down by HTTP verb. Distinguishes creates (POST) from updates (PUT/PATCH) from deletes. A healthy cluster is dominated by PUT (lease renewals, status updates). Unusual POST spikes indicate batch job creation or controller churn.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 39 },
+      "id": 42,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "spanNulls": false,
+            "axisBorderShow": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (verb) (rate(apiserver_request_total{verb=~\"POST|PUT|PATCH|DELETE\", job=\"apiserver\"}[$__rate_interval]))",
+          "legendFormat": "{{verb}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "title": "etcd DB size",
+      "description": "Physical size of the etcd database. Gradual growth is normal; sudden jumps indicate bulk writes. A large DB means compaction and defragmentation take longer, which can cause fsync pressure during maintenance windows.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 39 },
+      "id": 43,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": false,
+            "axisBorderShow": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "etcd_mvcc_db_total_size_in_bytes{job=\"kube-etcd\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 47 },
+      "id": 103,
+      "title": "Downstream Effects",
       "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "title": "Slow applies",
-      "description": "Raft proposals that took >100ms to apply. A healthy cluster with enterprise SSDs shows near zero. Your cluster shows 300-600 PER HOUR because every apply involves a disk fsync, and your consumer SATA SSDs can't keep up. This is the most damning metric: it means etcd is constantly falling behind on processing writes. When this spikes higher (1000+), you get leader elections and apiserver timeouts.",
+      "description": "Raft proposals that took >100ms to apply. Each slow apply involves a disk fsync. Non-zero values confirm etcd is falling behind on processing writes.",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 15 },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 48 },
       "id": 4,
       "fieldConfig": {
         "defaults": {
@@ -249,9 +577,9 @@
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "title": "Leader changes",
-      "description": "Count of leader elections per interval. Should be zero (per buroa's cluster: 'never'). Each bar is a leadership transfer caused by the current leader's heartbeat timing out, which happens when fsync takes so long that etcd can't respond to peers in time. Even one change causes brief API unavailability; rapid changes cause cascading pod restarts across the cluster.",
+      "description": "Leader elections per interval. Should be zero. Each change causes brief API unavailability.",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 15 },
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 48 },
       "id": 5,
       "fieldConfig": {
         "defaults": {
@@ -294,9 +622,9 @@
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "title": "Proposals pending",
-      "description": "Raft proposals waiting to be committed. This is the backlog. Sustained non-zero means the leader can't commit fast enough (because fsync is slow). During incidents this spikes as writes queue up waiting for disk. Drops back to zero once the fsync pressure passes and the leader catches up.",
+      "description": "Raft proposals waiting to be committed. Sustained non-zero means the leader cannot commit fast enough. Correlate with disk utilization and IOPS above.",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 15 },
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 48 },
       "id": 6,
       "fieldConfig": {
         "defaults": {
@@ -337,61 +665,10 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "Peer round-trip p99",
-      "description": "Network latency between etcd members. This panel rules out the network hypothesis. If this is low (<5ms) while WAL fsync is high (>10ms), the bottleneck is definitively disk, not network. Your peer RTT is consistently <2ms, confirming the problem is local disk I/O, not inter-node communication.",
-      "type": "timeseries",
-      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 15 },
-      "id": 7,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "min": 0,
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 0,
-            "axisBorderShow": false,
-            "axisSoftMax": 0.01,
-            "thresholdsStyle": { "mode": "area" }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "#EAB839", "value": 0.005 },
-              { "color": "red", "value": 0.01 }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket{job=\"kube-etcd\"}[$__rate_interval]))",
-          "legendFormat": "{{pod}} -> {{To}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
-      "id": 102,
-      "title": "Cluster Impact (The Blast Radius)",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "title": "apiserver latency p99",
-      "description": "99th percentile latency for non-streaming API requests. This is the downstream effect of slow etcd. Every API write (pod creation, lease renewal, configmap update) must wait for etcd to fsync before the apiserver can respond. When fsync takes 15ms+ baseline with 50ms+ spikes, apiserver latency follows. During severe incidents this reaches 5-25 seconds, which is why leader-elected controllers lose their leases (hardcoded 5-second timeout).",
+      "description": "99th percentile latency for non-streaming API requests. Every API write waits for etcd to fsync. When fsync latency spikes, this follows.",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 23 },
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 48 },
       "id": 8,
       "fieldConfig": {
         "defaults": {
@@ -430,91 +707,10 @@
           "refId": "A"
         }
       ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "Ceph mon quorum",
-      "description": "Number of Ceph monitors in quorum. Healthy = 3. Drops correlate with the same host-level disturbance that causes etcd slowness: when a control plane node's SATA disk stalls, both etcd and the co-located Ceph mon on that node suffer simultaneously. The mon can't respond to Paxos heartbeats in time and gets voted out of quorum. This is a symptom of the same root cause, not an independent problem.",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 23 },
-      "id": 9,
-      "fieldConfig": {
-        "defaults": {
-          "min": 0,
-          "max": 3,
-          "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "green" },
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 30,
-            "spanNulls": false,
-            "axisBorderShow": false,
-            "thresholdsStyle": { "mode": "area" }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "#EAB839", "value": 2 },
-              { "color": "green", "value": 3 }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "count(ceph_mon_quorum_status == 1)",
-          "legendFormat": "mons in quorum",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "title": "Container restarts",
-      "description": "Cluster-wide container restarts from all causes. This is the user-visible symptom. During etcd slowness, leader-elected controllers can't renew their leases within the 5-second timeout and get restarted. The pattern is distinctive: many unrelated controllers restart at the same time, which is the signal that the problem is infrastructure (etcd/disk), not any individual app.",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 23 },
-      "id": 10,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "min": 0,
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "bars",
-            "lineWidth": 1,
-            "fillOpacity": 80,
-            "stacking": { "mode": "normal" },
-            "axisBorderShow": false,
-            "axisSoftMax": 5
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "label_replace(label_replace(sum by (namespace, pod) (increase(kube_pod_container_status_restarts_total[$__rate_interval])) > 0, \"workload\", \"$1\", \"pod\", \"(.*)\"), \"workload\", \"$1\", \"pod\", \"(.+)-[a-f0-9]{7,10}-[a-z0-9]{5}$\")",
-          "legendFormat": "{{namespace}} / {{workload}}",
-          "refId": "A"
-        }
-      ]
     }
   ],
   "schemaVersion": 39,
-  "tags": ["incident", "etcd", "ceph"],
+  "tags": ["etcd", "disk", "correlation"],
   "templating": {
     "list": [
       {
@@ -530,16 +726,27 @@
         "refresh": 2,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": {},
+        "includeAll": false,
+        "label": "prometheus",
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
       }
     ]
   },
-  "time": { "from": "now-24h", "to": "now" },
+  "time": { "from": "now-3h", "to": "now" },
   "timepicker": {
     "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"],
-    "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d"]
+    "time_options": ["5m", "15m", "1h", "3h", "6h", "12h", "24h", "2d", "7d"]
   },
   "timezone": "browser",
-  "title": "Ceph / etcd Incident Overview",
+  "title": "Control Plane Disk Correlation",
   "uid": "ceph-etcd-incident",
   "version": 1
 }
