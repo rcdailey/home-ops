@@ -1,6 +1,8 @@
 set quiet := true
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
+root := justfile_directory()
+
 [private]
 default:
     @just --list kubernetes
@@ -50,6 +52,10 @@ disable-fencing:
 [doc('Show current fencing configuration')]
 show-fencing-status:
     @kubectl get drivers.csi.ceph.io -n rook-ceph -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}enableFencing={.spec.enableFencing}{"\n"}{end}'
+
+[doc('Show Ceph cluster health, PGs, OSDs, and capacity')]
+ceph-status:
+    cd "{{root}}" && ./scripts/hops.py storage ceph status
 
 [doc('Open a debug shell on a node')]
 node-shell node="":
