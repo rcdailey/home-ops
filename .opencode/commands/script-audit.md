@@ -77,8 +77,10 @@ For each friction point, pick one:
 ### 3. Apply
 
 Implement every non-dropped fix in this session. Remove superseded code outright. Update the
-relevant skill doc (`SKILL.md`) in the same pass when behavior or interfaces change. Update
-`AGENTS.md` only if a directive referenced the changed surface.
+relevant skill doc (`SKILL.md`) in the same pass when behavior or interfaces change. MUST update
+`AGENTS.md` when any user-facing behavior changes (new commands, changed resolvers, new input
+acceptance, changed output shape). The `hops` CLI section in AGENTS.md is the primary reference for
+all LLM sessions; stale documentation causes the next agent to misuse or skip commands.
 
 ### 4. Verify
 
@@ -118,6 +120,8 @@ Keep it under 20 lines. No diff dumps; the user reads those via git.
   gate structure behind an explicit flag
 - MUST NOT scan git history, grep for TODOs, or expand scope beyond session-observed friction
 - MUST delete obsolete skill/doc content in the same pass as the code change
+- MUST update `AGENTS.md` and the matching `SKILL.md` whenever user-facing behavior changes; stale
+  docs are bugs
 - MUST cap the audit at friction points actually surfaced this session; inventing hypothetical gaps
   defeats the purpose
 - If a fix is too large to land safely in-session, state that explicitly in the report with the
