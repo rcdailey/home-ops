@@ -40,6 +40,8 @@ class VictoriaLogsClient:
             "--",
             "curl",
             "-sS",
+            "--connect-timeout",
+            "5",
             "-X",
             "POST",
             "--data",
@@ -48,8 +50,16 @@ class VictoriaLogsClient:
         ]
         result = run(cmd, timeout=60, check=False)
         if result.returncode != 0:
-            msg = (result.stderr or "").strip().split("\n")[0]
-            info(f"error: VictoriaLogs query failed: {msg}")
+            stderr = (result.stderr or "").strip()
+            stdout = (result.stdout or "").strip()
+            combined = stderr or stdout
+            if "Could not resolve host" in combined or "connection refused" in combined:
+                info("error: VictoriaLogs is unreachable (pod may be down)")
+            elif result.returncode == 7:
+                info("error: VictoriaLogs is unreachable (connection failed)")
+            else:
+                msg = combined.split("\n")[0]
+                info(f"error: VictoriaLogs query failed: {msg}")
             sys.exit(1)
         return result.stdout
 
@@ -323,8 +333,8 @@ def cli():
 )
 @click.option("--search", help="Additional search term")
 @click.option("-n", "--limit", type=int, help="Max results")
-@click.option("--start", help="Start time (e.g., 5m, 1h, ISO timestamp)")
-@click.option("--end", help="End time")
+@click.option("--from", "time_from", help="Start time (e.g., 5m, 1h, ISO timestamp)")
+@click.option("--to", "time_to", help="End time")
 @click.option("--detail", is_flag=True, help="Show all VRL-processed fields")
 @click.option("--all-fields", is_flag=True, help="Show raw JSON per entry")
 @click.option("--json", "json_mode", is_flag=True, help="Output NDJSON")
@@ -337,8 +347,8 @@ def query_cmd(
     level: str | None,
     search: str | None,
     limit: int | None,
-    start: str | None,
-    end: str | None,
+    time_from: str | None,
+    time_to: str | None,
     detail: bool,
     all_fields: bool,
     json_mode: bool,
@@ -360,7 +370,7 @@ def query_cmd(
         raise SystemExit(1)
 
     client = VictoriaLogsClient()
-    logs = client.query_logs(query, start=start, end=end, limit=limit)
+    logs = client.query_logs(query, start=time_from, end=time_to, limit=limit)
 
     if json_mode:
         for log in logs:
@@ -496,13 +506,13 @@ def _print_hits_table(data: dict) -> None:
 
 @cli.command()
 @click.argument("query")
-@click.option("--start", help="Start time (e.g., 5m, 1h, ISO timestamp)")
-@click.option("--end", help="End time")
+@click.option("--from", "time_from", help="Start time (e.g., 5m, 1h, ISO timestamp)")
+@click.option("--to", "time_to", help="End time")
 @click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
-def stats(query: str, start: str | None, end: str | None, json_mode: bool):
+def stats(query: str, time_from: str | None, time_to: str | None, json_mode: bool):
     """Query log statistics (requires stats pipe in query)."""
     client = VictoriaLogsClient()
-    result = client.query_stats(query, start=start, end=end)
+    result = client.query_stats(query, start=time_from, end=time_to)
     if json_mode:
         print(json.dumps(result, indent=2))
         return
@@ -512,16 +522,16 @@ def stats(query: str, start: str | None, end: str | None, json_mode: bool):
 
 @cli.command("stats-range")
 @click.argument("query")
-@click.option("--start", help="Start time")
-@click.option("--end", help="End time")
+@click.option("--from", "time_from", help="Start time")
+@click.option("--to", "time_to", help="End time")
 @click.option("--step", default="1h", help="Aggregation interval")
 @click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
 def stats_range(
-    query: str, start: str | None, end: str | None, step: str, json_mode: bool
+    query: str, time_from: str | None, time_to: str | None, step: str, json_mode: bool
 ):
     """Query log statistics over a time range."""
     client = VictoriaLogsClient()
-    result = client.query_stats_range(query, start=start, end=end, step=step)
+    result = client.query_stats_range(query, start=time_from, end=time_to, step=step)
     if json_mode:
         print(json.dumps(result, indent=2))
         return
@@ -531,15 +541,15 @@ def stats_range(
 
 @cli.command()
 @click.argument("query")
-@click.option("--start", help="Start time")
-@click.option("--end", help="End time")
+@click.option("--from", "time_from", help="Start time")
+@click.option("--to", "time_to", help="End time")
 @click.option("--step", default="1h", help="Time bucket size")
 @click.option("--field", multiple=True, help="Group by field (repeatable)")
 @click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
 def hits(
     query: str,
-    start: str | None,
-    end: str | None,
+    time_from: str | None,
+    time_to: str | None,
     step: str,
     field: tuple[str, ...],
     json_mode: bool,
@@ -547,7 +557,11 @@ def hits(
     """Query hit statistics over time."""
     client = VictoriaLogsClient()
     result = client.query_hits(
-        query, start=start, end=end, step=step, field=list(field) if field else None
+        query,
+        start=time_from,
+        end=time_to,
+        step=step,
+        field=list(field) if field else None,
     )
     if json_mode:
         print(json.dumps(result, indent=2))
@@ -557,11 +571,11 @@ def hits(
 
 @cli.command()
 @click.argument("query")
-@click.option("--start", help="Start time")
-@click.option("--end", help="End time")
-def fields(query: str, start: str | None, end: str | None):
+@click.option("--from", "time_from", help="Start time")
+@click.option("--to", "time_to", help="End time")
+def fields(query: str, time_from: str | None, time_to: str | None):
     """List field names from query results."""
     client = VictoriaLogsClient()
-    result = client.query_field_names(query, start=start, end=end)
+    result = client.query_field_names(query, start=time_from, end=time_to)
     for field in result:
         print(f"{field['value']:30s} {field['hits']:>12,} hits")

@@ -44,7 +44,7 @@ scripts/hops/
   _runner.py             Subprocess runner (JSON, JSONL, kubectl helpers)
   _format.py             Tables, key-value, truncation (no color, no unicode)
   _nodes.py              Node name/IP resolution (cached per session)
-  _workload.py           Workload resolution (exact > label > suffix > prefix; near-match suggestions)
+  _workload.py           Workload resolution (exact > label > suffix > prefix > substring)
   _diagnose.py           Diagnose internals (workload, gateway, events, flux status)
   _helm.py               Helm chart resolution and YAML value helpers
   node.py                hops node (list, disks, status)
@@ -52,10 +52,10 @@ scripts/hops/
   app.py                 hops app (list, pods, pod, events, logs, resources, secrets, diagnose, ls, cat, du)
   flux.py                hops flux (status, hr, ks, values, defaults, suspend, resume)
   debug.py               hops debug (dns, curl, route; ephemeral pods + gateway diagnostics)
-  query/                 hops query (metrics, logs)
-    __init__.py
-    metrics.py           VictoriaMetrics (port of query-vm.py)
-    logs.py              VictoriaLogs (port of query-victorialogs.py)
+  query/                 hops query (PromQL + alerts at top level, logs subgroup)
+    __init__.py          Flattens metrics commands into query group
+    metrics.py           VictoriaMetrics (PromQL, alerts, container stats)
+    logs.py              VictoriaLogs (LogSQL, stats, hits)
   dns.py                 hops dns (search, logs, blocked, test; port of blocky.py)
   backup.py              hops backup (kopia wrapper)
   validate.py            hops validate (vmrules)

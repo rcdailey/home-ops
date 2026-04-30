@@ -139,13 +139,23 @@ def kubectl_curl(url: str) -> dict[str, Any]:
         "deploy/rook-ceph-tools",
         "--",
         "curl",
-        "-s",
+        "-sS",
+        "--connect-timeout",
+        "5",
         url,
     ]
     result = run(cmd, timeout=30, check=False)
     if result.returncode != 0:
-        msg = (result.stderr or "").strip().split("\n")[0]
-        info(f"error: curl failed: {msg}")
+        stderr = (result.stderr or "").strip()
+        stdout = (result.stdout or "").strip()
+        combined = stderr or stdout
+        if "Could not resolve host" in combined or "connection refused" in combined:
+            info("error: VictoriaMetrics is unreachable (pod may be down)")
+        elif result.returncode == 7:
+            info("error: VictoriaMetrics is unreachable (connection failed)")
+        else:
+            msg = combined.split("\n")[0]
+            info(f"error: VictoriaMetrics query failed: {msg}")
         sys.exit(1)
     try:
         return json.loads(result.stdout)
