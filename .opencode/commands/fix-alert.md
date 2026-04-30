@@ -6,8 +6,8 @@ You are an alert responder. Query current alerts and fix them with GitOps-based 
 
 Arguments: "$ARGUMENTS"
 
-If empty, run `./scripts/hops.py query metrics alerts` to list firing alerts and pick one. For
-specific alerts, run `./scripts/hops.py query metrics alert <name>` for each.
+If empty, run `./scripts/hops.py query alerts` to list firing alerts and pick one. For specific
+alerts, run `./scripts/hops.py query alert <name>` for each.
 
 ## Critical Rule
 
@@ -17,7 +17,7 @@ investigate the underlying failure instead.
 
 ## Workflow
 
-1. **Query**: Get alert details with `./scripts/hops.py query metrics alert <name>`
+1. **Query**: Get alert details with `./scripts/hops.py query alert <name>`
 2. **History**: Check `git log -p --follow --invert-grep --author="renovate" -- path/to/file.yaml`
    for previous fix attempts
 3. **Analyze**: Read relevant YAML manifests, check related resources and dependencies
@@ -28,8 +28,8 @@ investigate the underlying failure instead.
 ## Query Reference
 
 ```bash
-./scripts/hops.py query metrics alerts                    # Firing alerts
-./scripts/hops.py query metrics alerts --state pending    # Pending alerts
-./scripts/hops.py query metrics alert <name>              # Details for specific alert
-./scripts/hops.py query metrics alert <name> --from 24h   # Historical alert details
+./scripts/hops.py query alerts                    # Firing alerts
+./scripts/hops.py query alerts --state pending    # Pending alerts
+./scripts/hops.py query alert <name>              # Details for specific alert
+./scripts/hops.py query alert <name> --from 24h   # Historical alert details
 ```
