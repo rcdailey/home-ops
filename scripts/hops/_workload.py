@@ -7,6 +7,7 @@ matching strategies, ordered by specificity:
 2. Label: pod template app.kubernetes.io/name (or app) label == input
 3. Suffix: workload name ends with -{input} (subchart naming convention)
 4. Prefix: workload name starts with {input}- (partial name shorthand)
+5. Substring: input appears anywhere in workload name (hyphen-insensitive)
 """
 
 from __future__ import annotations
@@ -71,6 +72,8 @@ def find_workloads(
     by_label: list[Workload] = []
     suffix: list[Workload] = []
     prefix: list[Workload] = []
+    substring: list[Workload] = []
+    name_norm = name.lower().replace("-", "")
 
     for kind in WORKLOAD_KINDS:
         data = kubectl_json(kind, namespace=namespace)
@@ -89,8 +92,11 @@ def find_workloads(
                     suffix.append(wl)
                 if wl_name.startswith(f"{name}-"):
                     prefix.append(wl)
+                wl_norm = wl_name.lower().replace("-", "")
+                if name_norm in wl_norm and wl not in prefix and wl not in suffix:
+                    substring.append(wl)
 
-    result = exact or by_label or suffix or prefix
+    result = exact or by_label or suffix or prefix or substring
     result.sort(key=lambda w: (w.namespace, w.name))
     return result
 
