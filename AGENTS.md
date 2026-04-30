@@ -514,10 +514,13 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 
 - Rook Ceph: Distributed block/filesystem storage across cluster nodes
 - NFS (Nezuko 192.168.1.58): Media (100Ti), Photos (10Ti)
-- Garage S3 (192.168.1.58:3900): Region garage, buckets: postgres-backups
+- Garage S3 (192.168.1.58:3900): Region garage, per-app buckets (e.g., `immich-postgres-backups`,
+  `home-assistant-postgres-backups`)
 - Volsync: Kopia repository on NFS (Nezuko /mnt/user/volsync), shared single repository with per-app
   isolation via snapshot identity
-- CloudNativePG: Barman WAL archiving to s3://postgres-backups/{cluster}/
+- CloudNativePG: Barman WAL archiving to per-app S3 buckets (e.g., `s3://immich-postgres-backups`).
+  Each CNPG cluster MUST have its own GarageS3Bucket CR to avoid permission races when multiple CRs
+  target the same underlying bucket.
 - Ceph toolbox: `./scripts/hops.py storage ceph status` (or `osd`, `io`)
 
 **`hops` CLI:** Run `./scripts/hops.py --help` for domains, `./scripts/hops.py <domain> --help` for
@@ -531,8 +534,8 @@ whenever a specific pod misbehaves (crashloops, startup races, image pull failur
 Jobs). Use `debug route` when requests to an app fail at the gateway layer (503s, upload failures,
 timeouts, TLS issues). `app diagnose` and `app pod` accept workload names, app labels, pod-name
 prefixes, or full pod names, including orphan pods whose parent workload has been deleted (TTL'd
-Jobs, manually removed controllers). `debug route` accepts app names, HTTPRoute names, or hostname
-substrings.
+Jobs, manually removed controllers) and operator-managed pods without parent workloads (CNPG
+Clusters, etc.). `debug route` accepts app names, HTTPRoute names, or hostname substrings.
 
 ### New App Checklist
 

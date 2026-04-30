@@ -467,20 +467,31 @@ def secrets(namespace: str | None):
 def diagnose(app: str, namespace: str | None):
     """Composite diagnostic: Flux status, pods, events, logs, restarts.
 
-    Works for both workload apps (Deployments, etc.) and gateway-only apps
-    (external services proxied via Backend/Service + HTTPRoute).
+    Works for workload apps (Deployments, etc.), gateway-only apps
+    (external services proxied via Backend/Service + HTTPRoute), and
+    operator-managed pods (CNPG Clusters, etc.) without parent workloads.
     """
     wl = resolve_app(app, namespace)
+    pod_ns: str | None = None
 
-    ns = wl.namespace if wl else _find_gateway_namespace(app, namespace)
-    if not ns:
-        _not_found(app, namespace)
+    if wl:
+        ns = wl.namespace
+    else:
+        ns = _find_gateway_namespace(app, namespace)
+        if not ns:
+            result = resolve_pods(app, namespace)
+            if result:
+                pod_ns = result[0]
+                ns = pod_ns
+            else:
+                _not_found(app, namespace)
+                return  # unreachable; silences type checker
 
     section("FLUX")
     _diagnose_flux(app, ns)
 
-    if wl:
-        _diagnose_workload(wl, ns)
+    if wl or pod_ns:
+        _diagnose_workload(wl.name if wl else app, ns)
     else:
         _diagnose_gateway(app, ns)
 
