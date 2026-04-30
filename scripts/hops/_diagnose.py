@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from hops._format import age_str, info, section, table, truncate
 from hops._runner import kubectl_json, run, run_json
-from hops._workload import Workload
 
 
 def find_gateway_namespace(app: str, namespace: str | None) -> str | None:
@@ -29,7 +28,7 @@ def find_gateway_namespace(app: str, namespace: str | None) -> str | None:
     return None
 
 
-def diagnose_workload(wl: Workload, ns: str):
+def diagnose_workload(app_name: str, ns: str):
     """Diagnose a workload-based app: pods, restarts, logs."""
     section("PODS")
     pod_data = kubectl_json("pods", namespace=ns)
@@ -38,7 +37,7 @@ def diagnose_workload(wl: Workload, ns: str):
     for item in pod_data.get("items", []):
         meta = item.get("metadata", {})
         name = meta.get("name", "")
-        if not name.startswith(wl.name):
+        if not name.startswith(app_name):
             continue
         spec = item.get("spec", {})
         status = item.get("status", {})
@@ -71,7 +70,7 @@ def diagnose_workload(wl: Workload, ns: str):
     if pod_rows:
         table(["POD", "NODE", "STATUS", "RESTARTS", "AGE"], pod_rows)
     else:
-        info(f"No pods found for {wl.name!r}")
+        info(f"No pods found for {app_name!r}")
 
     if restart_details:
         info("")
@@ -88,7 +87,7 @@ def diagnose_workload(wl: Workload, ns: str):
     matching_pods = [
         item
         for item in pod_data.get("items", [])
-        if item["metadata"]["name"].startswith(wl.name)
+        if item["metadata"]["name"].startswith(app_name)
         and item.get("status", {}).get("phase") == "Running"
     ]
     if matching_pods:
