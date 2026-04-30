@@ -162,13 +162,67 @@ def ceph_io():
 # -- PVC command --
 
 
+def _pv_driver(pv: dict) -> str:
+    """Extract the storage driver from a PV (CSI driver or local-volume)."""
+    spec = pv.get("spec", {})
+    csi = spec.get("csi", {})
+    if csi:
+        driver = csi.get("driver", "")
+        # Shorten well-known drivers for table readability
+        if "rbd" in driver:
+            return "rbd"
+        if "cephfs" in driver:
+            return "cephfs"
+        if "nfs" in driver:
+            return "nfs"
+        return driver
+    if spec.get("local"):
+        return "local"
+    if spec.get("hostPath"):
+        return "hostpath"
+    if spec.get("nfs"):
+        return "nfs"
+    return "?"
+
+
 @cli.command()
-@click.argument("namespace", required=False)
-def pvcs(namespace: str | None):
-    """PersistentVolumeClaim status table."""
-    data = kubectl_json("pvc", namespace=namespace)
+@click.argument("app_or_ns", required=False)
+@click.option("-n", "--namespace", default=None, help="Namespace filter")
+@click.option("--problems", is_flag=True, help="Show only Lost/Pending PVCs")
+def pvcs(app_or_ns: str | None, namespace: str | None, problems: bool):
+    """PVC status with PV backing driver and health.
+
+    Correlates each PVC with its bound PV to show the actual storage
+    driver (rbd, cephfs, local, nfs). Flags Lost and Pending PVCs.
+
+    Optional positional argument filters by app name (substring match
+    on PVC name) or namespace.
+    """
+    # Resolve positional arg as namespace or app filter
+    app_filter: str | None = None
+    if app_or_ns and not namespace:
+        # If it looks like a namespace (exists in PVC data), treat as namespace
+        # Otherwise treat as app name filter
+        probe = kubectl_json("namespaces")
+        ns_names = {i["metadata"]["name"] for i in probe.get("items", [])}
+        if app_or_ns in ns_names:
+            namespace = app_or_ns
+        else:
+            app_filter = app_or_ns
+    elif app_or_ns:
+        app_filter = app_or_ns
+
+    pvc_data = kubectl_json("pvc", namespace=namespace)
+
+    # Build PV lookup map (name -> PV object)
+    pv_data = kubectl_json("pv")
+    pv_map: dict[str, dict] = {}
+    for pv in pv_data.get("items", []):
+        pv_map[pv["metadata"]["name"]] = pv
+
     rows = []
-    for item in data.get("items", []):
+    has_problems = False
+    for item in pvc_data.get("items", []):
         meta = item.get("metadata", {})
         spec = item.get("spec", {})
         status = item.get("status", {})
@@ -177,10 +231,43 @@ def pvcs(namespace: str | None):
         phase = status.get("phase", "?")
         cap = status.get("capacity", {}).get("storage", "?")
         sc = spec.get("storageClassName", "?")
-        access = ",".join(spec.get("accessModes", []))
-        rows.append([ns, name, phase, cap, sc, access])
+        pv_name = spec.get("volumeName", "")
+
+        # App filter: substring match on PVC name
+        if app_filter and app_filter.lower() not in name.lower():
+            continue
+
+        # Determine driver from bound PV
+        pv = pv_map.get(pv_name)
+        if pv:
+            driver = _pv_driver(pv)
+        elif pv_name:
+            driver = "LOST"
+            has_problems = True
+        else:
+            driver = "-"
+
+        # Flag problems
+        flag = ""
+        if phase == "Lost" or driver == "LOST":
+            flag = "(!)"
+            has_problems = True
+        elif phase == "Pending":
+            flag = "(?)"
+            has_problems = True
+
+        if problems and not flag:
+            continue
+
+        phase_str = f"{phase} {flag}".strip()
+        rows.append([ns, name, phase_str, cap, sc, driver])
+
     rows.sort(key=lambda r: (r[0], r[1]))
-    table(["NAMESPACE", "NAME", "STATUS", "CAPACITY", "STORAGECLASS", "ACCESS"], rows)
+    table(["NAMESPACE", "NAME", "STATUS", "CAPACITY", "CLASS", "DRIVER"], rows)
+
+    if has_problems:
+        info("")
+        info("(!) = PV lost or missing; (?) = PVC pending, not yet bound")
 
 
 # -- Storage disks (cross-reference Talos + Ceph) --

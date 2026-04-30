@@ -6,6 +6,7 @@ matching strategies, ordered by specificity:
 1. Exact: workload name == input
 2. Label: pod template app.kubernetes.io/name (or app) label == input
 3. Suffix: workload name ends with -{input} (subchart naming convention)
+4. Prefix: workload name starts with {input}- (partial name shorthand)
 """
 
 from __future__ import annotations
@@ -63,11 +64,13 @@ def find_workloads(
     """Find workloads matching name with cascading match strategies.
 
     Returns only the highest-priority tier that has matches (exact > label
-    > suffix). Within a tier, results are sorted by namespace then name.
+    > suffix > prefix). Within a tier, results are sorted by namespace
+    then name.
     """
     exact: list[Workload] = []
     by_label: list[Workload] = []
     suffix: list[Workload] = []
+    prefix: list[Workload] = []
 
     for kind in WORKLOAD_KINDS:
         data = kubectl_json(kind, namespace=namespace)
@@ -82,12 +85,42 @@ def find_workloads(
             else:
                 if wl.app_label() == name:
                     by_label.append(wl)
-                elif wl_name.endswith(f"-{name}"):
+                if wl_name.endswith(f"-{name}"):
                     suffix.append(wl)
+                if wl_name.startswith(f"{name}-"):
+                    prefix.append(wl)
 
-    result = exact or by_label or suffix
+    result = exact or by_label or suffix or prefix
     result.sort(key=lambda w: (w.namespace, w.name))
     return result
+
+
+def all_workload_names(namespace: str | None = None) -> list[str]:
+    """Return all workload names (for near-match suggestions)."""
+    names: list[str] = []
+    for kind in WORKLOAD_KINDS:
+        data = kubectl_json(kind, namespace=namespace)
+        for item in data.get("items", []):
+            names.append(item.get("metadata", {}).get("name", ""))
+    return sorted(set(names))
+
+
+def suggest_near_matches(name: str, namespace: str | None = None) -> list[str]:
+    """Find workload names similar to input (substring, hyphen-insensitive)."""
+    candidates = all_workload_names(namespace)
+    # Normalize by stripping hyphens for comparison so "victoriametrics"
+    # matches "victoria-metrics-k8s-stack"
+    norm = name.lower().replace("-", "")
+    hits: list[str] = []
+    for c in candidates:
+        if c == name:
+            continue
+        c_norm = c.lower().replace("-", "")
+        if norm in c_norm or c_norm.startswith(norm):
+            hits.append(c)
+        if len(hits) >= 5:
+            break
+    return hits
 
 
 def resolve_app(

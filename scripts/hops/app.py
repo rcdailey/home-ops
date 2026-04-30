@@ -8,7 +8,7 @@ import click
 
 from hops._format import age, info, kv, section, table, truncate
 from hops._runner import kubectl_json, run, run_json
-from hops._workload import Workload, resolve_app
+from hops._workload import Workload, resolve_app, suggest_near_matches
 
 # Namespaces to skip in list/events when no namespace is specified
 _SYSTEM_NS = frozenset(
@@ -47,9 +47,17 @@ def _resolve(app_name: str, namespace: str | None) -> Workload:
     """
     wl = resolve_app(app_name, namespace)
     if not wl:
-        info(f"error: could not find app {app_name!r}")
-        raise SystemExit(1)
+        _not_found(app_name, namespace)
     return wl
+
+
+def _not_found(name: str, namespace: str | None) -> None:
+    """Print error with near-match suggestions and exit."""
+    hints = suggest_near_matches(name, namespace)
+    info(f"error: could not find app {name!r}")
+    if hints:
+        info(f"  similar: {', '.join(hints)}")
+    raise SystemExit(1)
 
 
 def _resolve_pods(name: str, namespace: str | None) -> tuple[str, list[dict]]:
@@ -87,9 +95,7 @@ def _resolve_pods(name: str, namespace: str | None) -> tuple[str, list[dict]]:
         if p["metadata"]["name"] == name or p["metadata"]["name"].startswith(f"{name}-")
     ]
     if not orphans:
-        scope = f" in {namespace}" if namespace else ""
-        info(f"error: no workload or pod matching {name!r}{scope}")
-        raise SystemExit(1)
+        _not_found(name, namespace)
 
     orphans.sort(
         key=lambda p: p["metadata"].get("creationTimestamp", ""),
@@ -658,8 +664,7 @@ def diagnose(app: str, namespace: str | None):
     # Determine effective namespace: from workload, or from gateway resource lookup
     ns = wl.namespace if wl else _find_gateway_namespace(app, namespace)
     if not ns:
-        info(f"error: could not find app {app!r}")
-        raise SystemExit(1)
+        _not_found(app, namespace)
 
     # 1. Flux Kustomization + HelmRelease
     section("FLUX")
