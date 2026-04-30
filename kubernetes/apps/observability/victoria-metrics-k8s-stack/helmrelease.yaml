@@ -64,16 +64,7 @@ spec:
           resources:
             requests:
               storage: 30Gi
-          # WHY: openebs-hostpath avoids Ceph write amplification from frequent metric writes
-          storageClassName: openebs-hostpath
-        # Pin to worker nodes for openebs-hostpath (avoid controlplane etcd contention)
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: node-role.kubernetes.io/control-plane
-                  operator: DoesNotExist
+          storageClassName: ceph-block
         resources:
           limits:
             memory: 4Gi
@@ -100,22 +91,12 @@ spec:
         storage:
           volumeClaimTemplate:
             spec:
-              # OpenEBS hostPath provisioner for ephemeral alert state storage
-              # WHY: Avoid Ceph write amplification from frequent alert state writes
-              storageClassName: openebs-hostpath
+              storageClassName: ceph-block
               accessModes:
               - ReadWriteOnce
               resources:
                 requests:
                   storage: 1Gi
-        # Pin to non-controlplane nodes only (avoid controlplane etcd contention)
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: node-role.kubernetes.io/control-plane
-                  operator: DoesNotExist
         resources:
           limits:
             memory: 128Mi

@@ -37,22 +37,11 @@ spec:
 
       persistentVolume:
         enabled: true
-        # OpenEBS hostPath provisioner for ephemeral log storage
-        # WHY: Avoid Ceph write amplification from continuous log writes
-        storageClassName: openebs-hostpath
+        storageClassName: ceph-block
         accessModes:
         - ReadWriteOnce
         size: 25Gi
         mountPath: /storage
-
-      # Pin to non-controlplane nodes only (avoid controlplane etcd contention)
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: node-role.kubernetes.io/control-plane
-                operator: DoesNotExist
 
       resources:
         limits:
