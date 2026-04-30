@@ -1,27 +1,14 @@
-"""Diagnose command internals: Flux status, workload, gateway, events.
+"""Diagnose command internals: Flux status, workload, gateway, events, pod detail.
 
 Extracted from app.py to keep the main module focused on CLI commands.
-All functions are private helpers called only by `app.diagnose`.
+All functions are private helpers called only by `app.diagnose` and `app.pod`.
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
-from hops._format import age, info, section, table, truncate
+from hops._format import age_str, info, section, table, truncate
 from hops._runner import kubectl_json, run, run_json
 from hops._workload import Workload
-
-
-def age_str(timestamp: str | None) -> str:
-    """Convert an ISO timestamp to a human-readable age."""
-    if not timestamp:
-        return "?"
-    try:
-        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        return age((datetime.now(timezone.utc) - dt).total_seconds())
-    except (ValueError, TypeError):
-        return "?"
 
 
 def find_gateway_namespace(app: str, namespace: str | None) -> str | None:
@@ -248,7 +235,7 @@ def diagnose_gateway(app: str, ns: str):
         info(f"HTTPRoute: {app}")
         info(f"  hostnames: {', '.join(hostnames) if hostnames else '(none)'}")
 
-        for i, rule in enumerate(spec.get("rules", [])):
+        for rule in spec.get("rules", []):
             refs = rule.get("backendRefs", [])
             for ref in refs:
                 kind = ref.get("kind", "Service")
@@ -401,3 +388,6 @@ def _flux_ready_status(data: dict) -> str:
                 return f"{status}: {compact_event_message(msg)}"
             return status
     return "Unknown"
+
+
+# --- Pod detail (moved from app.py) ---

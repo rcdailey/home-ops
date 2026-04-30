@@ -1,7 +1,6 @@
 """DNS domain: Blocky DNS query log analysis (port of blocky.py).
 
 Queries Blocky DNS logs from PostgreSQL via kubectl exec into CNPG pod.
-All functionality preserved from the original script.
 """
 
 from __future__ import annotations
@@ -37,6 +36,34 @@ VLAN_NAMES = {
     "cameras": "192.168.5.",
     "work": "192.168.7.",
 }
+
+# Field lists for tab-delimited psql output
+_LOG_FIELDS = [
+    "request_ts",
+    "client_ip",
+    "client_name",
+    "question_name",
+    "question_type",
+    "reason",
+    "response_type",
+    "duration_ms",
+    "answer",
+]
+
+_SEARCH_FIELDS = [
+    "client_ip",
+    "client_name",
+    "question_name",
+    "response_type",
+    "count",
+    "first_seen",
+    "last_seen",
+]
+
+
+def _sql_escape(value: str) -> str:
+    """Escape a string for inclusion in SQL. Prevents injection."""
+    return value.replace("'", "''").replace("\\", "\\\\")
 
 
 def resolve_client(client: str) -> str | None:
@@ -111,7 +138,7 @@ def parse_time(value: str) -> str:
         }
         return f"INTERVAL '{num} {unit_map[unit]}'"
     # Assume ISO timestamp
-    return f"'{value}'"
+    return f"'{_sql_escape(value)}'"
 
 
 def build_where(
@@ -137,34 +164,47 @@ def build_where(
         else:
             conditions.append(f"request_ts < {to_interval}")
 
-    # Client filter
+    # Client filter (escaped to prevent SQL injection)
     if client:
         resolved = resolve_client(client)
         if resolved is None:
-            # Name pattern
-            pattern = client.lower()
+            pattern = _sql_escape(client.lower())
             conditions.append(
-                f"(LOWER(client_name) LIKE '%{pattern}%' OR LOWER(client_ip) LIKE '%{pattern}%')"
+                f"(LOWER(client_name) LIKE '%{pattern}%'"
+                f" OR LOWER(client_ip) LIKE '%{pattern}%')"
             )
         elif "/" in resolved:
-            # CIDR
-            conditions.append(f"client_ip::inet <<= '{resolved}'::inet")
+            conditions.append(f"client_ip::inet <<= '{_sql_escape(resolved)}'::inet")
         elif resolved.endswith("."):
-            # VLAN prefix
-            conditions.append(f"client_ip LIKE '{resolved}%'")
+            conditions.append(f"client_ip LIKE '{_sql_escape(resolved)}%'")
         else:
-            # Partial or full IP
-            conditions.append(f"client_ip LIKE '%{resolved}%'")
+            conditions.append(f"client_ip LIKE '%{_sql_escape(resolved)}%'")
 
-    # Domain filter
+    # Domain filter (escaped)
     if domain:
-        conditions.append(f"question_name LIKE '%{domain.lower()}%'")
+        conditions.append(f"question_name LIKE '%{_sql_escape(domain.lower())}%'")
 
-    # Blocked only
     if blocked_only:
         conditions.append("response_type = 'BLOCKED'")
 
     return " AND ".join(conditions)
+
+
+def _parse_tsv(output: str, fields: list[str]) -> list[dict]:
+    """Parse psql tab-delimited output into dicts."""
+    rows = []
+    for line in output.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split("\t")
+        rows.append(
+            {
+                field: (parts[i] if i < len(parts) else "")
+                for i, field in enumerate(fields)
+            }
+        )
+    return rows
 
 
 def format_log_row(row: dict) -> list[str]:
@@ -189,54 +229,38 @@ def format_log_row(row: dict) -> list[str]:
     return [ts, client, qtype, rtype, qname, reason, duration_str, answer]
 
 
-def parse_log_rows(output: str) -> list[dict]:
-    """Parse psql tab-delimited output into dicts."""
-    fields = [
-        "request_ts",
-        "client_ip",
-        "client_name",
-        "question_name",
-        "question_type",
-        "reason",
-        "response_type",
-        "duration_ms",
-        "answer",
-    ]
-    rows = []
-    for line in output.split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        parts = line.split("\t")
-        row = {}
-        for i, field in enumerate(fields):
-            row[field] = parts[i] if i < len(parts) else ""
-        rows.append(row)
-    return rows
+def _query_dns_logs(
+    time_from: str,
+    time_to: str | None,
+    client: str | None,
+    domain: str | None,
+    limit: int,
+    json_mode: bool,
+    blocked_only: bool = False,
+) -> None:
+    """Shared implementation for logs and blocked commands."""
+    where = build_where(time_from, time_to, client, domain, blocked_only=blocked_only)
+    sql = (
+        "SELECT request_ts, client_ip, client_name, question_name, question_type, "
+        "reason, response_type, duration_ms, answer "
+        f"FROM log_entries WHERE {where} "
+        f"ORDER BY request_ts DESC LIMIT {limit};"
+    )
+    output = psql(sql)
+    if not output:
+        info("No results")
+        return
 
+    rows = _parse_tsv(output, _LOG_FIELDS)
+    if json_mode:
+        for row in rows:
+            print(json.dumps(row))
+        return
 
-def parse_search_rows(output: str) -> list[dict]:
-    """Parse psql tab-delimited search output into dicts."""
-    fields = [
-        "client_ip",
-        "client_name",
-        "question_name",
-        "response_type",
-        "count",
-        "first_seen",
-        "last_seen",
-    ]
-    rows = []
-    for line in output.split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        parts = line.split("\t")
-        row = {}
-        for i, field in enumerate(fields):
-            row[field] = parts[i] if i < len(parts) else ""
-        rows.append(row)
-    return rows
+    table(
+        ["TIME", "CLIENT", "QTYPE", "STATUS", "DOMAIN", "REASON", "DUR", "ANSWER"],
+        [format_log_row(r) for r in rows],
+    )
 
 
 @click.group()
@@ -262,32 +286,13 @@ def logs(
     json_mode: bool,
 ):
     """Show recent DNS query log entries."""
-    where = build_where(time_from, time_to, client, domain)
-    sql = (
-        "SELECT request_ts, client_ip, client_name, question_name, question_type, "
-        "reason, response_type, duration_ms, answer "
-        f"FROM log_entries WHERE {where} "
-        f"ORDER BY request_ts DESC LIMIT {limit};"
-    )
-    output = psql(sql)
-    if not output:
-        info("No results")
-        return
-
-    rows = parse_log_rows(output)
-    if json_mode:
-        for row in rows:
-            print(json.dumps(row))
-        return
-
-    table(
-        ["TIME", "CLIENT", "QTYPE", "STATUS", "DOMAIN", "REASON", "DUR", "ANSWER"],
-        [format_log_row(r) for r in rows],
-    )
+    _query_dns_logs(time_from, time_to, client, domain, limit, json_mode)
 
 
 @cli.command()
-@click.option("-f", "--from", "time_from", default="1h", help="Start time")
+@click.option(
+    "-f", "--from", "time_from", default="1h", help="Start time (1h, 24h, 7d, ISO)"
+)
 @click.option("-t", "--to", "time_to", default=None, help="End time")
 @click.option("-c", "--client", help="Client IP, device name, CIDR, or VLAN")
 @click.option("-d", "--domain", help="Domain substring filter")
@@ -302,27 +307,8 @@ def blocked(
     json_mode: bool,
 ):
     """Show blocked DNS queries only."""
-    where = build_where(time_from, time_to, client, domain, blocked_only=True)
-    sql = (
-        "SELECT request_ts, client_ip, client_name, question_name, question_type, "
-        "reason, response_type, duration_ms, answer "
-        f"FROM log_entries WHERE {where} "
-        f"ORDER BY request_ts DESC LIMIT {limit};"
-    )
-    output = psql(sql)
-    if not output:
-        info("No results")
-        return
-
-    rows = parse_log_rows(output)
-    if json_mode:
-        for row in rows:
-            print(json.dumps(row))
-        return
-
-    table(
-        ["TIME", "CLIENT", "QTYPE", "STATUS", "DOMAIN", "REASON", "DUR", "ANSWER"],
-        [format_log_row(r) for r in rows],
+    _query_dns_logs(
+        time_from, time_to, client, domain, limit, json_mode, blocked_only=True
     )
 
 
@@ -351,7 +337,7 @@ def search(
         info("No results")
         return
 
-    rows = parse_search_rows(output)
+    rows = _parse_tsv(output, _SEARCH_FIELDS)
     if json_mode:
         for row in rows:
             print(json.dumps(row))
@@ -387,7 +373,6 @@ def test_blocking(domains: tuple[str, ...], client: str | None, qtype: str):
     """Test DNS blocking for domains against client groups via Blocky API."""
     clients = resolve_test_clients(client)
 
-    # Build curl commands for each domain/client combination
     url = f"http://{BLOCKY_SERVICE}.{CNPG_NAMESPACE}:{BLOCKY_HTTP_PORT}/api/query"
     script_parts = []
     for i, (cname, cip) in enumerate(clients):
@@ -422,7 +407,6 @@ def test_blocking(domains: tuple[str, ...], client: str | None, qtype: str):
         info(f"error: test pod failed: {(result.stderr or '').strip()}")
         return
 
-    # Parse responses
     responses: dict[int, dict | None] = {}
     for line in (result.stdout or "").strip().split("\n"):
         line = line.strip()
@@ -436,7 +420,6 @@ def test_blocking(domains: tuple[str, ...], client: str | None, qtype: str):
         except (ValueError, json.JSONDecodeError):
             pass
 
-    # Build result table
     rows = []
     for i, (cname, cip) in enumerate(clients):
         for j, domain in enumerate(domains):

@@ -268,21 +268,3 @@ def pvcs(app_or_ns: str | None, namespace: str | None, problems: bool):
     if has_problems:
         info("")
         info("(!) = PV lost or missing; (?) = PVC pending, not yet bound")
-
-
-# -- Storage disks (cross-reference Talos + Ceph) --
-
-
-@cli.command("disks")
-@click.argument("node", required=False)
-def storage_disks(node: str | None):
-    """Disks cross-referenced with Ceph OSD metadata.
-
-    Shows which physical disks are used by Ceph OSDs.
-    Alias for `hops node disks` with Ceph OSD correlation.
-    """
-    from hops.node import disks as node_disks_cmd
-
-    # Delegate to node disks (which already labels ceph-osd role)
-    ctx = click.get_current_context()
-    ctx.invoke(node_disks_cmd, node=node)

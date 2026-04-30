@@ -136,3 +136,70 @@ def resolve_app(
     """Resolve an app name to a single workload (first match)."""
     matches = find_workloads(name, namespace)
     return matches[0] if matches else None
+
+
+def resolve_pods(
+    name: str, namespace: str | None = None
+) -> tuple[str, list[dict]] | None:
+    """Resolve a name to pods, newest-first, across workload and orphan cases.
+
+    Strategy (in order):
+    1. Try workload resolution. If it matches, return its pods.
+    2. Fall back to pod-name lookup: exact match or name prefix.
+       Handles pods whose parent workload has been deleted (Job TTL,
+       manual workload removal, etc.) but whose pod objects still exist.
+
+    Returns (effective_namespace, pods) or None if nothing matches.
+    """
+    wl = resolve_app(name, namespace)
+    if wl:
+        data = kubectl_json("pods", namespace=wl.namespace)
+        pods = [
+            p
+            for p in data.get("items", [])
+            if p["metadata"]["name"].startswith(wl.name)
+        ]
+        pods.sort(
+            key=lambda p: p["metadata"].get("creationTimestamp", ""),
+            reverse=True,
+        )
+        if pods:
+            return wl.namespace, pods
+
+    data = kubectl_json("pods", namespace=namespace)
+    orphans = [
+        p
+        for p in data.get("items", [])
+        if p["metadata"]["name"] == name or p["metadata"]["name"].startswith(f"{name}-")
+    ]
+    if not orphans:
+        return None
+    orphans.sort(
+        key=lambda p: p["metadata"].get("creationTimestamp", ""),
+        reverse=True,
+    )
+    return orphans[0]["metadata"]["namespace"], orphans
+
+
+def pick_pod_for_logs(pods: list[dict]) -> dict:
+    """Pick best pod for reading logs. Prefers Running > Succeeded > Failed.
+
+    Input list must be newest-first; stable sort preserves that within a
+    phase tier.
+    """
+    phase_priority = {"Running": 0, "Succeeded": 1, "Failed": 2}
+    return sorted(
+        pods,
+        key=lambda p: phase_priority.get(p.get("status", {}).get("phase", ""), 3),
+    )[0]
+
+
+def find_running_pod(wl: Workload) -> str | None:
+    """Find a Running pod name for a workload. Returns None if not found."""
+    data = kubectl_json("pods", namespace=wl.namespace)
+    for p in data.get("items", []):
+        if p["metadata"]["name"].startswith(wl.name) and (
+            p.get("status", {}).get("phase") == "Running"
+        ):
+            return p["metadata"]["name"]
+    return None

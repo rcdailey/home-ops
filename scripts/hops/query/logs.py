@@ -1,188 +1,18 @@
 """VictoriaLogs query CLI (port of query-victorialogs.py).
 
 Queries VictoriaLogs using LogSQL syntax via kubectl exec.
-All functionality preserved from the original script.
 """
 
 from __future__ import annotations
 
 import json
-import sys
-import urllib.parse
 from datetime import datetime
-from typing import Any
 
 import click
 
 from hops._format import info, table
-from hops._runner import run
 from hops._workload import resolve_app
-
-VL_URL = "http://victoria-logs-single.observability:9428"
-
-
-class VictoriaLogsClient:
-    """Client for querying VictoriaLogs."""
-
-    def __init__(self, base_url: str = VL_URL):
-        self.base_url = base_url.rstrip("/")
-
-    def _post(self, endpoint: str, params: dict[str, str]) -> str:
-        """POST to VictoriaLogs via kubectl exec with curl."""
-        url = f"{self.base_url}{endpoint}"
-        data = urllib.parse.urlencode(params)
-        cmd = [
-            "kubectl",
-            "exec",
-            "-n",
-            "rook-ceph",
-            "deploy/rook-ceph-tools",
-            "--",
-            "curl",
-            "-sS",
-            "--connect-timeout",
-            "5",
-            "-X",
-            "POST",
-            "--data",
-            data,
-            url,
-        ]
-        result = run(cmd, timeout=60, check=False)
-        if result.returncode != 0:
-            stderr = (result.stderr or "").strip()
-            stdout = (result.stdout or "").strip()
-            combined = stderr or stdout
-            if "Could not resolve host" in combined or "connection refused" in combined:
-                info("error: VictoriaLogs is unreachable (pod may be down)")
-            elif result.returncode == 7:
-                info("error: VictoriaLogs is unreachable (connection failed)")
-            else:
-                msg = combined.split("\n")[0]
-                info(f"error: VictoriaLogs query failed: {msg}")
-            sys.exit(1)
-        return result.stdout
-
-    def _post_json(self, endpoint: str, params: dict[str, str]) -> Any:
-        raw = self._post(endpoint, params)
-        try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            info("error: invalid JSON from VictoriaLogs")
-            sys.exit(1)
-
-    def query_logs(
-        self,
-        query: str,
-        start: str | None = None,
-        end: str | None = None,
-        limit: int | None = None,
-    ) -> list[dict[str, Any]]:
-        params: dict[str, str] = {"query": query}
-        if start:
-            params["start"] = start
-        if end:
-            params["end"] = end
-        if limit:
-            params["limit"] = str(limit)
-        raw = self._post("/select/logsql/query", params)
-        logs = []
-        for line in raw.strip().split("\n"):
-            line = line.strip()
-            if line:
-                try:
-                    logs.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
-        return logs
-
-    def query_stats(
-        self,
-        query: str,
-        start: str | None = None,
-        end: str | None = None,
-        time: str | None = None,
-    ) -> Any:
-        params: dict[str, str] = {"query": query}
-        if start:
-            params["start"] = start
-        if end:
-            params["end"] = end
-        if time:
-            params["time"] = time
-        return self._post_json("/select/logsql/stats_query", params)
-
-    def query_stats_range(
-        self,
-        query: str,
-        start: str | None = None,
-        end: str | None = None,
-        step: str = "1h",
-    ) -> Any:
-        params: dict[str, str] = {"query": query, "step": step}
-        if start:
-            params["start"] = start
-        if end:
-            params["end"] = end
-        return self._post_json("/select/logsql/stats_query_range", params)
-
-    def query_hits(
-        self,
-        query: str,
-        start: str | None = None,
-        end: str | None = None,
-        step: str = "1h",
-        field: list[str] | None = None,
-    ) -> Any:
-        params: dict[str, str] = {"query": query, "step": step}
-        if start:
-            params["start"] = start
-        if end:
-            params["end"] = end
-        # Handle multiple field parameters by constructing raw data
-        if field:
-            data_parts = [
-                f"{k}={urllib.parse.quote(str(v))}" for k, v in params.items()
-            ]
-            for f in field:
-                data_parts.append(f"field={urllib.parse.quote(f)}")
-            raw_data = "&".join(data_parts)
-            url = f"{self.base_url}/select/logsql/hits"
-            cmd = [
-                "kubectl",
-                "exec",
-                "-n",
-                "rook-ceph",
-                "deploy/rook-ceph-tools",
-                "--",
-                "curl",
-                "-sS",
-                "-X",
-                "POST",
-                "--data",
-                raw_data,
-                url,
-            ]
-            result = run(cmd, timeout=60, check=False)
-            if result.returncode != 0:
-                info("error: VictoriaLogs query failed")
-                sys.exit(1)
-            return json.loads(result.stdout)
-        return self._post_json("/select/logsql/hits", params)
-
-    def query_field_names(
-        self,
-        query: str,
-        start: str | None = None,
-        end: str | None = None,
-    ) -> list[dict[str, Any]]:
-        params: dict[str, str] = {"query": query}
-        if start:
-            params["start"] = start
-        if end:
-            params["end"] = end
-        result = self._post_json("/select/logsql/field_names", params)
-        return result.get("values", [])
+from hops.query._client import VictoriaLogsClient
 
 
 def format_log_entry(log: dict, detail: bool = False, all_fields: bool = False) -> str:
@@ -278,15 +108,7 @@ def _has_vector_sidecar(pod_spec: dict) -> bool:
 
 
 def _require_vector_collection(app: str) -> None:
-    """Verify the app exists and Vector is collecting its logs (via daemonset
-    opt-in label or a sidecar container) before querying VictoriaLogs. Exits
-    with an error if the workload is missing or uncollected, so callers never
-    waste a query on logs that don't exist.
-
-    Uses cascading workload resolution (exact name > app label > suffix) so
-    subchart workloads like victoria-logs-single-vector are found when the
-    user queries by app label name (e.g., --app vector).
-    """
+    """Verify the app exists and Vector is collecting its logs."""
     wl = resolve_app(app)
     if not wl:
         info(f"error: no workload matching {app!r} found in cluster")
@@ -310,6 +132,128 @@ def _require_vector_collection(app: str) -> None:
     )
     info("hint: use 'hops app logs' for immediate kubectl-based access")
     raise SystemExit(1)
+
+
+# --- Display helpers ---
+
+
+def _format_metric_label(metric: dict[str, str]) -> str:
+    """Compact label string from a stats metric dict."""
+    filtered = {k: v for k, v in metric.items() if k != "__name__"}
+    if not filtered:
+        return "(all)"
+    if len(filtered) == 1:
+        return next(iter(filtered.values())) or "(empty)"
+    return ", ".join(f"{k}={v}" for k, v in filtered.items())
+
+
+def _format_ts(ts: str | float) -> str:
+    """Format a timestamp (ISO string or epoch) to HH:MM."""
+    if isinstance(ts, str):
+        try:
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            return dt.strftime("%H:%M")
+        except (ValueError, TypeError):
+            return str(ts)
+    try:
+        dt = datetime.fromtimestamp(float(ts), tz=datetime.now().astimezone().tzinfo)
+        return dt.strftime("%H:%M")
+    except (ValueError, TypeError, OSError):
+        return str(ts)
+
+
+def _print_vector(results: list[dict]) -> None:
+    """Format Prometheus-style vector results as a table."""
+    if not results:
+        info("No results")
+        return
+    rows = []
+    for r in results:
+        label = _format_metric_label(r.get("metric", {}))
+        val = r.get("value", [None, "N/A"])
+        try:
+            v = float(val[1])
+            value_str = str(int(v)) if v == int(v) else f"{v:.2f}"
+        except (ValueError, TypeError, IndexError):
+            value_str = str(val[1]) if len(val) > 1 else "N/A"
+        rows.append([label, value_str])
+    stat_name = results[0].get("metric", {}).get("__name__", "VALUE")
+    table(["METRIC", stat_name], rows)
+
+
+def _print_matrix_table(results: list[dict]) -> None:
+    """Format Prometheus-style matrix results as a time-series table."""
+    if not results:
+        info("No results")
+        return
+
+    # Collect all timestamps across all series
+    all_ts: list[float] = []
+    for r in results:
+        for ts, _ in r.get("values", []):
+            all_ts.append(float(ts))
+    all_ts = sorted(set(all_ts))
+
+    if not all_ts:
+        info("No data points")
+        return
+
+    # Limit columns for readability
+    max_cols = 12
+    if len(all_ts) > max_cols:
+        step = len(all_ts) // max_cols
+        sampled = all_ts[::step][:max_cols]
+        info(f"({len(all_ts)} points, showing {len(sampled)} samples)")
+    else:
+        sampled = all_ts
+
+    time_headers = [_format_ts(ts) for ts in sampled]
+    headers = ["METRIC"] + time_headers
+
+    rows = []
+    for r in results:
+        label = _format_metric_label(r.get("metric", {}))
+        val_map = {float(ts): val for ts, val in r.get("values", [])}
+        cells = []
+        for ts in sampled:
+            raw = val_map.get(ts)
+            if raw is None:
+                cells.append("-")
+            else:
+                try:
+                    v = float(raw)
+                    cells.append(str(int(v)) if v == int(v) else f"{v:.2f}")
+                except (ValueError, TypeError):
+                    cells.append(str(raw))
+        rows.append([label] + cells)
+
+    table(headers, rows)
+
+
+def _print_hits_table(data: dict) -> None:
+    """Format VictoriaLogs hits response as a time-series table."""
+    hit_list = data.get("hits", [])
+    if not hit_list:
+        info("No hits")
+        return
+
+    for hit in hit_list:
+        fields = hit.get("fields", {})
+        timestamps = hit.get("timestamps", [])
+        values = hit.get("values", [])
+        total = hit.get("total", sum(values))
+
+        if fields:
+            label = ", ".join(f"{k}={v}" for k, v in fields.items())
+        else:
+            label = "(all)"
+
+        info(f"{label}  total={total}")
+        if timestamps:
+            rows = []
+            for ts, val in zip(timestamps, values):
+                rows.append([_format_ts(ts), str(val)])
+            table(["TIME", "COUNT"], rows)
 
 
 # --- Click commands ---
@@ -382,126 +326,6 @@ def query_cmd(
             print(format_log_entry(log, detail=detail, all_fields=all_fields))
 
     info(f"\nTotal: {len(logs)} log entries")
-
-
-def _format_metric_label(metric: dict[str, str]) -> str:
-    """Compact label string from a stats metric dict."""
-    filtered = {k: v for k, v in metric.items() if k != "__name__"}
-    if not filtered:
-        return "(all)"
-    if len(filtered) == 1:
-        return next(iter(filtered.values())) or "(empty)"
-    return ", ".join(f"{k}={v}" for k, v in filtered.items())
-
-
-def _format_ts(ts: str | float) -> str:
-    """Format a timestamp (ISO string or epoch) to HH:MM."""
-    if isinstance(ts, str):
-        try:
-            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            return dt.strftime("%H:%M")
-        except (ValueError, TypeError):
-            return str(ts)
-    try:
-        dt = datetime.fromtimestamp(float(ts), tz=datetime.now().astimezone().tzinfo)
-        return dt.strftime("%H:%M")
-    except (ValueError, TypeError, OSError):
-        return str(ts)
-
-
-def _print_vector(results: list[dict]) -> None:
-    """Format Prometheus-style vector results as a table."""
-    if not results:
-        info("No results")
-        return
-    rows = []
-    for r in results:
-        label = _format_metric_label(r.get("metric", {}))
-        val = r.get("value", [None, "N/A"])
-        try:
-            v = float(val[1])
-            value_str = str(int(v)) if v == int(v) else f"{v:.2f}"
-        except (ValueError, TypeError, IndexError):
-            value_str = str(val[1]) if len(val) > 1 else "N/A"
-        rows.append([label, value_str])
-    stat_name = results[0].get("metric", {}).get("__name__", "VALUE")
-    table(["METRIC", stat_name], rows)
-
-
-def _print_matrix_table(results: list[dict]) -> None:
-    """Format Prometheus-style matrix results as a time-series table."""
-    if not results:
-        info("No results")
-        return
-
-    # Collect all timestamps across all series
-    all_ts: list[float] = []
-    for r in results:
-        for ts, _ in r.get("values", []):
-            all_ts.append(float(ts))
-    all_ts = sorted(set(all_ts))
-
-    if not all_ts:
-        info("No data points")
-        return
-
-    # Limit columns for readability
-    max_cols = 12
-    if len(all_ts) > max_cols:
-        # Sample evenly
-        step = len(all_ts) // max_cols
-        sampled = all_ts[::step][:max_cols]
-        info(f"({len(all_ts)} points, showing {len(sampled)} samples)")
-    else:
-        sampled = all_ts
-
-    time_headers = [_format_ts(ts) for ts in sampled]
-    headers = ["METRIC"] + time_headers
-
-    rows = []
-    for r in results:
-        label = _format_metric_label(r.get("metric", {}))
-        val_map = {float(ts): val for ts, val in r.get("values", [])}
-        cells = []
-        for ts in sampled:
-            raw = val_map.get(ts)
-            if raw is None:
-                cells.append("-")
-            else:
-                try:
-                    v = float(raw)
-                    cells.append(str(int(v)) if v == int(v) else f"{v:.2f}")
-                except (ValueError, TypeError):
-                    cells.append(str(raw))
-        rows.append([label] + cells)
-
-    table(headers, rows)
-
-
-def _print_hits_table(data: dict) -> None:
-    """Format VictoriaLogs hits response as a time-series table."""
-    hit_list = data.get("hits", [])
-    if not hit_list:
-        info("No hits")
-        return
-
-    for hit in hit_list:
-        fields = hit.get("fields", {})
-        timestamps = hit.get("timestamps", [])
-        values = hit.get("values", [])
-        total = hit.get("total", sum(values))
-
-        if fields:
-            label = ", ".join(f"{k}={v}" for k, v in fields.items())
-        else:
-            label = "(all)"
-
-        info(f"{label}  total={total}")
-        if timestamps:
-            rows = []
-            for ts, val in zip(timestamps, values):
-                rows.append([_format_ts(ts), str(val)])
-            table(["TIME", "COUNT"], rows)
 
 
 @cli.command()

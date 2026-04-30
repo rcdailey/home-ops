@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from hops.query.alerts import cli as alerts_cli
 from hops.query.logs import cli as logs_cli
 from hops.query.metrics import cli as metrics_cli
 
@@ -20,6 +21,10 @@ def cli():
 
 # Flatten every command from the metrics group into the query group
 for name, cmd in list(metrics_cli.commands.items()):
+    cli.add_command(cmd, name)
+
+# Flatten alert commands into the query group
+for name, cmd in list(alerts_cli.commands.items()):
     cli.add_command(cmd, name)
 
 cli.add_command(logs_cli, "logs")

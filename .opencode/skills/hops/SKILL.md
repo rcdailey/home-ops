@@ -4,11 +4,12 @@ description: >-
   Use when adding, modifying, debugging, refactoring, or reviewing `hops` CLI commands and domain
   modules in `scripts/hops/` and `scripts/hops.py`; creating new subcommands, click groups, or
   output formatters; changing subprocess helpers (`_runner.py`, `_format.py`, `_nodes.py`,
-  `_workload.py`); extending cluster introspection coverage (node, storage, app, flux, query,
-  debug, dns, backup, validate). Triggers on phrases like "add a hops command", "fix hops
-  output", "new hops domain", "extend hops", the `hops` escape hatch in AGENTS.md, or any edit to
-  files under `scripts/hops/`. Do NOT use for simply running existing `hops` commands during
-  diagnosis (no skill needed) or for non-cluster/app-specific scripts (e.g., `hass.py`).
+  `_workload.py`, `_time.py`, `_gateway.py`, `_pod_detail.py`); extending cluster introspection
+  coverage (node, storage, app, flux, query, debug, dns, backup, validate). Triggers on phrases
+  like "add a hops command", "fix hops output", "new hops domain", "extend hops", the `hops`
+  escape hatch in AGENTS.md, or any edit to files under `scripts/hops/`. Do NOT use for simply
+  running existing `hops` commands during diagnosis (no skill needed) or for non-cluster/app-specific
+  scripts (e.g., `hass.py`).
 ---
 
 # hops CLI Development
@@ -41,21 +42,28 @@ scripts/hops/
   __init__.py
   __main__.py            python -m hops support
   cli.py                 Root group with auto-discovery
-  _runner.py             Subprocess runner (JSON, JSONL, kubectl helpers)
-  _format.py             Tables, key-value, truncation (no color, no unicode)
+  _runner.py             Subprocess runner (JSON, JSONL, kubectl, tools_curl)
+  _format.py             Tables, key-value, truncation, age_str, format_timestamp
+  _time.py               TimeRange dataclass, time_options decorator (shared by query modules)
   _nodes.py              Node name/IP resolution (cached per session)
-  _workload.py           Workload resolution (exact > label > suffix > prefix > substring)
+  _workload.py           Workload resolution (exact > label > suffix > prefix > substring),
+                         resolve_pods, pick_pod_for_logs, find_running_pod
   _diagnose.py           Diagnose internals (workload, gateway, events, flux status)
+  _pod_detail.py         Pod detail diagnostic (container state, previous logs, events)
+  _gateway.py            Gateway introspection (HTTPRoute, policies, EnvoyProxy tracing)
   _helm.py               Helm chart resolution and YAML value helpers
   node.py                hops node (list, disks, status)
-  storage.py             hops storage (ceph status/osd/io, pvcs with PV driver correlation, disks)
+  storage.py             hops storage (ceph status/osd/io, pvcs with PV driver correlation)
   app.py                 hops app (list, pods, pod, events, logs, resources, secrets, diagnose, ls, cat, du)
   flux.py                hops flux (status, hr, ks, values, defaults, suspend, resume)
   debug.py               hops debug (dns, curl, route; ephemeral pods + gateway diagnostics)
-  query/                 hops query (PromQL + alerts at top level, logs subgroup)
-    __init__.py          Flattens metrics commands into query group
-    metrics.py           VictoriaMetrics (PromQL, alerts, container stats)
-    logs.py              VictoriaLogs (LogSQL, stats, hits)
+  query/                 hops query (PromQL + container stats at top level; alerts + logs subgroups)
+    __init__.py          Flattens metrics + alerts commands into query group
+    _vm.py               VictoriaMetrics API helpers (query_vm, query_vmalert, is_ignored_alert)
+    _client.py           VictoriaLogs HTTP client (VictoriaLogsClient)
+    metrics.py           PromQL queries, container stats (cpu, memory, query, labels, metrics)
+    alerts.py            Alert commands (alerts, alert, rules)
+    logs.py              VictoriaLogs (LogSQL, stats, hits, fields)
   dns.py                 hops dns (search, logs, blocked, test; port of blocky.py)
   backup.py              hops backup (kopia wrapper)
   validate.py            hops validate (vmrules)
@@ -66,6 +74,81 @@ scripts/hops/
 `cli.py` scans the package for modules exposing a `cli` attribute (a click Group or Command).
 Modules starting with `_` are skipped. Adding a new domain means creating a new `.py` file with a
 `cli` click group; no registration needed.
+
+## Module Structure
+
+### File Size
+
+Domain modules (click command files) MUST stay under 500 lines. When a module approaches the limit,
+extract implementation logic into `_` prefixed helper modules; keep click decorators and thin
+delegation in the domain module.
+
+Splitting signals: a file has grown past 500 lines, or a single function exceeds 80 lines, or two
+functions in the same file share no imports or data flow.
+
+### Helper Hierarchy
+
+Shared logic lives in the helper module closest to its concern. Before writing a new utility
+function, check whether one already exists in the appropriate layer:
+
+| Concern | Module | Examples |
+| --- | --- | --- |
+| Formatting, display | `_format.py` | `table`, `kv`, `age_str`, `format_timestamp`, `human_bytes`, `truncate` |
+| Subprocess, HTTP | `_runner.py` | `run`, `run_json`, `kubectl_json`, `tools_curl`, `ceph_json` |
+| Time ranges | `_time.py` | `TimeRange`, `time_options` |
+| Workload resolution | `_workload.py` | `resolve_app`, `resolve_pods`, `find_running_pod`, `pick_pod_for_logs` |
+| Node resolution | `_nodes.py` | `get_all`, `resolve_ip`, `resolve_name` |
+| Gateway introspection | `_gateway.py` | `find_httproute`, `fetch_gateway`, `fetch_envoy_proxy` |
+| Helm chart resolution | `_helm.py` | `resolve_hr`, `helm_chart_args` |
+| VM API | `query/_vm.py` | `query_vm`, `query_vmalert`, `is_ignored_alert` |
+| VL API | `query/_client.py` | `VictoriaLogsClient` |
+
+MUST NOT duplicate logic that already exists in a helper. Common violations to watch for:
+
+- Timestamp-to-age conversion: use `_format.age_str`, not a local `_age_str`
+- Bytes-to-human formatting: use `_format.human_bytes`, not a local `format_memory`
+- In-cluster HTTP: use `_runner.tools_curl`, not hand-rolled `kubectl exec ... curl` commands
+- Workload-to-pod resolution: use `_workload.resolve_pods`, not local pod-fetching logic
+
+### In-Cluster HTTP
+
+All HTTP requests to in-cluster services (VictoriaMetrics, VictoriaLogs, future services) MUST use
+`_runner.tools_curl`. This function executes curl via the rook-ceph-tools pod with standardized
+connection timeout, error classification (unreachable vs. failed), and one-line error output.
+Callers parse the returned string into JSON or use it raw.
+
+Do not construct kubectl exec curl commands directly in domain modules.
+
+### Domain Module Boundaries
+
+- One click group per domain module. Do not split a group's commands across files.
+- Click decorators and argument wiring stay in the domain module.
+- Implementation bodies exceeding ~30 lines SHOULD move to a `_` helper, with the click function
+  delegating in one call (see `app.pod_detail` delegating to `_pod_detail.diagnose_pod`).
+- When multiple click commands share the same resolve-then-exec pattern, extract a shared helper
+  (see `app._exec_in_pod` for ls/cat/du).
+- Commands that share 80%+ of their body MUST extract a shared implementation parameterized by the
+  difference (see `dns._query_dns_logs` for logs/blocked).
+
+### Data Fetching Discipline
+
+- MUST NOT fetch the same Kubernetes resource twice in one command. Store the result and reuse it.
+- When a command correlates multiple resources (e.g., HTTPRoute + Gateway + policies), fetch each
+  once and pass the data dict to helper functions rather than re-fetching inside helpers.
+- Tab-delimited or structured CLI output (psql, talosctl) SHOULD use a generic parser parameterized
+  by field names, not per-query parser functions.
+
+### SQL Safety
+
+The `dns.py` module constructs SQL from user input for psql queries. All user-provided values
+(client names, domain patterns, timestamps) MUST be escaped via `_sql_escape` before interpolation
+into SQL strings.
+
+### Alias and Redirect Commands
+
+Do not create commands that just delegate to another command without adding value. If `hops storage
+disks` would do exactly what `hops node disks` does, the command should not exist. Every command
+MUST add correlation, heuristics, or context beyond what the target already provides.
 
 ## Design Principles
 
@@ -101,9 +184,10 @@ Anti-patterns to reject in code review:
 - Resolver that exits with `not found` when a less strict match (pod name, label selector, fuzzy
   suffix) would have succeeded
 
-Reference implementation: `hops app pod` in `app.py`. One call resolves the target (workload or
-orphan pod), emits pod summary, container state machine, previous-termination table, auto-fetched
-`--previous` logs for each restarted container, and pod-scoped events. That is the bar.
+Reference implementation: `hops app pod` (implemented in `_pod_detail.py`). One call resolves the
+target (workload or orphan pod), emits pod summary, container state machine, previous-termination
+table, auto-fetched `--previous` logs for each restarted container, and pod-scoped events. That is
+the bar.
 
 ### Stewardship / Audit Obligation
 
@@ -162,14 +246,17 @@ All output is plain text optimized for LLM token efficiency:
 - All Groups default to `no_args_is_help=True` (shows help without subcommand)
 - Use `@click.group()` for domain modules, `@cli.command()` for leaf commands
 - Common patterns: `-n/--namespace`, `--json` for raw output, `--limit`
-- Time options via the `time_options()` decorator factory in `query/metrics.py`
+- Time options via the `time_options()` decorator factory in `_time.py`
 
 ### Dependencies
 
 - Only external dependency: `click` (in pyproject.toml; auto-installed by uv)
 - Shell out to cluster tools; parse their `-o json` output in Python
-- `_runner.py` handles subprocess execution, JSON/JSONL parsing, error handling
+- `_runner.py` handles subprocess execution, JSON/JSONL parsing, error handling, `tools_curl`
+  (in-cluster HTTP via rook-ceph-tools pod)
 - `_nodes.py` caches node name/IP mapping per process
+- `_workload.py` provides cascading workload resolution plus `resolve_pods`, `pick_pod_for_logs`,
+  `find_running_pod`
 
 ### Error Handling
 
@@ -183,14 +270,19 @@ All output is plain text optimized for LLM token efficiency:
 1. Identify the investigative workflow: enumerate the sequence of raw CLI calls a human or LLM would
    run to fully answer the question. If the list has one item, reconsider whether the command
    belongs in `hops`.
-2. Decide which domain module the command belongs to (or create a new one)
-3. Add a click command function with appropriate arguments and options
-4. Use `_runner.run_json()` or `_runner.kubectl_json()` for data fetching
-5. Fold the full workflow (correlation, heuristics, flexible resolution, auto-fetch of downstream
-   context) into the single command; see "Workflow, Not Passthrough" above
-6. Use `_format.table()` or `_format.kv()` for output
-7. Test against live cluster: `./scripts/hops.py <domain> <command> <args>`
-8. Measure token count: `./scripts/hops.py <command> 2>&1 | ttok`
+2. Decide which domain module the command belongs to (or create a new one).
+3. Check the helper hierarchy (see Module Structure) for existing utilities before writing new ones.
+   Common needs: `_workload.resolve_app` for app resolution, `_runner.tools_curl` for in-cluster
+   HTTP, `_format.age_str` for timestamp display, `_time.TimeRange` for time range options.
+4. Add a click command function with appropriate arguments and options.
+5. Use `_runner.run_json()` or `_runner.kubectl_json()` for data fetching.
+6. Fold the full workflow (correlation, heuristics, flexible resolution, auto-fetch of downstream
+   context) into the single command; see "Workflow, Not Passthrough" above.
+7. If the implementation exceeds ~30 lines, extract it to a `_` helper module. If the domain module
+   would exceed 500 lines, extract before adding.
+8. Use `_format.table()` or `_format.kv()` for output.
+9. Test against live cluster: `./scripts/hops.py <domain> <command> <args>`
+10. Measure token count: `./scripts/hops.py <command> 2>&1 | ttok`
 
 ## Testing Changes
 
