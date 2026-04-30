@@ -45,6 +45,8 @@ scripts/hops/
   _format.py             Tables, key-value, truncation (no color, no unicode)
   _nodes.py              Node name/IP resolution (cached per session)
   _workload.py           Workload resolution (exact > label > suffix > prefix; near-match suggestions)
+  _diagnose.py           Diagnose internals (workload, gateway, events, flux status)
+  _helm.py               Helm chart resolution and YAML value helpers
   node.py                hops node (list, disks, status)
   storage.py             hops storage (ceph status/osd/io, pvcs with PV driver correlation, disks)
   app.py                 hops app (list, pods, pod, events, logs, resources, secrets, diagnose, ls, cat, du)
@@ -135,13 +137,13 @@ The following rationalizations for skipping the audit MUST be rejected:
 
 ### Read-Only by Design
 
-`hops` never mutates cluster state. No `kubectl apply`, no `helm upgrade`. Two controlled
-exceptions exist:
+`hops` never mutates cluster state. No `kubectl apply`, no `helm upgrade`. Two controlled exceptions
+exist:
 
 - Ephemeral debug pods (`hops debug`): creates a pod, captures output, deletes in `try/finally`
-- Flux suspend/resume (`hops flux suspend/resume`): reversible state toggle for maintenance
-  (storage migrations, immutable field changes). Finds Kustomization + HelmRelease namespaces
-  automatically and handles both in one call.
+- Flux suspend/resume (`hops flux suspend/resume`): reversible state toggle for maintenance (storage
+  migrations, immutable field changes). Finds Kustomization + HelmRelease namespaces automatically
+  and handles both in one call.
 
 ### Output Standards
 
