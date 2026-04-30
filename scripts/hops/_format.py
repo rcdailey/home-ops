@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import datetime, timezone
 from typing import Sequence
 
 
@@ -100,3 +101,31 @@ def truncate(s: str, max_len: int = 120) -> str:
     if len(s) <= max_len:
         return s
     return s[: max_len - 3] + "..."
+
+
+def age_str(timestamp: str | None) -> str:
+    """Convert an ISO timestamp to a human-readable age."""
+    if not timestamp:
+        return "?"
+    try:
+        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        return age((datetime.now(timezone.utc) - dt).total_seconds())
+    except (ValueError, TypeError):
+        return "?"
+
+
+def format_timestamp(ts: float, local: bool = False) -> str:
+    """Format an epoch timestamp to an ISO or local time string."""
+    dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+    if local:
+        dt = dt.astimezone()
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def format_labels_list(
+    labels: dict[str, str], exclude: set[str] | None = None
+) -> list[str]:
+    """Format label dict as list of k=v strings, excluding specified keys."""
+    exclude = exclude or set()
+    return [f"{k}={v}" for k, v in labels.items() if k not in exclude]

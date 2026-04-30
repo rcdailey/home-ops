@@ -126,6 +126,61 @@ def kubectl_exec(
     return run(args, timeout=timeout, check=False)
 
 
+def tools_curl(
+    url: str,
+    *,
+    method: str = "GET",
+    data: str | None = None,
+    timeout: int = 30,
+    service_name: str = "service",
+) -> str:
+    """HTTP request via kubectl exec into rook-ceph-tools pod.
+
+    Returns the response body. Exits on connection failures with a
+    one-line error identifying the service.
+    """
+    cmd = [
+        "kubectl",
+        "exec",
+        "-n",
+        "rook-ceph",
+        "deploy/rook-ceph-tools",
+        "--",
+        "curl",
+        "-sS",
+        "--connect-timeout",
+        "5",
+    ]
+    if method != "GET":
+        cmd.extend(["-X", method])
+    if data is not None:
+        cmd.extend(["--data", data])
+    cmd.append(url)
+    result = run(cmd, timeout=timeout, check=False)
+    if result.returncode != 0:
+        stderr = (result.stderr or "").strip()
+        stdout = (result.stdout or "").strip()
+        combined = stderr or stdout
+        if "Could not resolve host" in combined or "connection refused" in combined:
+            print(
+                f"error: {service_name} is unreachable (pod may be down)",
+                file=sys.stderr,
+            )
+        elif result.returncode == 7:
+            print(
+                f"error: {service_name} is unreachable (connection failed)",
+                file=sys.stderr,
+            )
+        else:
+            msg = combined.split("\n")[0]
+            print(
+                f"error: {service_name} query failed: {msg}",
+                file=sys.stderr,
+            )
+        sys.exit(1)
+    return result.stdout
+
+
 def ceph_json(command: list[str], *, timeout: int = 30) -> Any:
     """Run a ceph command via rook-ceph-tools and parse JSON output."""
     args = [
