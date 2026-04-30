@@ -14,7 +14,7 @@ spec:
 apiVersion: garage-s3-operator.abucquet.com/v1
 kind: GarageS3Bucket
 metadata:
-  name: postgres-backups
+  name: immich-postgres-backups
 spec:
   instanceRef:
     name: garage

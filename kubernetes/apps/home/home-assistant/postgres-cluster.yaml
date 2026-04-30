@@ -15,7 +15,7 @@ spec:
       owner: home-assistant
 
   storage:
-    size: 10Gi
+    size: 15Gi
     storageClass: ceph-block
 
   resources:
@@ -29,7 +29,7 @@ spec:
     retentionPolicy: "30d"
     target: "prefer-standby"
     barmanObjectStore:
-      destinationPath: "s3://postgres-backups/home-assistant"
+      destinationPath: "s3://home-assistant-postgres-backups"
       endpointURL: "http://garage.storage:3900"
       s3Credentials:
         accessKeyId:
