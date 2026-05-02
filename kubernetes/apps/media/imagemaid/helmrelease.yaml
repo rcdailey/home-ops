@@ -39,7 +39,7 @@ spec:
           app:
             image:
               repository: kometateam/imagemaid
-              tag: v1.1.1@sha256:fbec331b36c1473f8a9c4214f55e5b097860476c8a5274eb61a2b85df89e56cc
+              tag: v1.2.0@sha256:94cf9ed79a264238c64cdcbf241822fc3569225cc103de542a6390bfaf393034
             env:
               TZ: America/Chicago
               PLEX_URL: http://plex.media:32400
