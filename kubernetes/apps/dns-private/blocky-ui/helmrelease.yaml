@@ -27,7 +27,7 @@ spec:
           app:
             image:
               repository: ghcr.io/gabeduartem/blocky-ui
-              tag: 1.6.1
+              tag: 1.7.0
             env:
               BLOCKY_API_URL: http://blocky.dns-private:4000
               QUERY_LOG_TYPE: postgresql
