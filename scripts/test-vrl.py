@@ -33,7 +33,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VRL_DIR = REPO_ROOT / "kubernetes/apps/observability/victoria-logs-single/vrl"
 TESTS_DIR = VRL_DIR / "tests"
-VECTOR_IMAGE = "timberio/vector:0.54.0-alpine"
+VECTOR_IMAGE = "timberio/vector:0.55.0-alpine"
 
 # Minimal Vector config template. The VRL file path is mounted at /vrl/prog.vrl;
 # stdin source with JSON decoding feeds the remap transform, console sink emits
