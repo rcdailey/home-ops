@@ -8,3 +8,4 @@ resources:
 - ./pocketidinstance.yaml
 - ./httproutefilter.yaml
 - ./pvc.yaml
+- ./usergroups.yaml
