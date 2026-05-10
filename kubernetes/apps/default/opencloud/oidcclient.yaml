@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aclerici38/pocket-id-operator/refs/heads/main/dist/schemas/pocketidoidcclient_v1alpha1.json
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: opencloud
+spec:
+  name: OpenCloud
+  clientID: bf1ff257-b0cb-4ebb-8f5e-a10a781be3c9
+  isPublic: true
+  pkceEnabled: true
+  launchUrl: https://cloud.${SECRET_DOMAIN}
+  callbackUrls:
+  - https://cloud.${SECRET_DOMAIN}/
+  - https://cloud.${SECRET_DOMAIN}/oidc-callback.html
+  - https://cloud.${SECRET_DOMAIN}/oidc-silent-redirect.html
+  allowedUserGroups:
+  - name: admins
+  - name: users
+  secret:
+    enabled: false
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: opencloud-android
+spec:
+  name: OpenCloud Android
+  clientID: OpenCloudAndroid
+  isPublic: true
+  pkceEnabled: true
+  callbackUrls:
+  - oc://android.opencloud.eu
+  logoutCallbackUrls:
+  - oc://android.opencloud.eu
+  allowedUserGroups:
+  - name: admins
+  - name: users
+  secret:
+    enabled: false
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: opencloud-desktop
+spec:
+  name: OpenCloud Desktop
+  clientID: OpenCloudDesktop
+  isPublic: true
+  pkceEnabled: true
+  callbackUrls:
+  - "http://127.0.0.1:*"
+  - "http://localhost:*"
+  allowedUserGroups:
+  - name: admins
+  - name: users
+  secret:
+    enabled: false
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: opencloud-ios
+spec:
+  name: OpenCloud iOS
+  clientID: OpenCloudIOS
+  isPublic: true
+  pkceEnabled: true
+  callbackUrls:
+  - oc://ios.opencloud.eu
+  logoutCallbackUrls:
+  - oc://ios.opencloud.eu
+  allowedUserGroups:
+  - name: admins
+  - name: users
+  secret:
+    enabled: false
