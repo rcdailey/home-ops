@@ -29,6 +29,14 @@
       automerge: false,
     },
     {
+      // mise specifies Python as major.minor only (e.g. "3.14") so mise resolves the
+      // latest patch at install time. Prevent Renovate from reintroducing patch versions.
+      description: "Keep Python at major.minor only in mise",
+      matchManagers: ["mise"],
+      matchPackageNames: ["python"],
+      allowedVersions: "/^\\d+\\.\\d+$/",
+    },
+    {
       description: "Auto-merge OCI charts and containers",
       matchDatasources: ["docker"],
       excludePackageNames: ["/cilium/", "ghcr.io/rook/**"],
