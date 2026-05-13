@@ -536,15 +536,19 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 commands. Key entry points for debugging: `./scripts/hops.py app diagnose APP [-n NS]` (workload or
 gateway-only scope, flux status + pods + events + recent logs), `./scripts/hops.py app pod APP [-n
 NS]` (per-pod drill-down with container state machine, previous-termination table, auto-fetched
-crash logs, and pod-scoped event timeline), and `./scripts/hops.py debug route APP [-n NS]` (gateway
-request path trace: HTTPRoute, Gateway, ClientTrafficPolicy, BackendTrafficPolicy, SecurityPolicy,
-EnvoyProxy config, and recent envoy access log errors for the route's hostnames). Use `app pod`
-whenever a specific pod misbehaves (crashloops, startup races, image pull failures, terminated
-Jobs). Use `debug route` when requests to an app fail at the gateway layer (503s, upload failures,
-timeouts, TLS issues). `app diagnose` and `app pod` accept workload names, app labels, pod-name
-prefixes, or full pod names, including orphan pods whose parent workload has been deleted (TTL'd
-Jobs, manually removed controllers) and operator-managed pods without parent workloads (CNPG
-Clusters, etc.). `debug route` accepts app names, HTTPRoute names, or hostname substrings.
+crash logs for restarted containers and failure logs for non-zero exit containers, and pod-scoped
+event timeline), `./scripts/hops.py db status` (all CNPG clusters: instances, phase, PDB status,
+backup config, pod placement with role/node, memory request/actual/limit, PVC sizes, last backup
+time), and `./scripts/hops.py debug route APP [-n NS]` (gateway request path trace: HTTPRoute,
+Gateway, ClientTrafficPolicy, BackendTrafficPolicy, SecurityPolicy, EnvoyProxy config, and recent
+envoy access log errors for the route's hostnames). Use `app pod` whenever a specific pod misbehaves
+(crashloops, startup races, image pull failures, terminated Jobs). Use `db status` for CNPG health
+checks, replica audits, PDB readiness, and resource usage across all database clusters. Use `debug
+route` when requests to an app fail at the gateway layer (503s, upload failures, timeouts, TLS
+issues). `app diagnose` and `app pod` accept workload names, app labels, pod-name prefixes, or full
+pod names, including orphan pods whose parent workload has been deleted (TTL'd Jobs, manually
+removed controllers) and operator-managed pods without parent workloads (CNPG Clusters, etc.).
+`debug route` accepts app names, HTTPRoute names, or hostname substrings.
 
 ### New App Checklist
 

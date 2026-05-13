@@ -134,6 +134,27 @@ def diagnose_pod(
                 info(f"--- {cname} (previous, last 30 lines) ---")
                 print(out if out else "(none available)")
 
+        # Failed containers that never restarted (exit != 0, restartCount == 0).
+        # Current logs contain the failure output; no --previous needed.
+        failed_no_restart = [
+            cs
+            for _, cs in all_statuses
+            if cs.get("restartCount", 0) == 0
+            and cs.get("state", {}).get("terminated", {}).get("exitCode", 0) != 0
+        ]
+        if failed_no_restart:
+            section("FAILURE LOGS")
+            for cs in failed_no_restart:
+                cname = cs.get("name", "?")
+                result = run(
+                    ["kubectl", "logs", name, "-n", ns, "-c", cname, "--tail=30"],
+                    timeout=15,
+                    check=False,
+                )
+                out = (result.stdout or "").strip()
+                info(f"--- {cname} (last 30 lines) ---")
+                print(out if out else "(none available)")
+
     # Events scoped to this specific pod
     if show_events:
         section("EVENTS (pod-scoped)")
