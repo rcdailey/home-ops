@@ -3,7 +3,7 @@
 apiVersion: garage-s3-operator.abucquet.com/v1
 kind: GarageS3AccessKey
 metadata:
-  name: home-assistant-s3
+  name: ${APP}-s3
 spec:
   instanceRef:
     name: garage
@@ -14,13 +14,13 @@ spec:
 apiVersion: garage-s3-operator.abucquet.com/v1
 kind: GarageS3Bucket
 metadata:
-  name: home-assistant-postgres-backups
+  name: ${APP}-postgres-backups
 spec:
   instanceRef:
     name: garage
     namespace: storage
   permissions:
-  - accessKeyName: home-assistant-s3
+  - accessKeyName: ${APP}-s3
     read: true
     write: true
     owner: true

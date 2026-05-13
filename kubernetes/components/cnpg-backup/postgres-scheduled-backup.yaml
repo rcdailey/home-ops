@@ -3,12 +3,12 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: immich-postgres-backup
+  name: ${APP}-postgres-backup
 spec:
-  schedule: "0 0 2 * * *" # Daily at 2 AM (6-field cron format: seconds minute hour day month dayofweek)
+  schedule: "0 0 2 * * *"
   backupOwnerReference: self
   cluster:
-    name: immich-postgres
+    name: ${APP}-postgres
   method: barmanObjectStore
   target: "prefer-standby"
-  immediate: true # Take first backup immediately for PITR capability
+  immediate: true

@@ -28,6 +28,8 @@ spec:
   dependsOn:
   - name: cloudnative-pg
     namespace: kube-system
+  - name: garage-instance
+    namespace: storage
   - name: global-config
     namespace: flux-system
   - name: rook-ceph-cluster
