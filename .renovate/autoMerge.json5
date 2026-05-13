@@ -11,8 +11,11 @@
     },
     {
       // Generalized rule at the top so it can be overridden
+      // kubectl excluded: it must group with kubelet (Kubernetes group) to prevent
+      // version drift that broke kube-scheduler when Talos 1.13.2 shipped 1.36 schema
       description: "Auto-merge Mise Tools",
       matchManagers: ["mise"],
+      excludePackageNames: ["/kubectl/"],
       automerge: true,
       automergeType: "pr",
       matchUpdateTypes: ["minor", "patch"],
