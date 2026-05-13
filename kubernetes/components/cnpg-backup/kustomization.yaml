@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization.json
+---
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+- ./s3.yaml
+- ./postgres-scheduled-backup.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+secretGenerator:
+- name: garage-s3-region
+  literals:
+  - AWS_REGION=garage
+patches:
+- target:
+    group: postgresql.cnpg.io
+    version: v1
+    kind: Cluster
+  patch: |-
+    - op: add
+      path: /spec/backup
+      value:
+        retentionPolicy: "30d"
+        target: "prefer-standby"
+        barmanObjectStore:
+          destinationPath: "s3://${APP}-postgres-backups"
+          endpointURL: "http://garage.storage:3900"
+          s3Credentials:
+            accessKeyId:
+              name: "${APP}-s3-gs3ak"
+              key: AWS_ACCESS_KEY
+            secretAccessKey:
+              name: "${APP}-s3-gs3ak"
+              key: AWS_SECRET_KEY
+            region:
+              name: garage-s3-region
+              key: AWS_REGION
+          wal:
+            compression: "gzip"
+            maxParallel: 1
+          data:
+            compression: "gzip"

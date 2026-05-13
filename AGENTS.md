@@ -182,6 +182,14 @@ co-location defeats the purpose of HA (e.g., DNS servers, database operators).
 
 - NEVER share databases between apps (dedicated instances per app)
 - Use CloudNativePG for PostgreSQL, MariaDB Operator for MariaDB
+- CNPG clusters MUST use `instances: 2` minimum. Single-instance clusters create a PDB with
+  `disruptionsAllowed: 0`, blocking node drains during Talos upgrades.
+- CNPG S3 backups are decided case by case (not every cluster warrants them). When backups are
+  warranted, use the `cnpg-backup` kustomize component: add to `kustomization.yaml` components and
+  add `dependsOn: garage-instance` (namespace: storage) to `ks.yaml`. The component provides the
+  GarageS3AccessKey, GarageS3Bucket, ScheduledBackup, `garage-s3-region` secret, and patches the
+  Cluster CR with backup config. The Garage operator creates the S3 credential secret
+  (`{accesskey}-gs3ak`) automatically; no Infisical/ExternalSecret needed.
 - NEVER create custom equivalents to standard Vector fields (message, timestamp, level, severity,
   host, source_type)
 - VRL regex: Prefer non-greedy `.*?` over greedy `.*`
@@ -323,6 +331,7 @@ Copy patterns from exemplary apps rather than using synthetic templates. These a
 - `targetNamespace` sets namespace (NOT metadata.namespace)
 - `dependsOn: global-config` required if using cluster-secrets substitution
 - `dependsOn: rook-ceph-cluster` required if using ceph storage
+- `dependsOn: garage-instance` required if using Garage S3 backups (see Database and Logging)
 - `postBuild.substitute.APP` required if using volsync component
 
 **kustomization.yaml (Kustomize):**
@@ -515,7 +524,7 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 - Rook Ceph: Distributed block/filesystem storage across cluster nodes
 - NFS (Nezuko 192.168.1.58): Media (100Ti), Photos (10Ti)
 - Garage S3 (192.168.1.58:3900): Region garage, per-app buckets (e.g., `immich-postgres-backups`,
-  `home-assistant-postgres-backups`)
+  `home-assistant-postgres-backups`, `outline-postgres-backups`)
 - Volsync: Kopia repository on NFS (Nezuko /mnt/user/volsync), shared single repository with per-app
   isolation via snapshot identity
 - CloudNativePG: Barman WAL archiving to per-app S3 buckets (e.g., `s3://immich-postgres-backups`).

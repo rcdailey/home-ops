@@ -5,7 +5,7 @@ kind: Cluster
 metadata:
   name: seerr-postgres
 spec:
-  instances: 1
+  instances: 2
   imageName: ghcr.io/cloudnative-pg/postgresql:17
   bootstrap:
     initdb:

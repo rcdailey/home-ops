@@ -5,7 +5,7 @@ kind: Cluster
 metadata:
   name: immich-postgres
 spec:
-  instances: 1
+  instances: 2
 
   imageName: ghcr.io/cloudnative-pg/postgresql:17
 
@@ -56,25 +56,3 @@ spec:
     limits:
       memory: "2Gi"
       cpu: "1000m"
-
-  backup:
-    retentionPolicy: "30d"
-    target: "prefer-standby"
-    barmanObjectStore:
-      destinationPath: "s3://immich-postgres-backups"
-      endpointURL: "http://garage.storage:3900"
-      s3Credentials:
-        accessKeyId:
-          name: immich-s3-gs3ak
-          key: AWS_ACCESS_KEY
-        secretAccessKey:
-          name: immich-s3-gs3ak
-          key: AWS_SECRET_KEY
-        region:
-          name: garage-s3-region
-          key: AWS_REGION
-      wal:
-        compression: "gzip"
-        maxParallel: 1
-      data:
-        compression: "gzip"
