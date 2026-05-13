@@ -49,7 +49,7 @@ scripts/hops/
   _workload.py           Workload resolution (exact > label > suffix > prefix > substring),
                          resolve_pods, pick_pod_for_logs, find_running_pod
   _diagnose.py           Diagnose internals (workload, gateway, events, flux status)
-  _pod_detail.py         Pod detail diagnostic (container state, previous logs, events)
+  _pod_detail.py         Pod detail diagnostic (container state, previous/failure logs, events)
   _gateway.py            Gateway introspection (HTTPRoute, policies, EnvoyProxy tracing)
   _helm.py               Helm chart resolution and YAML value helpers
   node.py                hops node (list, disks, status)
@@ -64,6 +64,7 @@ scripts/hops/
     metrics.py           PromQL queries, container stats (cpu, memory, query, labels, metrics)
     alerts.py            Alert commands (alerts, alert, rules)
     logs.py              VictoriaLogs (LogSQL, stats, hits, fields)
+  db.py                  hops db (status; CNPG cluster overview with pods, PDBs, PVCs, backups)
   dns.py                 hops dns (search, logs, blocked, test; port of blocky.py)
   backup.py              hops backup (kopia wrapper)
   validate.py            hops validate (vmrules)
