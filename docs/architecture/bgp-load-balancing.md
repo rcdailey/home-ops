@@ -197,6 +197,39 @@ Location: `bootstrap/udmp/bgp.conf`
 Uploaded via UniFi UI (Network → Settings → Policy Engine → BGP) or configured via FRR for older
 firmware versions.
 
+## Source IP Preservation
+
+Two mechanisms work together to preserve client source IPs:
+
+### DSR (Direct Server Return)
+
+Cilium's `loadBalancer.mode: dsr` preserves the client's source IP on inbound packets and sends
+replies directly from the backend pod to the client, skipping the intermediate node. This is a
+cluster-wide setting that applies to all LoadBalancer services.
+
+### externalTrafficPolicy: Local
+
+With BGP, `externalTrafficPolicy: Local` restricts traffic delivery to nodes that host the backing
+pod. Cilium withdraws VIP advertisements from nodes without local pods, so the UDMP only routes
+traffic to nodes that can serve it directly. No cross-node forwarding means no SNAT.
+
+This was previously set to `Cluster` as a workaround for [Cilium L2 issue #27800][cilium-27800],
+which is specific to L2 announcements and doesn't apply to BGP.
+
+### L7 proxy caveat
+
+Source IP preservation applies to the first backend the traffic reaches. When traffic flows through
+an L7 reverse proxy (Envoy Gateway), the proxy terminates the client's TCP connection and opens a
+new one to the upstream service. The upstream sees the proxy's pod IP (10.42.x.x), not the original
+client. The real client IP only survives in HTTP headers (`X-Forwarded-For`).
+
+This matters for applications that make decisions based on source IP (e.g., Plex LAN
+classification). Clients that need LAN treatment should connect via a direct LoadBalancer service,
+bypassing the gateway.
+
+See the [Plex Shield buffering investigation][plex-investigation] for a detailed trace of how this
+affects Plex specifically.
+
 ## Troubleshooting
 
 ### BGP Sessions Not Establishing
@@ -236,6 +269,9 @@ datacenter values (5s/9s/3s).
 - [onedr0p/home-ops BGP Configuration][onedr0p-bgp]
 
 [cilium-bgp]: https://docs.cilium.io/en/stable/network/bgp-control-plane/
+[cilium-27800]: https://github.com/cilium/cilium/issues/27800
 [unifi-bgp]: https://help.ui.com/hc/en-us/articles/16271338193559
 [onedr0p-bgp]:
     https://github.com/onedr0p/home-ops/blob/main/kubernetes/apps/kube-system/cilium/app/networking.yaml
+[plex-investigation]:
+    /docs/investigations/plex-shield-buffering-lan-classification-2026-05-12.md

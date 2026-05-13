@@ -1,11 +1,5 @@
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.envoyproxy.io/envoyproxy_v1alpha1.json
-# TODO: WORKAROUND for Cilium L2 announcements + externalTrafficPolicy: Local incompatibility
-# Issue: https://github.com/cilium/cilium/issues/27800
-#
-# Current: Using externalTrafficPolicy: Cluster + DSR/Geneve to preserve source IP
-# Future: When Cilium properly supports L2 + Local, revert to externalTrafficPolicy: Local
-#
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
@@ -22,6 +16,8 @@ spec:
           type: StrategicMerge
           value:
             spec:
-              # Changed from Local to Cluster for issue #27800 workaround
-              # DSR + Geneve tunneling preserves source IP with Cluster policy
-              externalTrafficPolicy: Cluster
+              # With BGP, Cilium only advertises VIPs from nodes that host the
+              # backing pod. Local ensures traffic is delivered directly without
+              # cross-node forwarding or SNAT. DSR (cluster-wide) complements
+              # this by sending replies directly to the client.
+              externalTrafficPolicy: Local
