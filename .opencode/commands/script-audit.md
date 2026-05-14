@@ -124,5 +124,5 @@ Keep it under 20 lines. No diff dumps; the user reads those via git.
   docs are bugs
 - MUST cap the audit at friction points actually surfaced this session; inventing hypothetical gaps
   defeats the purpose
-- If a fix is too large to land safely in-session, state that explicitly in the report with the
-  smallest viable next step, do not leave half-applied changes
+- MUST NOT defer fixes by claiming they are "too large"; implement every non-dropped fix or classify
+  it as out of scope with a concrete reason
