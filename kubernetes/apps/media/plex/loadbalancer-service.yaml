@@ -10,6 +10,7 @@ metadata:
     lbipam.cilium.io/ips: 192.168.50.100
 spec:
   type: LoadBalancer
+  externalTrafficPolicy: Local
   ports:
   - port: 32400
     targetPort: 32400
