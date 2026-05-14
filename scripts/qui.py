@@ -1,261 +1,292 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.12"
+# dependencies = ["click", "httpx"]
+# ///
 """CLI for inspecting QUI (qBittorrent management) via its REST API."""
 
-import argparse
 import json
 import os
-import sys
-from urllib.parse import urljoin, urlencode
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
+from pathlib import Path
+
+import click
+import httpx
 
 SECRET_DOMAIN = os.environ.get("SECRET_DOMAIN", "")
 BASE_URL = f"https://qui.{SECRET_DOMAIN}"
 API_KEY = os.environ.get("QUI_API_KEY", "")
 
 
-def _request(method: str, path: str, body: dict | None = None) -> dict | list | None:
-    url = urljoin(BASE_URL, path)
-    headers = {
-        "X-API-Key": API_KEY,
-        "Content-Type": "application/json",
-    }
-    data = json.dumps(body).encode() if body else None
-    req = Request(url, data=data, headers=headers, method=method)
-    try:
-        with urlopen(req, timeout=30) as resp:
-            raw = resp.read()
-            return json.loads(raw) if raw else None
-    except HTTPError as e:
-        body_text = e.read().decode(errors="replace")
-        print(f"HTTP {e.code}: {body_text}", file=sys.stderr)
-        sys.exit(1)
-
-
-def _json_out(data):
-    json.dump(data, sys.stdout, indent=2)
-    print()
+def _client() -> httpx.Client:
+    return httpx.Client(
+        base_url=BASE_URL,
+        headers={"X-API-Key": API_KEY},
+        timeout=30,
+    )
 
 
 def _check_env():
     if not SECRET_DOMAIN:
-        print("Error: SECRET_DOMAIN env var is required", file=sys.stderr)
-        sys.exit(1)
+        click.echo("Error: SECRET_DOMAIN env var is required", err=True)
+        raise SystemExit(1)
     if not API_KEY:
-        print("Error: QUI_API_KEY env var is required", file=sys.stderr)
-        sys.exit(1)
+        click.echo("Error: QUI_API_KEY env var is required", err=True)
+        raise SystemExit(1)
 
 
-# -- Commands --
+def _out(data):
+    click.echo(json.dumps(data, indent=2))
 
 
-def cmd_instances(_args):
+def _get(path: str):
+    with _client() as c:
+        r = c.get(path)
+        r.raise_for_status()
+        return r.json()
+
+
+def _post(path: str, body: dict | None = None):
+    with _client() as c:
+        r = c.post(path, json=body or {})
+        r.raise_for_status()
+        return r.json() if r.content else None
+
+
+def _put(path: str, body: dict):
+    with _client() as c:
+        r = c.put(path, json=body)
+        r.raise_for_status()
+        return r.json() if r.content else None
+
+
+@click.group()
+def cli():
+    """QUI API client."""
+    _check_env()
+
+
+# -- Instance commands --
+
+
+@cli.command()
+def instances():
     """List configured qBittorrent instances."""
-    _json_out(_request("GET", "/api/instances"))
+    _out(_get("/api/instances"))
 
 
-def cmd_instance_info(args):
+@cli.command("instance-info")
+@click.argument("instance")
+def instance_info(instance):
     """Get qBittorrent app info for an instance."""
-    _json_out(_request("GET", f"/api/instances/{args.instance}/app-info"))
+    _out(_get(f"/api/instances/{instance}/app-info"))
 
 
-def cmd_instance_prefs(args):
+@cli.command("instance-prefs")
+@click.argument("instance")
+def instance_prefs(instance):
     """Get qBittorrent preferences for an instance."""
-    _json_out(_request("GET", f"/api/instances/{args.instance}/preferences"))
+    _out(_get(f"/api/instances/{instance}/preferences"))
 
 
-def cmd_transfer_info(args):
+@cli.command("transfer-info")
+@click.argument("instance")
+def transfer_info(instance):
     """Get transfer stats for an instance."""
-    _json_out(_request("GET", f"/api/instances/{args.instance}/transfer-info"))
+    _out(_get(f"/api/instances/{instance}/transfer-info"))
 
 
-def cmd_torrents(args):
+# -- Torrent commands --
+
+
+@cli.command()
+@click.argument("instance")
+@click.option("--limit", default=50, type=int)
+@click.option("--offset", default=0, type=int)
+@click.option("--sort", default="added_on")
+@click.option("--reverse", is_flag=True)
+@click.option("--filter", "state_filter", default=None, help="State filter")
+@click.option("--category", default=None)
+@click.option("--tag", default=None)
+@click.option("--tracker", default=None)
+def torrents(
+    instance, limit, offset, sort, reverse, state_filter, category, tag, tracker
+):
     """List torrents for an instance."""
     params = {
-        "limit": args.limit,
-        "offset": args.offset,
-        "sort": args.sort,
-        "reverse": str(args.reverse).lower(),
+        "limit": limit,
+        "offset": offset,
+        "sort": sort,
+        "reverse": str(reverse).lower(),
     }
-    if args.filter:
-        params["filter"] = args.filter
-    if args.category:
-        params["category"] = args.category
-    if args.tag:
-        params["tag"] = args.tag
-    if args.tracker:
-        params["tracker"] = args.tracker
-    qs = urlencode(params)
-    _json_out(_request("GET", f"/api/instances/{args.instance}/torrents?{qs}"))
+    if state_filter:
+        params["filter"] = state_filter
+    if category:
+        params["category"] = category
+    if tag:
+        params["tag"] = tag
+    if tracker:
+        params["tracker"] = tracker
+    _out(_get(f"/api/instances/{instance}/torrents?{httpx.QueryParams(params)}"))
 
 
-def cmd_torrent_trackers(args):
+@cli.command("torrent-trackers")
+@click.argument("instance")
+@click.argument("hash_")
+def torrent_trackers(instance, hash_):
     """List trackers for a torrent."""
-    _json_out(
-        _request("GET", f"/api/instances/{args.instance}/torrents/{args.hash}/trackers")
-    )
+    _out(_get(f"/api/instances/{instance}/torrents/{hash_}/trackers"))
 
 
-def cmd_torrent_props(args):
+@cli.command("torrent-props")
+@click.argument("instance")
+@click.argument("hash_")
+def torrent_props(instance, hash_):
     """Get torrent properties."""
-    _json_out(
-        _request(
-            "GET", f"/api/instances/{args.instance}/torrents/{args.hash}/properties"
+    _out(_get(f"/api/instances/{instance}/torrents/{hash_}/properties"))
+
+
+# -- Add torrent --
+
+
+@cli.command("add-torrent")
+@click.argument("instance")
+@click.option("--url", default=None, help="Torrent download URL or magnet link")
+@click.option(
+    "--file",
+    "filepath",
+    default=None,
+    type=click.Path(exists=True),
+    help="Path to .torrent file",
+)
+@click.option("--category", default=None)
+@click.option("--tags", default=None, help="Comma-separated tags")
+@click.option("--savepath", default=None)
+@click.option(
+    "--content-layout",
+    default=None,
+    type=click.Choice(["Original", "Subfolder", "NoSubfolder"]),
+)
+@click.option("--paused", is_flag=True)
+def add_torrent(
+    instance, url, filepath, category, tags, savepath, content_layout, paused
+):
+    """Add a torrent to an instance via URL or file."""
+    if not url and not filepath:
+        raise click.UsageError("Either --url or --file is required.")
+
+    data = {}
+    files = {}
+
+    if url:
+        data["urls"] = url
+    elif filepath:
+        path = Path(filepath)
+        files["torrent"] = (path.name, path.read_bytes(), "application/x-bittorrent")
+
+    if category:
+        data["category"] = category
+    if tags:
+        data["tags"] = tags
+    if savepath:
+        data["savepath"] = savepath
+    if content_layout:
+        data["contentLayout"] = content_layout
+    if paused:
+        data["paused"] = "true"
+
+    with _client() as c:
+        r = c.post(
+            f"/api/instances/{instance}/torrents", data=data, files=files or None
         )
-    )
+        if r.status_code >= 400:
+            click.echo(f"HTTP {r.status_code}: {r.text}", err=True)
+            raise SystemExit(1)
+        result = r.json() if r.content else None
+        click.echo(f"Added torrent (HTTP {r.status_code})")
+        if result:
+            _out(result)
 
 
-def cmd_automations(args):
+# -- Automation commands --
+
+
+@cli.command()
+@click.argument("instance")
+def automations(instance):
     """List automation rules for an instance."""
-    _json_out(_request("GET", f"/api/instances/{args.instance}/automations"))
+    _out(_get(f"/api/instances/{instance}/automations"))
 
 
-def cmd_automation_activity(args):
+@cli.command("automation-activity")
+@click.argument("instance")
+def automation_activity(instance):
     """List recent automation activity."""
-    _json_out(_request("GET", f"/api/instances/{args.instance}/automations/activity"))
+    _out(_get(f"/api/instances/{instance}/automations/activity"))
 
 
-def cmd_automation_dry_run(args):
+@cli.command("automation-dry-run")
+@click.argument("instance")
+@click.option("--rule-id", default=None, help="Specific rule ID to dry-run")
+def automation_dry_run(instance, rule_id):
     """Dry-run all automation rules."""
     body = {}
-    if args.rule_id:
-        body["ruleId"] = int(args.rule_id)
-    _json_out(
-        _request("POST", f"/api/instances/{args.instance}/automations/dry-run", body)
-    )
+    if rule_id:
+        body["ruleId"] = int(rule_id)
+    _out(_post(f"/api/instances/{instance}/automations/dry-run", body))
 
 
-def cmd_automation_apply(args):
+@cli.command("automation-apply")
+@click.argument("instance")
+def automation_apply(instance):
     """Manually trigger automation rules to run now."""
-    result = _request("POST", f"/api/instances/{args.instance}/automations/apply", {})
-    _json_out(result)
+    _out(_post(f"/api/instances/{instance}/automations/apply"))
 
 
-def cmd_automation_update(args):
+@cli.command("automation-update")
+@click.argument("instance")
+@click.argument("rule_id")
+@click.argument("file", type=click.Path(exists=True))
+def automation_update(instance, rule_id, file):
     """Update an automation rule from a JSON file."""
-    with open(args.file) as f:
-        body = json.load(f)
-    result = _request(
-        "PUT", f"/api/instances/{args.instance}/automations/{args.rule_id}", body
-    )
-    _json_out(result)
+    body = json.loads(Path(file).read_text())
+    _out(_put(f"/api/instances/{instance}/automations/{rule_id}", body))
 
 
-def cmd_categories(args):
+# -- Other commands --
+
+
+@cli.command()
+@click.argument("instance")
+def categories(instance):
     """List categories for an instance."""
-    _json_out(_request("GET", f"/api/instances/{args.instance}/categories"))
+    _out(_get(f"/api/instances/{instance}/categories"))
 
 
-def cmd_tags(args):
+@cli.command()
+@click.argument("instance")
+def tags(instance):
     """List tags for an instance."""
-    _json_out(_request("GET", f"/api/instances/{args.instance}/tags"))
+    _out(_get(f"/api/instances/{instance}/tags"))
 
 
-def cmd_trackers(args):
+@cli.command()
+@click.argument("instance")
+def trackers(instance):
     """List active trackers across all torrents."""
-    _json_out(_request("GET", f"/api/instances/{args.instance}/trackers"))
+    _out(_get(f"/api/instances/{instance}/trackers"))
 
 
-def cmd_cross_seed_settings(_args):
+@cli.command("cross-seed-settings")
+def cross_seed_settings():
     """Get cross-seed settings."""
-    _json_out(_request("GET", "/api/cross-seed/settings"))
+    _out(_get("/api/cross-seed/settings"))
 
 
-def cmd_cross_seed_status(_args):
+@cli.command("cross-seed-status")
+def cross_seed_status():
     """Get cross-seed scheduler status."""
-    _json_out(_request("GET", "/api/cross-seed/status"))
-
-
-def _add_instance_arg(parser):
-    parser.add_argument("instance", help="Instance ID")
-
-
-def main():
-    _check_env()
-    parser = argparse.ArgumentParser(description="QUI API client")
-    sub = parser.add_subparsers(dest="command", required=True)
-
-    sub.add_parser("instances", help="List instances").set_defaults(func=cmd_instances)
-
-    p = sub.add_parser("instance-info", help="Instance app info")
-    _add_instance_arg(p)
-    p.set_defaults(func=cmd_instance_info)
-
-    p = sub.add_parser("instance-prefs", help="Instance preferences")
-    _add_instance_arg(p)
-    p.set_defaults(func=cmd_instance_prefs)
-
-    p = sub.add_parser("transfer-info", help="Transfer stats")
-    _add_instance_arg(p)
-    p.set_defaults(func=cmd_transfer_info)
-
-    p = sub.add_parser("torrents", help="List torrents")
-    _add_instance_arg(p)
-    p.add_argument("--limit", type=int, default=50)
-    p.add_argument("--offset", type=int, default=0)
-    p.add_argument("--sort", default="added_on")
-    p.add_argument("--reverse", action="store_true")
-    p.add_argument("--filter", default=None, help="State filter")
-    p.add_argument("--category", default=None)
-    p.add_argument("--tag", default=None)
-    p.add_argument("--tracker", default=None)
-    p.set_defaults(func=cmd_torrents)
-
-    p = sub.add_parser("torrent-trackers", help="Torrent trackers")
-    _add_instance_arg(p)
-    p.add_argument("hash", help="Torrent hash")
-    p.set_defaults(func=cmd_torrent_trackers)
-
-    p = sub.add_parser("torrent-props", help="Torrent properties")
-    _add_instance_arg(p)
-    p.add_argument("hash", help="Torrent hash")
-    p.set_defaults(func=cmd_torrent_props)
-
-    p = sub.add_parser("automations", help="List automation rules")
-    _add_instance_arg(p)
-    p.set_defaults(func=cmd_automations)
-
-    p = sub.add_parser("automation-activity", help="Automation activity log")
-    _add_instance_arg(p)
-    p.set_defaults(func=cmd_automation_activity)
-
-    p = sub.add_parser("automation-dry-run", help="Dry-run automations")
-    _add_instance_arg(p)
-    p.add_argument("--rule-id", default=None, help="Specific rule ID to dry-run")
-    p.set_defaults(func=cmd_automation_dry_run)
-
-    p = sub.add_parser("automation-apply", help="Trigger automations now")
-    _add_instance_arg(p)
-    p.set_defaults(func=cmd_automation_apply)
-
-    p = sub.add_parser("automation-update", help="Update an automation rule")
-    _add_instance_arg(p)
-    p.add_argument("rule_id", help="Automation rule ID")
-    p.add_argument("file", help="JSON file with updated rule body")
-    p.set_defaults(func=cmd_automation_update)
-
-    p = sub.add_parser("categories", help="List categories")
-    _add_instance_arg(p)
-    p.set_defaults(func=cmd_categories)
-
-    p = sub.add_parser("tags", help="List tags")
-    _add_instance_arg(p)
-    p.set_defaults(func=cmd_tags)
-
-    p = sub.add_parser("trackers", help="List active trackers")
-    _add_instance_arg(p)
-    p.set_defaults(func=cmd_trackers)
-
-    sub.add_parser("cross-seed-settings", help="Cross-seed settings").set_defaults(
-        func=cmd_cross_seed_settings
-    )
-    sub.add_parser("cross-seed-status", help="Cross-seed status").set_defaults(
-        func=cmd_cross_seed_status
-    )
-
-    args = parser.parse_args()
-    args.func(args)
+    _out(_get("/api/cross-seed/status"))
 
 
 if __name__ == "__main__":
-    main()
+    cli()
