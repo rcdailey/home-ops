@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
-from hops._runner import run_json
+from hops.core.runner import run_json
 
 
 @dataclass

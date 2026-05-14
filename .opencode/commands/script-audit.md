@@ -100,6 +100,11 @@ exact invocation that exposed the friction.
 Confirm output shape, token footprint (eyeball line count), and that the original workaround is no
 longer needed. If a command produces large output, sanity-check with `ttok` or line count.
 
+If the target script has a test suite, MUST run it and fix any failures caused by the audit changes.
+Update test assertions to match new behavior; do not delete tests. Add tests for new commands or
+changed resolver behavior. For `hops`, run: `uv run --project scripts/hops pytest
+scripts/hops/tests/ -v`
+
 ### 5. Report
 
 Concise session response with this shape:

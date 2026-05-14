@@ -7,3 +7,6 @@ dependencies = ["click>=8.1"]
 
 [project.scripts]
 hops = "hops.cli:cli"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]

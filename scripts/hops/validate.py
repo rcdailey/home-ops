@@ -10,8 +10,8 @@ from pathlib import Path
 
 import click
 
-from hops._format import info
-from hops._runner import run
+from hops.core.format import info
+from hops.core.runner import run
 
 # vmalert binary lives in the scripts directory
 _SCRIPTS_DIR = Path(__file__).parent.parent

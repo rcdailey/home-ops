@@ -7,8 +7,8 @@ import sys
 
 import click
 
-from hops._format import info, kv, section, table, truncate
-from hops._gateway import (
+from hops.core.format import info, kv, section, table, truncate
+from hops.app.gateway import (
     extract_policy_details,
     fetch_envoy_proxy,
     fetch_gateway,
@@ -17,7 +17,7 @@ from hops._gateway import (
     find_security_policies,
     search_envoy_errors,
 )
-from hops._runner import run
+from hops.core.runner import run
 
 
 def _pod_name(prefix: str) -> str:

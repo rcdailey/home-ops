@@ -12,7 +12,7 @@ matching strategies, ordered by specificity:
 
 from __future__ import annotations
 
-from hops._runner import kubectl_json
+from hops.core.runner import kubectl_json
 
 WORKLOAD_KINDS = ("deployments", "statefulsets", "daemonsets", "cronjobs", "jobs")
 

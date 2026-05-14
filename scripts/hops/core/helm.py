@@ -5,8 +5,8 @@ Extracted from flux.py. Used by flux values/defaults commands.
 
 from __future__ import annotations
 
-from hops._format import info
-from hops._runner import run_json
+from hops.core.format import info
+from hops.core.runner import run_json
 
 
 def resolve_hr(name: str, namespace: str | None) -> dict:

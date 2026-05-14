@@ -6,9 +6,9 @@ to keep file sizes manageable.
 
 from __future__ import annotations
 
-from hops._format import age_str, info, kv, section, table, truncate
-from hops._runner import run, run_json
-from hops._workload import resolve_pods, suggest_near_matches
+from hops.core.format import age_str, info, kv, section, table, truncate
+from hops.core.runner import run, run_json
+from hops.core.workload import resolve_pods, suggest_near_matches
 
 
 def format_container_state(state: dict) -> tuple[str, str]:

@@ -554,7 +554,13 @@ an app fail at the gateway layer (503s, upload failures, timeouts, TLS issues). 
 `app pod` accept workload names, app labels, pod-name prefixes, or full pod names, including orphan
 pods whose parent workload has been deleted (TTL'd Jobs, manually removed controllers) and
 operator-managed pods without parent workloads (CNPG Clusters, etc.). `debug route` accepts app
-names, HTTPRoute names, or hostname substrings.
+names, HTTPRoute names, or hostname substrings. `app diagnose --explain` prints the resolver trace,
+showing which resolvers were tried and what matched (useful for debugging resolution failures). `app
+types` lists every resolvable resource category with a sample name from the cluster.
+
+**`hops` test suite:** The test suite at `scripts/hops/tests/` MUST be run after any hops change:
+`uv run --project scripts/hops pytest scripts/hops/tests/ -v`. Fix failures caused by code changes
+(update assertions, not delete tests). Add tests for new commands and resolver strategies.
 
 ### New App Checklist
 
