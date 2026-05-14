@@ -54,7 +54,7 @@ scripts/hops/
   _helm.py               Helm chart resolution and YAML value helpers
   node.py                hops node (list, disks, status)
   storage.py             hops storage (ceph status/osd/io, pvcs with PV driver correlation)
-  app.py                 hops app (list, pods, pod, events, logs, resources, secrets, diagnose, ls, cat, du)
+  app.py                 hops app (list, unhealthy, pods, pod, events, logs, resources, secrets, diagnose, ls, cat, du)
   flux.py                hops flux (status, hr, ks, values, defaults, suspend, resume)
   debug.py               hops debug (dns, curl, route; ephemeral pods + gateway diagnostics)
   query/                 hops query (PromQL + container stats at top level; alerts + logs subgroups)
@@ -66,7 +66,7 @@ scripts/hops/
     logs.py              VictoriaLogs (LogSQL, stats, hits, fields)
   db.py                  hops db (status; CNPG cluster overview with pods, PDBs, PVCs, backups)
   dns.py                 hops dns (search, logs, blocked, test; port of blocky.py)
-  backup.py              hops backup (kopia wrapper)
+  backup.py              hops backup (status: Volsync + CNPG backup health; kopia wrapper)
   validate.py            hops validate (vmrules)
 ```
 
