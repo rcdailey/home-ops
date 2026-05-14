@@ -97,7 +97,7 @@ machine:
       port: 7445
     hostDNS:
       enabled: true
-      forwardKubeDNSToHost: true
+      forwardKubeDNSToHost: false
 {% if n.controller %}
   nodeLabels:
     node.kubernetes.io/exclude-from-external-load-balancers: ""

@@ -30,7 +30,6 @@ spec:
       enabled: true
     bpf:
       masquerade: true
-      hostLegacyRouting: true
     cni:
       # Required for pairing with Multus CNI
       exclusive: false
@@ -121,5 +120,3 @@ spec:
         - NET_ADMIN
         - SYS_ADMIN
         - SYS_RESOURCE
-    socketLB:
-      hostNamespaceOnly: true
