@@ -1,5 +1,5 @@
 ---
-description: Retrofit a living script (hops, hass) against real session friction
+description: Retrofit a script against real session friction
 ---
 
 Audit the target script against friction observed in the current session and mercilessly fix gaps,
@@ -11,12 +11,19 @@ Arguments: $ARGUMENTS
 
 Resolve the target script from the argument or session context:
 
-- `hops` or `./scripts/hops.py` -> target is `scripts/hops/` (load the `hops` skill)
-- `hass` or `./scripts/hass.py` -> target is `scripts/hass/` (load the `home-assistant` skill)
-- No argument -> infer from session: whichever script the session exercised most heavily. If both
-  were used, ask which to audit. If neither, stop and report that there is nothing to audit.
+- `hops` or `./scripts/hops.py` -> target is `scripts/hops/` (skill: `hops`)
+- `hass` or `./scripts/hass.py` -> target is `scripts/hass/` (skill: `home-assistant`)
+- Any other path (e.g., `./scripts/qui.py`, `scripts/foo/`) -> target is that path (no skill)
+- No argument -> infer from session: whichever script the session exercised most heavily. If
+  ambiguous, ask. If the session exercised no scripts, stop and report nothing to audit.
 
-MUST load the matching skill alone (no parallel tool calls) before reading source or editing.
+## Context Loading
+
+If the target has a matching skill (see above), MUST load it alone (no parallel tool calls) before
+reading source or editing.
+
+If no skill exists, read the target script source in full to understand its structure, patterns, and
+design intent. This replaces the skill as the "what good looks like" reference.
 
 ## Evidence: Session Friction Only
 
@@ -41,7 +48,9 @@ If the session yielded zero friction points, stop and say so. Do not invent gaps
 
 ## Audit Principles
 
-Apply the design philosophy from the loaded skill. Both scripts share these non-negotiables:
+When a skill was loaded, apply its design philosophy. When no skill exists, derive principles from
+the script's own structure and the universal rules below. These are non-negotiable for all
+LLM-facing scripts in this repo:
 
 - **Workflow, not passthrough.** A command must correlate sources, apply heuristics, or resolve
   inputs flexibly. A reformatter around one upstream call does not belong.
@@ -84,11 +93,9 @@ all LLM sessions; stale documentation causes the next agent to misuse or skip co
 
 ### 4. Verify
 
-Run each changed command against the live target at least once:
-
-- `hops`: `./scripts/hops.py <domain> <command> <args>` plus the exact invocation that exposed the
-  friction
-- `hass`: `./scripts/hass.py <subcommand> <args>` plus the failing invocation
+Run each changed command against the live target at least once. Use the script's own invocation
+pattern (e.g., `./scripts/hops.py <domain> <command>`, `./scripts/qui.py <subcommand>`) plus the
+exact invocation that exposed the friction.
 
 Confirm output shape, token footprint (eyeball line count), and that the original workaround is no
 longer needed. If a command produces large output, sanity-check with `ttok` or line count.
@@ -98,13 +105,13 @@ longer needed. If a command produces large output, sanity-check with `ttok` or l
 Concise session response with this shape:
 
 ```txt
-Target: <hops|hass>
+Target: <script name>
 Friction points: <N>
 Fixes applied:
 - <command>: <one-line summary>
 - ...
 Removed: <flags/commands/modules deleted>
-Skill/docs updated: <paths>
+Skill/docs updated: <paths> (or "n/a" if no skill)
 Deferred: <items classified out of scope, with one-line reason>
 ```
 
@@ -112,7 +119,8 @@ Keep it under 20 lines. No diff dumps; the user reads those via git.
 
 ## Rules
 
-- MUST load the matching skill (`hops` or `home-assistant`) alone before any edits
+- MUST load the matching skill alone before any edits (when one exists)
+- MUST read the full script source before any edits (when no skill exists)
 - MUST NOT commit or push; the user commits per the repo's GitOps rule
 - MUST NOT preserve backward compatibility; remove old flags, commands, and output shapes outright
 - MUST NOT add dual-support shims, deprecation warnings, or "legacy" branches
@@ -120,8 +128,8 @@ Keep it under 20 lines. No diff dumps; the user reads those via git.
   gate structure behind an explicit flag
 - MUST NOT scan git history, grep for TODOs, or expand scope beyond session-observed friction
 - MUST delete obsolete skill/doc content in the same pass as the code change
-- MUST update `AGENTS.md` and the matching `SKILL.md` whenever user-facing behavior changes; stale
-  docs are bugs
+- MUST update `AGENTS.md` and the matching `SKILL.md` whenever user-facing behavior changes (for
+  scripts with a skill); stale docs are bugs
 - MUST cap the audit at friction points actually surfaced this session; inventing hypothetical gaps
   defeats the purpose
 - MUST NOT defer fixes by claiming they are "too large"; implement every non-dropped fix or classify
