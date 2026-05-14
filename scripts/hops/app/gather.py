@@ -1,31 +1,13 @@
-"""Diagnose command internals: Flux status, workload, gateway, events, pod detail.
+"""Diagnose command internals: Flux status, workload, gateway, events.
 
-Extracted from app.py to keep the main module focused on CLI commands.
-All functions are private helpers called only by `app.diagnose` and `app.pod`.
+Data-fetching functions called by the diagnose command. All functions
+print output directly; there is no separate render layer.
 """
 
 from __future__ import annotations
 
-from hops._format import age_str, info, section, table, truncate
-from hops._runner import kubectl_json, run, run_json
-
-
-def find_gateway_namespace(app: str, namespace: str | None) -> str | None:
-    """Find the namespace of a gateway-only app (Backend or Service + HTTPRoute)."""
-    for resource in ("backends.gateway.envoyproxy.io", "services"):
-        try:
-            args = ["kubectl", "get", resource, app, "-o", "json"]
-            if namespace:
-                args.extend(["-n", namespace])
-            else:
-                args.append("--all-namespaces")
-            data = run_json(args, timeout=10, quiet=True)
-            ns = data.get("metadata", {}).get("namespace")
-            if ns:
-                return ns
-        except SystemExit:
-            continue
-    return None
+from hops.core.format import age_str, info, section, table, truncate
+from hops.core.runner import kubectl_json, run, run_json
 
 
 def diagnose_workload(app_name: str, ns: str):
@@ -387,6 +369,3 @@ def _flux_ready_status(data: dict) -> str:
                 return f"{status}: {compact_event_message(msg)}"
             return status
     return "Unknown"
-
-
-# --- Pod detail (moved from app.py) ---

@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import click
 
-from hops._format import age_str, info, kv, section, table
-from hops._runner import kubectl_json, run
+from hops.core.format import age_str, info, kv, section, table
+from hops.core.runner import kubectl_json, run
 
 
 @click.group("db", no_args_is_help=True)

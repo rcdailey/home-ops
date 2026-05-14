@@ -7,8 +7,8 @@ import sys
 import urllib.parse
 from typing import Any
 
-from hops._format import info
-from hops._runner import tools_curl
+from hops.core.format import info
+from hops.core.runner import tools_curl
 
 VL_URL = "http://victoria-logs-single.observability:9428"
 

@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import click
 
-from hops._format import human_bytes, kv, section, table
-from hops._nodes import get_all, resolve_ip
-from hops._runner import kubectl_json, run, run_json, run_jsonl
+from hops.core.format import human_bytes, kv, section, table
+from hops.core.nodes import get_all, resolve_ip
+from hops.core.runner import kubectl_json, run, run_json, run_jsonl
 
 
 @click.group()

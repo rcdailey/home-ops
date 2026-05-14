@@ -7,8 +7,8 @@ import sys
 from typing import Any
 from urllib.parse import urlencode
 
-from hops._format import info
-from hops._runner import tools_curl
+from hops.core.format import info
+from hops.core.runner import tools_curl
 
 VMSINGLE_URL = "http://vmsingle-victoria-metrics-k8s-stack.observability:8428"
 VMALERT_URL = "http://vmalert-victoria-metrics-k8s-stack.observability:8080"

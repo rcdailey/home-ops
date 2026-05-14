@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import click
 
-from hops._format import human_bytes, info, kv, table
-from hops._runner import ceph_json, kubectl_json
+from hops.core.format import human_bytes, info, kv, table
+from hops.core.runner import ceph_json, kubectl_json
 
 
 @click.group()

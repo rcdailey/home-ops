@@ -8,8 +8,8 @@ import sys
 
 import click
 
-from hops._format import format_labels_list, format_timestamp, info, kv
-from hops._time import TimeRange, time_options
+from hops.core.format import format_labels_list, format_timestamp, info, kv
+from hops.core.time import TimeRange, time_options
 from hops.query._vm import is_ignored_alert, query_vm, query_vmalert
 
 

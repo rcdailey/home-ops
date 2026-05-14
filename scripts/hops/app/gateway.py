@@ -1,10 +1,10 @@
-"""Gateway introspection helpers for debug route diagnostics."""
+"""Gateway introspection helpers used by app diagnose and debug route."""
 
 from __future__ import annotations
 
 import json
 
-from hops._runner import run
+from hops.core.runner import run
 
 
 def find_httproute(name: str, namespace: str | None) -> dict | None:
