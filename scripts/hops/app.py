@@ -145,6 +145,50 @@ def list_apps(namespace: str | None):
 
 
 @cli.command()
+@click.argument("namespace", required=False)
+def unhealthy(namespace: str | None):
+    """Pods not Running/Succeeded cluster-wide (or in a namespace).
+
+    Quick cluster health check: shows pods stuck in Pending,
+    ContainerCreating, CrashLoopBackOff, Error, etc. Excludes system
+    namespaces unless a namespace is specified. Returns a one-liner when
+    all pods are healthy.
+    """
+    data = kubectl_json("pods", namespace=namespace)
+    rows = []
+    for item in data.get("items", []):
+        meta = item.get("metadata", {})
+        ns = meta.get("namespace", "")
+        if not namespace and ns in _SYSTEM_NS:
+            continue
+        status = item.get("status", {})
+        phase = status.get("phase", "Unknown")
+        if phase in ("Running", "Succeeded"):
+            continue
+        name = meta.get("name", "")
+        # Derive status reason from container statuses (more specific than phase)
+        reason = phase
+        for cs in status.get("containerStatuses", []) + status.get(
+            "initContainerStatuses", []
+        ):
+            state = cs.get("state", {})
+            if "waiting" in state:
+                reason = state["waiting"].get("reason", reason)
+                break
+            if "terminated" in state:
+                reason = state["terminated"].get("reason", reason)
+                break
+        age_val = age_str(meta.get("creationTimestamp"))
+        rows.append([ns, name, reason, age_val])
+    if not rows:
+        scope = f"in {namespace}" if namespace else "cluster-wide"
+        info(f"All pods healthy {scope}.")
+        return
+    rows.sort(key=lambda r: (r[0], r[1]))
+    table(["NAMESPACE", "POD", "STATUS", "AGE"], rows)
+
+
+@cli.command()
 @click.argument("app")
 @click.option(
     "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
