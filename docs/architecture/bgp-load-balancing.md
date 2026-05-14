@@ -27,17 +27,17 @@ flowchart TB
 
     subgraph K8S["K8s Cluster"]
         direction TB
-        CP1[Worker: lucy<br/>192.168.1.54]
-        CP2[Control Plane: nami<br/>192.168.1.50]
-        CP3[Control Plane: marin<br/>192.168.1.59]
-        W1[Worker: sakura<br/>192.168.1.62]
-        W2[Worker: hanekawa<br/>192.168.1.63]
+        N1[Control Plane: hanekawa<br/>192.168.1.63]
+        N2[Control Plane: marin<br/>192.168.1.59]
+        N3[Control Plane: sakura<br/>192.168.1.62]
+        N4[Worker: lucy<br/>192.168.1.54]
+        N5[Worker: nami<br/>192.168.1.50]
 
-        CP1 -.->|BGP Session| Router
-        CP2 -.->|BGP Session| Router
-        CP3 -.->|BGP Session| Router
-        W1 -.->|BGP Session| Router
-        W2 -.->|BGP Session| Router
+        N1 -.->|BGP Session| Router
+        N2 -.->|BGP Session| Router
+        N3 -.->|BGP Session| Router
+        N4 -.->|BGP Session| Router
+        N5 -.->|BGP Session| Router
     end
 
     subgraph VIPs["Virtual IPs"]
@@ -47,8 +47,8 @@ flowchart TB
         EXT[External Gateway<br/>192.168.50.73]
     end
 
-    Router -->|Routes traffic to| CP1
-    Router -->|Routes traffic to| W1
+    Router -->|Routes traffic to| N3
+    Router -->|Routes traffic to| N5
     Router -->|Advertises| VIPs
 
     Client[Client Device] -->|Requests 192.168.50.73| Router
@@ -82,18 +82,21 @@ These aggressive timers enable ~9-12 second failover when nodes fail.
 Each Kubernetes node establishes a BGP session with the UDMP:
 
 - 5 total sessions (3 control plane + 2 worker nodes)
-- All nodes advertise same LoadBalancer IPs
-- UDMP selects one active route per IP (typically lowest node IP)
-- Other routes remain as backups for instant failover
+- With `externalTrafficPolicy: Local`, only nodes running the backing pods advertise the VIP; the
+  UDMP only routes to nodes that can serve directly
+- With `externalTrafficPolicy: Cluster` (not used), all nodes would advertise and forward cross-node
+  when needed
+- When multiple nodes advertise the same VIP, the UDMP picks one active route and keeps the others
+  as backups for failover
 
 ## Traffic Flow
 
 ### Normal Operation
 
 1. Client sends packet to VIP (e.g., 192.168.50.73)
-2. UDMP checks routing table: "192.168.50.73 → Node sakura (192.168.1.62)"
-3. UDMP forwards packet to sakura
-4. Cilium on sakura load balances to service pods cluster-wide
+2. UDMP checks routing table: "192.168.50.73 -> Node sakura (192.168.1.62)"
+3. UDMP forwards packet to sakura (which hosts the backing pod)
+4. Cilium on sakura delivers the packet to the local pod directly
 
 ### Node Failure Scenario
 
@@ -124,8 +127,7 @@ metadata:
   name: infrastructure-static-pool
 spec:
   blocks:
-  - start: "192.168.50.71"  # DNS gateway
-    stop: "192.168.50.79"   # Infrastructure range
+  - cidr: "192.168.50.0/24"
 ```
 
 Services request specific IPs via annotation:
@@ -273,5 +275,4 @@ datacenter values (5s/9s/3s).
 [unifi-bgp]: https://help.ui.com/hc/en-us/articles/16271338193559
 [onedr0p-bgp]:
     https://github.com/onedr0p/home-ops/blob/main/kubernetes/apps/kube-system/cilium/app/networking.yaml
-[plex-investigation]:
-    /docs/investigations/plex-shield-buffering-lan-classification-2026-05-12.md
+[plex-investigation]: /docs/investigations/plex-shield-buffering-lan-classification-2026-05-12.md

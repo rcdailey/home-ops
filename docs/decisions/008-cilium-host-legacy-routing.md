@@ -1,6 +1,6 @@
 # Use Hybrid BPF Routing (hostLegacyRouting: true)
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-012
 - **Date:** 2025-11-21
 - **Decision:** Use `bpf.hostLegacyRouting: true` for hybrid BPF/kernel routing
 
