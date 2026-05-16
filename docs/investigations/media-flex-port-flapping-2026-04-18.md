@@ -1,7 +1,7 @@
 # Media Flex Mini uplink port flapping
 
 - **Date:** 2026-04-18
-- **Status:** UNRESOLVED
+- **Status:** MONITORING (recrimped 2026-05-16, awaiting 24h validation)
 
 ## Summary
 
@@ -64,8 +64,8 @@ generation are effectively unavailable.
 
 ## Root Cause
 
-Not yet confirmed. The evidence fits a single-pair physical fault on the run to the Media Flex
-Mini, most likely at one of the hand-terminated punchdowns.
+Not yet confirmed. The evidence fits a single-pair physical fault on the run to the Media Flex Mini,
+most likely at one of the hand-terminated punchdowns.
 
 1000BASE-T uses all four pairs of the cable with PAM-5 signaling and requires all four to train
 successfully. 100BASE-TX only uses two pairs (pins 1/2 and 3/6). If one of the 1000BASE-T-only pairs
@@ -73,15 +73,15 @@ successfully. 100BASE-TX only uses two pairs (pins 1/2 and 3/6). If one of the 1
 the behavior is exactly what we observe:
 
 - With auto-negotiation on, the PHYs try 1000BASE-T, fail training on the bad pair, fall back to
-  100M (which doesn't need the bad pair), and stay at 100M because further retraining keeps
-  failing. Only a full unplug/replug reruns negotiation from scratch and briefly catches a window
-  where the pair works.
+  100M (which doesn't need the bad pair), and stay at 100M because further retraining keeps failing.
+  Only a full unplug/replug reruns negotiation from scratch and briefly catches a window where the
+  pair works.
 - With 1G forced, the PHY is required to train all four pairs. When the bad pair fails, the whole
-  link drops and retrains. No corrupt frames are passed because the link doesn't stay up long
-  enough to pass bad data; it just fails training and starts over. That matches `rx_errors=0,
-  tx_errors=0, link_down_count=2058`.
-- PoE runs on the same pairs but only needs DC continuity, which tolerates crosstalk and return
-  loss that would kill gigabit PAM-5. PoE staying up while data drops is consistent with, not
+  link drops and retrains. No corrupt frames are passed because the link doesn't stay up long enough
+  to pass bad data; it just fails training and starts over. That matches `rx_errors=0, tx_errors=0,
+  link_down_count=2058`.
+- PoE runs on the same pairs but only needs DC continuity, which tolerates crosstalk and return loss
+  that would kill gigabit PAM-5. PoE staying up while data drops is consistent with, not
   contradictory to, a marginal pair.
 
 ### The physical path
@@ -116,10 +116,10 @@ Only two hand-terminated points exist in the full path: the RJ45 male plug(s) cr
 in-wall run by the low-voltage contractor at build time, and the keystone jack in the media cabinet
 that the owner punched down himself. Every short patch cable was purchased factory-terminated.
 
-Side note: feed-through shielded keystones rely on a bonded shield from end to end for the
-shielding to work. If the panels are not grounded to the rack and the in-wall run isn't using STP,
-the shielding does nothing. This doesn't cause the flapping symptom by itself (other ports on the
-same panels are stable), but it's worth noting if future EMI issues come up.
+Side note: feed-through shielded keystones rely on a bonded shield from end to end for the shielding
+to work. If the panels are not grounded to the rack and the in-wall run isn't using STP, the
+shielding does nothing. This doesn't cause the flapping symptom by itself (other ports on the same
+panels are stable), but it's worth noting if future EMI issues come up.
 
 In order of probability:
 
@@ -137,16 +137,39 @@ In order of probability:
 
 ## Resolution
 
-Not yet resolved. A full end-to-end bypass test (temporary patch cable on the floor from the switch
-to the Flex) was ruled out due to low WAF, so the plan below narrows things down progressively
-without running visible cables through the house. Steps are ordered cheapest and least invasive
-first; wait 12-24 hours between steps and recheck `link_down_count` to see whether the change
-helped.
+### What was done
+
+**Step 1 (port swap):** Moved the Media Flex from port 6 to port 4. Flap rate dropped from ~196/day
+to ~15/day. This eliminated port 6 hardware as the sole cause but confirmed the problem followed the
+cable path.
+
+**Step 7 (re-crimp server-room RJ45):** On 2026-05-16, cut the contractor-crimped RJ45 male plug off
+the in-wall run (the termination into feed-through panel A) and crimped a fresh plug. Moved the
+cable back to port 6 to get a clean baseline on the original port.
+
+Immediate results (~22 minutes after re-crimp):
+
+| Metric | Port 6 (post-crimp) | Port 6 (original investigation) |
+| --- | --- | --- |
+| `link_down_count` | 2,062 (4 from physical unplug/replug) | 2,058 |
+| `tx_dropped` | 5,260 (unchanged) | 5,165 |
+| Media Flex uptime | 22 min (stable) | 15 hours (restarting repeatedly) |
+
+Zero flaps in the first 22 minutes. At the old rate (~8/hour) you'd expect ~3 in that window. Too
+early to call conclusive; recheck in 12-24 hours.
+
+**TODO:** Check `link_down_count` on port 6 after 24 hours. If it hasn't climbed beyond the
+physical-reconnection baseline of 2,062, mark resolved.
+
+### Original diagnostic plan
+
+The plan below was used to narrow things down progressively without running visible cables through
+the house. Steps are ordered cheapest and least invasive first.
 
 ### Step 1: move to a different port on the 48-port switch
 
-Unplug the 2 in patch from port 6 and plug it into a spare port (e.g. port 12). Rename the new
-port in UniFi to keep the naming convention tidy. Entirely inside the rack.
+Unplug the 2 in patch from port 6 and plug it into a spare port (e.g. port 12). Rename the new port
+in UniFi to keep the naming convention tidy. Entirely inside the rack.
 
 - If drops stop: port 6's PHY is failing. Leave the Flex on the new port and retire port 6.
 - If drops continue: switch port hardware is fine. Continue to step 2.
@@ -174,9 +197,9 @@ cable.
 
 ### Step 5: swap the 4-6 ft patch at the Media Flex end (already tried)
 
-Already attempted before this investigation started. Owner swapped the patch cable between the
-Media Flex and the media-cabinet keystone jack; drops continued. This patch cable is eliminated as
-the cause. Skip.
+Already attempted before this investigation started. Owner swapped the patch cable between the Media
+Flex and the media-cabinet keystone jack; drops continued. This patch cable is eliminated as the
+cause. Skip.
 
 ### Step 6: re-terminate the media room keystone jack
 
@@ -186,9 +209,9 @@ tool (~$15).
 ### Step 7: re-crimp the RJ45 male plug on the in-wall run
 
 Inside the rack. The in-wall run terminates in a contractor-crimped RJ45 male plug that plugs into
-coupler row A. Cut the plug off and crimp on a fresh one (requires a crimper and an RJ45 plug
-rated for solid-core cable). Given that this is suspect #1 in the probability ranking, you may
-choose to do this step before steps 5 and 6.
+coupler row A. Cut the plug off and crimp on a fresh one (requires a crimper and an RJ45 plug rated
+for solid-core cable). Given that this is suspect #1 in the probability ranking, you may choose to
+do this step before steps 5 and 6.
 
 ### Step 8: replace the in-wall run
 
@@ -205,8 +228,8 @@ Last resort. If steps 1-7 all fail, the permanent cable is damaged and needs to 
   failures, which usually mean a physical-layer fault on one of the pairs, not signal corruption.
   Don't anchor on "no errors logged" to conclude the cable is fine; the absence of FCS/alignment
   errors combined with high flap counts is actually the opposite signal.
-- Asymmetric auto-negotiation settings (one end forced, one end auto) don't cause drops like this
-  on their own when both ends resolve to the same speed and duplex. The flaps here happen whether
+- Asymmetric auto-negotiation settings (one end forced, one end auto) don't cause drops like this on
+  their own when both ends resolve to the same speed and duplex. The flaps here happen whether
   auto-negotiation is on or off; only the symptom changes (stuck at 100M vs. dropping entirely).
 - The `hops` CLI doesn't currently have a UniFi domain. `unifly` covers the controller API, and
   `scripts/unifi-ssh.sh` wraps direct switch SSH with a timeout and remote `grep`/`head` filters
