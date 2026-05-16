@@ -26,6 +26,10 @@ blocking:
   denylists:
     ads:
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro.txt
+    - |
+      # Plex tracking: feeds watch/browse history into ad targeting profiles
+      discover.plex.tv
+      discover.provider.plex.tv
     threats:
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/tif.txt
     social:
