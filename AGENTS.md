@@ -166,8 +166,7 @@ co-location defeats the purpose of HA (e.g., DNS servers, database operators).
   external-dns instance should manage them
 - NEVER create LoadBalancer without explicit user discussion
 - MCP sidecar routing: `mcp-{service-subdomain}.${SECRET_DOMAIN}` where `{service-subdomain}` is the
-  app's existing hostname prefix (e.g., SearXNG at `search.${SECRET_DOMAIN}` gets MCP endpoint at
-  `mcp-search.${SECRET_DOMAIN}`)
+  app's existing hostname prefix
 - Route backendRefs: Use full service name (e.g., radarr-app), not identifier (e.g., app)
 - NEVER use wildcards for SecurityPolicy headers (always explicit headers)
 - NEVER specify explicit timeouts/intervals without justification (use Flux defaults)
