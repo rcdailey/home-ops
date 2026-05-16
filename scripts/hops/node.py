@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.core.format import human_bytes, kv, section, table
 from hops.core.nodes import get_all, resolve_ip
 from hops.core.runner import kubectl_json, run, run_json, run_jsonl
 
 
-@click.group()
+@click.group(cls=HelpfulGroup)
 def cli():
     """Cluster node information and diagnostics."""
 

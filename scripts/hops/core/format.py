@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import sys
 from datetime import datetime, timezone
 from typing import Sequence
+
+import click
 
 
 def table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> None:
@@ -31,9 +32,9 @@ def table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> None:
                 parts.append(str(cell).ljust(widths[i]))
         return "  ".join(parts)
 
-    print(fmt_row(headers))
+    click.echo(fmt_row(headers))
     for row in rows:
-        print(fmt_row(row))
+        click.echo(fmt_row(row))
 
 
 def kv(pairs: Sequence[tuple[str, str]], indent: int = 0) -> None:
@@ -46,22 +47,22 @@ def kv(pairs: Sequence[tuple[str, str]], indent: int = 0) -> None:
     prefix = " " * indent
     max_key = max(len(k) for k, _ in pairs)
     for key, value in pairs:
-        print(f"{prefix}{key + ':':<{max_key + 1}} {value}")
+        click.echo(f"{prefix}{key + ':':<{max_key + 1}} {value}")
 
 
 def section(title: str) -> None:
     """Print a section header."""
-    print(f"\n--- {title} ---")
+    click.echo(f"\n--- {title} ---")
 
 
 def info(msg: str) -> None:
     """Print an informational message."""
-    print(msg)
+    click.echo(msg)
 
 
 def error(msg: str) -> None:
     """Print an error message to stderr."""
-    print(f"error: {msg}", file=sys.stderr)
+    click.echo(f"error: {msg}", err=True)
 
 
 def human_bytes(n: int | float) -> str:

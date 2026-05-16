@@ -10,6 +10,7 @@ from pathlib import Path
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.core.format import info
 from hops.core.runner import run
 
@@ -92,7 +93,7 @@ def _download_vmalert() -> None:
     info("vmalert downloaded successfully")
 
 
-@click.group()
+@click.group(cls=HelpfulGroup)
 def cli():
     """Validation commands."""
 

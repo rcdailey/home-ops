@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.query.alerts import cli as alerts_cli
 from hops.query.logs import cli as logs_cli
 from hops.query.metrics import cli as metrics_cli
@@ -14,7 +15,7 @@ from hops.query.metrics import cli as metrics_cli
 # subgroup since it has a distinct filter surface.
 
 
-@click.group()
+@click.group(cls=HelpfulGroup)
 def cli():
     """Query metrics (VictoriaMetrics) and logs (VictoriaLogs)."""
 

@@ -6,6 +6,7 @@ import json
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.core.format import human_bytes, info, kv
 from hops.core.time import TimeRange, time_options
 from hops.query._vm import query_vm
@@ -56,7 +57,7 @@ def container_stats(
 # --- Click commands ---
 
 
-@click.group()
+@click.group(cls=HelpfulGroup)
 def cli():
     """Query VictoriaMetrics: PromQL and container stats."""
 
@@ -160,7 +161,7 @@ def raw_query(
         data = query_vm("/api/v1/query_range", params)
 
     if json_mode:
-        print(json.dumps(data, indent=2))
+        click.echo(json.dumps(data, indent=2))
         return
 
     results = data.get("data", {}).get("result", [])
@@ -183,7 +184,7 @@ def raw_query(
             return
 
     info(f"{result_type}, {len(results)} series{suffix}")
-    print()
+    click.echo()
 
     max_series = 20
     if result_type == "matrix":
@@ -193,7 +194,7 @@ def raw_query(
             metric = r.get("metric", {})
             labels = compact_labels(metric)
             value = r.get("value", [None, "N/A"])
-            print(f"{{{labels}}} => {format_value(value[1])}")
+            click.echo(f"{{{labels}}} => {format_value(value[1])}")
 
     if len(results) > max_series:
         info(f"... {len(results) - max_series} more series")
@@ -214,12 +215,12 @@ def labels(name: str | None, json_mode: bool):
     values = data.get("data", [])
 
     if json_mode:
-        print(json.dumps(values, indent=2))
+        click.echo(json.dumps(values, indent=2))
         return
 
     info(f"{title} ({len(values)} total)")
     for v in values:
-        print(v)
+        click.echo(v)
 
 
 @cli.command("metrics")
@@ -236,10 +237,10 @@ def list_metrics(pattern: str | None, json_mode: bool):
         values = [v for v in values if p in v.lower()]
 
     if json_mode:
-        print(json.dumps(values, indent=2))
+        click.echo(json.dumps(values, indent=2))
         return
 
     title = f"Metrics matching '{pattern}'" if pattern else "All metrics"
     info(f"{title} ({len(values)} total)")
     for v in values:
-        print(v)
+        click.echo(v)

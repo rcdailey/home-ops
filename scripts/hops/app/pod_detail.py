@@ -6,6 +6,8 @@ to keep file sizes manageable.
 
 from __future__ import annotations
 
+import click
+
 from hops.core.format import age_str, info, kv, section, table, truncate
 from hops.core.runner import run, run_json
 from hops.core.workload import resolve_pods, suggest_near_matches
@@ -132,7 +134,7 @@ def diagnose_pod(
                 )
                 out = (prev.stdout or "").strip()
                 info(f"--- {cname} (previous, last 30 lines) ---")
-                print(out if out else "(none available)")
+                click.echo(out if out else "(none available)")
 
         # Failed containers that never restarted (exit != 0, restartCount == 0).
         # Current logs contain the failure output; no --previous needed.
@@ -153,7 +155,7 @@ def diagnose_pod(
                 )
                 out = (result.stdout or "").strip()
                 info(f"--- {cname} (last 30 lines) ---")
-                print(out if out else "(none available)")
+                click.echo(out if out else "(none available)")
 
     # Events scoped to this specific pod
     if show_events:

@@ -143,7 +143,7 @@ def values(name: str, namespace: str | None):
 
     output = (result.stdout or "").strip()
     if output and output != "null":
-        print(output)
+        click.echo(output)
     else:
         info("(no user-supplied values)")
 

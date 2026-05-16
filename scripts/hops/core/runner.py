@@ -7,6 +7,8 @@ import subprocess
 import sys
 from typing import Any
 
+import click
+
 
 def run(
     args: list[str],
@@ -27,13 +29,10 @@ def run(
             timeout=timeout,
         )
     except FileNotFoundError:
-        print(f"error: {args[0]} not found in PATH", file=sys.stderr)
+        click.echo(f"error: {args[0]} not found in PATH", err=True)
         sys.exit(1)
     except subprocess.TimeoutExpired:
-        print(
-            f"error: {args[0]} timed out after {timeout}s",
-            file=sys.stderr,
-        )
+        click.echo(f"error: {args[0]} timed out after {timeout}s", err=True)
         sys.exit(1)
 
 
@@ -52,13 +51,13 @@ def run_json(
     if result.returncode != 0:
         if not quiet:
             msg = (result.stderr or result.stdout or "").strip().split("\n")[0]
-            print(f"error: {args[0]} failed: {msg}", file=sys.stderr)
+            click.echo(f"error: {args[0]} failed: {msg}", err=True)
         sys.exit(1)
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError as exc:
         if not quiet:
-            print(f"error: failed to parse JSON from {args[0]}: {exc}", file=sys.stderr)
+            click.echo(f"error: failed to parse JSON from {args[0]}: {exc}", err=True)
         sys.exit(1)
 
 
@@ -75,7 +74,7 @@ def run_jsonl(
     result = run(args, timeout=timeout, check=False)
     if result.returncode != 0:
         msg = (result.stderr or result.stdout or "").strip().split("\n")[0]
-        print(f"error: {args[0]} failed: {msg}", file=sys.stderr)
+        click.echo(f"error: {args[0]} failed: {msg}", err=True)
         sys.exit(1)
     decoder = json.JSONDecoder()
     objects = []
@@ -89,10 +88,7 @@ def run_jsonl(
             while pos < len(text) and text[pos] in " \t\r\n":
                 pos += 1
         except json.JSONDecodeError as exc:
-            print(
-                f"error: failed to parse JSON from {args[0]}: {exc}",
-                file=sys.stderr,
-            )
+            click.echo(f"error: failed to parse JSON from {args[0]}: {exc}", err=True)
             sys.exit(1)
     return objects
 
@@ -162,21 +158,16 @@ def tools_curl(
         stdout = (result.stdout or "").strip()
         combined = stderr or stdout
         if "Could not resolve host" in combined or "connection refused" in combined:
-            print(
-                f"error: {service_name} is unreachable (pod may be down)",
-                file=sys.stderr,
+            click.echo(
+                f"error: {service_name} is unreachable (pod may be down)", err=True
             )
         elif result.returncode == 7:
-            print(
-                f"error: {service_name} is unreachable (connection failed)",
-                file=sys.stderr,
+            click.echo(
+                f"error: {service_name} is unreachable (connection failed)", err=True
             )
         else:
             msg = combined.split("\n")[0]
-            print(
-                f"error: {service_name} query failed: {msg}",
-                file=sys.stderr,
-            )
+            click.echo(f"error: {service_name} query failed: {msg}", err=True)
         sys.exit(1)
     return result.stdout
 
@@ -213,6 +204,6 @@ def ceph_text(command: list[str], *, timeout: int = 30) -> str:
     result = run(args, timeout=timeout, check=False)
     if result.returncode != 0:
         msg = (result.stderr or result.stdout or "").strip().split("\n")[0]
-        print(f"error: ceph failed: {msg}", file=sys.stderr)
+        click.echo(f"error: ceph failed: {msg}", err=True)
         sys.exit(1)
     return result.stdout

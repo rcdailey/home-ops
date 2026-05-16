@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import os
-import sys
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.core.format import info, kv, section, table, truncate
 from hops.app.gateway import (
     extract_policy_details,
@@ -76,9 +76,9 @@ def _run_ephemeral(
             check=False,
         )
         if log_result.stdout:
-            print(log_result.stdout.rstrip())
+            click.echo(log_result.stdout.rstrip())
         if log_result.stderr and log_result.returncode != 0:
-            print(log_result.stderr.rstrip(), file=sys.stderr)
+            click.echo(log_result.stderr.rstrip(), err=True)
 
     finally:
         run(
@@ -98,7 +98,7 @@ def _run_ephemeral(
         )
 
 
-@click.group()
+@click.group(cls=HelpfulGroup)
 def cli():
     """Ephemeral debug pods and gateway diagnostics."""
 

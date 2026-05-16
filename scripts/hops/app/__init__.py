@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import click
 
+from hops._click import HelpfulGroup
 
-@click.group()
+
+@click.group(cls=HelpfulGroup)
 def cli():
     """Application listing, logs, and diagnostics."""
 

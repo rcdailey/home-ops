@@ -96,7 +96,7 @@ def search(
     rows = parse_tsv(output, SEARCH_FIELDS)
     if json_mode:
         for row in rows:
-            print(json.dumps(row))
+            click.echo(json.dumps(row))
         return
 
     table_rows = []

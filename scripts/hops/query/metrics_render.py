@@ -1,11 +1,10 @@
-"""Display helpers for VictoriaMetrics query output.
-
-Pure formatting functions with no click dependency.
-"""
+"""Display helpers for VictoriaMetrics query output."""
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
+
+import click
 
 # Labels that are always noise in investigation output
 _NOISE_LABELS = frozenset(
@@ -99,11 +98,11 @@ def _print_matrix(results: list[dict]) -> None:
     label_width = max((len(lb) for lb in series_labels), default=5)
     label_width = max(label_width, 5)
 
-    print(f"Date: {date_header}")
+    click.echo(f"Date: {date_header}")
     header = " " * label_width + " | "
     header += " ".join(h.rjust(col_width) for h in time_headers)
-    print(header)
-    print("-" * len(header))
+    click.echo(header)
+    click.echo("-" * len(header))
 
     for i, r in enumerate(results):
         values = r.get("values", [])
@@ -112,8 +111,8 @@ def _print_matrix(results: list[dict]) -> None:
         row += " ".join(
             format_value(val_map.get(ts, "")).rjust(col_width) for ts in timestamps
         )
-        print(row)
+        click.echo(row)
 
     total_points = len(results[0].get("values", []))
     if total_points > max_points:
-        print(f"... ({total_points} total points, showing first {max_points})")
+        click.echo(f"... ({total_points} total points, showing first {max_points})")

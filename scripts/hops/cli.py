@@ -8,8 +8,10 @@ from pathlib import Path
 
 import click
 
+from hops._click import HelpfulGroup
 
-class _AutoGroup(click.Group):
+
+class _AutoGroup(HelpfulGroup):
     """Click group that auto-discovers domain modules in the package.
 
     Any module in the hops package that exposes a ``cli`` attribute
@@ -48,6 +50,10 @@ class _AutoGroup(click.Group):
         return super().get_command(ctx, cmd_name)
 
 
-@click.group(cls=_AutoGroup)
+@click.group(
+    cls=_AutoGroup,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+@click.version_option(version=__import__("hops").__version__, prog_name="hops")
 def cli():
     """LLM-optimized cluster operations CLI."""

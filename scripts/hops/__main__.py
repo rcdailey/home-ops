@@ -1,5 +1,6 @@
-"""Allow running as `python -m hops`."""
+"""Entry point for `python -m hops`."""
 
 from hops.cli import cli
 
-cli()
+if __name__ == "__main__":
+    cli()

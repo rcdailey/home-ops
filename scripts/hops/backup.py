@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.core.format import age_str, info, section, table
 from hops.core.runner import kubectl_json, run
 
 
-@click.group()
+@click.group(cls=HelpfulGroup)
 def cli():
     """Backup operations: status overview, Kopia repository management."""
 
@@ -92,8 +93,8 @@ def kopia(args: tuple[str, ...]):
     ] + list(args)
     result = run(cmd, timeout=60, check=False)
     if result.stdout:
-        print(result.stdout.rstrip())
+        click.echo(result.stdout.rstrip())
     if result.stderr:
-        print(result.stderr.rstrip())
+        click.echo(result.stderr.rstrip())
     if result.returncode != 0:
         raise SystemExit(result.returncode)

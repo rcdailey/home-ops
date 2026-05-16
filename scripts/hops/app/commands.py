@@ -12,9 +12,9 @@ from hops.app.gather import (
     diagnose_workload as _diagnose_workload,
 )
 from hops.app.pod_detail import diagnose_pod as _diagnose_pod
-from hops.core.format import age_str, info, section, table
+from hops.core.format import info, section
 from hops.core.resolve import TargetKind, resolve
-from hops.core.runner import kubectl_json, run
+from hops.core.runner import run
 from hops.core.workload import (
     Workload,
     find_running_pod,
@@ -85,48 +85,7 @@ def _exec_in_pod(
         raise SystemExit(1)
     output = (result.stdout or "").strip()
     if output:
-        print(output)
-
-
-@cli.command()
-@click.argument("app")
-@click.option(
-    "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
-)
-def pods(app: str, namespace: str | None):
-    """Pods for a specific app with status, restarts, node, age."""
-    wl = _resolve(app, namespace)
-
-    data = kubectl_json("pods", namespace=wl.namespace)
-    rows = []
-    for item in data.get("items", []):
-        meta = item.get("metadata", {})
-        name = meta.get("name", "")
-        if not name.startswith(wl.name):
-            continue
-        spec = item.get("spec", {})
-        status = item.get("status", {})
-        phase = status.get("phase", "?")
-        node = spec.get("nodeName", "?")
-        age_val = age_str(meta.get("creationTimestamp"))
-
-        restarts = 0
-        container_statuses = status.get("containerStatuses", [])
-        for cs in container_statuses:
-            restarts += cs.get("restartCount", 0)
-
-        for cs in container_statuses:
-            waiting = cs.get("state", {}).get("waiting", {})
-            if waiting:
-                phase = waiting.get("reason", phase)
-                break
-
-        rows.append([name, node, phase, str(restarts), age_val])
-
-    if not rows:
-        info(f"No pods found for {wl.name!r} in {wl.namespace}")
-        return
-    table(["POD", "NODE", "STATUS", "RESTARTS", "AGE"], rows)
+        click.echo(output)
 
 
 @cli.command()
@@ -189,7 +148,7 @@ def logs(
         container_hint = f", container={container}" if container else ""
         scope = "since boot" if terminated else f"since {since}"
         info(f"--- {pod} [{phase}] (last {lines} lines, {scope}{container_hint}) ---")
-        print(output)
+        click.echo(output)
     else:
         window = "in this container" if terminated else f"in the last {since}"
         info(f"No logs from {pod} [{phase}] {window}")

@@ -6,6 +6,8 @@ print output directly; there is no separate render layer.
 
 from __future__ import annotations
 
+import click
+
 from hops.core.format import age_str, info, section, table, truncate
 from hops.core.runner import kubectl_json, run, run_json
 
@@ -90,7 +92,7 @@ def diagnose_workload(app_name: str, ns: str):
         )
         output = (result.stdout or "").strip()
         if output:
-            print(output)
+            click.echo(output)
         else:
             info("(no recent logs)")
     else:
@@ -121,7 +123,7 @@ def diagnose_workload(app_name: str, ns: str):
             output = (result.stdout or "").strip()
             if output:
                 info(f"--- {container_name} (previous, last 30 lines) ---")
-                print(output)
+                click.echo(output)
                 shown = True
         if not shown:
             info("(no previous logs available)")

@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.core.format import human_bytes, info, kv, table
 from hops.core.runner import ceph_json, kubectl_json
 
 
-@click.group()
+@click.group(cls=HelpfulGroup)
 def cli():
     """Cluster storage: Ceph, PVCs, disks."""
 
@@ -16,7 +17,7 @@ def cli():
 # -- Ceph subgroup --
 
 
-@cli.group()
+@cli.group(cls=HelpfulGroup)
 def ceph():
     """Rook Ceph storage cluster."""
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import click
+
 from hops.core.format import info, table, truncate
 from hops.dns.psql import LOG_FIELDS, build_where, parse_tsv, psql
 
@@ -57,7 +59,7 @@ def query_dns_logs(
     rows = parse_tsv(output, LOG_FIELDS)
     if json_mode:
         for row in rows:
-            print(json.dumps(row))
+            click.echo(json.dumps(row))
         return
 
     table(

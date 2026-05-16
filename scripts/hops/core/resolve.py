@@ -16,6 +16,8 @@ import sys
 from dataclasses import dataclass, field
 from typing import Protocol
 
+import click
+
 from hops.core.runner import run_json
 from hops.core.workload import Workload, resolve_app, resolve_pods, suggest_near_matches
 
@@ -165,10 +167,10 @@ def resolve(
     hints = suggest_near_matches(name, namespace)
     if explain:
         for step in trace:
-            print(f"  {step}", file=sys.stderr)
-    print(f"error: could not find app {name!r}", file=sys.stderr)
+            click.echo(f"  {step}", err=True)
+    click.echo(f"error: could not find app {name!r}", err=True)
     if hints:
-        print(f"  similar: {', '.join(hints)}", file=sys.stderr)
+        click.echo(f"  similar: {', '.join(hints)}", err=True)
     sys.exit(1)
 
 

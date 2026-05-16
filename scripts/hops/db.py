@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.core.format import age_str, info, kv, section, table
 from hops.core.runner import kubectl_json, run
 
 
-@click.group("db", no_args_is_help=True)
+@click.group("db", cls=HelpfulGroup, no_args_is_help=True)
 def cli():
     """CloudNativePG database operations."""
 

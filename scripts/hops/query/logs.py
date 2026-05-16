@@ -9,6 +9,7 @@ import json
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.core.format import info
 from hops.core.workload import resolve_app
 from hops.query._client import VictoriaLogsClient
@@ -88,7 +89,7 @@ def _require_vector_collection(app: str) -> None:
 # --- Click commands ---
 
 
-@click.group()
+@click.group(cls=HelpfulGroup)
 def cli():
     """Query VictoriaLogs using LogSQL syntax."""
 
@@ -147,12 +148,12 @@ def query_cmd(
 
     if json_mode:
         for log in logs:
-            print(json.dumps(log))
+            click.echo(json.dumps(log))
     else:
         for i, log in enumerate(logs):
             if i > 0 and detail:
-                print()
-            print(format_log_entry(log, detail=detail, all_fields=all_fields))
+                click.echo()
+            click.echo(format_log_entry(log, detail=detail, all_fields=all_fields))
 
     info(f"\nTotal: {len(logs)} log entries")
 
@@ -167,7 +168,7 @@ def stats(query: str, time_from: str | None, time_to: str | None, json_mode: boo
     client = VictoriaLogsClient()
     result = client.query_stats(query, start=time_from, end=time_to)
     if json_mode:
-        print(json.dumps(result, indent=2))
+        click.echo(json.dumps(result, indent=2))
         return
     results = result.get("data", {}).get("result", [])
     _print_vector(results)
@@ -186,7 +187,7 @@ def stats_range(
     client = VictoriaLogsClient()
     result = client.query_stats_range(query, start=time_from, end=time_to, step=step)
     if json_mode:
-        print(json.dumps(result, indent=2))
+        click.echo(json.dumps(result, indent=2))
         return
     results = result.get("data", {}).get("result", [])
     _print_matrix_table(results)
@@ -217,7 +218,7 @@ def hits(
         field=list(field) if field else None,
     )
     if json_mode:
-        print(json.dumps(result, indent=2))
+        click.echo(json.dumps(result, indent=2))
         return
     _print_hits_table(result)
 
@@ -231,4 +232,4 @@ def fields(query: str, time_from: str | None, time_to: str | None):
     client = VictoriaLogsClient()
     result = client.query_field_names(query, start=time_from, end=time_to)
     for field in result:
-        print(f"{field['value']:30s} {field['hits']:>12,} hits")
+        click.echo(f"{field['value']:30s} {field['hits']:>12,} hits")

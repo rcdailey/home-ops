@@ -5,6 +5,8 @@ Extracted from flux.py. Used by flux values/defaults commands.
 
 from __future__ import annotations
 
+import click
+
 from hops.core.format import info
 from hops.core.runner import run_json
 
@@ -124,7 +126,7 @@ def print_yaml_key(yaml_text: str, key_path: str):
 
     output = (proc.stdout or "").strip()
     if output and output != "null":
-        print(output)
+        click.echo(output)
     else:
         info(f"(key {key_path!r} not found in defaults)")
 
@@ -169,7 +171,7 @@ def _print_yaml_key_naive(yaml_text: str, key_path: str):
             len(ln) - len(ln.lstrip()) for ln in result_lines if ln.strip()
         )
         for line in result_lines:
-            print(line[min_indent:] if line.strip() else "")
+            click.echo(line[min_indent:] if line.strip() else "")
     else:
         info(f"(key {key_path!r} not found in defaults)")
 
@@ -202,4 +204,4 @@ def print_search_results(yaml_text: str, term: str):
         if i > 0:
             info("---")
         for j in range(start, end):
-            print(f"{j + 1}: {lines[j]}")
+            click.echo(f"{j + 1}: {lines[j]}")

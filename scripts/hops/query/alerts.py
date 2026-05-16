@@ -8,12 +8,13 @@ import sys
 
 import click
 
+from hops._click import HelpfulGroup
 from hops.core.format import format_labels_list, format_timestamp, info, kv
 from hops.core.time import TimeRange, time_options
 from hops.query._vm import is_ignored_alert, query_vm, query_vmalert
 
 
-@click.group()
+@click.group(cls=HelpfulGroup)
 def cli():
     """Alert monitoring and investigation."""
 
@@ -67,7 +68,7 @@ def _alerts_current(state: str, json_mode: bool) -> None:
     ]
 
     if json_mode:
-        print(json.dumps(filtered, indent=2))
+        click.echo(json.dumps(filtered, indent=2))
         return
 
     if not filtered:
@@ -78,17 +79,17 @@ def _alerts_current(state: str, json_mode: bool) -> None:
         labels = alert.get("labels", {})
         annotations = alert.get("annotations", {})
         severity = labels.get("severity", "none")
-        print(f"[{severity}] {labels.get('alertname')} ({alert.get('state')})")
-        print(
+        click.echo(f"[{severity}] {labels.get('alertname')} ({alert.get('state')})")
+        click.echo(
             f"  {annotations.get('summary', annotations.get('description', 'No description'))}"
         )
-        print(f"  Expression: {alert.get('expression', 'N/A')}")
+        click.echo(f"  Expression: {alert.get('expression', 'N/A')}")
         relevant = format_labels_list(
             labels, exclude={"alertname", "alertgroup", "prometheus", "severity"}
         )
         if relevant:
-            print(f"  Labels: {', '.join(relevant[:5])}")
-        print()
+            click.echo(f"  Labels: {', '.join(relevant[:5])}")
+        click.echo()
 
 
 def _alerts_historical(time_range: TimeRange, json_mode: bool) -> None:
@@ -101,7 +102,7 @@ def _alerts_historical(time_range: TimeRange, json_mode: bool) -> None:
     results = data.get("data", {}).get("result", [])
 
     if json_mode:
-        print(json.dumps(results, indent=2))
+        click.echo(json.dumps(results, indent=2))
         return
 
     if not results:
@@ -119,7 +120,7 @@ def _alerts_historical(time_range: TimeRange, json_mode: bool) -> None:
         if is_ignored_alert(alertname):
             continue
         severity = metric.get("severity", "none")
-        print(f"  [{severity}] {alertname} - {count} times")
+        click.echo(f"  [{severity}] {alertname} - {count} times")
 
 
 @cli.command("alert")
@@ -152,7 +153,7 @@ def _alert_current(name: str, json_mode: bool) -> None:
 
     alert = matches[0]
     if json_mode:
-        print(json.dumps(alert, indent=2))
+        click.echo(json.dumps(alert, indent=2))
         return
 
     labels = alert.get("labels", {})
@@ -167,13 +168,13 @@ def _alert_current(name: str, json_mode: bool) -> None:
     ]
     kv(pairs)
     if labels:
-        print("\nLabels:")
+        click.echo("\nLabels:")
         for k, v in labels.items():
-            print(f"  {k}: {v}")
+            click.echo(f"  {k}: {v}")
     if annotations:
-        print("\nAnnotations:")
+        click.echo("\nAnnotations:")
         for k, v in annotations.items():
-            print(f"  {k}: {v}")
+            click.echo(f"  {k}: {v}")
 
     # Auto-diagnose absent() expressions: the typical failure mode is label
     # drift where the metric exists but under a different label value. Show
@@ -181,7 +182,7 @@ def _alert_current(name: str, json_mode: bool) -> None:
     # immediately visible instead of requiring a follow-up count-by query.
     debug = _analyze_absent_expression(alert.get("expression", ""))
     if debug:
-        print("\nRoot cause analysis (absent() expression):")
+        click.echo("\nRoot cause analysis (absent() expression):")
         kv(debug, indent=2)
 
 
@@ -242,7 +243,7 @@ def _alert_historical(name: str, time_range: TimeRange, json_mode: bool) -> None
     results = data.get("data", {}).get("result", [])
 
     if json_mode:
-        print(
+        click.echo(
             json.dumps(
                 {"alertname": name, "duration": duration, "instances": results},
                 indent=2,
@@ -264,18 +265,20 @@ def _alert_historical(name: str, time_range: TimeRange, json_mode: bool) -> None
             continue
 
         firing_periods = _extract_firing_periods(values)
-        print(f"\nInstance {i + 1}:")
+        click.echo(f"\nInstance {i + 1}:")
         severity = labels.get("severity", "none")
-        print(f"  Severity: {severity}")
+        click.echo(f"  Severity: {severity}")
         relevant = format_labels_list(
             labels, exclude={"alertname", "alertstate", "__name__", "severity"}
         )
         if relevant:
-            print(f"  Labels: {', '.join(relevant)}")
+            click.echo(f"  Labels: {', '.join(relevant)}")
         if firing_periods:
-            print("  Firing periods:")
+            click.echo("  Firing periods:")
             for start_ts, end_ts in firing_periods:
-                print(f"    {format_timestamp(start_ts)} - {format_timestamp(end_ts)}")
+                click.echo(
+                    f"    {format_timestamp(start_ts)} - {format_timestamp(end_ts)}"
+                )
 
 
 @cli.command("rules")
@@ -286,11 +289,13 @@ def rules(json_mode: bool):
     groups = data.get("data", {}).get("groups", [])
 
     if json_mode:
-        print(json.dumps(groups, indent=2))
+        click.echo(json.dumps(groups, indent=2))
         return
 
     for group in groups:
-        print(f"Group: {group.get('name')}")
+        click.echo(f"Group: {group.get('name')}")
         for rule in group.get("rules", []):
-            print(f"  {rule.get('name')} ({rule.get('type')}) - {rule.get('state')}")
-        print()
+            click.echo(
+                f"  {rule.get('name')} ({rule.get('type')}) - {rule.get('state')}"
+            )
+        click.echo()
