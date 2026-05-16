@@ -1,5 +1,6 @@
-"""Allow running as `python -m hass`."""
+"""Entry point for `python -m hass`."""
 
 from hass.cli import cli
 
-cli()
+if __name__ == "__main__":
+    cli()

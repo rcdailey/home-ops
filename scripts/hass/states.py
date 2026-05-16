@@ -5,7 +5,8 @@ from __future__ import annotations
 import click
 from homeassistant_api.errors import EndpointNotFoundError
 
-from hass._client import DEFAULT_LIMIT, die, get_client, print_json
+from hass._client import DEFAULT_LIMIT, get_client, print_json
+from hass._errors import die
 
 
 @click.command()
@@ -29,7 +30,7 @@ def cli(targets: tuple[str, ...], limit: int | None, no_limit: bool) -> None:
             return
 
         if len(targets) > 1:
-            die("Error: mixing domain filter with entity_ids is not supported")
+            die("mixing domain filter with entity_ids is not supported")
 
         states = client.get_states()
         if targets:

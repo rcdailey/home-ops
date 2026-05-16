@@ -6,7 +6,8 @@ import json
 
 import click
 
-from hass._client import die, run_ws, ws_error
+from hass._client import run_ws, ws_error
+from hass._errors import die
 
 
 def _collect_cards(view: dict) -> list[dict]:

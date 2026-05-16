@@ -5,7 +5,8 @@ from __future__ import annotations
 import click
 from homeassistant_api.errors import EndpointNotFoundError
 
-from hass._client import die, get_client, print_json, run_ws
+from hass._client import get_client, print_json, run_ws
+from hass._errors import die
 
 
 @click.group()
@@ -26,7 +27,7 @@ def automation_cmd(identifier: str) -> None:
                 die(f"Entity not found: {identifier}")
             config_id = state.attributes.get("id", "")
             if not config_id:
-                die(f"Error: could not resolve automation id from {identifier}")
+                die(f"could not resolve automation id from {identifier}")
         resp = client.request(f"config/automation/config/{config_id}")
     print_json(resp)
 

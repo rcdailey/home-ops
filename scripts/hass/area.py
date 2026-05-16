@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import click
 
-from hass._client import die, run_ws, ws_error
+from hass._client import run_ws, ws_error
+from hass._errors import die
 
 
 @click.group()

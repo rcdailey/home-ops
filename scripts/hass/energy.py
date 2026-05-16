@@ -6,7 +6,8 @@ import json
 
 import click
 
-from hass._client import die, print_json, run_ws, ws_error
+from hass._client import print_json, run_ws, ws_error
+from hass._errors import die
 
 
 @click.group(invoke_without_command=True)

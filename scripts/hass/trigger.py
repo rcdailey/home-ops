@@ -6,7 +6,8 @@ import json
 
 import click
 
-from hass._client import die, get_client
+from hass._client import get_client
+from hass._errors import die
 
 
 @click.command()
@@ -28,13 +29,13 @@ def cli(entity_id: str, variables: str | None) -> None:
         service = "automation/trigger"
         payload = {"entity_id": entity_id}
         if variables:
-            die("Error: --vars is only supported for scripts")
+            die("--vars is only supported for scripts")
     elif entity_id.startswith("script."):
         slug = entity_id.removeprefix("script.")
         service = f"script/{slug}"
         payload = json.loads(variables) if variables else {}
     else:
-        die(f"Error: entity_id must start with 'automation.' or 'script.': {entity_id}")
+        die(f"entity_id must start with 'automation.' or 'script.': {entity_id}")
 
     with get_client() as client:
         client.request(f"services/{service}", method="POST", json=payload)

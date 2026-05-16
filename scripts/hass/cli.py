@@ -8,12 +8,15 @@ from pathlib import Path
 
 import click
 
+from hass._click import HelpfulGroup
 
-class _AutoGroup(click.Group):
-    """Click group that auto-registers any sibling module exposing ``cli``.
 
-    Modules whose names start with ``_`` are treated as private helpers and
-    skipped. The ``cli`` attribute must be a ``click.BaseCommand``.
+class _AutoGroup(HelpfulGroup):
+    """Click group that auto-discovers subcommand modules.
+
+    Any module in the package that exposes a ``cli`` attribute
+    (a click.Group or click.Command) is registered as a subcommand.
+    Modules whose names start with ``_`` are skipped (private helpers).
     """
 
     def __init__(self, *args, **kwargs):
@@ -33,7 +36,7 @@ class _AutoGroup(click.Group):
             except Exception:
                 continue
             cmd = getattr(mod, "cli", None)
-            if isinstance(cmd, click.BaseCommand):
+            if isinstance(cmd, click.Command):
                 self.add_command(cmd, info.name)
 
     def list_commands(self, ctx):
@@ -45,6 +48,10 @@ class _AutoGroup(click.Group):
         return super().get_command(ctx, cmd_name)
 
 
-@click.group(cls=_AutoGroup, context_settings={"help_option_names": ["-h", "--help"]})
+@click.group(
+    cls=_AutoGroup,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+@click.version_option(version=__import__("hass").__version__, prog_name="hass")
 def cli():
     """Home Assistant API wrapper."""
