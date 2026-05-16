@@ -18,6 +18,14 @@ spec:
           reloader.stakater.com/auto: "true"
 
         pod:
+          # Block Plex telemetry at the pod level (server-side tracking)
+          hostAliases:
+          - ip: 0.0.0.0
+            hostnames:
+            - analytics.plex.tv
+            - metrics.plex.tv
+            - discover.plex.tv
+            - discover.provider.plex.tv
           securityContext:
             fsGroup: 1000
             fsGroupChangePolicy: "OnRootMismatch"
