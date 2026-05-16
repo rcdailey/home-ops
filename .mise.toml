@@ -35,6 +35,7 @@ talosctl = "1.13.2"
 yamlfmt = "latest"
 yamllint = "latest"
 yq = "latest"
+"npm:@stephendolan/ynab-cli" = "latest"
 
 [hooks.enter]
 shell = "zsh"
