@@ -1,7 +1,7 @@
 # Media Flex Mini uplink port flapping
 
 - **Date:** 2026-04-18
-- **Status:** MONITORING (recrimped 2026-05-16, awaiting 24h validation)
+- **Status:** MONITORING (recrimped 2026-05-16; 97% reduction, 6 drops/day residual)
 
 ## Summary
 
@@ -155,11 +155,16 @@ Immediate results (~22 minutes after re-crimp):
 | `tx_dropped` | 5,260 (unchanged) | 5,165 |
 | Media Flex uptime | 22 min (stable) | 15 hours (restarting repeatedly) |
 
-Zero flaps in the first 22 minutes. At the old rate (~8/hour) you'd expect ~3 in that window. Too
-early to call conclusive; recheck in 12-24 hours.
+Zero flaps in the first 22 minutes. At the old rate (~8/hour) you'd expect ~3 in that window.
 
-**TODO:** Check `link_down_count` on port 6 after 24 hours. If it hasn't climbed beyond the
-physical-reconnection baseline of 2,062, mark resolved.
+24-hour follow-up (2026-05-17): `link_down_count` rose to 2,068 (6 new drops in ~25 hours),
+including sustained 4K Plex streaming with no visible buffering. That's ~6/day vs. the original
+~196/day (97% reduction). The re-crimp was the primary cause, but a small residual remains. Possible
+contributors: the owner-punched keystone in the media cabinet (suspect #2) or a marginal pair on
+the in-wall run itself.
+
+**TODO:** Continue monitoring. If drops climb or buffering returns, re-terminate the media cabinet
+keystone (Step 6).
 
 ### Original diagnostic plan
 
