@@ -29,7 +29,7 @@ drift.
 
 Recurring issues indicate incomplete root cause analysis.
 
-**All cluster queries MUST use `hops` commands** (`./scripts/hops.py`). Direct use of kubectl,
+**All cluster queries MUST use `hops` commands** (`./scripts/hops.sh`). Direct use of kubectl,
 talosctl, helm, flux, and other cluster CLIs is prohibited except when `hops` lacks the needed
 functionality (see escape hatch below). `hops` produces LLM-optimized, token-compact output by
 design; raw CLI output wastes context on noise the LLM has to parse and discard.
@@ -529,20 +529,20 @@ disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical 
 - CloudNativePG: Barman WAL archiving to per-app S3 buckets (e.g., `s3://immich-postgres-backups`).
   Each CNPG cluster MUST have its own GarageS3Bucket CR to avoid permission races when multiple CRs
   target the same underlying bucket.
-- Ceph toolbox: `./scripts/hops.py storage ceph status` (or `osd`, `io`)
+- Ceph toolbox: `./scripts/hops.sh storage ceph status` (or `osd`, `io`)
 
-**`hops` CLI:** Run `./scripts/hops.py --help` for domains, `./scripts/hops.py <domain> --help` for
-commands. Key entry points for debugging: `./scripts/hops.py app diagnose APP [-n NS]` (workload or
-gateway-only scope, flux status + pods + events + recent logs), `./scripts/hops.py app pod APP [-n
+**`hops` CLI:** Run `./scripts/hops.sh --help` for domains, `./scripts/hops.sh <domain> --help` for
+commands. Key entry points for debugging: `./scripts/hops.sh app diagnose APP [-n NS]` (workload or
+gateway-only scope, flux status + pods + events + recent logs), `./scripts/hops.sh app pod APP [-n
 NS]` (per-pod drill-down with container state machine, previous-termination table, auto-fetched
 crash logs for restarted containers and failure logs for non-zero exit containers, and pod-scoped
-event timeline), `./scripts/hops.py app unhealthy [NS]` (cluster-wide pod health check; shows all
+event timeline), `./scripts/hops.sh app unhealthy [NS]` (cluster-wide pod health check; shows all
 non-Running/non-Succeeded pods with status reason, or a one-liner when everything is healthy; use
-during and after infrastructure changes to monitor recovery), `./scripts/hops.py db status` (all
+during and after infrastructure changes to monitor recovery), `./scripts/hops.sh db status` (all
 CNPG clusters: instances, phase, PDB status, backup config, pod placement with role/node, memory
-request/actual/limit, PVC sizes, last backup time), `./scripts/hops.py backup status` (unified
+request/actual/limit, PVC sizes, last backup time), `./scripts/hops.sh backup status` (unified
 backup health: Volsync last sync times for all ReplicationSources plus CNPG scheduled backup results
-with schedule and last completion), and `./scripts/hops.py debug route APP [-n NS]` (gateway request
+with schedule and last completion), and `./scripts/hops.sh debug route APP [-n NS]` (gateway request
 path trace: HTTPRoute, Gateway, ClientTrafficPolicy, BackendTrafficPolicy, SecurityPolicy,
 EnvoyProxy config, and recent envoy access log errors for the route's hostnames). Use `app pod`
 whenever a specific pod misbehaves (crashloops, startup races, image pull failures, terminated

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from hops.tests.conftest import run_hops
+from tests.conftest import run_hops
 
 
 @pytest.mark.integration

@@ -9,7 +9,7 @@ from pathlib import Path
 
 # Repo root: three levels up from scripts/hops/tests/
 REPO_ROOT = Path(__file__).parent.parent.parent.parent
-HOPS_SCRIPT = REPO_ROOT / "scripts" / "hops.py"
+HOPS_SCRIPT = REPO_ROOT / "scripts" / "hops.sh"
 
 
 def pytest_configure(config):

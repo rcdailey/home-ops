@@ -11,7 +11,7 @@ If empty, infer scope from recent conversation context.
 
 ## Workflow
 
-1. **Diagnose**: Use `./scripts/hops.py app diagnose APP` for initial triage (flux status, pods,
+1. **Diagnose**: Use `./scripts/hops.sh app diagnose APP` for initial triage (flux status, pods,
    events, logs). Drill down with `app pod APP` for container state or `debug route APP` for gateway
    issues.
 2. **Follow the pipeline**: Kustomization -> HelmRelease -> Pod -> Container logs

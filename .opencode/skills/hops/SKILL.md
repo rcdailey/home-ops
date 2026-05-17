@@ -2,7 +2,7 @@
 name: hops
 description: >-
   Use when adding, modifying, debugging, refactoring, or reviewing `hops` CLI commands and domain
-  modules in `scripts/hops/` and `scripts/hops.py`; creating new subcommands, click groups, or
+  modules in `scripts/hops/` and `scripts/hops.sh`; creating new subcommands, click groups, or
   output formatters; changing core helpers (`core/runner.py`, `core/format.py`, `core/nodes.py`,
   `core/workload.py`, `core/time.py`, `core/resolve.py`, `core/helm.py`); extending cluster
   introspection coverage (node, storage, app, flux, query, debug, dns, backup, validate). Triggers
@@ -35,13 +35,14 @@ Ceph passes (storage infrastructure). Blocky DNS passes (cluster DNS infrastruct
 
 ## Architecture
 
-Run `./scripts/hops.py <domain> --help` for command details. Do not maintain a parallel command list
+Run `./scripts/hops.sh <domain> --help` for command details. Do not maintain a parallel command list
 in documentation; the CLI is authoritative.
 
 ```txt
-scripts/hops.py          Entry point (uv shebang, auto-installs deps)
+scripts/hops.sh          Shell wrapper (invokes uv run)
 scripts/hops/
-  cli.py                 Root group with auto-discovery
+  hops/                  Package root (nested layout)
+    cli.py               Root group with auto-discovery
   core/                  Shared helpers (domains import from here, never from each other)
     runner.py            Subprocess runner (JSON, JSONL, kubectl, tools_curl, ceph_json)
     format.py            Tables, key-value, truncation, age_str, human_bytes
@@ -290,8 +291,8 @@ All output is plain text optimized for LLM token efficiency:
 7. If the implementation exceeds ~30 lines, extract it to a sibling module. If a flat domain module
     would exceed 400 lines, convert to a package directory.
 8. Use `core.format.table()` or `core.format.kv()` for output.
-9. Test against live cluster: `./scripts/hops.py <domain> <command> <args>`
-10. Measure token count: `./scripts/hops.py <command> 2>&1 | ttok`
+9. Test against live cluster: `./scripts/hops.sh <domain> <command> <args>`
+10. Measure token count: `./scripts/hops.sh <command> 2>&1 | ttok`
 
 ## Testing
 
@@ -316,7 +317,7 @@ escaping logic that has caused regressions.
 the live cluster. Cover every resource category: Deployment, StatefulSet, DaemonSet, CronJob, CNPG
 pods, subchart naming. These are the tests that would have caught the 4 resolver fix commits.
 
-**Command integration tests** (`test_commands.py`): Invoke `./scripts/hops.py` via subprocess and
+**Command integration tests** (`test_commands.py`): Invoke `./scripts/hops.sh` via subprocess and
 assert on exit codes and output structure (header presence, section markers). Cover all domains.
 
 ### Test Obligations
@@ -345,9 +346,9 @@ reference a current app. Do not delete the test.
 
 ```bash
 # Verify a specific command works
-./scripts/hops.py <domain> <command>
+./scripts/hops.sh <domain> <command>
 
 # Compare token usage vs raw equivalent
-./scripts/hops.py node list 2>&1 | ttok
+./scripts/hops.sh node list 2>&1 | ttok
 kubectl get nodes -o wide 2>&1 | ttok
 ```

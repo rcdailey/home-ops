@@ -55,7 +55,7 @@ show-fencing-status:
 
 [doc('Show Ceph cluster health, PGs, OSDs, and capacity')]
 ceph-status:
-    cd "{{root}}" && ./scripts/hops.py storage ceph status
+    cd "{{root}}" && ./scripts/hops.sh storage ceph status
 
 [doc('Open a debug shell on a node')]
 node-shell node="":

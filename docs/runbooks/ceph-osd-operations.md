@@ -5,8 +5,8 @@ for mutations:
 
 ```bash
 # Read-only (use hops)
-./scripts/hops.py storage ceph status
-./scripts/hops.py storage ceph osd
+./scripts/hops.sh storage ceph status
+./scripts/hops.sh storage ceph osd
 
 # Mutations (kubectl exec directly)
 kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph <command>

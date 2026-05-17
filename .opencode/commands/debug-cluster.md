@@ -9,7 +9,7 @@ Arguments: "$ARGUMENTS"
 
 ## Workflow
 
-1. **Cluster state**: Use `./scripts/hops.py` to understand current state and error conditions. Key
+1. **Cluster state**: Use `./scripts/hops.sh` to understand current state and error conditions. Key
    entry points: `app diagnose APP` (flux status, pods, events, logs), `app pod APP` (per-pod
    drill-down with container state, crash logs), `debug route APP` (gateway request path trace).
 2. **Repository config**: Examine relevant YAML files (HelmRelease, Kustomization, ExternalSecrets,
