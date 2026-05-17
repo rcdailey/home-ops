@@ -40,3 +40,10 @@ def open_client():
     from pypaperless import PaperlessClient
 
     return PaperlessClient(get_url(), get_token())
+
+
+def get_transport():
+    """Return a raw PaperlessTransport for direct API calls."""
+    from pypaperless.transport import PaperlessTransport
+
+    return PaperlessTransport(get_url(), get_token())

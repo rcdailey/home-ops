@@ -78,7 +78,8 @@ def list_cmd(
 
 @cli.command()
 @click.argument("doc_id", type=int)
-def show(doc_id: int) -> None:
+@click.option("--full", is_flag=True, help="Show full content without truncation.")
+def show(doc_id: int, full: bool) -> None:
     """Show full document details."""
 
     async def _show():
@@ -130,10 +131,13 @@ def show(doc_id: int) -> None:
         for cf in doc.custom_fields:
             click.echo(f"    {cf.field}: {cf.value}")
     if hasattr(doc, "content") and doc.content:
-        preview = doc.content[:500]
-        if len(doc.content) > 500:
-            preview += f" [truncated at 500 of {len(doc.content)} chars]"
-        click.echo(f"  content: {preview}")
+        if full:
+            click.echo(f"  content: {doc.content}")
+        else:
+            preview = doc.content[:500]
+            if len(doc.content) > 500:
+                preview += f" [truncated at 500 of {len(doc.content)} chars]"
+            click.echo(f"  content: {preview}")
 
 
 @cli.command()
@@ -205,6 +209,13 @@ def upload(
 @click.argument("doc_id", type=int)
 @click.option("--title", default=None, help="New title.")
 @click.option(
+    "--tag",
+    "tag_ids",
+    multiple=True,
+    type=int,
+    help="Tag ID (repeatable). Replaces all tags and adds ai-classified.",
+)
+@click.option(
     "--add-tag", "add_tags", multiple=True, type=int, help="Tag ID to add (repeatable)."
 )
 @click.option(
@@ -223,6 +234,7 @@ def upload(
 def update(
     doc_id: int,
     title: str | None,
+    tag_ids: tuple[int, ...],
     add_tags: tuple[int, ...],
     remove_tags: tuple[int, ...],
     type_id: int | None,
@@ -237,7 +249,13 @@ def update(
             doc = await p.documents(doc_id)
             if title:
                 doc.title = title
-            if add_tags or remove_tags:
+            if tag_ids:
+                # Replace semantics: specified tags + ai-classified
+                from paperless.classify.commands import _ensure_tag
+
+                ai_tag_id = await _ensure_tag(p)
+                doc.tags = list(set(tag_ids) | {ai_tag_id})
+            elif add_tags or remove_tags:
                 current = set(doc.tags or [])
                 current.update(add_tags)
                 current -= set(remove_tags)

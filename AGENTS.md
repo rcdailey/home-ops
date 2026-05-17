@@ -248,6 +248,8 @@ Repo-scoped skills live under `.opencode/skills/`. Per-skill triggers (RFC 2119)
   to merely run existing `hops` commands when no signals are present.
 - `outline-cli`: MUST load when creating, updating, searching, moving, or deleting Outline wiki
   content via the `ol` CLI.
+- `paperless-classify`: MUST load when classifying or triaging Paperless documents; reviewing the
+  paperless inbox; discussing taxonomy conventions; or running `./scripts/paperless.sh classify`.
 
 ## Tier 3: Reference
 
