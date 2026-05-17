@@ -6,7 +6,7 @@ import click
 
 from paperless._click import HelpfulGroup
 from paperless._client import open_client, run_async
-from paperless._permissions import set_family_permissions
+from paperless._permissions import create_object
 
 
 @click.group(cls=HelpfulGroup)
@@ -34,19 +34,7 @@ def list_cmd() -> None:
 @click.argument("name")
 def create(name: str) -> None:
     """Create a new document type."""
-
-    async def _create():
-        async with open_client() as p:
-            draft = p.document_types.create()
-            draft.name = name
-            draft.match = ""
-            draft.matching_algorithm = 0
-            draft.is_insensitive = True
-            pk = await p.document_types.save(draft)
-        await set_family_permissions("document_types", pk)
-        return pk
-
-    pk = run_async(_create())
+    pk = run_async(create_object("document_types", {"name": name}))
     click.echo(f"created document type #{pk}: {name}")
 
 

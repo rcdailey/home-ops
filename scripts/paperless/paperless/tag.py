@@ -6,7 +6,7 @@ import click
 
 from paperless._click import HelpfulGroup
 from paperless._client import open_client, run_async
-from paperless._permissions import set_family_permissions
+from paperless._permissions import create_object
 
 
 @click.group(cls=HelpfulGroup)
@@ -36,21 +36,11 @@ def list_cmd() -> None:
 @click.option("--inbox", is_flag=True, help="Mark as inbox tag.")
 def create(name: str, color: str | None, inbox: bool) -> None:
     """Create a new tag."""
-
-    async def _create():
-        async with open_client() as p:
-            draft = p.tags.create()
-            draft.name = name
-            draft.match = ""
-            draft.matching_algorithm = 0
-            draft.is_insensitive = True
-            draft.color = color or "#a6cee3"
-            draft.is_inbox_tag = inbox
-            pk = await p.tags.save(draft)
-        await set_family_permissions("tags", pk)
-        return pk
-
-    pk = run_async(_create())
+    pk = run_async(
+        create_object(
+            "tags", {"name": name, "color": color or "#a6cee3", "is_inbox_tag": inbox}
+        )
+    )
     click.echo(f"created tag #{pk}: {name}")
 
 

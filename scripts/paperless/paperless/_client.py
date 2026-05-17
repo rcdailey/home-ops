@@ -32,7 +32,20 @@ def get_token() -> str:
 
 def run_async(coro: Awaitable[T]) -> T:
     """Run an async coroutine synchronously."""
-    return asyncio.run(coro)
+    try:
+        return asyncio.run(coro)
+    except Exception as exc:
+        from httpx import HTTPStatusError
+        from pypaperless.exceptions import PaperlessError
+
+        if isinstance(exc, HTTPStatusError):
+            die(
+                f"{exc.response.status_code} {exc.response.reason_phrase}: "
+                f"{exc.request.url.path}"
+            )
+        if isinstance(exc, PaperlessError):
+            die(str(exc))
+        raise
 
 
 def open_client():
