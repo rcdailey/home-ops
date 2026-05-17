@@ -9,7 +9,7 @@ description: >-
   on phrases like "add a hops command", "fix hops output", "new hops domain", "extend hops", the
   `hops` escape hatch in AGENTS.md, or any edit to files under `scripts/hops/`. Do NOT use for
   simply running existing `hops` commands during diagnosis (no skill needed) or for
-  non-cluster/app-specific scripts (e.g., `hass.py`).
+  non-cluster/app-specific scripts (e.g., `hass.sh`).
 ---
 
 # hops CLI Development

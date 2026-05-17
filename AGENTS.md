@@ -242,7 +242,7 @@ Repo-scoped skills live under `.opencode/skills/`. Per-skill triggers (RFC 2119)
 - `dns-debug`: MUST load when diagnosing DNS resolution failures, investigating Blocky-blocked
   domains, debugging "site X is broken" reports, or editing `kubernetes/apps/dns-private/blocky/`.
 - `home-assistant`: MUST load when querying Home Assistant state, firing automations/scripts,
-  editing HA automation or script YAML, or working with `./scripts/hass.py` and `scripts/hass/`.
+  editing HA automation or script YAML, or working with `./scripts/hass.sh` and `scripts/hass/`.
 - `hops`: MUST load when adding, modifying, or debugging commands in `scripts/hops/` (per the Tier 1
   `hops` escape hatch) OR when the Tier 1 stewardship signals appear during diagnosis. MUST NOT load
   to merely run existing `hops` commands when no signals are present.
@@ -422,7 +422,7 @@ reconcile
 template`, `just talos diff-config`/`just talos apply-node`. Use `hops flux values` and `hops flux
 defaults` instead of `helm show values`/`helm get values`. Standalone scripts:
 `./scripts/test-vrl.py` (VRL validation), `./scripts/icon-search.py` (dashboard icons),
-`./scripts/hass.py` (Home Assistant API).
+`./scripts/hass.sh` (Home Assistant API).
 
 **talosctl access:** Read-only diagnostic subcommands (`get`, `version`, `services`, `dmesg`,
 `logs`, `health`, `inspect`, `time`, `etcd members`, `etcd status`, `etcd snapshot`, `netstat`) are
