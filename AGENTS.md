@@ -422,7 +422,10 @@ reconcile
 template`, `just talos diff-config`/`just talos apply-node`. Use `hops flux values` and `hops flux
 defaults` instead of `helm show values`/`helm get values`. Standalone scripts:
 `./scripts/test-vrl.py` (VRL validation), `./scripts/icon-search.py` (dashboard icons),
-`./scripts/hass.sh` (Home Assistant API).
+`./scripts/hass.sh` (Home Assistant API)
+
+**`paperless` CLI:** `./scripts/paperless.sh` (subcommands: doc, bulk, tag, type, correspondent,
+field, workflow, config). Run `--help` on the relevant subcommand before use.
 
 **talosctl access:** Read-only diagnostic subcommands (`get`, `version`, `services`, `dmesg`,
 `logs`, `health`, `inspect`, `time`, `etcd members`, `etcd status`, `etcd snapshot`, `netstat`) are
