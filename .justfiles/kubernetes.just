@@ -99,3 +99,60 @@ delete-stale-attachments node="":
     kubectl get volumeattachments -o json | \
         jq -r ".items[] | select(.spec.nodeName==\"$node\") | .metadata.name" | \
         xargs -r -I {} kubectl delete volumeattachment {} --force --grace-period=0
+
+[doc('Authenticate claude-proxy with Anthropic OAuth')]
+claude-proxy-login:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Get the management password from the running secret
+    MGMT_KEY=$(kubectl get secret -n default claude-proxy-secret -o jsonpath='{.data.MANAGEMENT_PASSWORD}' | base64 -d)
+
+    # Find the claude-proxy pod
+    POD=$(kubectl get pod -n default -l app.kubernetes.io/name=claude-proxy -o jsonpath='{.items[0].metadata.name}')
+    if [ -z "$POD" ]; then
+        echo "Error: claude-proxy pod not found"
+        exit 1
+    fi
+
+    # Port-forward API (8317) and OAuth callback (54545)
+    kubectl port-forward -n default "$POD" 8317:8317 54545:54545 >/dev/null 2>&1 &
+    PF_PID=$!
+    trap "kill $PF_PID 2>/dev/null" EXIT
+    sleep 2
+
+    # Initiate OAuth flow via management API
+    RESPONSE=$(curl -sf -H "Authorization: Bearer $MGMT_KEY" \
+        "http://localhost:8317/v0/management/anthropic-auth-url?is_webui=true")
+    AUTH_URL=$(echo "$RESPONSE" | jq -r '.url')
+    STATE=$(echo "$RESPONSE" | jq -r '.state')
+
+    if [ -z "$AUTH_URL" ] || [ "$AUTH_URL" = "null" ]; then
+        echo "Error: failed to get auth URL from management API"
+        echo "$RESPONSE"
+        exit 1
+    fi
+
+    echo "Opening Anthropic login in your browser..."
+    open "$AUTH_URL"
+
+    # Poll get-auth-status: returns {"status":"wait"} while pending,
+    # {"status":"ok"} on success, {"status":"error","error":"..."} on failure
+    echo "Waiting for OAuth callback..."
+    for i in $(seq 1 60); do
+        sleep 2
+        STATUS=$(curl -sf -H "Authorization: Bearer $MGMT_KEY" \
+            "http://localhost:8317/v0/management/get-auth-status?state=$STATE" || true)
+        RESULT=$(echo "$STATUS" | jq -r '.status' 2>/dev/null || true)
+        if [ "$RESULT" = "ok" ]; then
+            echo "Authentication successful!"
+            exit 0
+        fi
+        if [ "$RESULT" = "error" ]; then
+            echo "Error: $(echo "$STATUS" | jq -r '.error')"
+            exit 1
+        fi
+    done
+
+    echo "Timed out waiting for OAuth callback (120s)"
+    exit 1

@@ -1,0 +1,10 @@
+---
+port: 8317
+auth-dir: /data
+api-keys:
+- sk-claude-proxy-internal
+remote-management:
+  allow-remote: true
+  disable-control-panel: false
+routing:
+  strategy: round-robin
