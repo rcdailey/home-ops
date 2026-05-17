@@ -167,23 +167,25 @@ def search(query: str, limit: int) -> None:
         click.echo(" | ".join(parts))
 
 
-@cli.command()
-@click.argument("file", type=click.Path(exists=True, dir_okay=False))
-@click.option("--title", default=None, help="Document title (defaults to filename).")
-@click.option("--tag", "tag_ids", multiple=True, type=int, help="Tag ID (repeatable).")
-@click.option("--type", "type_id", default=None, type=int, help="Document type ID.")
-@click.option(
-    "--correspondent", "corr_id", default=None, type=int, help="Correspondent ID."
-)
-def upload(
-    file: str,
+def _collect_files(path: Path, recursive: bool) -> list[Path]:
+    """Collect PDF files from a directory."""
+    pattern = "**/*.pdf" if recursive else "*.pdf"
+    files = sorted(path.glob(pattern))
+    if not files:
+        from paperless._errors import die
+
+        die(f"no PDF files found in {path}")
+    return files
+
+
+def _upload_single(
+    path: Path,
     title: str | None,
     tag_ids: tuple[int, ...],
     type_id: int | None,
     corr_id: int | None,
 ) -> None:
-    """Upload a document file."""
-    path = Path(file)
+    """Upload a single file to Paperless."""
     content = path.read_bytes()
     filename = path.name
 
@@ -203,6 +205,39 @@ def upload(
 
     task_id = run_async(_upload())
     click.echo(f"uploaded {filename}, task: {task_id}")
+
+
+@cli.command()
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--title", default=None, help="Document title (defaults to filename).")
+@click.option("--tag", "tag_ids", multiple=True, type=int, help="Tag ID (repeatable).")
+@click.option("--type", "type_id", default=None, type=int, help="Document type ID.")
+@click.option(
+    "--correspondent", "corr_id", default=None, type=int, help="Correspondent ID."
+)
+@click.option("-r", "--recursive", is_flag=True, help="Recurse into subdirectories.")
+def upload(
+    path: str,
+    title: str | None,
+    tag_ids: tuple[int, ...],
+    type_id: int | None,
+    corr_id: int | None,
+    recursive: bool,
+) -> None:
+    """Upload a document file or all PDFs in a directory."""
+    from paperless._errors import die
+
+    target = Path(path)
+
+    if target.is_dir():
+        if title:
+            die("--title cannot be used with directory uploads")
+        files = _collect_files(target, recursive)
+        click.echo(f"uploading {len(files)} file(s) from {target}")
+        for f in files:
+            _upload_single(f, None, tag_ids, type_id, corr_id)
+    else:
+        _upload_single(target, title, tag_ids, type_id, corr_id)
 
 
 @cli.command()

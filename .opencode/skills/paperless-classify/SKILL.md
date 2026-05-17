@@ -131,13 +131,18 @@ Principles:
 
 ### Title Formatting
 
-- Structure: `Correspondent - Description (Date or Context)`
+Paperless displays titles as `Correspondent: Title` in the UI. Titles MUST NOT repeat the
+correspondent name; that creates redundant display like `TxDMV: TxDMV - Certificate of Title`.
+
+- Structure: `Description (Date or Context)`
 - Examples:
-  - "Parker Brothers - Carpet Cleaning Invoice (Oct 2024)"
-  - "AAA Insurance - Home Policy Declaration (2025-2026)"
-  - "Kwik Kar - QX60 Transmission Warranty (Nov 2022)"
+  - "Carpet Cleaning Invoice (Oct 2024)"
+  - "Home Policy Declaration (2025-2026)"
+  - "QX60 Transmission Rebuild Warranty (Nov 2022)"
+  - "Certificate of Title, 2016 Mazda 6 (Jul 2016)"
 - Keep titles concise but specific enough to distinguish from similar documents
 - Include date context when the document is time-bounded
+- The correspondent field provides the "who"; the title provides the "what"
 
 ## Taxonomy Maintenance
 
