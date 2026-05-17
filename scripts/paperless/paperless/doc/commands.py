@@ -246,20 +246,26 @@ def update(
 
     async def _update():
         async with open_client() as p:
+            from paperless.classify.commands import _ensure_tag
+
             doc = await p.documents(doc_id)
             if title:
                 doc.title = title
             if tag_ids:
                 # Replace semantics: specified tags + ai-classified
-                from paperless.classify.commands import _ensure_tag
-
                 ai_tag_id = await _ensure_tag(p)
                 doc.tags = list(set(tag_ids) | {ai_tag_id})
             elif add_tags or remove_tags:
                 current = set(doc.tags or [])
                 current.update(add_tags)
                 current -= set(remove_tags)
-                doc.tags = list(current)
+                ai_tag_id = await _ensure_tag(p)
+                doc.tags = list(current | {ai_tag_id})
+            else:
+                # No tag flags: still inject ai-classified
+                ai_tag_id = await _ensure_tag(p)
+                current = set(doc.tags or [])
+                doc.tags = list(current | {ai_tag_id})
             if type_id is not None:
                 doc.document_type = type_id
             if corr_id is not None:

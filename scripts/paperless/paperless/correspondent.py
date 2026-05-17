@@ -38,6 +38,9 @@ def create(name: str) -> None:
         async with open_client() as p:
             draft = p.correspondents.create()
             draft.name = name
+            draft.match = ""
+            draft.matching_algorithm = 0
+            draft.is_insensitive = True
             return await p.correspondents.save(draft)
 
     pk = run_async(_create())

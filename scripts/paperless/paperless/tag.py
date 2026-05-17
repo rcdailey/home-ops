@@ -40,8 +40,10 @@ def create(name: str, color: str | None, inbox: bool) -> None:
         async with open_client() as p:
             draft = p.tags.create()
             draft.name = name
-            if color:
-                draft.color = color
+            draft.match = ""
+            draft.matching_algorithm = 0
+            draft.is_insensitive = True
+            draft.color = color or "#a6cee3"
             draft.is_inbox_tag = inbox
             return await p.tags.save(draft)
 
