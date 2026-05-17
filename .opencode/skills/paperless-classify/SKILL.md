@@ -16,7 +16,8 @@ data gathering and persistence interface.
 
 ## Prerequisites
 
-- `ai-classified` tag exists in Paperless (run `./scripts/paperless.sh classify tag` to ensure)
+- "inbox" tag exists with `is_inbox_tag=true` (created automatically by `ensure_inbox_tag()`)
+- A Paperless workflow assigns the inbox tag to all newly consumed documents
 - Taxonomy (types, correspondents, tags) is populated with initial entries
 - Documents have been uploaded and OCR processing is complete
 
@@ -28,8 +29,8 @@ data gathering and persistence interface.
 ./scripts/paperless.sh classify inbox
 ```
 
-Shows documents without the `ai-classified` tag. These have never been reviewed by the AI
-classifier, regardless of whether Paperless auto-assigned some fields.
+Shows documents with the inbox tag. These have not yet been reviewed, regardless of whether
+Paperless auto-assigned some fields.
 
 ### 2. Get the briefing
 
@@ -64,8 +65,8 @@ For each document, determine:
   --tag TAG_ID --tag TAG_ID
 ```
 
-The `--tag` flag uses replace semantics: specified tags become the complete tag set, and
-`ai-classified` is automatically injected. The agent never specifies `ai-classified` directly.
+The `--tag` flag uses replace semantics: specified tags become the complete tag set. The inbox tag
+is automatically removed on any `doc update` call, signaling that classification is done.
 
 ### 5. Handle taxonomy gaps
 
@@ -155,9 +156,9 @@ Principles:
 ### Reviewing auto-classification
 
 Paperless auto-classifies on ingestion using a sklearn classifier trained on existing documents. Its
-assignments may be wrong. The inbox workflow reviews ALL untagged documents regardless of whether
-Paperless pre-filled fields. When the brief shows incorrect auto-assigned values, overwrite them
-with correct values.
+assignments may be wrong. The inbox workflow reviews ALL documents that still carry the inbox tag,
+regardless of whether Paperless pre-filled fields. When the brief shows incorrect auto-assigned
+values, overwrite them with correct values.
 
 Over time, correct classifications improve the auto-classifier. The feedback loop is automatic.
 

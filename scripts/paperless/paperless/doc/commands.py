@@ -213,7 +213,7 @@ def upload(
     "tag_ids",
     multiple=True,
     type=int,
-    help="Tag ID (repeatable). Replaces all tags and adds ai-classified.",
+    help="Tag ID (repeatable). Replaces all tags.",
 )
 @click.option(
     "--add-tag", "add_tags", multiple=True, type=int, help="Tag ID to add (repeatable)."
@@ -243,29 +243,28 @@ def update(
     clear_type: bool,
 ) -> None:
     """Update document metadata."""
+    from paperless._permissions import ensure_inbox_tag
 
     async def _update():
+        inbox_tag_id = await ensure_inbox_tag()
         async with open_client() as p:
-            from paperless.classify.commands import _ensure_tag
-
             doc = await p.documents(doc_id)
             if title:
                 doc.title = title
             if tag_ids:
-                # Replace semantics: specified tags + ai-classified
-                ai_tag_id = await _ensure_tag(p)
-                doc.tags = list(set(tag_ids) | {ai_tag_id})
+                # Replace semantics: exclude inbox tag from replacement set
+                doc.tags = list(set(tag_ids) - {inbox_tag_id})
             elif add_tags or remove_tags:
                 current = set(doc.tags or [])
                 current.update(add_tags)
                 current -= set(remove_tags)
-                ai_tag_id = await _ensure_tag(p)
-                doc.tags = list(current | {ai_tag_id})
+                current.discard(inbox_tag_id)
+                doc.tags = list(current)
             else:
-                # No tag flags: still inject ai-classified
-                ai_tag_id = await _ensure_tag(p)
+                # No tag flags: remove inbox tag to signal classification done
                 current = set(doc.tags or [])
-                doc.tags = list(current | {ai_tag_id})
+                current.discard(inbox_tag_id)
+                doc.tags = list(current)
             if type_id is not None:
                 doc.document_type = type_id
             if corr_id is not None:

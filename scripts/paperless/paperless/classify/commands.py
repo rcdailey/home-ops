@@ -10,9 +10,9 @@ import ftfy
 import yake
 
 from paperless._client import open_client, run_async
+from paperless._permissions import ensure_inbox_tag
 from paperless.classify import cli
 
-AI_CLASSIFIED_TAG = "ai-classified"
 CONTENT_LIMIT = 2000
 KEYWORD_THRESHOLD = 5000
 
@@ -36,54 +36,27 @@ def _extract_keywords(text: str, top_n: int = 10) -> str:
     return ", ".join(kw for kw, _score in keywords)
 
 
-async def _ensure_tag(p) -> int:
-    """Ensure ai-classified tag exists and return its ID."""
-    tags = await p.tags.as_list()
-    for t in tags:
-        if t.name == AI_CLASSIFIED_TAG:
-            return t.id
-    draft = p.tags.create()
-    draft.name = AI_CLASSIFIED_TAG
-    draft.matching_algorithm = 0  # None (never auto-assign)
-    draft.match = ""
-    draft.is_insensitive = False
-    draft.is_inbox_tag = False
-    draft.color = "#a6cee3"
-    pk = await p.tags.save(draft)
-    return pk
-
-
-async def _get_tag_id(p) -> int | None:
-    """Get ai-classified tag ID if it exists, else None."""
-    tags = await p.tags.as_list()
-    for t in tags:
-        if t.name == AI_CLASSIFIED_TAG:
-            return t.id
-    return None
-
-
 @cli.command()
 @click.option("-n", "--limit", default=25, type=int, help="Max documents to show.")
 def inbox(limit: int) -> None:
-    """List documents pending classification (missing ai-classified tag)."""
+    """List documents pending classification (have inbox tag)."""
 
     async def _inbox():
+        inbox_tag_id = await ensure_inbox_tag()
         async with open_client() as p:
-            tag_id = await _get_tag_id(p)
             results = []
             async for doc in p.documents:
                 doc_tags = doc.tags or []
-                if tag_id is None or tag_id not in doc_tags:
+                if inbox_tag_id in doc_tags:
                     results.append(doc)
                     if len(results) >= limit:
                         break
-            # Resolve names for display
             all_types = {t.id: t.name for t in await p.document_types.as_list()}
             all_corrs = {c.id: c.name for c in await p.correspondents.as_list()}
             all_tags = {t.id: t.name for t in await p.tags.as_list()}
-            return results, all_types, all_corrs, all_tags
+            return results, all_types, all_corrs, all_tags, inbox_tag_id
 
-    docs, types, corrs, tags = run_async(_inbox())
+    docs, types, corrs, tags, inbox_tag_id = run_async(_inbox())
     if not docs:
         click.echo("inbox empty")
         return
@@ -94,12 +67,12 @@ def inbox(limit: int) -> None:
             missing.append("correspondent")
         if not doc.document_type:
             missing.append("type")
-        doc_tags = [t for t in (doc.tags or []) if tags.get(t, "") != AI_CLASSIFIED_TAG]
+        doc_tags = [t for t in (doc.tags or []) if t != inbox_tag_id]
         if not doc_tags:
             missing.append("tags")
         corr_name = corrs.get(doc.correspondent, "none")
         type_name = types.get(doc.document_type, "none")
-        tag_names = [tags.get(t, str(t)) for t in (doc.tags or [])]
+        tag_names = [tags.get(t, str(t)) for t in (doc.tags or []) if t != inbox_tag_id]
         line = f"#{doc.id} {doc.title}"
         meta = f"corr={corr_name} type={type_name} tags=[{', '.join(tag_names)}]"
         missing_str = f"missing: {', '.join(missing)}" if missing else "all fields set"
@@ -114,16 +87,12 @@ def brief(doc_ids: tuple[int, ...], limit: int) -> None:
     """Output taxonomy and document content for classification."""
 
     async def _brief():
+        inbox_tag_id = await ensure_inbox_tag()
         async with open_client() as p:
             # Taxonomy
             all_tags = await p.tags.as_list()
             all_types = await p.document_types.as_list()
             all_corrs = await p.correspondents.as_list()
-            tag_id = None
-            for t in all_tags:
-                if t.name == AI_CLASSIFIED_TAG:
-                    tag_id = t.id
-                    break
 
             # Determine which docs to brief
             if doc_ids:
@@ -132,14 +101,14 @@ def brief(doc_ids: tuple[int, ...], limit: int) -> None:
                 docs = []
                 async for doc in p.documents:
                     doc_tags = doc.tags or []
-                    if tag_id is None or tag_id not in doc_tags:
+                    if inbox_tag_id in doc_tags:
                         docs.append(doc)
                         if len(docs) >= limit:
                             break
 
-            return docs, all_tags, all_types, all_corrs, tag_id
+            return docs, all_tags, all_types, all_corrs, inbox_tag_id
 
-    docs, all_tags, all_types, all_corrs, tag_id = run_async(_brief())
+    docs, all_tags, all_types, all_corrs, inbox_tag_id = run_async(_brief())
 
     # Print taxonomy
     click.echo("=== Taxonomy ===")
@@ -150,7 +119,7 @@ def brief(doc_ids: tuple[int, ...], limit: int) -> None:
     for t in sorted(all_types, key=lambda x: x.name.lower()):
         click.echo(f"  {t.id}={t.name}")
     click.echo("Tags:")
-    display_tags = [t for t in all_tags if t.name != AI_CLASSIFIED_TAG]
+    display_tags = [t for t in all_tags if t.id != inbox_tag_id]
     for t in sorted(display_tags, key=lambda x: x.name.lower()):
         click.echo(f"  {t.id}={t.name}")
     click.echo()
@@ -170,9 +139,7 @@ def brief(doc_ids: tuple[int, ...], limit: int) -> None:
         corr_name = corr_map.get(doc.correspondent, "none")
         type_name = type_map.get(doc.document_type, "none")
         doc_tags = [
-            tag_map.get(t, str(t))
-            for t in (doc.tags or [])
-            if tag_map.get(t) != AI_CLASSIFIED_TAG
+            tag_map.get(t, str(t)) for t in (doc.tags or []) if t != inbox_tag_id
         ]
         click.echo(
             f"Current: correspondent={corr_name}, type={type_name}, "
@@ -198,15 +165,3 @@ def brief(doc_ids: tuple[int, ...], limit: int) -> None:
         else:
             click.echo("Content: (empty)")
         click.echo()
-
-
-@cli.command()
-def tag() -> None:
-    """Ensure ai-classified tag exists and show its ID."""
-
-    async def _tag():
-        async with open_client() as p:
-            return await _ensure_tag(p)
-
-    tag_id = run_async(_tag())
-    click.echo(f"ai-classified tag: #{tag_id}")

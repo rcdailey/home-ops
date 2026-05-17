@@ -5,6 +5,7 @@ from __future__ import annotations
 from paperless._client import get_transport
 
 FAMILY_GROUP_NAME = "family"
+INBOX_TAG_NAME = "inbox"
 
 _BASE_FIELDS: dict[str, object] = {
     "match": "",
@@ -52,6 +53,23 @@ async def create_object(object_type: str, fields: dict[str, object]) -> int:
         return result["id"]
     finally:
         await transport.close()
+
+
+async def ensure_inbox_tag() -> int:
+    """Find or create the inbox tag and return its ID."""
+    transport = get_transport()
+    try:
+        data = await transport.get("/api/tags/")
+        results = data.get("results", data) if isinstance(data, dict) else data
+        for tag in results:
+            if tag.get("name") == INBOX_TAG_NAME:
+                return tag["id"]
+    finally:
+        await transport.close()
+    return await create_object(
+        "tags",
+        {"name": INBOX_TAG_NAME, "is_inbox_tag": True, "color": "#a6cee3"},
+    )
 
 
 async def set_family_permissions(object_type: str, object_id: int) -> None:
