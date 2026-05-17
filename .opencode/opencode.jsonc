@@ -47,7 +47,8 @@
       "helm rollback*": "deny",
 
       // others: complete deny
-      "just *": "deny"
+      "just *": "deny",
+      "just infisical add-secret*": "ask",
     }
   }
 }
