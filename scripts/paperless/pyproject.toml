@@ -1,0 +1,27 @@
+[project]
+name = "paperless"
+version = "0.1.0"
+description = "LLM-optimized Paperless-ngx document management CLI"
+requires-python = ">=3.13"
+# pypaperless v6.0 targets Paperless-ngx >= 3.0 but is not yet published to PyPI.
+# Install from git main until v6.0 is released.
+dependencies = [
+    "click>=8.1",
+    "pypaperless @ git+https://github.com/tb1337/paperless-api.git@main",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["paperless"]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
