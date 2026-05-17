@@ -64,6 +64,38 @@ def test_doc_search_no_results():
         assert "no results" in result.output
 
 
+async def _async_iter(items):
+    for item in items:
+        yield item
+
+
+def test_tasks_shows_active():
+    task = MagicMock()
+    task.status = "started"
+    client = _make_client()
+    client.tasks = MagicMock()
+    client.tasks.active = lambda: _async_iter([task, task])
+
+    with patch("paperless.doc.commands.open_client", return_value=client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["doc", "tasks"])
+        assert result.exit_code == 0
+        assert "2 active" in result.output
+        assert "started" in result.output
+
+
+def test_tasks_no_active():
+    client = _make_client()
+    client.tasks = MagicMock()
+    client.tasks.active = lambda: _async_iter([])
+
+    with patch("paperless.doc.commands.open_client", return_value=client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["doc", "tasks"])
+        assert result.exit_code == 0
+        assert "no active tasks" in result.output
+
+
 def test_upload_single_file(tmp_path):
     pdf = tmp_path / "invoice.pdf"
     pdf.write_bytes(b"%PDF-1.4 fake content")

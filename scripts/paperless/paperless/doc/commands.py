@@ -77,6 +77,43 @@ def list_cmd(
 
 
 @cli.command()
+@click.option("-w", "--wait", is_flag=True, help="Block until all tasks finish.")
+@click.option(
+    "--interval",
+    default=2,
+    type=int,
+    help="Poll interval in seconds when waiting.",
+)
+def tasks(wait: bool, interval: int) -> None:
+    """Show active document processing tasks, optionally wait for completion."""
+    import time
+
+    prev_count = -1
+    while True:
+        active = run_async(_active_tasks())
+        count = len(active)
+        if count == 0:
+            click.echo("no active tasks")
+            return
+        if count != prev_count:
+            by_status: dict[str, int] = {}
+            for t in active:
+                by_status[t.status] = by_status.get(t.status, 0) + 1
+            parts = [f"{v} {k}" for k, v in sorted(by_status.items())]
+            click.echo(f"{count} active: {', '.join(parts)}")
+            prev_count = count
+        if not wait:
+            return
+        time.sleep(interval)
+
+
+async def _active_tasks() -> list:
+    """Fetch active (pending/started) tasks."""
+    async with open_client() as p:
+        return [t async for t in p.tasks.active()]
+
+
+@cli.command()
 @click.argument("doc_id", type=int)
 @click.option("--full", is_flag=True, help="Show full content without truncation.")
 def show(doc_id: int, full: bool) -> None:

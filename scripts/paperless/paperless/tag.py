@@ -31,17 +31,19 @@ def list_cmd() -> None:
 
 
 @cli.command()
-@click.argument("name")
+@click.argument("names", nargs=-1, required=True)
 @click.option("--color", default=None, help="Hex color (e.g. #a6cee3).")
 @click.option("--inbox", is_flag=True, help="Mark as inbox tag.")
-def create(name: str, color: str | None, inbox: bool) -> None:
-    """Create a new tag."""
-    pk = run_async(
-        create_object(
-            "tags", {"name": name, "color": color or "#a6cee3", "is_inbox_tag": inbox}
+def create(names: tuple[str, ...], color: str | None, inbox: bool) -> None:
+    """Create one or more tags."""
+    for name in names:
+        pk = run_async(
+            create_object(
+                "tags",
+                {"name": name, "color": color or "#a6cee3", "is_inbox_tag": inbox},
+            )
         )
-    )
-    click.echo(f"created tag #{pk}: {name}")
+        click.echo(f"created tag #{pk}: {name}")
 
 
 @cli.command()

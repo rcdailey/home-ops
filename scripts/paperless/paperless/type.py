@@ -31,11 +31,12 @@ def list_cmd() -> None:
 
 
 @cli.command()
-@click.argument("name")
-def create(name: str) -> None:
-    """Create a new document type."""
-    pk = run_async(create_object("document_types", {"name": name}))
-    click.echo(f"created document type #{pk}: {name}")
+@click.argument("names", nargs=-1, required=True)
+def create(names: tuple[str, ...]) -> None:
+    """Create one or more document types."""
+    for name in names:
+        pk = run_async(create_object("document_types", {"name": name}))
+        click.echo(f"created document type #{pk}: {name}")
 
 
 @cli.command()
