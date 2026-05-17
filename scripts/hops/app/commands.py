@@ -5,10 +5,12 @@ from __future__ import annotations
 import click
 
 from hops.app import cli
+from hops.app.events import diagnose_events as _diagnose_events
 from hops.app.gather import (
-    diagnose_events as _diagnose_events,
+    diagnose_externalsecrets as _diagnose_externalsecrets,
     diagnose_flux as _diagnose_flux,
     diagnose_gateway as _diagnose_gateway,
+    diagnose_services as _diagnose_services,
     diagnose_workload as _diagnose_workload,
 )
 from hops.app.pod_detail import diagnose_pod as _diagnose_pod
@@ -200,8 +202,10 @@ def diagnose(app: str, namespace: str | None, explain: bool):
 
     section("FLUX")
     _diagnose_flux(app, target.namespace)
+    _diagnose_externalsecrets(app, target.namespace)
 
     if target.kind in (TargetKind.WORKLOAD, TargetKind.POD):
+        _diagnose_services(target.name, target.namespace)
         _diagnose_workload(target.name, target.namespace)
     else:
         _diagnose_gateway(app, target.namespace)

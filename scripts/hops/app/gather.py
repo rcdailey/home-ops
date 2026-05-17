@@ -1,4 +1,4 @@
-"""Diagnose command internals: Flux status, workload, gateway, events.
+"""Diagnose command internals: Flux status, workload, gateway, services.
 
 Data-fetching functions called by the diagnose command. All functions
 print output directly; there is no separate render layer.
@@ -8,8 +8,67 @@ from __future__ import annotations
 
 import click
 
+from hops.app.events import compact_event_message
 from hops.core.format import age_str, info, section, table, truncate
 from hops.core.runner import kubectl_json, run, run_json
+
+
+def diagnose_services(app_name: str, ns: str):
+    """Show services matching an app (catches naming surprises)."""
+    section("SERVICES")
+    svc_data = kubectl_json("services", namespace=ns)
+    rows = []
+    for item in svc_data.get("items", []):
+        meta = item.get("metadata", {})
+        name = meta.get("name", "")
+        labels = meta.get("labels", {})
+        app_label = labels.get("app.kubernetes.io/name", "")
+        if app_label != app_name and not name.startswith(app_name):
+            continue
+        spec = item.get("spec", {})
+        stype = spec.get("type", "ClusterIP")
+        ports = ", ".join(
+            f"{p.get('name', '?')}:{p.get('port', '?')}" for p in spec.get("ports", [])
+        )
+        cluster_ip = spec.get("clusterIP", "")
+        rows.append([name, stype, ports, cluster_ip])
+    if rows:
+        table(["SERVICE", "TYPE", "PORTS", "CLUSTER-IP"], rows)
+    else:
+        info(f"No services found for {app_name!r}")
+
+
+def diagnose_externalsecrets(app_name: str, ns: str):
+    """Show ExternalSecret sync status for an app."""
+    es_data = kubectl_json("externalsecrets", namespace=ns)
+    rows = []
+    for item in es_data.get("items", []):
+        meta = item.get("metadata", {})
+        name = meta.get("name", "")
+        if not name.startswith(app_name):
+            continue
+        conditions = item.get("status", {}).get("conditions", [])
+        sync = "?"
+        msg = ""
+        for cond in conditions:
+            if cond.get("type") == "Ready":
+                sync = "Synced" if cond.get("status") == "True" else "Error"
+                if sync == "Error":
+                    msg = truncate(cond.get("message", ""), 100)
+                break
+        row = [name, sync]
+        if msg:
+            row.append(msg)
+        rows.append(row)
+    if rows:
+        section("EXTERNALSECRETS")
+        headers = ["NAME", "STATUS"]
+        if any(len(r) > 2 for r in rows):
+            headers.append("MESSAGE")
+            for r in rows:
+                if len(r) == 2:
+                    r.append("")
+        table(headers, rows)
 
 
 def diagnose_workload(app_name: str, ns: str):
@@ -254,77 +313,6 @@ def _print_conditions(data: dict):
         status_str = "yes" if cstatus == "True" else "no"
         detail = f": {truncate(msg, 80)}" if msg else ""
         info(f"  {ctype}: {status_str}{detail}")
-
-
-def diagnose_events(app: str, ns: str):
-    """Show non-Normal events filtered to an app name."""
-    section(f"EVENTS (non-Normal, {ns})")
-    events_args = [
-        "kubectl",
-        "get",
-        "events",
-        "-n",
-        ns,
-        "--sort-by=.lastTimestamp",
-        "-o",
-        "json",
-    ]
-    events_data = run_json(events_args, timeout=30)
-    event_items = events_data.get("items", [])
-    app_events = []
-    for e in event_items:
-        if e.get("type", "Normal") == "Normal":
-            continue
-        obj = e.get("involvedObject", {})
-        obj_name = obj.get("name", "")
-        if obj_name.startswith(app):
-            app_events.append(e)
-
-    # Deduplicate events with identical messages, keeping the most recent.
-    # Strip trailing "Last Helm logs:" blocks before comparing (timestamps vary).
-    def _dedup_key(msg: str) -> str:
-        idx = msg.find("\n\nLast Helm logs:")
-        return msg[:idx] if idx != -1 else msg
-
-    seen_keys: dict[str, int] = {}
-    deduped: list[dict] = []
-    for e in reversed(app_events):
-        key = _dedup_key(e.get("message", ""))
-        if key not in seen_keys:
-            seen_keys[key] = 0
-            deduped.append(e)
-        seen_keys[key] += 1
-    deduped.reverse()
-    deduped = deduped[-20:]
-
-    if deduped:
-        event_rows = []
-        for e in deduped:
-            reason = e.get("reason", "?")
-            obj = e.get("involvedObject", {})
-            obj_str = f"{obj.get('kind', '?')}/{obj.get('name', '?')}"
-            msg = compact_event_message(e.get("message", ""))
-            last_seen = age_str(e.get("lastTimestamp"))
-            count = seen_keys.get(_dedup_key(e.get("message", "")), 1)
-            count_str = f"x{count}" if count > 1 else ""
-            event_rows.append([last_seen, reason, obj_str, count_str, msg])
-        table(["AGE", "REASON", "OBJECT", "#", "MESSAGE"], event_rows)
-    else:
-        info("(none)")
-
-
-def compact_event_message(msg: str) -> str:
-    """Shorten verbose Helm template error chains to the actionable tail."""
-    if "error calling include:" in msg or "error calling tpl:" in msg:
-        for marker in ("error calling tpl:", "error calling include:"):
-            idx = msg.rfind(marker)
-            if idx != -1:
-                tail = msg[idx:].strip()
-                prefix = msg[:80].split(":")[0] if len(msg) > 200 else ""
-                if prefix:
-                    return f"{prefix}: ... {tail}"
-                return tail
-    return msg
 
 
 def diagnose_flux(app: str, namespace: str):

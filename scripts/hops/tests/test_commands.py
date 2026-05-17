@@ -33,8 +33,8 @@ def test_app_list_namespace():
 
 
 @pytest.mark.integration
-def test_app_pods():
-    result = run_hops("app", "pods", "plex", "-n", "media")
+def test_app_pod():
+    result = run_hops("app", "pod", "plex", "-n", "media")
     assert result.returncode == 0
     assert "POD" in result.stdout
 
@@ -53,6 +53,7 @@ def test_app_diagnose():
     result = run_hops("app", "diagnose", "plex", "-n", "media")
     assert result.returncode == 0
     assert "FLUX" in result.stdout
+    assert "SERVICES" in result.stdout
     assert "PODS" in result.stdout
 
 
