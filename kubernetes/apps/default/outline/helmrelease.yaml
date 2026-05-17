@@ -31,7 +31,7 @@ spec:
               tag: 1.7.1
             env:
               # Core
-              URL: https://docs.${SECRET_DOMAIN}
+              URL: https://wiki.${SECRET_DOMAIN}
               PORT: "8080"
               ENABLE_UPDATES: "false"
               WEB_CONCURRENCY: "1"
@@ -136,7 +136,7 @@ spec:
     route:
       app:
         hostnames:
-        - docs.${SECRET_DOMAIN}
+        - wiki.${SECRET_DOMAIN}
         parentRefs:
         - name: internal
           namespace: network

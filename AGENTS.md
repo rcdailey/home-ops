@@ -210,7 +210,7 @@ co-location defeats the purpose of HA (e.g., DNS servers, database operators).
 - MUST hard-wrap at column 100
 - Blank line required between headings, lists, code blocks, and other elements
 
-**Outline vs docs/ boundary:** Outline (`docs.${SECRET_DOMAIN}`) is the household knowledge base for
+**Outline vs docs/ boundary:** Outline (`wiki.${SECRET_DOMAIN}`) is the household knowledge base for
 home maintenance, pool care, media room, homelab reference, and hobby documentation. Content lives
 in Outline when it changes independently of code, benefits from rich editing and search, or may be
 referenced by non-technical users. The `docs/` directory is for content tightly coupled to the
