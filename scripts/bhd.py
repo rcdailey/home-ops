@@ -7,11 +7,13 @@
 
 import hashlib
 import json
+import math
 import os
 import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import click
@@ -125,15 +127,40 @@ def _promo_weight(t: dict) -> float:
     return 0.0
 
 
-def _score(t: dict) -> float:
-    """Score: (leechers / (seeders + 1)) * promo_weight / size_gib.
+def _completion_rate(t: dict) -> float:
+    """Daily completion rate (completions / age_days)."""
+    completions = t.get("times_completed", 0)
+    created = t.get("created_at", "")
+    if not created:
+        return float(completions)
+    try:
+        created_dt = datetime.strptime(created, "%Y-%m-%d %H:%M:%S").replace(
+            tzinfo=timezone.utc
+        )
+        age_days = max((datetime.now(timezone.utc) - created_dt).days, 1)
+    except (ValueError, TypeError):
+        return float(completions)
+    return completions / age_days
 
-    Demand-per-GiB: smaller torrents with high demand rank higher because
-    they finish downloading faster and start seeding sooner.
+
+def _score(t: dict) -> float:
+    """Score for set-and-forget ratio building.
+
+    (completions/day) / (seeders+1)^2  *  promo_weight  *  log2(size_gib+1)
+
+    - Daily completion rate normalizes for torrent age; a recent torrent
+      with 10 snatches in a week scores far above a 4-year-old torrent
+      with 22 lifetime snatches.
+    - Squaring (seeders+1) heavily penalizes crowded swarms where your share
+      of any future leecher is negligible.
+    - log2(size+1) rewards larger torrents: leechers stay connected longer,
+      producing more sustained upload per snatch.
     """
-    demand = t.get("leechers", 0) / (t.get("seeders", 0) + 1)
+    rate = _completion_rate(t)
+    seeders = t.get("seeders", 0)
     size_gib = max(t.get("size", 0) / (1024**3), 0.01)
-    return (demand * _promo_weight(t)) / size_gib
+    demand = rate / (seeders + 1) ** 2
+    return demand * _promo_weight(t) * math.log2(size_gib + 1)
 
 
 def _size(n: int) -> str:
@@ -152,8 +179,8 @@ def _collect_promo_results(
 
     Strategy:
     - Promo types ordered by value (free first, partial discounts last).
-    - Page 1 sorted by leechers desc; skip type entirely if page 1 peak
-      leechers is 0 (no demand, not worth paginating).
+    - Sorted by times_completed desc to surface proven-demand torrents
+      (scoring penalizes high seeders client-side).
     - Stop collecting once we have 2x the requested limit (scoring headroom).
     - 2s delay between API calls; abort all on rate limit.
     - Responses cached for 10 minutes so preview-then-grab doesn't double-hit.
@@ -170,7 +197,7 @@ def _collect_promo_results(
 
         body: dict = {
             "action": "search",
-            "sort": "leechers",
+            "sort": "times_completed",
             "order": "desc",
             flag: 1,
             "alive": 1,
@@ -205,10 +232,6 @@ def _collect_promo_results(
                 continue
 
             page_results = result.get("results", [])
-
-            # Skip this promo type if page 1 has zero leechers everywhere
-            if page == 1 and all(t.get("leechers", 0) == 0 for t in page_results):
-                break
 
             new_count = 0
             for t in page_results:
@@ -327,6 +350,12 @@ def search(search, **kwargs):
     "--any-promo", is_flag=True, help="Search high-value promo types (excludes promo75)"
 )
 @click.option("--max-size", type=float, default=None, help="Max torrent size in GiB")
+@click.option(
+    "--max-seeders",
+    type=int,
+    default=None,
+    help="Exclude torrents with more than N seeders",
+)
 @click.option("--limit", type=int, default=20, help="Number of results")
 @click.option("--pages", type=int, default=1, help="API pages per promo type")
 @click.option("--json", "as_json", is_flag=True, help="Output raw JSON")
@@ -343,6 +372,7 @@ def ratio_picks(
     rewind,
     any_promo,
     max_size,
+    max_seeders,
     limit,
     pages,
     as_json,
@@ -374,6 +404,8 @@ def ratio_picks(
         all_results = [
             t for t in all_results if t.get("size", 0) / (1024**3) <= max_size
         ]
+    if max_seeders is not None:
+        all_results = [t for t in all_results if t.get("seeders", 0) <= max_seeders]
 
     results = all_results[:limit]
 
@@ -387,30 +419,37 @@ def ratio_picks(
 
     if verbose:
         click.echo(
-            f"{'#':>3}  {'Promo':6}  {'S':>4}  {'L':>4}  {'Size':>10}  "
-            f"{'Demand':>6}  {'Wt':>4}  {'Score':>7}  Name"
+            f"{'#':>3}  {'Promo':6}  {'S':>4}  {'L':>4}  {'Comp':>5}  "
+            f"{'C/day':>5}  {'Size':>10}  {'Demand':>6}  "
+            f"{'Score':>7}  Name"
         )
-        click.echo("-" * 110)
+        click.echo("-" * 120)
         for i, t in enumerate(results, 1):
-            seeders, leechers = t.get("seeders", 0), t.get("leechers", 0)
+            seeders = t.get("seeders", 0)
+            leechers = t.get("leechers", 0)
+            completions = t.get("times_completed", 0)
+            rate = _completion_rate(t)
             click.echo(
                 f"{i:3}  {_promo_label(t):6}  {seeders:4}  {leechers:4}  "
+                f"{completions:5}  {rate:5.2f}  "
                 f"{_size(t.get('size', 0)):>10}  "
-                f"{leechers / (seeders + 1):6.2f}  {_promo_weight(t):4.2f}  "
+                f"{rate / (seeders + 1) ** 2:6.3f}  "
                 f"{_score(t):7.4f}  "
-                f"{t.get('name', '?')[:52]}"
+                f"{t.get('name', '?')[:48]}"
             )
     else:
         click.echo(
-            f"{'#':>3}  {'Promo':6}  {'S':>4}  {'L':>4}  {'Size':>10}  "
-            f"{'Score':>7}  Name"
+            f"{'#':>3}  {'Promo':6}  {'S':>4}  {'L':>4}  {'Comp':>5}  "
+            f"{'C/day':>5}  {'Size':>10}  {'Score':>7}  Name"
         )
-        click.echo("-" * 100)
+        click.echo("-" * 110)
         for i, t in enumerate(results, 1):
             click.echo(
                 f"{i:3}  {_promo_label(t):6}  {t.get('seeders', 0):4}  "
-                f"{t.get('leechers', 0):4}  {_size(t.get('size', 0)):>10}  "
-                f"{_score(t):7.4f}  {t.get('name', '?')[:58]}"
+                f"{t.get('leechers', 0):4}  {t.get('times_completed', 0):5}  "
+                f"{_completion_rate(t):5.2f}  "
+                f"{_size(t.get('size', 0)):>10}  "
+                f"{_score(t):7.4f}  {t.get('name', '?')[:48]}"
             )
 
     click.echo()
@@ -426,8 +465,9 @@ def ratio_picks(
 @click.option("--instance", default="1", help="QUI instance ID")
 @click.option("--category", default="manual")
 @click.option("--tags", default="bhd-ratio", help="Comma-separated tags")
+@click.option("--limit", type=int, default=None, help="Grab only first N torrents")
 @click.option("--paused", is_flag=True)
-def grab(ids, url, instance, category, tags, paused):
+def grab(ids, url, instance, category, tags, limit, paused):
     """Download from BHD and add to qBittorrent via QUI."""
     if not RSS_KEY:
         click.echo("Error: BHD_RSS_KEY env var is required for grab", err=True)
@@ -452,6 +492,9 @@ def grab(ids, url, instance, category, tags, paused):
     if ids:
         wanted = {int(x) for x in ids.split(",")}
         torrents = [t for t in torrents if t.get("id") in wanted]
+
+    if limit is not None:
+        torrents = torrents[:limit]
 
     if not torrents:
         click.echo("No torrents to grab.", err=True)

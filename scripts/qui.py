@@ -8,6 +8,7 @@
 import json
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 import click
 import httpx
@@ -38,11 +39,50 @@ def _out(data):
     click.echo(json.dumps(data, indent=2))
 
 
+def _fmt_bytes(n: int | float) -> str:
+    """Format bytes to compact human-readable string."""
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+        if abs(n) < 1024:
+            return f"{n:.1f}{unit}" if n != int(n) else f"{int(n)}{unit}"
+        n /= 1024
+    return f"{n:.1f}PiB"
+
+
+def _fmt_speed(n: int) -> str:
+    """Format bytes/s, or '-' when idle."""
+    return "-" if n == 0 else f"{_fmt_bytes(n)}/s"
+
+
+def _tracker_domain(url: str) -> str:
+    """Extract hostname from a tracker announce URL."""
+    if not url or url.startswith("**"):
+        return ""
+    try:
+        return urlparse(url).hostname or ""
+    except Exception:
+        return url
+
+
 def _get(path: str):
     with _client() as c:
         r = c.get(path)
         r.raise_for_status()
         return r.json()
+
+
+def _resolve_instance(ctx, _param, value: str) -> int:
+    """Click callback: resolve an instance name or ID to its numeric ID."""
+    if value.isdigit():
+        return int(value)
+    instances = _get("/api/instances")
+    for inst in instances:
+        if inst["name"].lower() == value.lower():
+            return inst["id"]
+    names = [inst["name"] for inst in instances]
+    raise click.BadParameter(f"'{value}' not found. Available: {', '.join(names)}")
+
+
+INSTANCE = click.argument("instance", callback=_resolve_instance)
 
 
 def _post(path: str, body: dict | None = None):
@@ -75,21 +115,21 @@ def instances():
 
 
 @cli.command("instance-info")
-@click.argument("instance")
+@INSTANCE
 def instance_info(instance):
     """Get qBittorrent app info for an instance."""
     _out(_get(f"/api/instances/{instance}/app-info"))
 
 
 @cli.command("instance-prefs")
-@click.argument("instance")
+@INSTANCE
 def instance_prefs(instance):
     """Get qBittorrent preferences for an instance."""
     _out(_get(f"/api/instances/{instance}/preferences"))
 
 
 @cli.command("transfer-info")
-@click.argument("instance")
+@INSTANCE
 def transfer_info(instance):
     """Get transfer stats for an instance."""
     _out(_get(f"/api/instances/{instance}/transfer-info"))
@@ -99,7 +139,7 @@ def transfer_info(instance):
 
 
 @cli.command()
-@click.argument("instance")
+@INSTANCE
 @click.option("--limit", default=50, type=int)
 @click.option("--offset", default=0, type=int)
 @click.option("--sort", default="added_on")
@@ -107,9 +147,23 @@ def transfer_info(instance):
 @click.option("--filter", "state_filter", default=None, help="State filter")
 @click.option("--category", default=None)
 @click.option("--tag", default=None)
-@click.option("--tracker", default=None)
+@click.option(
+    "--tracker",
+    default=None,
+    help="Filter by tracker domain (partial match, e.g. 'beyond')",
+)
+@click.option("--json", "as_json", is_flag=True, help="Output raw JSON")
 def torrents(
-    instance, limit, offset, sort, reverse, state_filter, category, tag, tracker
+    instance,
+    limit,
+    offset,
+    sort,
+    reverse,
+    state_filter,
+    category,
+    tag,
+    tracker,
+    as_json,
 ):
     """List torrents for an instance."""
     params = {
@@ -124,13 +178,48 @@ def torrents(
         params["category"] = category
     if tag:
         params["tag"] = tag
+
+    data = _get(f"/api/instances/{instance}/torrents?{httpx.QueryParams(params)}")
+    items = data.get("torrents", data) if isinstance(data, dict) else data
+
     if tracker:
-        params["tracker"] = tracker
-    _out(_get(f"/api/instances/{instance}/torrents?{httpx.QueryParams(params)}"))
+        needle = tracker.lower()
+        items = [t for t in items if needle in t.get("tracker", "").lower()]
+
+    if as_json:
+        _out(items)
+        return
+
+    if not items:
+        click.echo("No torrents found.")
+        return
+
+    for t in items:
+        name = t.get("name", "?")
+        h = t.get("hash", "")[:8]
+        state = t.get("state", "?")
+        ratio = t.get("ratio", 0)
+        uploaded = t.get("uploaded", 0)
+        ul_speed = t.get("upspeed", 0)
+        seeds = t.get("num_complete", 0)
+        leech = t.get("num_incomplete", 0)
+        domain = _tracker_domain(t.get("tracker", ""))
+        tags_str = t.get("tags", "")
+
+        click.echo(f"{name}  [{h}]")
+        line2 = (
+            f"  {state:<12} ratio={ratio:.3f}  up={_fmt_bytes(uploaded)}  "
+            f"speed={_fmt_speed(ul_speed)}  S:{seeds} L:{leech}"
+        )
+        if domain:
+            line2 += f"  {domain}"
+        click.echo(line2)
+        if tags_str:
+            click.echo(f"  tags=[{tags_str}]")
 
 
 @cli.command("torrent-trackers")
-@click.argument("instance")
+@INSTANCE
 @click.argument("hash_")
 def torrent_trackers(instance, hash_):
     """List trackers for a torrent."""
@@ -138,7 +227,7 @@ def torrent_trackers(instance, hash_):
 
 
 @cli.command("torrent-props")
-@click.argument("instance")
+@INSTANCE
 @click.argument("hash_")
 def torrent_props(instance, hash_):
     """Get torrent properties."""
@@ -149,7 +238,7 @@ def torrent_props(instance, hash_):
 
 
 @cli.command("add-torrent")
-@click.argument("instance")
+@INSTANCE
 @click.option("--url", default=None, help="Torrent download URL or magnet link")
 @click.option(
     "--file",
@@ -211,21 +300,21 @@ def add_torrent(
 
 
 @cli.command()
-@click.argument("instance")
+@INSTANCE
 def automations(instance):
     """List automation rules for an instance."""
     _out(_get(f"/api/instances/{instance}/automations"))
 
 
 @cli.command("automation-activity")
-@click.argument("instance")
+@INSTANCE
 def automation_activity(instance):
     """List recent automation activity."""
     _out(_get(f"/api/instances/{instance}/automations/activity"))
 
 
 @cli.command("automation-dry-run")
-@click.argument("instance")
+@INSTANCE
 @click.option("--rule-id", default=None, help="Specific rule ID to dry-run")
 def automation_dry_run(instance, rule_id):
     """Dry-run all automation rules."""
@@ -236,14 +325,14 @@ def automation_dry_run(instance, rule_id):
 
 
 @cli.command("automation-apply")
-@click.argument("instance")
+@INSTANCE
 def automation_apply(instance):
     """Manually trigger automation rules to run now."""
     _out(_post(f"/api/instances/{instance}/automations/apply"))
 
 
 @cli.command("automation-update")
-@click.argument("instance")
+@INSTANCE
 @click.argument("rule_id")
 @click.argument("file", type=click.Path(exists=True))
 def automation_update(instance, rule_id, file):
@@ -256,21 +345,21 @@ def automation_update(instance, rule_id, file):
 
 
 @cli.command()
-@click.argument("instance")
+@INSTANCE
 def categories(instance):
     """List categories for an instance."""
     _out(_get(f"/api/instances/{instance}/categories"))
 
 
 @cli.command()
-@click.argument("instance")
+@INSTANCE
 def tags(instance):
     """List tags for an instance."""
     _out(_get(f"/api/instances/{instance}/tags"))
 
 
 @cli.command()
-@click.argument("instance")
+@INSTANCE
 def trackers(instance):
     """List active trackers across all torrents."""
     _out(_get(f"/api/instances/{instance}/trackers"))
