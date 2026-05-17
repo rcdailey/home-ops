@@ -37,6 +37,11 @@
       href: https://grafana.${SECRET_DOMAIN}/
       siteMonitor: http://grafana-service.observability:3000/api/health
 
+  - Paperless-ngx:
+      icon: paperless-ngx
+      href: https://docs.${SECRET_DOMAIN}/
+      siteMonitor: http://paperless-ngx-app.default:8000
+
   - Donetick:
       icon: donetick
       href: https://tasks.${SECRET_DOMAIN}/

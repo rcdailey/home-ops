@@ -1,0 +1,211 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app paperless-ngx
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      paperless-ngx:
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          oidc-config:
+            image:
+              repository: alpine
+              tag: latest
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              cat <<EOF > /config/oidc-providers.json
+              {"openid_connect": {"SCOPE": ["openid", "profile", "email"], "APPS": [{"provider_id": "pocket-id", "name": "Pocket ID", "client_id": "paperless-ngx", "secret": "$(cat /oidc/client-secret)", "settings": {"server_url": "$(cat /oidc/discovery_url)"}}]}}
+              EOF
+        containers:
+          app:
+            image:
+              repository: ghcr.io/paperless-ngx/paperless-ngx
+              tag: 3.0.0-beta.rc1
+            env:
+              # Application
+              PAPERLESS_URL: https://docs.${SECRET_DOMAIN}
+              PAPERLESS_PORT: &port 8000
+              PAPERLESS_TIME_ZONE: America/Chicago
+              PAPERLESS_WEBSERVER_WORKERS: "2"
+              PAPERLESS_TASK_WORKERS: "2"
+              USERMAP_UID: "1000"
+              USERMAP_GID: "1000"
+
+              # Database
+              PAPERLESS_DBENGINE: postgresql
+              PAPERLESS_DBHOST: paperless-ngx-postgres-rw.default
+              PAPERLESS_DBPORT: "5432"
+              PAPERLESS_DBNAME: paperless
+              PAPERLESS_DBUSER:
+                valueFrom:
+                  secretKeyRef:
+                    name: paperless-ngx-postgres-app
+                    key: username
+              PAPERLESS_DBPASS:
+                valueFrom:
+                  secretKeyRef:
+                    name: paperless-ngx-postgres-app
+                    key: password
+
+              # Redis
+              PAPERLESS_REDIS: redis://paperless-ngx-redis.default:6379
+
+              # Storage paths
+              PAPERLESS_DATA_DIR: /data
+              PAPERLESS_MEDIA_ROOT: /media
+              PAPERLESS_CONSUMPTION_DIR: /consume
+
+              # Consumer settings
+              PAPERLESS_CONSUMER_POLLING: "60"
+              PAPERLESS_CONSUMER_RECURSIVE: "true"
+              PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: "true"
+
+              # OCR
+              PAPERLESS_OCR_LANGUAGE: eng
+
+              # Auth (app-level OIDC via Pocket ID for user identity)
+              PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
+              PAPERLESS_SOCIALACCOUNT_PROVIDERS_FILE: /config/oidc-providers.json
+              PAPERLESS_REDIRECT_LOGIN_TO_SSO: "true"
+              PAPERLESS_DISABLE_REGULAR_LOGIN: "true"
+
+              # AI/LLM via claude-proxy (OpenAI-compatible proxy to Claude Max)
+              PAPERLESS_AI_ENABLED: "true"
+              PAPERLESS_AI_LLM_BACKEND: openai-like
+              PAPERLESS_AI_LLM_MODEL: claude-sonnet-4-6
+              PAPERLESS_AI_LLM_ENDPOINT: http://claude-proxy.default:8317/v1
+              PAPERLESS_AI_LLM_API_KEY: sk-claude-proxy-internal
+
+            envFrom:
+            - secretRef:
+                name: paperless-ngx-secret
+
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: *port
+                  timeoutSeconds: 5
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: *port
+                  timeoutSeconds: 5
+                  failureThreshold: 30
+                  periodSeconds: 10
+
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 4Gi
+
+        pod:
+          securityContext:
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+
+      redis:
+        containers:
+          main:
+            image:
+              repository: public.ecr.aws/docker/library/redis
+              tag: 8.6.3
+            command: ["redis-server"]
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: *port
+      redis:
+        controller: redis
+        ports:
+          http:
+            port: 6379
+
+    route:
+      app:
+        hostnames:
+        - docs.${SECRET_DOMAIN}
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - identifier: app
+            port: http
+
+    persistence:
+      media:
+        existingClaim: *app
+        advancedMounts:
+          paperless-ngx:
+            app:
+            - path: /media
+
+      data:
+        existingClaim: paperless-ngx-data
+        advancedMounts:
+          paperless-ngx:
+            app:
+            - path: /data
+
+      consume:
+        type: emptyDir
+        advancedMounts:
+          paperless-ngx:
+            app:
+            - path: /consume
+
+      oidc-secret:
+        type: secret
+        name: paperless-ngx-oidc-credentials
+        advancedMounts:
+          paperless-ngx:
+            oidc-config:
+            - path: /oidc
+              readOnly: true
+
+      oidc-config:
+        type: emptyDir
+        advancedMounts:
+          paperless-ngx:
+            oidc-config:
+            - path: /config
+            app:
+            - path: /config
