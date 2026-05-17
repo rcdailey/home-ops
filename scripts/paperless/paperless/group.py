@@ -40,7 +40,9 @@ def create(name: str) -> None:
     async def _create():
         transport = get_transport()
         try:
-            result = await transport.post("/api/groups/", json={"name": name})
+            result = await transport.post(
+                "/api/groups/", json={"name": name, "permissions": []}
+            )
             return result
         finally:
             await transport.close()

@@ -6,6 +6,7 @@ import click
 
 from paperless._click import HelpfulGroup
 from paperless._client import open_client, run_async
+from paperless._permissions import set_family_permissions
 
 
 @click.group(cls=HelpfulGroup)
@@ -41,7 +42,9 @@ def create(name: str) -> None:
             draft.match = ""
             draft.matching_algorithm = 0
             draft.is_insensitive = True
-            return await p.document_types.save(draft)
+            pk = await p.document_types.save(draft)
+        await set_family_permissions("document_types", pk)
+        return pk
 
     pk = run_async(_create())
     click.echo(f"created document type #{pk}: {name}")
