@@ -11,6 +11,9 @@
   },
   "permission": {
     "bash": {
+      // override from global ask permission
+      "*git push*": "allow",
+
       "kubectl apply*": "deny",
       "kubectl apply -f /tmp/*": "ask",
       "kubectl create*": "deny",
