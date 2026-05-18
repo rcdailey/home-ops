@@ -84,7 +84,7 @@ def inbox(limit: int) -> None:
 
 @cli.command()
 @click.argument("doc_ids", nargs=-1, type=int)
-@click.option("-n", "--limit", default=10, type=int, help="Max docs if no IDs given.")
+@click.option("-n", "--limit", default=25, type=int, help="Max docs if no IDs given.")
 @click.option("--full", is_flag=True, help="Show full content (2000 chars + keywords).")
 def brief(doc_ids: tuple[int, ...], limit: int, full: bool) -> None:
     """Output taxonomy and document content for classification."""
