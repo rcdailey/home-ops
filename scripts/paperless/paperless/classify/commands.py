@@ -233,6 +233,9 @@ def apply() -> None:
     async def _apply():
         inbox_tag_id = await ensure_inbox_tag()
         async with open_client() as p:
+            all_corrs = {c.id: c.name for c in await p.correspondents.as_list()}
+            all_types = {t.id: t.name for t in await p.document_types.as_list()}
+            all_tags_map = {t.id: t.name for t in await p.tags.as_list()}
             results = []
             for entry in entries:
                 doc_id = entry["doc_id"]
@@ -248,19 +251,31 @@ def apply() -> None:
                     tags.discard(inbox_tag_id)
                     doc.tags = list(tags)
                     await p.documents.update(doc)
-                    results.append((doc_id, doc.title, None))
+                    corr_name = all_corrs.get(entry.get("correspondent"), "none")
+                    type_name = all_types.get(entry.get("type"), "none")
+                    tag_names = [
+                        all_tags_map.get(t, str(t))
+                        for t in entry.get("tags", [])
+                        if t != inbox_tag_id
+                    ]
+                    results.append(
+                        (doc_id, doc.title, corr_name, type_name, tag_names, None)
+                    )
                 except Exception as exc:
-                    results.append((doc_id, None, str(exc)))
+                    results.append((doc_id, None, None, None, None, str(exc)))
             return results
 
     results = run_async(_apply())
     errors = 0
-    for doc_id, title, err in results:
+    for doc_id, title, corr_name, type_name, tag_names, err in results:
         if err:
             click.echo(f"#{doc_id}: error: {err}", err=True)
             errors += 1
         else:
-            click.echo(f"#{doc_id}: {title}")
+            tags_str = ", ".join(tag_names) if tag_names else "none"
+            click.echo(
+                f"#{doc_id}: {title} | corr={corr_name} | type={type_name} | tags={tags_str}"
+            )
     click.echo(f"\n{len(results) - errors}/{len(results)} classified")
     if errors:
         raise SystemExit(1)

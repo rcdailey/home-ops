@@ -180,6 +180,13 @@ def test_apply_classifies_documents():
 
     client.documents = AsyncMock(side_effect=_get_doc)
     client.documents.update = AsyncMock()
+    client.correspondents.as_list = AsyncMock(
+        return_value=[_mock_corr(5, "Acme"), _mock_corr(6, "Beta")]
+    )
+    client.document_types.as_list = AsyncMock(return_value=[_mock_type(7, "Tax Form")])
+    client.tags.as_list = AsyncMock(
+        return_value=[_mock_tag(3, "tax"), _mock_tag(4, "home")]
+    )
 
     stdin_data = "10|5|7|3,4|New Title One\n20|6|7|3|New Title Two\n"
 
@@ -192,8 +199,13 @@ def test_apply_classifies_documents():
         runner = CliRunner()
         result = runner.invoke(cli, ["classify", "apply"], input=stdin_data)
         assert result.exit_code == 0
-        assert "#10: New Title One" in result.output
-        assert "#20: New Title Two" in result.output
+        assert (
+            "#10: New Title One | corr=Acme | type=Tax Form | tags=tax, home"
+            in result.output
+        )
+        assert (
+            "#20: New Title Two | corr=Beta | type=Tax Form | tags=tax" in result.output
+        )
         assert "2/2 classified" in result.output
 
     assert doc1.title == "New Title One"
@@ -213,6 +225,9 @@ def test_apply_empty_correspondent():
 
     client.documents = AsyncMock(return_value=doc)
     client.documents.update = AsyncMock()
+    client.correspondents.as_list = AsyncMock(return_value=[_mock_corr(5, "Acme")])
+    client.document_types.as_list = AsyncMock(return_value=[_mock_type(7, "Tax Form")])
+    client.tags.as_list = AsyncMock(return_value=[_mock_tag(3, "tax")])
 
     stdin_data = "10||7|3|New Title\n"
 
@@ -225,7 +240,7 @@ def test_apply_empty_correspondent():
         runner = CliRunner()
         result = runner.invoke(cli, ["classify", "apply"], input=stdin_data)
         assert result.exit_code == 0
-        assert "#10: New Title" in result.output
+        assert "#10: New Title | corr=none | type=Tax Form | tags=tax" in result.output
 
     # Correspondent should not be changed (empty field means skip)
     assert doc.correspondent == 5
@@ -237,6 +252,11 @@ def test_apply_removes_inbox_tag():
 
     client.documents = AsyncMock(return_value=doc)
     client.documents.update = AsyncMock()
+    client.correspondents.as_list = AsyncMock(return_value=[_mock_corr(5, "Acme")])
+    client.document_types.as_list = AsyncMock(return_value=[_mock_type(7, "Tax Form")])
+    client.tags.as_list = AsyncMock(
+        return_value=[_mock_tag(3, "tax"), _mock_tag(4, "home")]
+    )
 
     stdin_data = "10|5|7|3,4|New Title\n"
 
@@ -249,6 +269,7 @@ def test_apply_removes_inbox_tag():
         runner = CliRunner()
         result = runner.invoke(cli, ["classify", "apply"], input=stdin_data)
         assert result.exit_code == 0
+        assert "| corr=Acme | type=Tax Form | tags=tax, home" in result.output
 
     assert INBOX_TAG_ID not in doc.tags
 
@@ -259,6 +280,9 @@ def test_apply_skips_comments_and_blank_lines():
 
     client.documents = AsyncMock(return_value=doc)
     client.documents.update = AsyncMock()
+    client.correspondents.as_list = AsyncMock(return_value=[_mock_corr(5, "Acme")])
+    client.document_types.as_list = AsyncMock(return_value=[_mock_type(7, "Tax Form")])
+    client.tags.as_list = AsyncMock(return_value=[_mock_tag(3, "tax")])
 
     stdin_data = "# This is a comment\n\n10|5|7|3|New Title\n\n"
 
