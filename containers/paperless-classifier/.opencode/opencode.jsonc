@@ -1,0 +1,26 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "claude-proxy/claude-sonnet-4-6",
+  "default_agent": "paperless-classifier",
+  "snapshot": false,
+  "autoupdate": false,
+  "share": "disabled",
+  "provider": {
+    "claude-proxy": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Claude Proxy",
+      "options": {
+        "baseURL": "{env:CLAUDE_PROXY_URL}",
+        "apiKey": "{env:CLAUDE_PROXY_API_KEY}"
+      },
+      "models": {
+        "claude-sonnet-4-6": {
+          "name": "Claude Sonnet 4.6",
+          "options": {
+            "reasoningEffort": "high"
+          }
+        }
+      }
+    }
+  }
+}

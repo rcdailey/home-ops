@@ -1,0 +1,72 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app paperless-classifier
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      paperless-classifier:
+        type: cronjob
+        cronjob:
+          schedule: "0 */6 * * *"
+          timeZone: America/Chicago
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 3
+          ttlSecondsAfterFinished: 86400
+          activeDeadlineSeconds: 3600
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          labels:
+            observability.home-ops/logs: "true"
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+
+        containers:
+          app:
+            image:
+              repository: ghcr.io/rcdailey/paperless-classifier
+              tag: latest
+            env:
+              PAPERLESS_URL: http://paperless-ngx-app.default:8000
+              CLAUDE_PROXY_URL: http://claude-proxy.default:8317/v1
+              CLAUDE_PROXY_API_KEY: sk-claude-proxy-internal
+            envFrom:
+            - secretRef:
+                name: paperless-classifier-secret
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities:
+                drop:
+                - ALL
+
+    persistence:
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          paperless-classifier:
+            app:
+            - path: /tmp

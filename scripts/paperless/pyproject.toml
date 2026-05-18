@@ -12,6 +12,9 @@ dependencies = [
     "pypaperless @ git+https://github.com/tb1337/paperless-api.git@main",
 ]
 
+[project.scripts]
+paperless = "paperless.cli:cli"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

@@ -277,23 +277,21 @@ repositories often as documentation.
 
 Pattern: `kubernetes/apps/namespace/app/`
 
-```txt
-kubernetes/apps/{namespace}/{app}/
-  ks.yaml             Flux Kustomization (spec.targetNamespace)
-  kustomization.yaml  Kustomize resources list, components
-  helmrelease.yaml    HelmRelease (chartRef or chart.spec.sourceRef)
-  pvc.yaml            PersistentVolumeClaims
-  externalsecret.yaml Infisical secrets
-  config/             Files for configMapGenerator
-
-docs/
-  architecture/       System design, rationale for technology choices
-  decisions/          ADRs - read TEMPLATE.md before creating/editing
-  investigations/     Historical debugging journals (not prescriptive guides)
-  memory-bank/        Ephemeral context, temporary workarounds (remove when stale)
-  reference/          Standalone reference material (OIDC patterns, protocol guides)
-  runbooks/           Step-by-step operational procedures
-```
+- `kubernetes/apps/{namespace}/{app}/` -- app manifests
+  - `ks.yaml` -- Flux Kustomization (spec.targetNamespace)
+  - `kustomization.yaml` -- Kustomize resources list, components
+  - `helmrelease.yaml` -- HelmRelease (chartRef or chart.spec.sourceRef)
+  - `pvc.yaml` -- PersistentVolumeClaims
+  - `externalsecret.yaml` -- Infisical secrets
+  - `config/` -- files for configMapGenerator
+- `containers/` -- bespoke container images (one subdir per image)
+- `docs/`
+  - `architecture/` -- system design, rationale for technology choices
+  - `decisions/` -- ADRs; read TEMPLATE.md before creating/editing
+  - `investigations/` -- historical debugging journals (not prescriptive guides)
+  - `memory-bank/` -- ephemeral context, temporary workarounds (remove when stale)
+  - `reference/` -- standalone reference material (OIDC patterns, protocol guides)
+  - `runbooks/` -- step-by-step operational procedures
 
 - Namespace directories MUST match actual namespace names exactly
 - Use flat directory structure for YAML files

@@ -35,17 +35,20 @@ def run_async(coro: Awaitable[T]) -> T:
     try:
         return asyncio.run(coro)
     except Exception as exc:
-        from httpx import HTTPStatusError
+        from httpx import HTTPStatusError, TransportError
         from pypaperless.exceptions import PaperlessError
 
+        url = os.environ.get("PAPERLESS_URL", "(unset)")
         if isinstance(exc, HTTPStatusError):
             die(
                 f"{exc.response.status_code} {exc.response.reason_phrase}: "
-                f"{exc.request.url.path}"
+                f"{exc.request.url}"
             )
+        if isinstance(exc, TransportError):
+            die(f"cannot reach {url}: {exc}")
         if isinstance(exc, PaperlessError):
             die(str(exc))
-        raise
+        die(f"unexpected error talking to {url}: {type(exc).__name__}: {exc}")
 
 
 def open_client():

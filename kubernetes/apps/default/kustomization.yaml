@@ -14,6 +14,7 @@ resources:
 - ./immich/ks.yaml
 - ./opencloud/ks.yaml
 - ./outline/ks.yaml
+- ./paperless-classifier/ks.yaml
 - ./paperless-ngx/ks.yaml
 - ./headlamp/ks.yaml
 - ./pocket-id/ks.yaml
