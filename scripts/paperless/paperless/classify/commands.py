@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import sys
 import unicodedata
 
 import click
@@ -13,7 +14,8 @@ from paperless._client import open_client, run_async
 from paperless._permissions import ensure_inbox_tag
 from paperless.classify import cli
 
-CONTENT_LIMIT = 2000
+COMPACT_LIMIT = 500
+FULL_LIMIT = 2000
 KEYWORD_THRESHOLD = 5000
 
 
@@ -83,7 +85,8 @@ def inbox(limit: int) -> None:
 @cli.command()
 @click.argument("doc_ids", nargs=-1, type=int)
 @click.option("-n", "--limit", default=10, type=int, help="Max docs if no IDs given.")
-def brief(doc_ids: tuple[int, ...], limit: int) -> None:
+@click.option("--full", is_flag=True, help="Show full content (2000 chars + keywords).")
+def brief(doc_ids: tuple[int, ...], limit: int, full: bool) -> None:
     """Output taxonomy and document content for classification."""
 
     async def _brief():
@@ -152,16 +155,112 @@ def brief(doc_ids: tuple[int, ...], limit: int) -> None:
         content = getattr(doc, "content", "") or ""
         if content:
             cleaned = _sanitize(content)
-            truncated = cleaned[:CONTENT_LIMIT]
-            if len(cleaned) > CONTENT_LIMIT:
+            limit_chars = FULL_LIMIT if full else COMPACT_LIMIT
+            truncated = cleaned[:limit_chars]
+            if len(cleaned) > limit_chars:
                 truncated += f"\n[...truncated from {len(cleaned)} chars]"
             click.echo(f"Content ({len(cleaned)} chars):")
             click.echo(truncated)
 
-            # Keywords for longer docs
-            if len(cleaned) > KEYWORD_THRESHOLD:
+            # Keywords for longer docs (full mode only)
+            if full and len(cleaned) > KEYWORD_THRESHOLD:
                 keywords = _extract_keywords(cleaned)
                 click.echo(f"Keywords: {keywords}")
         else:
             click.echo("Content: (empty)")
         click.echo()
+
+
+def _parse_apply_line(line: str) -> dict[str, object]:
+    """Parse a pipe-delimited classification line.
+
+    Format: id|correspondent_id|type_id|tag_ids|title
+    Empty correspondent_id or type_id means skip. Empty tag_ids means no tags.
+    """
+    parts = line.split("|")
+    if len(parts) != 5:
+        msg = f"expected 5 pipe-delimited fields, got {len(parts)}"
+        raise ValueError(msg)
+    doc_id_str, corr_str, type_str, tags_str, title = parts
+    result: dict[str, object] = {"doc_id": int(doc_id_str.strip())}
+    corr_str = corr_str.strip()
+    if corr_str:
+        result["correspondent"] = int(corr_str)
+    type_str = type_str.strip()
+    if type_str:
+        result["type"] = int(type_str)
+    tags_str = tags_str.strip()
+    if tags_str:
+        result["tags"] = [int(t.strip()) for t in tags_str.split(",")]
+    else:
+        result["tags"] = []
+    title = title.strip()
+    if title:
+        result["title"] = title
+    return result
+
+
+@cli.command()
+def apply() -> None:
+    """Bulk-classify documents from stdin (pipe-delimited).
+
+    Format: id|correspondent_id|type_id|tag_ids|title
+
+    Correspondent and type fields can be empty to skip. Tag IDs are
+    comma-separated within the field. The inbox tag is removed automatically.
+
+    Example input:
+    278|18|7|7|W-2 Wage and Tax Statement (2025)
+    248||7|7,3|W-4 Employee Withholding Certificate (2023)
+    """
+    lines = [
+        line.strip()
+        for line in sys.stdin
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    if not lines:
+        click.echo("no input lines", err=True)
+        return
+
+    entries = []
+    for i, line in enumerate(lines, 1):
+        try:
+            entries.append(_parse_apply_line(line))
+        except ValueError as exc:
+            click.echo(f"line {i}: {exc} -- {line!r}", err=True)
+            raise SystemExit(1) from None
+
+    async def _apply():
+        inbox_tag_id = await ensure_inbox_tag()
+        async with open_client() as p:
+            results = []
+            for entry in entries:
+                doc_id = entry["doc_id"]
+                try:
+                    doc = await p.documents(doc_id)
+                    if "title" in entry:
+                        doc.title = entry["title"]
+                    if "correspondent" in entry:
+                        doc.correspondent = entry["correspondent"]
+                    if "type" in entry:
+                        doc.document_type = entry["type"]
+                    tags = set(entry.get("tags", []))
+                    tags.discard(inbox_tag_id)
+                    doc.tags = list(tags)
+                    await p.documents.update(doc)
+                    results.append((doc_id, doc.title, None))
+                except Exception as exc:
+                    results.append((doc_id, None, str(exc)))
+            return results
+
+    results = run_async(_apply())
+    errors = 0
+    for doc_id, title, err in results:
+        if err:
+            click.echo(f"#{doc_id}: error: {err}", err=True)
+            errors += 1
+        else:
+            click.echo(f"#{doc_id}: {title}")
+    click.echo(f"\n{len(results) - errors}/{len(results)} classified")
+    if errors:
+        raise SystemExit(1)

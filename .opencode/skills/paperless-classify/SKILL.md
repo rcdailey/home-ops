@@ -21,6 +21,15 @@ data gathering and persistence interface.
 - Taxonomy (types, correspondents, tags) is populated with initial entries
 - Documents have been uploaded and OCR processing is complete
 
+## Discovery
+
+Run `--help` on relevant subcommands before the first classification session. Key capabilities to
+know about:
+
+- `correspondent create` accepts multiple names: `correspondent create "A" "B" "C"` (one call)
+- `bulk tag`, `bulk set-type`, `bulk set-correspondent` operate on comma-separated doc IDs
+- `classify apply` reads structured input from stdin (see step 4 below)
+
 ## Workflow
 
 ### 1. Check the inbox
@@ -35,16 +44,19 @@ Paperless auto-assigned some fields.
 ### 2. Get the briefing
 
 ```bash
-# All inbox docs (default limit 10)
+# All inbox docs (default limit 10, compact 500 chars)
 ./scripts/paperless.sh classify brief
 
 # Specific documents
 ./scripts/paperless.sh classify brief 12 13 14
+
+# Full content (2000 chars + keywords for long docs)
+./scripts/paperless.sh classify brief 14 --full
 ```
 
-Outputs the full taxonomy (correspondents, types, tags with IDs) followed by each document's current
-metadata and sanitized content (truncated to 2000 chars; YAKE keywords appended for docs over 5000
-chars).
+Default output is compact: taxonomy header, per-doc metadata, and the first 500 chars of sanitized
+content. This is usually enough to classify. For ambiguous documents, re-run with `--full` on just
+those doc IDs to get 2000 chars plus YAKE keyword extraction for long documents.
 
 ### 3. Analyze and decide
 
@@ -56,6 +68,26 @@ For each document, determine:
 4. **Title** (clean, normalized)
 
 ### 4. Apply classification
+
+Bulk-classify via `classify apply`, which reads pipe-delimited lines from stdin:
+
+```bash
+./scripts/paperless.sh classify apply <<'EOF'
+278|18|7|7|W-2 Wage and Tax Statement (2025)
+277|19|7|7,3|W-2 Wage and Tax Statement (2025)
+248||7|7|W-4 Employee Withholding Certificate (2023)
+EOF
+```
+
+Format: `id|correspondent_id|type_id|tag_ids|title`
+
+- Correspondent and type fields can be empty to skip (preserves existing value)
+- Tag IDs are comma-separated within the field; empty means no tags
+- The inbox tag is removed automatically
+- Lines starting with `#` and blank lines are ignored
+- Errors on individual documents are reported but do not abort the batch
+
+For single-document updates, `doc update` is still available:
 
 ```bash
 ./scripts/paperless.sh doc update ID \
@@ -77,7 +109,10 @@ If a document needs a correspondent, type, or tag that does not exist:
 - **Type**: Propose to user before creating (types are finite; see cap below)
 
 ```bash
-./scripts/paperless.sh correspondent create "Parker Brothers Carpet Cleaning"
+# Multiple correspondents in one call
+./scripts/paperless.sh correspondent create "Milliman" "UTA" "Studio Designer"
+
+# Single type or tag
 ./scripts/paperless.sh tag create "home"
 ./scripts/paperless.sh type create "Warranty"
 ```
@@ -183,8 +218,8 @@ The `brief` command applies these transformations to document content:
 
 1. Fix encoding artifacts (ftfy)
 2. Strip fill characters, decorative separators, excess whitespace
-3. Truncate to first 2000 characters
-4. Append YAKE keyword extraction for documents over 5000 characters
+3. Truncate to first 500 characters (compact, default) or 2000 characters (`--full`)
+4. Append YAKE keyword extraction for documents over 5000 characters (`--full` only)
 
-This provides sufficient signal for classification in most cases. For ambiguous documents, use
-`./scripts/paperless.sh doc show ID --full` to read the complete content.
+Use the two-pass approach: compact brief for the full batch, then `--full` for just the ambiguous
+docs. For complete untruncated content, use `doc show ID --full`.
