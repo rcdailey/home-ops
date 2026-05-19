@@ -136,6 +136,13 @@ cluster:
       # Requires both feature gate and runtime-config (beta feature in K8s 1.34)
       feature-gates: HPAScaleToZero=true,MutatingAdmissionPolicy=true
       runtime-config: admissionregistration.k8s.io/v1beta1=true
+      # OIDC authentication (Pocket-ID) for Headlamp dashboard access
+      oidc-issuer-url: https://auth.{{ ENV.SECRET_DOMAIN }}
+      oidc-client-id: headlamp
+      oidc-username-claim: email
+      oidc-username-prefix: "-"
+      oidc-groups-claim: groups
+      oidc-groups-prefix: "oidc:"
     certSANs:
       - 127.0.0.1
       - 192.168.1.70
