@@ -22,7 +22,7 @@ spec:
     remediation:
       retries: 3
   values:
-    annotations:
+    podAnnotations:
       reloader.stakater.com/auto: "true"
 
     replicaCount: 1
