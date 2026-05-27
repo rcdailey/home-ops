@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import subprocess
-import sys
 from pathlib import Path
 
 
@@ -25,7 +24,7 @@ def run_hops(*args: str, check: bool = False) -> subprocess.CompletedProcess:
     Returns the CompletedProcess; never raises on non-zero exit unless check=True.
     Working directory is the repo root so relative paths resolve correctly.
     """
-    cmd = [sys.executable, str(HOPS_SCRIPT)] + list(args)
+    cmd = [str(HOPS_SCRIPT)] + list(args)
     return subprocess.run(
         cmd,
         capture_output=True,

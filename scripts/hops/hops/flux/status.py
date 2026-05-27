@@ -63,32 +63,70 @@ def flux_status():
     )
 
 
+def _ready_status(item: dict) -> str:
+    """Extract compact Ready status from a Flux resource."""
+    for cond in item.get("status", {}).get("conditions", []):
+        if cond.get("type") == "Ready":
+            if cond.get("status") == "True":
+                return "Ready"
+            return truncate(cond.get("message", "Not Ready"), 80)
+    return "Unknown"
+
+
+def _fetch_all(kind: str) -> list[dict]:
+    """Fetch all items of a Flux resource kind across namespaces."""
+    data = run_json(
+        ["kubectl", "get", kind, "--all-namespaces", "-o", "json"],
+        timeout=15,
+    )
+    return data.get("items", [])
+
+
+def _find_items(items: list[dict], name: str | None) -> list[dict]:
+    """Filter items: exact match first, then substring, then all."""
+    if not name:
+        return items
+    exact = [i for i in items if i["metadata"]["name"] == name]
+    if exact:
+        return exact
+    return [i for i in items if name in i["metadata"]["name"]]
+
+
 @cli.command("hr")
-@click.argument("name")
+@click.argument("name", required=False, default=None)
 @click.option(
     "-n", "--namespace", default=None, help="Namespace (searches all if omitted)"
 )
-def helmrelease(name: str, namespace: str | None):
-    """Detailed HelmRelease status."""
+def helmrelease(name: str | None, namespace: str | None):
+    """HelmRelease status. Omit NAME to list all; partial names search."""
+    all_items = _fetch_all("helmreleases")
     if namespace:
-        data = run_json(
-            ["kubectl", "get", "helmrelease", name, "-n", namespace, "-o", "json"],
-            timeout=15,
-        )
-    else:
-        # Search all namespaces
-        all_data = run_json(
-            ["kubectl", "get", "helmreleases", "--all-namespaces", "-o", "json"],
-            timeout=15,
-        )
-        matches = [
-            i for i in all_data.get("items", []) if i["metadata"]["name"] == name
-        ]
-        if not matches:
-            info(f"error: HelmRelease {name!r} not found")
-            raise SystemExit(1)
-        data = matches[0]
+        all_items = [i for i in all_items if i["metadata"]["namespace"] == namespace]
 
+    matches = _find_items(all_items, name)
+
+    if not matches:
+        info(f"error: HelmRelease {name!r} not found")
+        raise SystemExit(1)
+
+    # Multiple matches or no name: show compact listing
+    if len(matches) != 1 or name is None:
+        rows = []
+        for item in sorted(
+            matches, key=lambda i: (i["metadata"]["namespace"], i["metadata"]["name"])
+        ):
+            rows.append(
+                [
+                    item["metadata"]["namespace"],
+                    item["metadata"]["name"],
+                    _ready_status(item),
+                ]
+            )
+        table(["NAMESPACE", "NAME", "STATUS"], rows)
+        return
+
+    # Single exact/substring match: show detail
+    data = matches[0]
     meta = data.get("metadata", {})
     spec = data.get("spec", {})
     status = data.get("status", {})
@@ -198,30 +236,40 @@ def defaults(
 
 
 @cli.command("ks")
-@click.argument("name")
+@click.argument("name", required=False, default=None)
 @click.option(
     "-n", "--namespace", default=None, help="Namespace (searches all if omitted)"
 )
-def kustomization(name: str, namespace: str | None):
-    """Detailed Kustomization status."""
+def kustomization(name: str | None, namespace: str | None):
+    """Kustomization status. Omit NAME to list all; partial names search."""
+    all_items = _fetch_all("kustomizations")
     if namespace:
-        data = run_json(
-            ["kubectl", "get", "kustomization", name, "-n", namespace, "-o", "json"],
-            timeout=15,
-        )
-    else:
-        all_data = run_json(
-            ["kubectl", "get", "kustomizations", "--all-namespaces", "-o", "json"],
-            timeout=15,
-        )
-        matches = [
-            i for i in all_data.get("items", []) if i["metadata"]["name"] == name
-        ]
-        if not matches:
-            info(f"error: Kustomization {name!r} not found")
-            raise SystemExit(1)
-        data = matches[0]
+        all_items = [i for i in all_items if i["metadata"]["namespace"] == namespace]
 
+    matches = _find_items(all_items, name)
+
+    if not matches:
+        info(f"error: Kustomization {name!r} not found")
+        raise SystemExit(1)
+
+    # Multiple matches or no name: show compact listing
+    if len(matches) != 1 or name is None:
+        rows = []
+        for item in sorted(
+            matches, key=lambda i: (i["metadata"]["namespace"], i["metadata"]["name"])
+        ):
+            rows.append(
+                [
+                    item["metadata"]["namespace"],
+                    item["metadata"]["name"],
+                    _ready_status(item),
+                ]
+            )
+        table(["NAMESPACE", "NAME", "STATUS"], rows)
+        return
+
+    # Single exact/substring match: show detail
+    data = matches[0]
     meta = data.get("metadata", {})
     spec = data.get("spec", {})
     status = data.get("status", {})

@@ -99,6 +99,43 @@ def test_flux_hr():
 
 
 @pytest.mark.integration
+def test_flux_hr_list():
+    result = run_hops("flux", "hr")
+    assert result.returncode == 0
+    assert "NAMESPACE" in result.stdout
+    assert "NAME" in result.stdout
+
+
+@pytest.mark.integration
+def test_flux_hr_search():
+    result = run_hops("flux", "hr", "victoria")
+    assert result.returncode == 0
+    assert "victoria" in result.stdout
+
+
+@pytest.mark.integration
+def test_flux_ks_list():
+    result = run_hops("flux", "ks")
+    assert result.returncode == 0
+    assert "NAMESPACE" in result.stdout
+    assert "NAME" in result.stdout
+
+
+@pytest.mark.integration
+def test_flux_ks_search():
+    result = run_hops("flux", "ks", "external")
+    assert result.returncode == 0
+    assert "external" in result.stdout
+
+
+@pytest.mark.integration
+def test_flux_ks_detail():
+    result = run_hops("flux", "ks", "external-secrets")
+    assert result.returncode == 0
+    assert "Path:" in result.stdout
+
+
+@pytest.mark.integration
 def test_node_list():
     result = run_hops("node", "list")
     assert result.returncode == 0
