@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aclerici38/pocket-id-operator/refs/heads/main/dist/schemas/pocketidoidcclient_v1alpha1.json
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: forgejo
+spec:
+  name: Forgejo
+  clientID: forgejo
+  launchUrl: https://git.${SECRET_DOMAIN}
+  callbackUrls:
+  - https://git.${SECRET_DOMAIN}/user/oauth2/Pocket%20ID/callback
+  logoutCallbackUrls:
+  - https://git.${SECRET_DOMAIN}
+  secret:
+    keys:
+      clientSecret: secret

@@ -47,6 +47,11 @@
       href: https://tasks.${SECRET_DOMAIN}/
       siteMonitor: http://donetick.default:2021/api/v1/ping
 
+  - Forgejo:
+      icon: forgejo
+      href: https://git.${SECRET_DOMAIN}/
+      siteMonitor: http://forgejo-http.default:3000/api/healthz
+
 - Media:
   - Qui:
       icon: qbittorrent

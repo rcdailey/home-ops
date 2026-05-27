@@ -1,0 +1,175 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: forgejo
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: forgejo
+      version: 17.1.0
+      sourceRef:
+        kind: HelmRepository
+        name: forgejo
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    image:
+      rootless: true
+
+    podSecurityContext:
+      fsGroup: 1000
+
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      capabilities:
+        drop:
+        - ALL
+
+    persistence:
+      create: false
+      mount: true
+      claimName: forgejo
+
+    service:
+      ssh:
+        type: ClusterIP
+        port: 22
+
+    # Use chart's built-in Gateway API HTTPRoute
+    httpRoute:
+      enabled: true
+      parentRefs:
+      - name: internal
+        namespace: network
+        sectionName: https
+      hostnames:
+      - git.${SECRET_DOMAIN}
+
+    # Use chart's built-in Gateway API TCPRoute for SSH
+    tcpRoute:
+      enabled: true
+      parentRefs:
+      - name: internal
+        namespace: network
+        sectionName: ssh
+
+    deployment:
+      annotations:
+        reloader.stakater.com/auto: "true"
+      env:
+      # Inject OIDC client secret from pocket-id-operator
+      - name: GITEA_OAUTH_SECRET_0
+        valueFrom:
+          secretKeyRef:
+            name: forgejo-oidc-credentials
+            key: secret
+      # Inject database password from CNPG
+      - name: FORGEJO__database__PASSWD
+        valueFrom:
+          secretKeyRef:
+            name: forgejo-postgres-app
+            key: password
+
+    gitea:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+
+      oauth:
+      - name: Pocket ID
+        provider: openidConnect
+        key: forgejo
+        autoDiscoverUrl: https://auth.${SECRET_DOMAIN}/.well-known/openid-configuration
+        scopes: openid profile email groups
+        groupClaimName: groups
+        adminGroup: admins
+
+      config:
+        server:
+          ROOT_URL: https://git.${SECRET_DOMAIN}
+          SSH_DOMAIN: git.${SECRET_DOMAIN}
+          SSH_PORT: 22
+          SSH_LISTEN_PORT: 2222
+
+        database:
+          DB_TYPE: postgres
+          HOST: forgejo-postgres-rw.default:5432
+          NAME: forgejo
+          USER: forgejo
+          SSL_MODE: disable
+
+        cache:
+          ADAPTER: memory
+
+        session:
+          PROVIDER: db
+
+        queue:
+          TYPE: level
+
+        indexer:
+          REPO_INDEXER_ENABLED: true
+          ISSUE_INDEXER_TYPE: bleve
+
+        service:
+          DISABLE_REGISTRATION: false
+          ALLOW_ONLY_EXTERNAL_REGISTRATION: true
+          ENABLE_AUTO_REGISTRATION: true
+          ENABLE_BASIC_AUTHENTICATION: false
+          ENABLE_INTERNAL_SIGNIN: false
+
+        openid:
+          ENABLE_OPENID_SIGNIN: false
+          ENABLE_OPENID_SIGNUP: false
+
+        mailer:
+          ENABLED: true
+          PROTOCOL: smtp
+          SMTP_ADDR: smtp-relay.network
+          SMTP_PORT: 587
+          FROM: forgejo@${SECRET_DOMAIN}
+
+        time:
+          DEFAULT_UI_LOCATION: America/Chicago
+
+      # Override default probes: use httpGet for liveness, disable readiness
+      # (single replica, readiness is irrelevant)
+      livenessProbe:
+        enabled: true
+        tcpSocket: null
+        httpGet:
+          path: /api/healthz
+          port: http
+        initialDelaySeconds: 30
+        failureThreshold: 10
+
+      readinessProbe:
+        enabled: false
+
+      startupProbe:
+        enabled: true
+        tcpSocket:
+          port: http
+        failureThreshold: 30
+        periodSeconds: 5
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
