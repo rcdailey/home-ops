@@ -52,6 +52,11 @@ spec:
 
               # OIDC authentication via Pocket ID
               OIDC_CLIENT_ID: outline
+              OIDC_CLIENT_SECRET:
+                valueFrom:
+                  secretKeyRef:
+                    name: outline-oidc-credentials
+                    key: client-secret
               OIDC_ISSUER_URL: https://auth.${SECRET_DOMAIN}
               OIDC_DISPLAY_NAME: Pocket ID
               OIDC_USERNAME_CLAIM: email

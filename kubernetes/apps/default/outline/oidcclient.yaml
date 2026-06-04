@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aclerici38/pocket-id-operator/refs/heads/main/dist/schemas/pocketidoidcclient_v1alpha1.json
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: outline
+spec:
+  name: Outline
+  clientID: outline
+  launchUrl: https://wiki.${SECRET_DOMAIN}
+  callbackUrls:
+  - https://wiki.${SECRET_DOMAIN}/auth/oidc.callback
+  logoutCallbackUrls:
+  - https://wiki.${SECRET_DOMAIN}
+  secret:
+    keys:
+      clientSecret: client-secret
