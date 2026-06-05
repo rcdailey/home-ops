@@ -28,13 +28,6 @@ spec:
       # Reloader annotation to restart pod when ConfigMap changes
       podAnnotations:
         reloader.stakater.com/auto: "true"
-      extraArgs:
-        envflag.enable: true
-        envflag.prefix: VM_
-        loggerFormat: json
-        httpListenAddr: :9428
-        http.shutdownDelay: 15s
-
       persistentVolume:
         enabled: true
         storageClassName: ceph-block
@@ -49,11 +42,6 @@ spec:
         requests:
           cpu: 50m
           memory: 256Mi
-
-      service:
-        type: ClusterIP
-        servicePort: 9428
-        targetPort: http
 
       # Security context
       securityContext:
@@ -116,6 +104,3 @@ spec:
     # Service monitor for metrics
     serviceMonitor:
       enabled: true
-      extraLabels: {}
-      annotations: {}
-      targetPort: http

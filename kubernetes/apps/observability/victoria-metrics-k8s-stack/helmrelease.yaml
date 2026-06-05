@@ -10,14 +10,14 @@ spec:
   chartRef:
     kind: OCIRepository
     name: victoria-metrics-k8s-stack
-  # WORKAROUND: Chart creates VMRule even when defaultRules.groups.general.create: false
+  # WORKAROUND: Chart creates VMRule even when defaultRules.groups.general.enabled: false
   # Patch the count:up0 recording rule to always return a value (prevents RecordingRulesNoData alerts)
   #
   # WHY this is needed:
   # - Recording rule count:up0 expression: count(up == 0) without(instance,pod,node)
   # - Returns empty result when all targets healthy (no targets with up == 0)
   # - Empty results are EXPECTED BEHAVIOR but trigger RecordingRulesNoData alerts
-  # - Chart doesn't respect general.create: false and doesn't expose rule expression customization
+  # - Chart doesn't respect general.enabled: false and doesn't expose rule expression customization
   #
   # HOW it works:
   # - Adds 'OR on() vector(0)' to expression, ensuring it returns 0 when all targets healthy
@@ -25,7 +25,7 @@ spec:
   # - Path /spec/groups/0/rules/1/expr targets count:up0 (second rule in first group)
   #
   # WHEN to reconsider:
-  # - Chart fixes create: false configuration or exposes rule expression customization
+  # - Chart fixes enabled: false configuration or exposes rule expression customization
   # - Recording rules become operationally critical (currently optional dashboard optimizations)
   postRenderers:
   - kustomize:
@@ -294,61 +294,31 @@ spec:
 
     # Default rules and dashboards
     defaultRules:
-      create: true
-      additionalGroupByLabels: []
-      # Individual rule overrides via defaultRules.rules.<RuleName>.create: false
+      enabled: true
+      extraGroupByLabels: []
+      # Individual rule overrides via defaultRules.rules.<RuleName>.enabled: false
       # This disables specific default rules while keeping the rule group enabled
       # VictoriaMetrics operator aggregates ALL VMRule resources - there is no true override mechanism
       # To customize a default rule: disable it here, then create custom VMRule with desired configuration
       # Reference: https://github.com/VictoriaMetrics/helm-charts chart values.yaml structure
       rules:
         TooManyLogs:
-          create: false # Using custom VMRule (vmrule.yaml) with >20 threshold vs default >0
+          enabled: false # Using custom VMRule (vmrule.yaml) with >20 threshold vs default >0
         NodeSystemSaturation:
-          create: false # Using custom VMRule (vmrule.yaml) requiring both high load AND high CPU
+          enabled: false # Using custom VMRule (vmrule.yaml) requiring both high load AND high CPU
         KubeHpaMaxedOut:
-          create: false # Using custom VMRule (vmrule.yaml) excluding zero-scaler HPAs
+          enabled: false # Using custom VMRule (vmrule.yaml) excluding zero-scaler HPAs
         TooHighChurnRate24h:
-          create: false # Using custom VMRule (vmrule.yaml) with 10x threshold vs default 3x
+          enabled: false # Using custom VMRule (vmrule.yaml) with 10x threshold vs default 3x
       groups:
         etcd:
-          create: false
-        # general recording rules patched via postRenderers (see above) to prevent RecordingRulesNoData alerts
-        # Chart creates VMRule even when create: false, so we patch the expression instead
-        general:
-          create: true
+          enabled: false
         # kubeScheduler recording rules disabled due to deprecated/removed metrics in Kubernetes 1.27+
         # Summary: Old scheduler histogram metrics don't exist, causing RecordingRulesNoData alerts
         # The new scheduler_scheduling_attempt_duration_seconds metric exists and is being scraped
         # See commit message (2025-10-11) for detailed investigation and upstream context
         kubeScheduler:
-          create: false
-        k8sContainerCpuLimits:
-          create: true
-        k8sContainerMemoryLimits:
-          create: true
-        k8sContainerResource:
-          create: true
-        kubeApiserver:
-          create: true
-        kubelet:
-          create: true
-        kubernetesApps:
-          create: true
-        kubernetesResources:
-          create: true
-        kubernetesStorage:
-          create: true
-        kubernetesSystem:
-          create: true
-        node:
-          create: true
-        vmagent:
-          create: true
-        vmsingle:
-          create: true
-        vmHealth:
-          create: true
+          enabled: false
 
     # Kubernetes component monitoring
     kubeApiServer:
