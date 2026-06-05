@@ -23,10 +23,6 @@ spec:
     monitoring:
       enabled: true
 
-    csi:
-      enableCSIHostNetwork: true
-      enableSnapshot: true
-
     resources:
       requests:
         cpu: 100m
