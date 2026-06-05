@@ -92,6 +92,20 @@ def test_flux_status():
 
 
 @pytest.mark.integration
+def test_flux_status_filtered():
+    result = run_hops("flux", "status", "rook-ceph")
+    assert result.returncode == 0
+    assert "rook-ceph" in result.stdout
+    assert "TYPE" in result.stdout
+
+
+@pytest.mark.integration
+def test_flux_status_nonexistent():
+    result = run_hops("flux", "status", "nonexistent-xyz-123")
+    assert result.returncode != 0
+
+
+@pytest.mark.integration
 def test_flux_hr():
     result = run_hops("flux", "hr", "plex", "-n", "media")
     assert result.returncode == 0

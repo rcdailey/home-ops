@@ -16,13 +16,14 @@ from hops.flux import cli
 
 
 @cli.command("status")
-def flux_status():
-    """Problems only: unhealthy Kustomizations and HelmReleases.
+@click.argument("name", required=False, default=None)
+def flux_status(name: str | None):
+    """Flux resource status. NAME filters by exact or substring match.
 
-    Shows only resources that are not Ready. If everything is healthy,
-    says so in one line.
+    Without NAME: problems only (unhealthy Kustomizations and HelmReleases).
+    With NAME: show matching resources regardless of health state.
     """
-    problems = []
+    all_resources: list[dict] = []
     totals = {}
 
     for kind, label in [
@@ -36,20 +37,52 @@ def flux_status():
         items = data.get("items", [])
         totals[label] = len(items)
         for item in items:
-            meta = item.get("metadata", {})
-            name = meta.get("name", "")
-            ns = meta.get("namespace", "")
-            conditions = item.get("status", {}).get("conditions", [])
-            ready = None
-            for cond in conditions:
-                if cond.get("type") == "Ready":
-                    ready = cond
-                    break
-            if ready and ready.get("status") != "True":
-                msg = truncate(ready.get("message", ""), 100)
-                problems.append([label, ns, name, "Not Ready", msg])
-            elif not ready:
-                problems.append([label, ns, name, "Unknown", "no Ready condition"])
+            item["_kind_label"] = label
+        all_resources.extend(items)
+
+    if name:
+        matches = _find_items(all_resources, name)
+        if not matches:
+            info(f"error: no Kustomization or HelmRelease matching {name!r}")
+            raise SystemExit(1)
+        rows = []
+        for item in matches:
+            meta = item["metadata"]
+            rows.append(
+                [
+                    item["_kind_label"],
+                    meta["namespace"],
+                    meta["name"],
+                    _ready_status(item),
+                ]
+            )
+        table(["TYPE", "NAMESPACE", "NAME", "STATUS"], rows)
+        return
+
+    problems = []
+    for item in all_resources:
+        meta = item["metadata"]
+        conditions = item.get("status", {}).get("conditions", [])
+        ready = None
+        for cond in conditions:
+            if cond.get("type") == "Ready":
+                ready = cond
+                break
+        if ready and ready.get("status") != "True":
+            msg = truncate(ready.get("message", ""), 100)
+            problems.append(
+                [item["_kind_label"], meta["namespace"], meta["name"], "Not Ready", msg]
+            )
+        elif not ready:
+            problems.append(
+                [
+                    item["_kind_label"],
+                    meta["namespace"],
+                    meta["name"],
+                    "Unknown",
+                    "no Ready condition",
+                ]
+            )
 
     if not problems:
         ks = totals.get("Kustomization", 0)
