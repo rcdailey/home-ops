@@ -11,6 +11,7 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
   - name: rook-ceph-operator
+  - name: ceph-csi-drivers
   - name: global-config
     namespace: flux-system
   interval: 1h
@@ -27,3 +28,17 @@ spec:
     namespace: flux-system
   timeout: 30m
   wait: true
+  healthChecks:
+  - apiVersion: helm.toolkit.fluxcd.io/v2
+    kind: HelmRelease
+    name: rook-ceph-cluster
+    namespace: rook-ceph
+  - apiVersion: ceph.rook.io/v1
+    kind: CephCluster
+    name: rook-ceph
+    namespace: rook-ceph
+  healthCheckExprs:
+  - apiVersion: ceph.rook.io/v1
+    kind: CephCluster
+    failed: status.ceph.health == 'HEALTH_ERR'
+    current: status.ceph.health in ['HEALTH_OK', 'HEALTH_WARN']
