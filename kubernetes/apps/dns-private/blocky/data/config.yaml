@@ -72,6 +72,9 @@ blocking:
       *.discordapp.com
       *.discordapp.net
       *.discord.gg
+      discord.media
+      *.discord.media
+      discordstatus.com
   clientGroupsBlock:
     default:
     # Main LAN (192.168.1.0/24) + fallback
