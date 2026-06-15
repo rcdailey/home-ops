@@ -49,15 +49,21 @@ spec:
             envFrom:
             - secretRef:
                 name: qbittorrent-secret
-            # Restart gluetun when ProtonVPN port forwarding dies (known NAT-PMP
-            # renewal bug: gluetun clears the port file and never recovers)
+            # Restart gluetun when ProtonVPN port forwarding dies. Two checks:
+            # 1. Port file has a non-zero value (catches NAT-PMP renewal bug where
+            #    gluetun clears the file and never recovers)
+            # 2. qBT is not "disconnected" (catches stale port file where NAT-PMP
+            #    lease expired but gluetun didn't detect it). Uses "disconnected"
+            #    not "firewalled" because firewalled is normal in swarms with zero
+            #    inbound peers (qBT source: hasIncomingConnections is false until
+            #    a peer connects in, even with valid port forwarding)
             probes:
               liveness:
                 enabled: true
                 custom: true
                 spec:
                   exec:
-                    command: ["sh", "-c", "port=$(cat /tmp/gluetun/forwarded_port 2>/dev/null); [ -n \"$port\" ] && [ \"$port\" != \"0\" ]"]
+                    command: ["sh", "-c", "port=$(cat /tmp/gluetun/forwarded_port 2>/dev/null); [ -n \"$port\" ] && [ \"$port\" != \"0\" ] && ! wget -qO- http://127.0.0.1:8080/api/v2/transfer/info 2>/dev/null | grep -q '\"connection_status\":\"disconnected\"'"]
                   initialDelaySeconds: 60
                   periodSeconds: 60
                   failureThreshold: 3
