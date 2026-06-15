@@ -1,12 +1,13 @@
-"""Pure unit tests for hops.core.format."""
+"""Pure unit tests for hops.core.format and other pure helpers."""
 
 from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
 
-
+from hops.app.pod_detail import short_image
 from hops.core.format import age, age_str, format_labels_list, human_bytes, truncate
+from hops.core.workload import _segments_contain
 
 
 def test_human_bytes_zero():
@@ -150,3 +151,64 @@ def test_format_labels_list_empty_labels():
 def test_format_labels_list_exclude_all():
     labels = {"app": "plex"}
     assert format_labels_list(labels, exclude={"app"}) == []
+
+
+# --- _segments_contain tests ---
+
+
+def test_segments_contain_exact_segment_match():
+    assert _segments_contain("cloudflare", "cloudflare-dns") is True
+
+
+def test_segments_contain_multi_segment_match():
+    assert _segments_contain("victoriametrics", "victoria-metrics-k8s-stack") is True
+
+
+def test_segments_contain_rejects_cross_boundary():
+    # "cloudflared" must not match "cloudflare-dns" where the "d" from
+    # "dns" accidentally completes the pattern after hyphen removal
+    assert _segments_contain("cloudflared", "cloudflare-dns") is False
+
+
+def test_segments_contain_rejects_cross_boundary_tunnel():
+    assert _segments_contain("cloudflared", "cloudflare-tunnel") is False
+
+
+def test_segments_contain_full_name():
+    assert _segments_contain("cloudflaredns", "cloudflare-dns") is True
+
+
+def test_segments_contain_single_segment():
+    assert _segments_contain("plex", "plex") is True
+
+
+def test_segments_contain_middle_segments():
+    assert _segments_contain("metricsk8s", "victoria-metrics-k8s-stack") is True
+
+
+def test_segments_contain_no_match():
+    assert _segments_contain("grafana", "victoria-metrics-k8s-stack") is False
+
+
+# --- short_image tests ---
+
+
+def test_short_image_registry_path():
+    assert short_image("ghcr.io/victoriametrics/operator:v0.71.0") == "operator:v0.71.0"
+
+
+def test_short_image_docker_library():
+    assert short_image("docker.io/library/alpine:3.20") == "alpine:3.20"
+
+
+def test_short_image_with_digest():
+    img = "ghcr.io/foo/bar:v1@sha256:abc123"
+    assert short_image(img) == "bar:v1"
+
+
+def test_short_image_no_registry():
+    assert short_image("alpine:latest") == "alpine:latest"
+
+
+def test_short_image_no_tag():
+    assert short_image("ghcr.io/foo/bar") == "bar"

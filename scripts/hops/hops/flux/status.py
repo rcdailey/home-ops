@@ -16,12 +16,12 @@ from hops.flux import cli
 
 
 @cli.command("status")
-@click.argument("name", required=False, default=None)
-def flux_status(name: str | None):
-    """Flux resource status. NAME filters by exact or substring match.
+@click.argument("names", nargs=-1)
+def flux_status(names: tuple[str, ...]):
+    """Flux resource status. NAMES filters by exact or substring match.
 
-    Without NAME: problems only (unhealthy Kustomizations and HelmReleases).
-    With NAME: show matching resources regardless of health state.
+    Without NAMES: problems only (unhealthy Kustomizations and HelmReleases).
+    With one or more NAMES: show matching resources regardless of health state.
     """
     all_resources: list[dict] = []
     totals = {}
@@ -40,23 +40,53 @@ def flux_status(name: str | None):
             item["_kind_label"] = label
         all_resources.extend(items)
 
-    if name:
-        matches = _find_items(all_resources, name)
-        if not matches:
-            info(f"error: no Kustomization or HelmRelease matching {name!r}")
-            raise SystemExit(1)
-        rows = []
+    if names:
+        matches: list[dict] = []
+        missing: list[str] = []
+        for name in names:
+            found = _find_items(all_resources, name)
+            if found:
+                matches.extend(found)
+            else:
+                missing.append(name)
+
+        # Deduplicate (same resource matched by multiple names)
+        seen: set[tuple[str, str, str]] = set()
+        unique: list[dict] = []
         for item in matches:
-            meta = item["metadata"]
-            rows.append(
-                [
-                    item["_kind_label"],
-                    meta["namespace"],
-                    meta["name"],
-                    _ready_status(item),
-                ]
+            key = (
+                item["_kind_label"],
+                item["metadata"]["namespace"],
+                item["metadata"]["name"],
             )
-        table(["TYPE", "NAMESPACE", "NAME", "STATUS"], rows)
+            if key not in seen:
+                seen.add(key)
+                unique.append(item)
+
+        if unique:
+            rows = []
+            for item in sorted(
+                unique,
+                key=lambda i: (
+                    i["metadata"]["namespace"],
+                    i["metadata"]["name"],
+                ),
+            ):
+                meta = item["metadata"]
+                rows.append(
+                    [
+                        item["_kind_label"],
+                        meta["namespace"],
+                        meta["name"],
+                        _ready_status(item),
+                    ]
+                )
+            table(["TYPE", "NAMESPACE", "NAME", "STATUS"], rows)
+        if missing:
+            for name in missing:
+                info(f"not found: {name}")
+            if not unique:
+                raise SystemExit(1)
         return
 
     problems = []

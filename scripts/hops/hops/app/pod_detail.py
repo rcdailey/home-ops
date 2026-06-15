@@ -13,6 +13,19 @@ from hops.core.runner import run, run_json
 from hops.core.workload import resolve_pods, suggest_near_matches
 
 
+def short_image(image: str) -> str:
+    """Shorten a container image to name:tag.
+
+    ghcr.io/victoriametrics/operator:v0.71.0 -> operator:v0.71.0
+    docker.io/library/alpine:3.20 -> alpine:3.20
+    """
+    # Strip digest suffix (@sha256:...) if present
+    img = image.split("@")[0]
+    # Take last path segment (includes tag)
+    parts = img.rsplit("/", 1)
+    return parts[-1] if parts else img
+
+
 def format_container_state(state: dict) -> tuple[str, str]:
     """Summarize a containerStatus.state dict as (label, detail)."""
     if "running" in state:
@@ -66,15 +79,15 @@ def diagnose_pod(
 
     # Summary
     section("POD")
-    kv(
-        [
-            ("name", name),
-            ("namespace", ns),
-            ("node", spec.get("nodeName", "?")),
-            ("phase", status.get("phase", "?")),
-            ("age", age_str(meta.get("creationTimestamp"))),
-        ]
-    )
+    pairs = [
+        ("name", name),
+        ("namespace", ns),
+        ("node", spec.get("nodeName", "?")),
+        ("ip", status.get("podIP", "?")),
+        ("phase", status.get("phase", "?")),
+        ("age", age_str(meta.get("creationTimestamp"))),
+    ]
+    kv(pairs)
 
     # Containers (init + regular)
     init_statuses = status.get("initContainerStatuses", [])
@@ -87,11 +100,12 @@ def diagnose_pod(
         rows = []
         for kind, cs in all_statuses:
             cname = cs.get("name", "?")
+            image = short_image(cs.get("image", "?"))
             restarts = cs.get("restartCount", 0)
             state = cs.get("state", {})
             state_str, detail = format_container_state(state)
-            rows.append([kind, cname, str(restarts), state_str, detail])
-        table(["KIND", "CONTAINER", "RESTARTS", "STATE", "DETAIL"], rows)
+            rows.append([kind, cname, image, str(restarts), state_str, detail])
+        table(["KIND", "CONTAINER", "IMAGE", "RESTARTS", "STATE", "DETAIL"], rows)
 
         # Previous termination details (for containers that restarted).
         # Auto-fetch --previous logs for each so the caller sees crash output

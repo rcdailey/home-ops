@@ -16,6 +16,29 @@ from hops.core.runner import kubectl_json
 
 WORKLOAD_KINDS = ("deployments", "statefulsets", "daemonsets", "cronjobs", "jobs")
 
+
+def _segments_contain(name_norm: str, wl_name: str) -> bool:
+    """Check if normalized input matches a contiguous run of segments.
+
+    Splits the workload name on hyphens and checks whether any
+    contiguous range of complete segments, concatenated, equals the
+    normalized input. This prevents false positives like "cloudflared"
+    matching "cloudflare-dns" (where removing hyphens yields
+    "cloudflareddns" and the "d" from "dns" accidentally completes
+    the pattern).
+    """
+    segments = wl_name.lower().split("-")
+    for i in range(len(segments)):
+        concat = ""
+        for j in range(i, len(segments)):
+            concat += segments[j]
+            if concat == name_norm:
+                return True
+            if len(concat) > len(name_norm):
+                break
+    return False
+
+
 # Short labels for table output
 KIND_LABELS = {
     "deployments": "D",
@@ -92,8 +115,11 @@ def find_workloads(
                     suffix.append(wl)
                 if wl_name.startswith(f"{name}-"):
                     prefix.append(wl)
-                wl_norm = wl_name.lower().replace("-", "")
-                if name_norm in wl_norm and wl not in prefix and wl not in suffix:
+                if (
+                    wl not in prefix
+                    and wl not in suffix
+                    and _segments_contain(name_norm, wl_name)
+                ):
                     substring.append(wl)
 
     result = exact or by_label or suffix or prefix or substring
@@ -112,17 +138,31 @@ def all_workload_names(namespace: str | None = None) -> list[str]:
 
 
 def suggest_near_matches(name: str, namespace: str | None = None) -> list[str]:
-    """Find workload names similar to input (substring, hyphen-insensitive)."""
+    """Find workload names similar to input.
+
+    Wider than resolution matching: uses raw substring and normalized
+    substring so suggestions surface plausible candidates even when
+    segment-aligned matching (used for resolution) would reject them.
+    """
     candidates = all_workload_names(namespace)
-    # Normalize by stripping hyphens for comparison so "victoriametrics"
-    # matches "victoria-metrics-k8s-stack"
     norm = name.lower().replace("-", "")
+    name_lower = name.lower()
+    min_prefix = max(3, len(name) * 2 // 3)
     hits: list[str] = []
     for c in candidates:
         if c == name:
             continue
         c_norm = c.lower().replace("-", "")
-        if norm in c_norm or c_norm.startswith(norm):
+        c_lower = c.lower()
+        if (
+            norm in c_norm
+            or c_norm in norm
+            or c.startswith(f"{name}-")
+            or (
+                len(c_lower) >= min_prefix
+                and c_lower[:min_prefix] == name_lower[:min_prefix]
+            )
+        ):
             hits.append(c)
         if len(hits) >= 5:
             break
