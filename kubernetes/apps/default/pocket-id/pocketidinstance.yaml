@@ -29,6 +29,21 @@ spec:
       sectionName: https
     hostnames:
     - auth.${SECRET_DOMAIN}
+    template:
+      rules:
+      - matches:
+        - path:
+            type: PathPrefix
+            value: /setup
+        - path:
+            type: PathPrefix
+            value: /signup/setup
+        filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.envoyproxy.io
+            kind: HTTPRouteFilter
+            name: pocket-id-block-setup
 
   resources:
     requests:
