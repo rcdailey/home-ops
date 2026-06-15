@@ -422,7 +422,10 @@ reconcile
 template`, `just talos diff-config`/`just talos apply-node`. Use `hops flux values` and `hops flux
 defaults` instead of `helm show values`/`helm get values`. Standalone scripts:
 `./scripts/test-vrl.py` (VRL validation), `./scripts/icon-search.py` (dashboard icons),
-`./scripts/hass.sh` (Home Assistant API)
+`./scripts/hass.sh` (Home Assistant API), `./scripts/qui.py` (QUI/qBittorrent management API),
+`./scripts/arrapi.py` (Sonarr/Radarr API: `get`/`put`/`post`/`delete` verbs, `--all`/`--type`
+instance targeting, `indexer list`/`fix-seeds` subcommands; env: `SECRET_DOMAIN`,
+`{SONARR,SONARR_ANIME,RADARR,RADARR_4K,RADARR_ANIME}_API_KEY`)
 
 **`paperless` CLI:** `./scripts/paperless.sh` (subcommands: doc, bulk, tag, type, correspondent,
 field, workflow, config). Run `--help` on the relevant subcommand before use.
