@@ -54,6 +54,11 @@
       matchManagers: ["mise"],
       addLabels: ["renovate/mise"],
       commitMessageTopic: "tool {{depName}}"
+    },
+    {
+      description: "Label high-risk infrastructure upgrades",
+      matchPackageNames: ["/cilium/", "ghcr.io/rook/**", "/siderolabs/", "/talosctl/", "/kubelet/", "/kubectl/"],
+      addLabels: ["risk/high"],
     }
   ]
 }
