@@ -30,7 +30,7 @@ spec:
           app:
             image:
               repository: ghcr.io/esphome/esphome
-              tag: 2026.5.3
+              tag: 2026.6.3
             env:
               TZ: America/Chicago
               ESPHOME_DASHBOARD_USE_PING: "true"
