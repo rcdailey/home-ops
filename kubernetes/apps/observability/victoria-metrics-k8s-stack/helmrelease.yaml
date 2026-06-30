@@ -146,34 +146,6 @@ spec:
       enabled: true
       spec:
         scrapeInterval: 20s
-        # Opt-in metrics: Scrape infrastructure by default, application metrics require explicit labels
-        # Infrastructure (node-exporter, kube-state-metrics, kubelet) always scraped via chart VMNodeScrape objects
-        # Application metrics only from specific namespaces (media, default, home)
-        selectAllByDefault: false
-        # Scrape VMServiceScrape/VMPodScrape only from target namespaces
-        serviceScrapeNamespaceSelector:
-          matchExpressions:
-          - key: kubernetes.io/metadata.name
-            operator: In
-            values: [media, default, home, observability, rook-ceph]
-        podScrapeNamespaceSelector:
-          matchExpressions:
-          - key: kubernetes.io/metadata.name
-            operator: In
-            values: [media, default, home, observability, rook-ceph]
-        # Node scrapes always enabled (infrastructure metrics)
-        nodeScrapeSelector: {}
-        nodeScrapeNamespaceSelector: {}
-        # Enable chart-created scrape configs (infrastructure components)
-        serviceScrapeSelector: {}
-        podScrapeSelector: {}
-        probeSelector: {}
-        probeNamespaceSelector:
-          matchExpressions:
-          - key: kubernetes.io/metadata.name
-            operator: In
-            values: [observability]
-        staticScrapeSelector: {}
         resources:
           limits:
             memory: 512Mi

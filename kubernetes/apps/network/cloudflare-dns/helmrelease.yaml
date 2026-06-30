@@ -42,5 +42,7 @@ spec:
     domainFilters: ["${SECRET_DOMAIN}"]
     serviceMonitor:
       enabled: true
+    podLabels:
+      observability.home-ops/logs: "true"
     podAnnotations:
       reloader.stakater.com/auto: "true"
