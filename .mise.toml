@@ -6,7 +6,7 @@ DIFFTOOL = "delta"
 [tools]
 crane = "latest"
 delta = "latest"
-flux2 = "2.8.8"
+flux2 = "2.9.0"
 fzf = "latest"
 gh = "latest"
 gitleaks = "latest"
