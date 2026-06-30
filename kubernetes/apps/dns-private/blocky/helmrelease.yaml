@@ -149,3 +149,9 @@ spec:
             - path: /app/config.yml
               subPath: config.yml
               readOnly: true
+      cache:
+        type: emptyDir
+        advancedMounts:
+          blocky:
+            app:
+            - path: /app/cache

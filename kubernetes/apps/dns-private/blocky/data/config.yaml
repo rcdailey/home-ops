@@ -11,6 +11,12 @@ bootstrapDns:
 - upstream: https://9.9.9.9/dns-query
   ips: [9.9.9.9]
 
+rebindingProtection:
+  enable: true
+  allowedDomains:
+  # Conditional mapping resolves to private IPs via UDMP
+  - ${SECRET_DOMAIN}
+
 conditional:
   mapping:
     ${SECRET_DOMAIN}: tcp+udp:192.168.1.1
@@ -23,6 +29,9 @@ customDNS:
     internal.${SECRET_DOMAIN}: 192.168.50.72
 
 blocking:
+  loading:
+    downloads:
+      cachePath: /app/cache
   denylists:
     ads:
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro.txt
