@@ -43,6 +43,9 @@
       // Groups Talos OS packages across datasources (docker, mise/aqua, helm, etc.)
       // minimumGroupSize ensures mise tool + installer image are grouped together
       // Excludes kubelet which is a Kubernetes component, not Talos itself
+      // extractVersion normalizes docker's v-prefixed tags (v1.13.5) to bare semver (1.13.5)
+      // to match mise's format; without this, Renovate sees two distinct versions and strips
+      // the version from->to from commit messages
       description: "Talos Group",
       groupName: "Talos",
       matchPackageNames: [
@@ -50,7 +53,7 @@
         "/talosctl/",
         "!/kubelet/",
       ],
-      commitMessageExtra: "( {{currentVersion}} ➜ {{newVersion}} )",
+      extractVersion: "^v?(?<version>.*)$",
       minimumGroupSize: 2,
     },
   ],
