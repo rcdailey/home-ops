@@ -180,6 +180,11 @@
       href: http://192.168.1.31/
       ping: 192.168.1.31
 
+  - Claude Proxy:
+      icon: claude-ai
+      href: https://ai-proxy.${SECRET_DOMAIN}/management.html
+      siteMonitor: http://claude-proxy.default:8317/healthz
+
 - Monitoring:
   - VictoriaMetrics:
       icon: victoriametrics
