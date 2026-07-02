@@ -24,6 +24,12 @@ spec:
         strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          seed-config:
+            image:
+              repository: alpine
+              tag: latest
+            command: ["sh", "-c", "test -f /config/config.yaml || cp /seed/config.yaml /config/config.yaml"]
         containers:
           app:
             image:
@@ -88,14 +94,23 @@ spec:
             port: http
 
     persistence:
-      config:
+      seed:
         type: configMap
-        name: claude-proxy-config
+        name: claude-proxy-seed
         advancedMounts:
           claude-proxy:
+            seed-config:
+            - path: /seed
+              readOnly: true
+
+      config:
+        existingClaim: claude-proxy-config
+        advancedMounts:
+          claude-proxy:
+            seed-config:
+            - path: /config
             app:
             - path: /config
-              readOnly: true
 
       data:
         existingClaim: *app
