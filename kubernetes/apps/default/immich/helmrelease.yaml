@@ -47,7 +47,7 @@ spec:
           main:
             image:
               repository: ghcr.io/immich-app/immich-server
-              tag: v2.7.5@sha256:c15bff75068effb03f4355997d03dc7e0fc58720c2b54ad6f7f10d1bc57efaa5
+              tag: v3.0.0@sha256:685ba5c93337058ff8a189d3ed89f0ba470ef966b1c94d2eace1a3d991f9816e
             envFrom:
             - secretRef:
                 name: immich-secret
@@ -83,7 +83,7 @@ spec:
           main:
             image:
               repository: ghcr.io/immich-app/immich-machine-learning
-              tag: v2.7.5-openvino@sha256:71cd5a681823c4b818f4b24b3f05816eccc3d085559e7615f695bde77e64f1f2
+              tag: v3.0.0-openvino@sha256:9abb73aff96dc3a9aa28cfa090d1556708890811d3b8b9b6bacfb14436037a21
             env:
             # FP16 halves compiled model blob size to fit iGPU sub-buffer limits (#25830)
             - name: MACHINE_LEARNING_OPENVINO_PRECISION
