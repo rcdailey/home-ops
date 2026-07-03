@@ -10,33 +10,6 @@ spec:
   chartRef:
     kind: OCIRepository
     name: victoria-metrics-k8s-stack
-  # WORKAROUND: Chart creates VMRule even when defaultRules.groups.general.enabled: false
-  # Patch the count:up0 recording rule to always return a value (prevents RecordingRulesNoData alerts)
-  #
-  # WHY this is needed:
-  # - Recording rule count:up0 expression: count(up == 0) without(instance,pod,node)
-  # - Returns empty result when all targets healthy (no targets with up == 0)
-  # - Empty results are EXPECTED BEHAVIOR but trigger RecordingRulesNoData alerts
-  # - Chart doesn't respect general.enabled: false and doesn't expose rule expression customization
-  #
-  # HOW it works:
-  # - Adds 'OR on() vector(0)' to expression, ensuring it returns 0 when all targets healthy
-  # - Uses JSON6902 patch to modify the VMRule spec after Helm renders it
-  # - Path /spec/groups/0/rules/1/expr targets count:up0 (second rule in first group)
-  #
-  # WHEN to reconsider:
-  # - Chart fixes enabled: false configuration or exposes rule expression customization
-  # - Recording rules become operationally critical (currently optional dashboard optimizations)
-  postRenderers:
-  - kustomize:
-      patches:
-      - target:
-          kind: VMRule
-          name: victoria-metrics-k8s-stack-kube-prometheus-general.rules
-        patch: |-
-          - op: replace
-            path: /spec/groups/0/rules/1/expr
-            value: "count(up == 0) without(instance,pod,node) OR on() vector(0)"
   values:
     # Disable Grafana since we're using separate deployment
     grafana:
@@ -268,12 +241,15 @@ spec:
     defaultRules:
       enabled: true
       extraGroupByLabels: []
-      # Individual rule overrides via defaultRules.rules.<RuleName>.enabled: false
-      # This disables specific default rules while keeping the rule group enabled
-      # VictoriaMetrics operator aggregates ALL VMRule resources - there is no true override mechanism
-      # To customize a default rule: disable it here, then create custom VMRule with desired configuration
-      # Reference: https://github.com/VictoriaMetrics/helm-charts chart values.yaml structure
+      # Per-rule overrides: enabled: false disables, spec.expr/for/labels patches in-place
+      # Disabled rules use custom VMRules in vmrule.yaml for full control
       rules:
+        # Override count:up0 to always return a value (prevents RecordingRulesNoData alerts)
+        # Default expr returns empty when all targets healthy (no up == 0), which is expected
+        # but triggers alerts. Adding OR on() vector(0) ensures it returns 0 instead.
+        "count:up0":
+          spec:
+            expr: "count(up == 0) without(instance,pod,node) OR on() vector(0)"
         TooManyLogs:
           enabled: false # Using custom VMRule (vmrule.yaml) with >20 threshold vs default >0
         NodeSystemSaturation:
