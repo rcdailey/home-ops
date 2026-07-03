@@ -99,6 +99,19 @@ def _exec_in_pod(
 @click.option("--since", default="1h", help="Time window (default: 1h)")
 @click.option("--lines", default=50, help="Max lines to show")
 @click.option("--previous", is_flag=True, help="Show previous container logs")
+@click.option(
+    "-g",
+    "--grep",
+    default=None,
+    help="Filter log lines by regex pattern (searches all logs, not just tail)",
+)
+@click.option(
+    "-A",
+    "--after-context",
+    default=0,
+    type=int,
+    help="Lines of context after each grep match",
+)
 def logs(
     app: str,
     namespace: str | None,
@@ -106,8 +119,13 @@ def logs(
     since: str,
     lines: int,
     previous: bool,
+    grep: str | None,
+    after_context: int,
 ):
     """Pod logs for an app. Auto-selects the first matching pod.
+
+    With --grep, fetches all logs in the time window and filters by
+    regex pattern (removes --tail limit so matches are not missed).
 
     Prefer 'hops query logs' for apps with VictoriaLogs/Vector support.
     """
@@ -126,8 +144,10 @@ def logs(
         pod,
         "-n",
         ns,
-        f"--tail={lines}",
     ]
+    # With grep, fetch all logs in the window (no tail limit)
+    if not grep:
+        args.append(f"--tail={lines}")
     # --since is meaningless for --previous or terminated pods
     if not previous and not terminated:
         args.append(f"--since={since}")
@@ -145,15 +165,53 @@ def logs(
         return
 
     output = result.stdout.strip()
+
+    if grep:
+        output = _grep_logs(output, grep, after_context, lines)
+
     if output:
         info("note: prefer 'hops query logs' for apps with Vector support")
         container_hint = f", container={container}" if container else ""
         scope = "since boot" if terminated else f"since {since}"
-        info(f"--- {pod} [{phase}] (last {lines} lines, {scope}{container_hint}) ---")
+        grep_hint = f", grep={grep!r}" if grep else ""
+        info(f"--- {pod} [{phase}] ({scope}{container_hint}{grep_hint}) ---")
         click.echo(output)
     else:
         window = "in this container" if terminated else f"in the last {since}"
-        info(f"No logs from {pod} [{phase}] {window}")
+        extra = f" matching {grep!r}" if grep else ""
+        info(f"No logs from {pod} [{phase}] {window}{extra}")
+
+
+def _grep_logs(output: str, pattern: str, after_context: int, max_lines: int) -> str:
+    """Filter log output by regex pattern with optional context lines."""
+    import re
+
+    try:
+        regex = re.compile(pattern)
+    except re.error as e:
+        info(f"error: invalid grep pattern: {e}")
+        raise SystemExit(1)
+
+    log_lines = output.splitlines()
+    matched: list[str] = []
+    remaining_context = 0
+
+    for line in log_lines:
+        if regex.search(line):
+            # Insert separator when matches are non-contiguous
+            if matched and remaining_context == 0:
+                matched.append("--")
+            matched.append(line)
+            remaining_context = after_context
+        elif remaining_context > 0:
+            matched.append(line)
+            remaining_context -= 1
+
+    # Cap output to --lines
+    if len(matched) > max_lines:
+        matched = matched[-max_lines:]
+
+    return "\n".join(matched)
 
 
 @cli.command("pod")
