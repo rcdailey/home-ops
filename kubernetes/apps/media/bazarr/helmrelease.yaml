@@ -21,6 +21,9 @@ spec:
 
         pod:
           securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
 
@@ -38,26 +41,15 @@ spec:
                 custom: true
                 spec:
                   httpGet:
-                    path: /health
+                    path: /api/system/ping
                     port: *port
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  timeoutSeconds: 1
-                  failureThreshold: 3
-              readiness:
+              startup:
                 enabled: true
                 custom: true
                 spec:
                   httpGet:
-                    path: /health
+                    path: /api/system/ping
                     port: *port
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  timeoutSeconds: 1
-                  failureThreshold: 3
-              startup:
-                enabled: true
-                spec:
                   failureThreshold: 30
                   periodSeconds: 5
             resources:
@@ -67,9 +59,6 @@ spec:
               limits:
                 memory: 1Gi
             securityContext:
-              runAsUser: 1000
-              runAsGroup: 1000
-              runAsNonRoot: true
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities:
