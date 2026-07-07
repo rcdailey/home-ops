@@ -34,7 +34,7 @@ spec:
           app:
             image:
               repository: docker.io/eceasy/cli-proxy-api
-              tag: v7.2.48
+              tag: v7.2.49
             command: ["/CLIProxyAPI/CLIProxyAPI", "--config", "/config/config.yaml"]
             env:
               MANAGEMENT_STATIC_PATH: /tmp/static
