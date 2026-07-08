@@ -1,0 +1,4 @@
+---
+renderers:
+  flate:
+    path: kubernetes
