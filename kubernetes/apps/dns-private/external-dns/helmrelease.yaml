@@ -18,13 +18,9 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
-  valuesFrom:
-  - kind: Secret
-    name: cluster-secrets
-    valuesKey: SECRET_DOMAIN
-    targetPath: domainFilters[0]
   values:
     fullnameOverride: *app
+    domainFilters: ["${SECRET_DOMAIN}"]
     sources: ["gateway-httproute"]
 
     provider:
@@ -55,7 +51,5 @@ spec:
     policy: sync
     txtPrefix: k8s.
 
-    metrics:
+    serviceMonitor:
       enabled: true
-      serviceMonitor:
-        enabled: true
