@@ -1,5 +1,14 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "lsp": {
+    "yaml-ls": {
+      "disabled": true
+    },
+    "yayamlls": {
+      "command": ["yayamlls"],
+      "extensions": [".yaml", ".yml"]
+    }
+  },
   "formatter": {
     "yamlfmt": {
       "command": ["yamlfmt", "$FILE"],
