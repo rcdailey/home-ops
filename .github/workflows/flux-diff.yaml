@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Flux Local
+name: Flux Diff
 
 on:
   pull_request:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   filter:
-    name: Flux Local - Filter
+    name: Flux Diff - Filter
     runs-on: ubuntu-latest
     outputs:
       changed-files: ${{ steps.changed-files.outputs.changed_files }}
@@ -30,25 +30,27 @@ jobs:
   test:
     if: ${{ needs.filter.outputs.changed-files != '[]' }}
     needs: filter
-    name: Flux Local - Test
+    name: Flux Diff - Test
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
+        fetch-depth: 0
         persist-credentials: false
 
-    - name: Run flux-local test
-      uses: docker://ghcr.io/allenporter/flux-local:v8.4.0
+    - name: Setup flate
+      uses: home-operations/flate/action@0fc37fae10cf3c265294f6adebc6d6c100c74ea5 # v0.4.10
       with:
-        args: >-
-          test --all-namespaces --enable-helm --path /github/workspace/kubernetes/flux/cluster
-          --sources flux-system --verbose
+        cache: true
+
+    - name: Run flate test
+      run: flate test all -p ./kubernetes/flux/cluster
 
   diff:
     if: ${{ needs.filter.outputs.changed-files != '[]' }}
     needs: filter
-    name: Flux Local - Diff
+    name: Flux Diff - Diff
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,39 +58,33 @@ jobs:
     strategy:
       matrix:
         resource:
-        - helmrelease
-        - kustomization
+        - hr
+        - ks
       fail-fast: false
     steps:
-    - name: Checkout Pull Request Branch
+    - name: Checkout
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
-        path: pull
+        fetch-depth: 0
         persist-credentials: false
 
-    - name: Checkout Default Branch
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: Setup flate
+      uses: home-operations/flate/action@0fc37fae10cf3c265294f6adebc6d6c100c74ea5 # v0.4.10
       with:
-        path: default
-        persist-credentials: false
-        ref: ${{ github.event.repository.default_branch }}
+        cache: true
 
-    - name: Run flux-local diff
-      uses: docker://ghcr.io/allenporter/flux-local:v8.4.0
-      with:
-        args: >-
-          diff ${{ matrix.resource }} --unified 6 --path
-          /github/workspace/pull/kubernetes/flux/cluster --path-orig
-          /github/workspace/default/kubernetes/flux/cluster --strip-attrs
-          "helm.sh/chart,checksum/config,app.kubernetes.io/version,chart" --limit-bytes 10000
-          --all-namespaces --sources "flux-system" --output-file diff.patch
-
-    - name: Generate Diff
+    - name: Run flate diff
       id: diff
       run: |-
-        echo 'diff<<EOF' >> $GITHUB_OUTPUT
-        cat diff.patch >> $GITHUB_OUTPUT
-        echo 'EOF' >> $GITHUB_OUTPUT
+        diff=$(flate diff ${{ matrix.resource }} -p ./kubernetes/flux/cluster \
+          --output diff \
+          --strip-attr helm.sh/chart \
+          --strip-attr checksum/config \
+          --strip-attr app.kubernetes.io/version \
+          --strip-attr chart)
+        echo 'diff<<EOF' >> "$GITHUB_OUTPUT"
+        echo "$diff" >> "$GITHUB_OUTPUT"
+        echo 'EOF' >> "$GITHUB_OUTPUT"
 
     - if: ${{ steps.diff.outputs.diff != '' }}
       name: Add Comment
@@ -105,7 +101,7 @@ jobs:
     needs:
     - test
     - diff
-    name: Flux Local - Success
+    name: Flux Diff - Success
     runs-on: ubuntu-latest
     steps:
     - name: Any jobs failed?

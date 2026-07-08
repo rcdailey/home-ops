@@ -24,7 +24,7 @@
     {
       // Python minor version updates frequently introduce breaking changes to stdlib APIs
       // Example: Python 3.14's BooleanOptionalAction no longer accepts 'type' parameter,
-      // breaking flux-local and other tools. Only auto-merge patch versions (security fixes).
+      // breaking CLI tools. Only auto-merge patch versions (security fixes).
       description: "Disable auto-merge for Mise Python minor/major",
       matchManagers: ["mise"],
       matchPackageNames: ["python"],

@@ -55,6 +55,16 @@ repos:
   hooks:
   - id: zizmor
 
+- repo: local
+  hooks:
+  - id: flate-test
+    name: Flux Manifest Validation
+    entry: env FLATE_BASE=HEAD flate test all -p ./kubernetes/flux/cluster
+    language: system
+    files: '^kubernetes/.*\.ya?ml$'
+    pass_filenames: false
+    description: Validates Flux HelmReleases and Kustomizations render without errors
+
 - repo: https://github.com/gitleaks/gitleaks
   rev: v8.30.1
   hooks:
