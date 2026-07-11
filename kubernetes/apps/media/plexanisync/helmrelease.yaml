@@ -36,7 +36,7 @@ spec:
           app:
             image:
               repository: ghcr.io/rickdb/plexanisync
-              tag: 1.4.3
+              tag: 1.4.4
             env:
               INTERVAL: "0"
               PLEX_SECTION: Anime Series|Anime Movies
