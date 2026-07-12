@@ -7,6 +7,7 @@ metadata:
 spec:
   name: ${APP}
   clientID: ${APP}
+  skipConsent: true
   launchUrl: https://${SUBDOMAIN:=${APP}}.${SECRET_DOMAIN}
   callbackUrls:
   - https://${SUBDOMAIN:=${APP}}.${SECRET_DOMAIN}/oauth2/callback

@@ -7,6 +7,7 @@ metadata:
 spec:
   name: Forgejo
   clientID: forgejo
+  skipConsent: true
   launchUrl: https://git.${SECRET_DOMAIN}
   callbackUrls:
   - https://git.${SECRET_DOMAIN}/user/oauth2/Pocket%20ID/callback

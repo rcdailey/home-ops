@@ -7,6 +7,7 @@ metadata:
 spec:
   name: Paperless-ngx
   clientID: paperless-ngx
+  skipConsent: true
   launchUrl: https://docs.${SECRET_DOMAIN}
   callbackUrls:
   - https://docs.${SECRET_DOMAIN}/accounts/oidc/pocket-id/login/callback/

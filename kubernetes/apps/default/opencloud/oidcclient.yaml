@@ -7,6 +7,7 @@ metadata:
 spec:
   name: OpenCloud
   clientID: bf1ff257-b0cb-4ebb-8f5e-a10a781be3c9
+  skipConsent: true
   isPublic: true
   pkceEnabled: true
   launchUrl: https://cloud.${SECRET_DOMAIN}
@@ -27,6 +28,7 @@ metadata:
 spec:
   name: OpenCloud Android
   clientID: OpenCloudAndroid
+  skipConsent: true
   isPublic: true
   pkceEnabled: true
   callbackUrls:
@@ -46,6 +48,7 @@ metadata:
 spec:
   name: OpenCloud Desktop
   clientID: OpenCloudDesktop
+  skipConsent: true
   isPublic: true
   pkceEnabled: true
   callbackUrls:
@@ -64,6 +67,7 @@ metadata:
 spec:
   name: OpenCloud iOS
   clientID: OpenCloudIOS
+  skipConsent: true
   isPublic: true
   pkceEnabled: true
   callbackUrls:
