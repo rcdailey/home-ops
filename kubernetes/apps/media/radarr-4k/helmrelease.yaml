@@ -30,7 +30,7 @@ spec:
             nameOverride: radarr-4k
             image:
               repository: ghcr.io/home-operations/radarr
-              tag: 6.2.1.10461
+              tag: 6.3.0.10511
             env:
               UMASK: "022"
               RADARR__APP__INSTANCENAME: "Radarr 4K"
