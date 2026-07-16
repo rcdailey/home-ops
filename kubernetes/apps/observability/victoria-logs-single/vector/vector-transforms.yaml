@@ -46,7 +46,7 @@ transforms:
   talos_enrich:
     type: remap
     inputs: [talos]
-    source: '.node = "$${VECTOR_NODE_NAME}"'
+    source: '.node = get_env_var!("VECTOR_NODE_NAME")'
 
   talos_parser:
     type: remap
