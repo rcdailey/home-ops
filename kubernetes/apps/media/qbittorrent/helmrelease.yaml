@@ -67,6 +67,10 @@ spec:
                   initialDelaySeconds: 60
                   periodSeconds: 60
                   failureThreshold: 3
+            lifecycle:
+              postStart:
+                exec:
+                  command: ["/bin/sh", "-c", "(ip rule del table 51820; ip -6 rule del table 51820) || true"]
             restartPolicy: Always
             securityContext:
               privileged: true
