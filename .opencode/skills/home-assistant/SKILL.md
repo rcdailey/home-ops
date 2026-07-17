@@ -85,6 +85,14 @@ the entity registry when they diverge from the `entity_id` suffix.
 hass.sh attributes remote.harmony_media_room
 ```
 
+**services** -- list available HA services:
+
+```bash
+hass.sh services                              # Domain summary (count per domain)
+hass.sh services notify                       # List services in domain
+hass.sh services notify.mobile_app_pixel_8_pro  # Service fields/schema
+```
+
 **orient** -- discover all entities, automations, scripts, and dashboard cards for a topic:
 
 ```bash
@@ -220,7 +228,6 @@ For `raw` calls, these endpoints have no dedicated subcommand:
 - `POST /api/states/<entity_id>` + `{"state": ..., "attributes": {...}}` -- set entity state
 - `POST /api/events/<event_type>` + `{...}` -- fire an event
 - `POST /api/config/core/check_config` (no body) -- validate HA config
-- `GET /api/services` -- full service registry (pipe to `jq` to inspect service schemas)
 - `GET /api/events` -- event types with listener counts
 
 All other common endpoints are covered by subcommands.
