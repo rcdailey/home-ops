@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: docker.io/outlinewiki/outline
-              tag: 1.9.0
+              tag: 1.9.1
             env:
               # Core
               URL: https://wiki.${SECRET_DOMAIN}
