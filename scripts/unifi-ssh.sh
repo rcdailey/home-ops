@@ -55,5 +55,5 @@ ssh \
   -o ServerAliveInterval=5 \
   -o ServerAliveCountMax=2 \
   -o LogLevel=ERROR \
-  "admin@${host}" \
+  "root@${host}" \
   "timeout -t 15 sh -c $(printf '%q' "$remote_cmd") 2>&1"

@@ -85,6 +85,9 @@ context is cheaper than a future audit.
   files from config/ subdirectory
 - **NEVER inline VRL source in vector.yaml** - Separate VRL file required for testing and validation
 - **ALWAYS include test data for VRL validation** - Use ./scripts/test-vrl.py for validation
+- **NEVER read, reference, or document `.local` files** (e.g., `.mise.local.toml`, `.envrc.local`).
+  These are unversioned and contain secrets/credentials that MUST NOT appear in agent output,
+  commits, or documentation.
 
 ### Scaling
 
@@ -433,6 +436,17 @@ field, workflow, config). Run `--help` on the relevant subcommand before use.
 **talosctl access:** Read-only diagnostic subcommands (`get`, `version`, `services`, `dmesg`,
 `logs`, `health`, `inspect`, `time`, `etcd members`, `etcd status`, `etcd snapshot`, `netstat`) are
 permitted for agents. Mutating subcommands are denied via permissions.
+
+**UniFi management:** `unifly` (github:hyperb1iss/unifly, installed via mise) is the CLI for the
+UniFi Network controller. Env vars: `UNIFI_URL`, `UNIFI_API_KEY`, `UNIFI_SITE`, `UNIFI_INSECURE`,
+`UNIFI_OUTPUT`. Use `unifly` for firewall policies, networks, clients, zones, and settings; MUST NOT
+fall back to raw `curl` or MongoDB when `unifly` covers the operation. `unifly settings set <key>
+<field> <value>` uses the session API for site settings. Known limitation: the mDNS site setting
+(`unifly settings set mdns enabled_for_network_ids [...]`) silently no-ops via all API paths
+(Integration, legacy REST, session); mDNS VLAN scope changes MUST be made through the UniFi UI
+(Settings > Networks > Gateway mDNS Proxy). `./scripts/unifi-ssh.sh` runs commands on UniFi devices
+via SSH. The UDM at 192.168.1.1 runs MongoDB on port 27117 (database `ace`) for direct queries when
+`unifly` lacks coverage; prefer `unifly` first.
 
 **Conventional commits:**
 

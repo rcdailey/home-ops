@@ -19,6 +19,9 @@
     }
   },
   "permission": {
+    "read": {
+      "*.local.*": "deny"
+    },
     "bash": {
       // override from global ask permission
       "*git push*": "allow",
