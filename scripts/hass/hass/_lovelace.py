@@ -249,9 +249,8 @@ def parse_cards(text: str) -> list[dict]:
 def write_backup(url_path: str | None, config: dict) -> Path:
     """Stash the pre-write dashboard config; returns the backup path."""
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
-    name = f"{url_path or 'overview'}-{stamp}.json"
-    path = BACKUP_DIR / name
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
+    path = BACKUP_DIR / f"{url_path or 'overview'}-{stamp}.json"
     path.write_text(json.dumps(config, indent=2))
     return path
 
