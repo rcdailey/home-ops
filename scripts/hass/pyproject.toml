@@ -7,6 +7,8 @@ dependencies = [
     "click>=8.1",
     "homeassistant-api>=4.0",
     "aiohttp>=3.9",
+    "pyyaml>=6.0",
+    "requests>=2.32",
 ]
 
 [build-system]

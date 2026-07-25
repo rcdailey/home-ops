@@ -6,8 +6,9 @@ import json
 
 import click
 
-from hass._client import get_client
-from hass._errors import die
+from hass._client import run_ws
+from hass._errors import HassError, die
+from hass.call import call_service
 
 
 @click.command()
@@ -26,17 +27,22 @@ def cli(entity_id: str, variables: str | None) -> None:
       hass trigger script.set_mode --vars '{"hdr_mode": "user_4"}'
     """
     if entity_id.startswith("automation."):
-        service = "automation/trigger"
-        payload = {"entity_id": entity_id}
         if variables:
             die("--vars is only supported for scripts")
+        domain, service, entities, data = "automation", "trigger", [entity_id], {}
     elif entity_id.startswith("script."):
-        slug = entity_id.removeprefix("script.")
-        service = f"script/{slug}"
-        payload = json.loads(variables) if variables else {}
+        domain = "script"
+        service = entity_id.removeprefix("script.")
+        entities = []
+        data = json.loads(variables) if variables else {}
     else:
         die(f"entity_id must start with 'automation.' or 'script.': {entity_id}")
 
-    with get_client() as client:
-        client.request(f"services/{service}", method="POST", json=payload)
-    click.echo(f"Triggered: {entity_id}")
+    async def handler(send):
+        await call_service(send, domain, service, entities, data)
+        click.echo(f"Triggered: {entity_id}")
+
+    try:
+        run_ws(handler)
+    except HassError as exc:
+        die(str(exc))
