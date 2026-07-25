@@ -93,6 +93,16 @@ def rest_call(method: str, path: str, payload: Any | None = None) -> Any:
     return resp.text
 
 
+def rest_get(path: str) -> Any | None:
+    """GET a REST path, returning None when the object does not exist."""
+    try:
+        return rest_call("GET", path)
+    except HassError as exc:
+        if "404" in str(exc):
+            return None
+        raise
+
+
 def parse_time_arg(value: str, now: datetime) -> datetime:
     """Parse a time argument as hours-ago (number/Nh) or ISO timestamp."""
     try:

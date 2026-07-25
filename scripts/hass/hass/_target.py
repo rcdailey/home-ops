@@ -18,7 +18,7 @@ from typing import Any
 import yaml
 
 from hass import _lovelace as lv
-from hass._client import get_client, rest_call, run_ws
+from hass._client import get_client, rest_call, rest_get, run_ws
 from hass._errors import HassError
 
 EDIT_DIR = Path.home() / ".cache" / "hass" / "edit"
@@ -78,21 +78,11 @@ def resolve_script_slug(identifier: str) -> str:
         if resolved and resolved not in candidates:
             candidates.append(resolved)
     for slug in candidates:
-        if _rest_get(f"config/script/config/{slug}") is not None:
+        if rest_get(f"config/script/config/{slug}") is not None:
             return slug
     raise HassError(
         f"script config not found for {identifier} (tried: {', '.join(candidates)})"
     )
-
-
-def _rest_get(path: str) -> dict | None:
-    """GET a config endpoint, returning None when the object does not exist."""
-    try:
-        return rest_call("GET", path)
-    except HassError as exc:
-        if "404" in str(exc):
-            return None
-        raise
 
 
 @dataclass(frozen=True)
@@ -126,7 +116,7 @@ class Target:
         if self.kind == "view":
             config, idx = self._fetch_view()
             return config["views"][idx]
-        return _rest_get(self._path)
+        return rest_get(self._path)
 
     def _fetch_view(self) -> tuple[dict, int]:
         """Return the whole dashboard config plus the index of the addressed view.

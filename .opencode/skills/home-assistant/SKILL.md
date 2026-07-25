@@ -170,12 +170,43 @@ hass.sh trigger automation.my_automation
 hass.sh trigger script.set_mode --vars '{"hdr_mode": "user_4"}'
 ```
 
-**entity** -- enable/disable entities in the registry:
+**entity** -- manage entity registry entries:
 
 ```bash
 hass.sh entity enable sensor.jvc_projector_hdr_mode
 hass.sh entity disable sensor.some_entity
+hass.sh entity rename media_player.wiim_patio "Pool Speakers"   # friendly-name override
+hass.sh entity rename media_player.wiim_patio                   # clear override
 ```
+
+`rename` sets the friendly name only; the entity_id never changes, so dashboard cards and
+automations that reference it keep working. Renaming entity_ids is not an entity-level operation:
+use `device rename`, which derives them from the device name the way HA does.
+
+**device** -- inspect devices and rename them the way the HA UI does:
+
+```bash
+hass.sh device list                                   # All devices
+hass.sh device list wiim                              # Name or device_id substring
+hass.sh device rename "WiiM Patio" "Pool Speakers" --dry-run
+hass.sh device rename "WiiM Patio" "Pool Speakers"
+hass.sh device rename 404353788e6f... "Pool Speakers" --keep-entity-ids
+```
+
+`list` prints `name [device_id] area= entities= (manufacturer model)`. `rename` is one operation
+covering everything the UI's rename dialog does: it sets `name_by_user` on the device, re-slugifies
+every entity_id whose object_id starts with the old device slug (`media_player.wiim_patio` ->
+`media_player.pool_speakers`, domain preserved), and clears per-entity friendly-name overrides on
+that device so entities inherit the new device name again. Entity_ids that do not carry the old
+slug are reported as `unchanged` and left alone rather than guessed at. `--keep-entity-ids` renames
+the device only.
+
+Before writing, `rename` lists every dashboard view, automation, and script whose stored config
+mentions a moving entity_id; those references are NOT rewritten, so fix them with `edit push` or
+`dashboard card edit` afterwards. YAML-mode automations/scripts have no config endpoint and are not
+scanned. The device query accepts a device_id or a name substring; no match fails with close-name
+candidates and multiple matches fail with the matching devices, never a guess. A target entity_id
+that is already taken aborts the whole rename. Always do a `--dry-run` pass first.
 
 **logs** -- parsed and filtered HA error log:
 
