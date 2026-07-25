@@ -12,9 +12,6 @@ dependencies = [
     "pypaperless @ git+https://github.com/tb1337/paperless-api.git@main",
 ]
 
-[project.scripts]
-paperless = "paperless.cli:cli"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -24,9 +21,3 @@ allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["paperless"]
-
-[dependency-groups]
-dev = ["pytest>=8.0"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]

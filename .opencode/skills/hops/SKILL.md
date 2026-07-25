@@ -294,59 +294,21 @@ All output is plain text optimized for LLM token efficiency:
 9. Test against live cluster: `./scripts/hops.sh <domain> <command> <args>`
 10. Measure token count: `./scripts/hops.sh <command> 2>&1 | ttok`
 
-## Testing
+## Verification
 
-The test suite at `scripts/hops/tests/` is the primary validation mechanism. All changes to hops
-MUST maintain, update, or extend the test suite. Run tests via:
-
-```bash
-# All tests (unit + integration against live cluster)
-uv run --project scripts/hops pytest scripts/hops/tests/ -v
-
-# Unit tests only (no cluster access needed)
-uv run --project scripts/hops pytest scripts/hops/tests/ -v -m "not integration"
-```
-
-### Test Categories
-
-**Unit tests** (`test_format.py`, `test_time.py`, `test_dns_psql.py`): Pure function tests for
-`core.format`, `core.time`, and `dns.psql`. No cluster access. These test formatting, parsing, and
-escaping logic that has caused regressions.
-
-**Resolver integration tests** (`test_resolver.py`): Call `core.resolve.resolve()` directly against
-the live cluster. Cover every resource category: Deployment, StatefulSet, DaemonSet, CronJob, CNPG
-pods, subchart naming. These are the tests that would have caught the 4 resolver fix commits.
-
-**Command integration tests** (`test_commands.py`): Invoke `./scripts/hops.sh` via subprocess and
-assert on exit codes and output structure (header presence, section markers). Cover all domains.
-
-### Test Obligations
-
-When modifying hops code, MUST:
-
-1. Run the full test suite before considering the change complete
-2. Fix any test failures caused by the change (update assertions, not delete tests)
-3. Add tests for new commands (at minimum: exit 0 for valid input, non-zero for invalid)
-4. Add tests for new resolver strategies or resource categories
-5. Add unit tests for new pure functions in `core/`
-6. Update test fixtures when cluster apps are added or removed
-
-When a test fails due to a removed or renamed cluster app, update the fixture data in the test to
-reference a current app. Do not delete the test.
-
-### Test Patterns
-
-- Integration tests are marked `@pytest.mark.integration`
-- Use `conftest.run_hops()` for subprocess invocations
-- Assert on output structure (headers, section markers), not exact values
-- Assert on app names and namespaces (stable); skip pod suffixes and timestamps (volatile)
-- Test both success and failure paths (valid app, nonexistent app)
-
-### Verification
+No test suite exists; validate adhoc against the live cluster (see `python-scripting` skill,
+Adhoc Verification). Every change MUST be exercised before reporting done:
 
 ```bash
-# Verify a specific command works
-./scripts/hops.sh <domain> <command>
+# Run the changed command, plus a failure path (nonexistent target)
+./scripts/hops.sh <domain> <command> <args>
+./scripts/hops.sh <domain> <command> nonexistent-app
+
+# Pure functions: exercise inline, print observed beside expected
+uv run --project scripts/hops python - <<'EOF'
+from hops.core.format import age_str
+print("age:", age_str("2026-07-25T12:00:00Z"), "| expect a short relative string")
+EOF
 
 # Compare token usage vs raw equivalent
 ./scripts/hops.sh node list 2>&1 | ttok

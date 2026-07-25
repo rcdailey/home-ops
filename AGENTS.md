@@ -577,9 +577,9 @@ names, HTTPRoute names, or hostname substrings. `app diagnose --explain` prints 
 showing which resolvers were tried and what matched (useful for debugging resolution failures). `app
 types` lists every resolvable resource category with a sample name from the cluster.
 
-**`hops` test suite:** The test suite at `scripts/hops/tests/` MUST be run after any hops change:
-`uv run --project scripts/hops pytest scripts/hops/tests/ -v`. Fix failures caused by code changes
-(update assertions, not delete tests). Add tests for new commands and resolver strategies.
+**`hops` verification:** Python script projects under `scripts/` carry no test suites. After any
+hops change, MUST exercise the affected commands against the live cluster (success and failure
+paths) before reporting done. MUST NOT add pytest or a `tests/` directory to any script project.
 
 ### New App Checklist
 
