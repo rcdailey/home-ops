@@ -569,7 +569,10 @@ whenever a specific pod misbehaves (crashloops, startup races, image pull failur
 Jobs). Use `app unhealthy` as a quick cluster health scan before or after any change. Use `db
 status` for CNPG health checks, replica audits, PDB readiness, and resource usage across all
 database clusters. Use `backup status` for backup health audits. Use `debug route` when requests to
-an app fail at the gateway layer (503s, upload failures, timeouts, TLS issues). `app diagnose` and
+an app fail at the gateway layer (503s, upload failures, timeouts, TLS issues). Use `./scripts/hops.sh
+app addr APP [-n NS]` whenever a manifest needs an in-cluster address; it matches operator-generated
+service names by substring and lists `service.namespace:port` plus any external HTTPRoute hostnames,
+so never grep manifests for a service address. `app diagnose` and
 `app pod` accept workload names, app labels, pod-name prefixes, or full pod names, including orphan
 pods whose parent workload has been deleted (TTL'd Jobs, manually removed controllers) and
 operator-managed pods without parent workloads (CNPG Clusters, etc.). `debug route` accepts app

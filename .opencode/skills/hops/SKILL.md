@@ -94,6 +94,7 @@ writing a new utility function, check whether one already exists:
 | Unified resolution | `core.resolve` | `resolve`, `ResolvedTarget`, `TargetKind`, resolver registry |
 | Node resolution | `core.nodes` | `get_all`, `resolve_ip`, `resolve_name` |
 | Gateway introspection | `app.gateway` | `find_httproute`, `fetch_gateway`, `fetch_envoy_proxy` |
+| Service matching | `app.endpoints` | `match_services` |
 | Helm chart resolution | `core.helm` | `resolve_hr`, `helm_chart_args` |
 | VM API | `query._vm` | `query_vm`, `query_vmalert`, `is_ignored_alert` |
 | VL API | `query._client` | `VictoriaLogsClient` |

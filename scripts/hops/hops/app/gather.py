@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import click
 
+from hops.app.endpoints import match_services
 from hops.app.events import compact_event_message
 from hops.core.format import age_str, info, section, table, truncate
 from hops.core.runner import kubectl_json, run, run_json
@@ -16,15 +17,10 @@ from hops.core.runner import kubectl_json, run, run_json
 def diagnose_services(app_name: str, ns: str):
     """Show services matching an app (catches naming surprises)."""
     section("SERVICES")
-    svc_data = kubectl_json("services", namespace=ns)
     rows = []
-    for item in svc_data.get("items", []):
+    for item in match_services(app_name, ns):
         meta = item.get("metadata", {})
         name = meta.get("name", "")
-        labels = meta.get("labels", {})
-        app_label = labels.get("app.kubernetes.io/name", "")
-        if app_label != app_name and not name.startswith(app_name):
-            continue
         spec = item.get("spec", {})
         stype = spec.get("type", "ClusterIP")
         ports = ", ".join(
