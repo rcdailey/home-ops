@@ -11,6 +11,7 @@ import click
 from hops._click import HelpfulGroup
 from hops.core.format import format_labels_list, format_timestamp, info, kv
 from hops.core.time import TimeRange, time_options
+from hops.query import rules_render
 from hops.query._vm import is_ignored_alert, query_vm, query_vmalert
 
 
@@ -282,9 +283,11 @@ def _alert_historical(name: str, time_range: TimeRange, json_mode: bool) -> None
 
 
 @cli.command("rules")
+@click.option("-g", "--group", help="Filter to groups matching this substring")
+@click.option("--all", "show_all", is_flag=True, help="Include healthy inactive rules")
 @click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
-def rules(json_mode: bool):
-    """List all alert rules."""
+def rules(group: str | None, show_all: bool, json_mode: bool):
+    """Rule health: evaluation errors, firing/pending rules, slow evaluations."""
     data = query_vmalert("/api/v1/rules")
     groups = data.get("data", {}).get("groups", [])
 
@@ -292,10 +295,10 @@ def rules(json_mode: bool):
         click.echo(json.dumps(groups, indent=2))
         return
 
-    for group in groups:
-        click.echo(f"Group: {group.get('name')}")
-        for rule in group.get("rules", []):
-            click.echo(
-                f"  {rule.get('name')} ({rule.get('type')}) - {rule.get('state')}"
-            )
-        click.echo()
+    all_rules = rules_render.flatten(groups)
+    if group:
+        all_rules = [r for r in all_rules if group.lower() in r["group"].lower()]
+        if not all_rules:
+            info(f"error: no rule group matching {group!r}")
+            sys.exit(1)
+    rules_render.render(all_rules, show_all)
