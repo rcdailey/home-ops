@@ -67,6 +67,23 @@ class TimeRange:
         span = int((self._parse_end_time() - self._parse_start_time()).total_seconds())
         return f"{max(60, -(-span // MAX_RANGE_POINTS))}s"
 
+    def to_instant_params(self) -> dict[str, str]:
+        """Params pinning an instant query to the end of the range.
+
+        Without this an instant query evaluates its lookbehind window at now,
+        so an explicit --to is silently ignored and the caller gets recent data
+        labelled as history.
+        """
+        if not self.end:
+            return {}
+        return {"time": f"-{self.end}" if self._is_duration(self.end) else self.end}
+
+    def describe(self) -> str:
+        """Human label for the window, distinguishing trailing from absolute."""
+        if self.end:
+            return f"{self.to_duration()} ending {self.end}"
+        return f"last {self.to_duration()}"
+
     def to_range_params(self, step: str = "auto") -> dict[str, str]:
         params: dict[str, str] = {"step": self.auto_step() if step == "auto" else step}
         if self.start:

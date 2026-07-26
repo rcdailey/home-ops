@@ -9,7 +9,7 @@ import sys
 import click
 
 from hops._click import HelpfulGroup
-from hops.core.format import format_labels_list, format_timestamp, info, kv
+from hops.core.format import format_labels_list, format_timestamp, info, kv, table
 from hops.core.time import TimeRange, time_options
 from hops.query import rules_render
 from hops.query._vm import is_ignored_alert, query_vm, query_vmalert
@@ -95,33 +95,62 @@ def _alerts_current(state: str, json_mode: bool) -> None:
 
 def _alerts_historical(time_range: TimeRange, json_mode: bool) -> None:
     duration = time_range.to_duration()
-    query_str = (
-        f'topk(20, sum(changes(ALERTS{{alertstate="firing"}}[{duration}])) '
-        f"by (alertname,severity))"
+    instant = time_range.to_instant_params()
+    counts = query_vm(
+        "/api/v1/query",
+        {
+            "query": (
+                f'topk(20, sum(changes(ALERTS{{alertstate="firing"}}[{duration}])) '
+                f"by (alertname,severity))"
+            ),
+            **instant,
+        },
     )
-    data = query_vm("/api/v1/query", {"query": query_str})
-    results = data.get("data", {}).get("result", [])
+    results = counts.get("data", {}).get("result", [])
 
     if json_mode:
         click.echo(json.dumps(results, indent=2))
         return
 
-    if not results:
-        info(f"No alerts fired in last {duration}")
+    rows = []
+    for r in sorted(results, key=lambda x: float(x["value"][1]), reverse=True):
+        alertname = r["metric"].get("alertname", "unknown")
+        count = int(float(r["value"][1]))
+        if not count or is_ignored_alert(alertname):
+            continue
+        rows.append([alertname, r["metric"].get("severity", "none"), str(count)])
+
+    if not rows:
+        info(f"No alerts fired in {time_range.describe()}")
         return
 
-    info(f"Alerts fired in last {duration}:")
-    results.sort(key=lambda x: float(x["value"][1]), reverse=True)
-    for r in results:
-        metric = r["metric"]
-        count = int(float(r["value"][1]))
-        if count == 0:
-            continue
-        alertname = metric.get("alertname", "unknown")
-        if is_ignored_alert(alertname):
-            continue
-        severity = metric.get("severity", "none")
-        click.echo(f"  [{severity}] {alertname} - {count} times")
+    # Without a last-fired column every row needs a follow-up `query alert`
+    # call just to learn when it happened, which is the whole reason the
+    # caller is looking at history.
+    last_fired = _last_fired(duration, time_range.auto_step(), instant)
+    info(f"Alerts fired in {time_range.describe()}:")
+    table(
+        ["ALERT", "SEV", "COUNT", "LAST FIRED"],
+        [[*row, last_fired.get(row[0], "?")] for row in rows],
+    )
+
+
+def _last_fired(duration: str, step: str, instant: dict[str, str]) -> dict[str, str]:
+    """Map alertname to the last time it was firing within the window."""
+    data = query_vm(
+        "/api/v1/query",
+        {
+            "query": (
+                f"max by (alertname) (last_over_time(timestamp("
+                f'ALERTS{{alertstate="firing"}})[{duration}:{step}]))'
+            ),
+            **instant,
+        },
+    )
+    return {
+        r["metric"].get("alertname", ""): format_timestamp(float(r["value"][1]))
+        for r in data.get("data", {}).get("result", [])
+    }
 
 
 @cli.command("alert")
