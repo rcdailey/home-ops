@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import click
+from httpx import HTTPError
+from pypaperless.exceptions import PaperlessError
 
 from paperless._client import open_client, run_async
 from paperless.doc import cli
@@ -128,21 +130,21 @@ def show(doc_id: int, full: bool) -> None:
                     try:
                         t = await p.tags(tid)
                         tag_names.append(t.name)
-                    except Exception:
+                    except (PaperlessError, HTTPError):
                         tag_names.append(str(tid))
             corr_name = None
             if doc.correspondent:
                 try:
                     c = await p.correspondents(doc.correspondent)
                     corr_name = c.name
-                except Exception:
+                except (PaperlessError, HTTPError):
                     corr_name = str(doc.correspondent)
             type_name = None
             if doc.document_type:
                 try:
                     dt = await p.document_types(doc.document_type)
                     type_name = dt.name
-                except Exception:
+                except (PaperlessError, HTTPError):
                     type_name = str(doc.document_type)
             return doc, tag_names, corr_name, type_name
 
@@ -198,9 +200,13 @@ def search(query: str, limit: int) -> None:
         return
     for d in docs:
         parts = [f"#{d.id} {d.title}"]
-        if hasattr(d, "search_hit") and d.search_hit:
-            if hasattr(d.search_hit, "score") and d.search_hit.score:
-                parts.append(f"score={d.search_hit.score:.2f}")
+        if (
+            hasattr(d, "search_hit")
+            and d.search_hit
+            and hasattr(d.search_hit, "score")
+            and d.search_hit.score
+        ):
+            parts.append(f"score={d.search_hit.score:.2f}")
         click.echo(" | ".join(parts))
 
 

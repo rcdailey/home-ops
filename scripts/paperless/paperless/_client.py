@@ -31,24 +31,30 @@ def get_token() -> str:
 
 
 def run_async(coro: Awaitable[T]) -> T:
-    """Run an async coroutine synchronously."""
+    """Run an async coroutine synchronously, reporting API failures cleanly."""
+    from httpx import HTTPStatusError, TransportError
+    from pypaperless.exceptions import PaperlessError
+
+    url = get_url()
     try:
         return asyncio.run(coro)
+    except HTTPStatusError as exc:
+        die(
+            f"{exc.response.status_code} {exc.response.reason_phrase}: "
+            f"{exc.request.url}"
+        )
+    except TransportError as exc:
+        die(f"cannot reach {url}: {exc}")
+    except PaperlessError as exc:
+        # pypaperless raises some of these with no args, which would otherwise
+        # print a bare "error:" with nothing to act on.
+        die(str(exc) or f"{type(exc).__name__} from {url}")
     except Exception as exc:
-        from httpx import HTTPStatusError, TransportError
-        from pypaperless.exceptions import PaperlessError
-
-        url = os.environ.get("PAPERLESS_URL", "(unset)")
-        if isinstance(exc, HTTPStatusError):
-            die(
-                f"{exc.response.status_code} {exc.response.reason_phrase}: "
-                f"{exc.request.url}"
-            )
-        if isinstance(exc, TransportError):
-            die(f"cannot reach {url}: {exc}")
-        if isinstance(exc, PaperlessError):
-            die(str(exc))
-        die(f"unexpected error talking to {url}: {type(exc).__name__}: {exc}")
+        # Last-resort boundary: any other failure from the async stack becomes
+        # a one-line CLI error instead of a traceback. Mirrors die().
+        raise SystemExit(
+            f"error: unexpected error talking to {url}: {type(exc).__name__}: {exc}"
+        ) from exc
 
 
 def open_client():

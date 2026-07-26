@@ -9,6 +9,8 @@ import unicodedata
 import click
 import ftfy
 import yake
+from httpx import HTTPError
+from pypaperless.exceptions import PaperlessError
 
 from paperless._client import open_client, run_async
 from paperless._permissions import ensure_inbox_tag
@@ -261,7 +263,7 @@ def apply() -> None:
                     results.append(
                         (doc_id, doc.title, corr_name, type_name, tag_names, None)
                     )
-                except Exception as exc:
+                except (PaperlessError, HTTPError) as exc:
                     results.append((doc_id, None, None, None, None, str(exc)))
             return results
 

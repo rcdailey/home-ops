@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import sys
-
 import click
 
 from paperless._client import get_url, open_client, run_async
@@ -17,12 +15,10 @@ def cli() -> None:
         async with open_client() as p:
             return await p.statistics()
 
+    # run_async already reports connectivity/API failures and exits non-zero,
+    # so reaching the next line means the call succeeded.
     url = get_url()
-    try:
-        stats = run_async(_status())
-    except Exception as exc:
-        click.echo(f"cannot reach {url}: {exc}", err=True)
-        sys.exit(1)
+    stats = run_async(_status())
 
     click.echo(f"connected to {url}")
     if hasattr(stats, "documents_total"):

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-
 import click
+from httpx import HTTPError
+from pypaperless.exceptions import PaperlessError
 
 from paperless._click import HelpfulGroup
 from paperless._client import get_transport, open_client, run_async
@@ -44,14 +45,14 @@ def show(workflow_id: int) -> None:
                 try:
                     t = await p.workflows.triggers(tid)
                     triggers.append(t)
-                except Exception:
+                except (PaperlessError, HTTPError):
                     triggers.append(tid)
             actions = []
             for aid in wf.actions if hasattr(wf, "actions") and wf.actions else []:
                 try:
                     a = await p.workflows.actions(aid)
                     actions.append(a)
-                except Exception:
+                except (PaperlessError, HTTPError):
                     actions.append(aid)
             return wf, triggers, actions
 
