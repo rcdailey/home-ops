@@ -7,7 +7,6 @@ import os
 import click
 
 from hops._click import HelpfulGroup
-from hops.core.format import info, kv, section, table, truncate
 from hops.app.gateway import (
     extract_policy_details,
     fetch_envoy_proxy,
@@ -17,6 +16,7 @@ from hops.app.gateway import (
     find_security_policies,
     search_envoy_errors,
 )
+from hops.core.format import info, kv, section, table, truncate
 from hops.core.runner import run
 
 

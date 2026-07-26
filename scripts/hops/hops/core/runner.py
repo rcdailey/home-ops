@@ -14,12 +14,13 @@ def run(
     args: list[str],
     *,
     timeout: int = 30,
-    check: bool = True,
+    check: bool = True,  # vestigial: ignored; kept for call-site compatibility
     capture: bool = True,
 ) -> subprocess.CompletedProcess[str]:
     """Run a subprocess and return the result.
 
-    On failure, prints a one-line error and exits non-zero.
+    Never raises on a non-zero exit; callers inspect ``returncode``/``stderr``
+    themselves. Missing binaries and timeouts print a one-line error and exit.
     """
     try:
         return subprocess.run(
@@ -27,6 +28,7 @@ def run(
             capture_output=capture,
             text=True,
             timeout=timeout,
+            check=False,
         )
     except FileNotFoundError:
         click.echo(f"error: {args[0]} not found in PATH", err=True)

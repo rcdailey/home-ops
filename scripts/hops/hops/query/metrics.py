@@ -17,7 +17,6 @@ from hops.query.metrics_render import (
     format_value,
 )
 
-
 # --- Container stats helper ---
 
 

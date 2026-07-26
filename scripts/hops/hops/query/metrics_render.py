@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 
 import click
@@ -39,7 +40,7 @@ def format_value(val: str) -> str:
         f = float(val)
     except (ValueError, TypeError):
         return val
-    if f != f:
+    if math.isnan(f):
         return "NaN"
     if abs(f) == float("inf"):
         return val

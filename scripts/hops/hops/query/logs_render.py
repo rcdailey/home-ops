@@ -23,7 +23,7 @@ def format_log_entry(log: dict, detail: bool = False, all_fields: bool = False) 
         try:
             dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
             formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S")
-        except Exception:
+        except (TypeError, ValueError):
             formatted_time = timestamp
 
     if all_fields:

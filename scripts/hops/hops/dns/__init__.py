@@ -4,13 +4,9 @@ from __future__ import annotations
 
 import click
 
-from hops._click import HelpfulGroup
+from hops._click import AutoGroup
 
 
-@click.group(cls=HelpfulGroup)
+@click.group(cls=AutoGroup, package="hops.dns")
 def cli():
     """Blocky DNS query log analysis."""
-
-
-# Import submodules after cli is defined; @cli.command decorators register against this group.
-from hops.dns import commands as _commands  # noqa: E402, F401

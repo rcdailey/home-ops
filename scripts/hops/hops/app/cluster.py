@@ -32,7 +32,7 @@ def list_apps(namespace: str | None):
         "daemonsets": "DS",
         "cronjobs": "CJ",
     }
-    for kind in kind_labels:
+    for kind, k in kind_labels.items():
         data = kubectl_json(kind, namespace=namespace)
         for item in data.get("items", []):
             meta = item.get("metadata", {})
@@ -41,7 +41,6 @@ def list_apps(namespace: str | None):
                 continue
             name = meta.get("name", "")
             status = item.get("status", {})
-            k = kind_labels[kind]
 
             if kind == "cronjobs":
                 active = len(status.get("active", []))

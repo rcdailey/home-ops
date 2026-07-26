@@ -50,7 +50,7 @@ def _get_latest_release() -> str:
         with urllib.request.urlopen(url, timeout=15) as resp:
             data = json.loads(resp.read())
             return data["tag_name"]
-    except Exception as e:
+    except (OSError, ValueError, KeyError) as e:
         info(f"error: failed to get latest release: {e}")
         sys.exit(1)
 
@@ -72,7 +72,7 @@ def _download_vmalert() -> None:
     tmp_path = Path(tempfile.gettempdir()) / filename
     try:
         urllib.request.urlretrieve(url, tmp_path)
-    except Exception as e:
+    except OSError as e:
         info(f"error: download failed: {e}")
         sys.exit(1)
 

@@ -118,6 +118,7 @@ def print_yaml_key(yaml_text: str, key_path: str):
         capture_output=True,
         text=True,
         timeout=10,
+        check=False,
     )
 
     if proc.returncode != 0:

@@ -8,9 +8,17 @@ from hops.app import cli
 from hops.app.events import diagnose_events as _diagnose_events
 from hops.app.gather import (
     diagnose_externalsecrets as _diagnose_externalsecrets,
+)
+from hops.app.gather import (
     diagnose_flux as _diagnose_flux,
+)
+from hops.app.gather import (
     diagnose_gateway as _diagnose_gateway,
+)
+from hops.app.gather import (
     diagnose_services as _diagnose_services,
+)
+from hops.app.gather import (
     diagnose_workload as _diagnose_workload,
 )
 from hops.app.pod_detail import diagnose_pod as _diagnose_pod

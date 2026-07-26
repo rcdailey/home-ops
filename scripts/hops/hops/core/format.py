@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Sequence
 
 import click
 
@@ -65,7 +65,7 @@ def error(msg: str) -> None:
     click.echo(f"error: {msg}", err=True)
 
 
-def human_bytes(n: int | float) -> str:
+def human_bytes(n: float) -> str:
     """Convert bytes to human-readable string (Ki, Mi, Gi, Ti)."""
     for unit in ("B", "Ki", "Mi", "Gi", "Ti", "Pi"):
         if abs(n) < 1024:

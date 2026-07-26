@@ -18,7 +18,8 @@ def format_log_row(row: dict) -> list[str]:
     try:
         dt = datetime.fromisoformat(ts)
         ts = dt.strftime("%Y-%m-%d %H:%M:%S")
-    except Exception:
+    except (TypeError, ValueError):
+        # Leave the raw timestamp in place when it is not ISO-8601.
         pass
     client = row.get("client_ip", "")
     name = row.get("client_name", "")

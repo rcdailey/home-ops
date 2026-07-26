@@ -52,7 +52,7 @@ KIND_LABELS = {
 class Workload:
     """Resolved workload with metadata needed by callers."""
 
-    __slots__ = ("namespace", "name", "kind", "raw")
+    __slots__ = ("kind", "name", "namespace", "raw")
 
     def __init__(self, namespace: str, name: str, kind: str, raw: dict):
         self.namespace = namespace
@@ -228,10 +228,10 @@ def pick_pod_for_logs(pods: list[dict]) -> dict:
     phase tier.
     """
     phase_priority = {"Running": 0, "Succeeded": 1, "Failed": 2}
-    return sorted(
+    return min(
         pods,
         key=lambda p: phase_priority.get(p.get("status", {}).get("phase", ""), 3),
-    )[0]
+    )
 
 
 def find_running_pod(wl: Workload) -> str | None:
