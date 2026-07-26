@@ -6,8 +6,9 @@ import asyncio
 import json
 import os
 import re
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 import click
 from homeassistant_api import Client
@@ -24,7 +25,7 @@ def _env() -> tuple[str, str]:
         die("SECRET_DOMAIN is not set")
     if not token:
         die("HASS_TOKEN is not set")
-    return domain, token  # type: ignore[return-value]
+    return domain, token
 
 
 def get_client() -> Client:
@@ -127,24 +128,23 @@ async def _ws_call(handler: WsHandler) -> Any:
 
     domain, token = _env()
     url = f"wss://ha.{domain}/api/websocket"
-    async with aiohttp.ClientSession() as session:
-        async with session.ws_connect(url) as ws:
-            await ws.receive_json()
-            await ws.send_json({"type": "auth", "access_token": token})
-            msg = await ws.receive_json()
-            if msg["type"] != "auth_ok":
-                die(json.dumps(msg))
+    async with aiohttp.ClientSession() as session, session.ws_connect(url) as ws:
+        await ws.receive_json()
+        await ws.send_json({"type": "auth", "access_token": token})
+        msg = await ws.receive_json()
+        if msg["type"] != "auth_ok":
+            die(json.dumps(msg))
 
-            msg_id = 0
+        msg_id = 0
 
-            async def send(payload: dict) -> dict:
-                nonlocal msg_id
-                msg_id += 1
-                payload["id"] = msg_id
-                await ws.send_json(payload)
-                return await ws.receive_json()
+        async def send(payload: dict) -> dict:
+            nonlocal msg_id
+            msg_id += 1
+            payload["id"] = msg_id
+            await ws.send_json(payload)
+            return await ws.receive_json()
 
-            return await handler(send)
+        return await handler(send)
 
 
 def run_ws(handler: WsHandler) -> Any:

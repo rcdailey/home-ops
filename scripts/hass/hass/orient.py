@@ -6,6 +6,8 @@ import json
 import re
 
 import click
+from homeassistant_api.errors import HomeassistantAPIError
+from requests.exceptions import RequestException
 
 from hass._client import get_client, run_ws
 
@@ -40,7 +42,7 @@ def cli(terms: tuple[str, ...]) -> None:
                 continue
             try:
                 config = client.request(f"config/automation/config/{config_id}")
-            except Exception:
+            except (HomeassistantAPIError, RequestException):
                 continue
             config_str = json.dumps(config)
             if any(eid in config_str for eid in entity_ids) or pattern.search(
@@ -63,14 +65,14 @@ def cli(terms: tuple[str, ...]) -> None:
                 for slug in svc.get("services", {})
                 if slug not in ("reload", "turn_on", "turn_off", "toggle")
             ]
-        except Exception:
+        except (HomeassistantAPIError, RequestException):
             script_slugs = []
         click.echo("\n## Scripts")
         found = False
         for slug in script_slugs:
             try:
                 config = client.request(f"config/script/config/{slug}")
-            except Exception:
+            except (HomeassistantAPIError, RequestException):
                 continue
             config_str = json.dumps(config)
             if any(eid in config_str for eid in entity_ids) or pattern.search(
