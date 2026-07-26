@@ -11,6 +11,30 @@ spec:
   policy:
     rebootMode: default
     waitForVolumeDetach: true
+  # Each node is cordoned, drained and rebooted in turn, which reliably trips
+  # node-, Ceph- and scrape-level alerts. Matchers within one silence are ANDed,
+  # so each independent scope needs its own entry. Alertmanager anchors regex
+  # matchers. Silencing is safe here because the healthChecks below still gate
+  # progress to the next node: a real fault stalls the run instead of hiding.
+  # maxDuration re-arms per hold, so a stalled run alerts again on its own.
+  silences:
+  - matchers:
+    - name: alertname
+      matchType: =~
+      value: NodeDown|KubeletDown|KubeletInstanceUnreachable|KubeNode(NotReady|Unreachable|ReadinessFlapping|Eviction)
+    maxDuration: 2h
+  - matchers:
+    - name: alertname
+      matchType: =~
+      value: Ceph(OSDDown|OSDDownHigh|MonDown|MonDownQuorumAtRisk|HealthWarning|HealthError)
+    # Tighter than the rest: Ceph degradation outlasting a single reboot is a
+    # real problem worth paging on even mid-upgrade.
+    maxDuration: 1h
+  - matchers:
+    - name: alertname
+      matchType: =~
+      value: TargetDown|ScrapePoolHasNoTargets|TooManyScrapeErrors|KubePodNotReady|PodNotReady
+    maxDuration: 2h
   healthChecks:
   - apiVersion: volsync.backube/v1alpha1
     kind: ReplicationSource

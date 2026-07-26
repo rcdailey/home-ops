@@ -19,3 +19,10 @@ spec:
       retries: 3
   values:
     replicaCount: 2
+    # Connection only; which alerts get silenced is authored per-run on
+    # TalosUpgrade.spec.silences. VMAlertmanager speaks the v2 silences API and
+    # requires no auth in-cluster, so no header secret is needed.
+    silences:
+      enabled: true
+      alertmanager:
+        address: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093
