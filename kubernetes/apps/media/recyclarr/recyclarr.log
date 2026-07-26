@@ -1,0 +1,499 @@
+
+── radarr-1080p ────────────────────────────────────────────────────────────────
+
+── Custom Format (Preview) [radarr-1080p] ──
+Changes
+├── (from custom_formats)
+│   ┌────────┬──────────┬──────────────────────────────────┐
+│   │ Action │ Name     │ Trash ID                         │
+│   ├────────┼──────────┼──────────────────────────────────┤
+│   │ Delete │ Upscaled │ bfd8eb01832d646a0a89c4deb46f8564 │
+│   └────────┴──────────┴──────────────────────────────────┘
+└── (from group: [Streaming Services] General [implicit via: SQP-1 (1080p)])
+    ┌────────┬──────┬──────────────────────────────────┐
+    │ Action │ Name │ Trash ID                         │
+    ├────────┼──────┼──────────────────────────────────┤
+    │ Create │ ATV  │ df13ed57843877b21ad969184ab6888f │
+    │ Create │ PLAY │ 350e9170619683a55cb9191d0b1ababa │
+    │ Create │ ROKU │ 44c2b54d7c81c1a442a8b2cabeaef54f │
+    └────────┴──────┴──────────────────────────────────┘
+Unchanged: 52
+
+── Quality Definition (Preview) [radarr-1080p] ──
+No changes
+
+── Quality Profile (Preview) [radarr-1080p] ──
+SQP-1 (1080p) (Change Reason: Changed)
+├── Profile Updates
+│   ┌──────────────────────────────┬──────────────────┬──────────────────┐
+│   │ Profile Field                │ Current          │ New              │
+│   ├──────────────────────────────┼──────────────────┼──────────────────┤
+│   │ Name                         │ SQP-1 (1080p)    │ SQP-1 (1080p)    │
+│   │ Upgrades Allowed?            │ Yes              │ Yes              │
+│   │ Minimum Format Score         │ 1000             │ 1000             │
+│   │ Minimum Format Upgrade Score │ 1                │ 1                │
+│   │ Upgrade Until Quality        │ Bluray|WEB-1080p │ Bluray|WEB-1080p │
+│   │ Upgrade Until Score          │ 10000            │ 10000            │
+│   └──────────────────────────────┴──────────────────┴──────────────────┘
+├── Quality Updates (Sort Mode: Top)
+│    Current                 New
+│    ✔ Bluray|WEB-1080p      ✔ Bluray|WEB-1080p
+│    ├── ✔ Bluray-1080p      ├── ✔ Bluray-1080p
+│    ├── ✔ WEBDL-1080p       ├── ✔ WEBRip-1080p
+│    ├── ✔ WEBRip-1080p      ├── ✔ WEBDL-1080p
+│    ├── ✔ WEBDL-720p        ├── ✔ WEBRip-720p
+│    └── ✔ WEBRip-720p       └── ✔ WEBDL-720p
+│    ✔ Bluray-720p           ✔ Bluray-720p
+│    ❌ HDTV-1080p           ❌ Raw-HD
+│    ❌ Remux-1080p          ❌ BR-DISK
+│    ❌ Raw-HD               ❌ Remux-2160p
+│    ❌ BR-DISK              ❌ Bluray-2160p
+│    ❌ Remux-2160p          ❌ WEB 2160p
+│    ❌ Bluray-2160p         ├── ❌ WEBRip-2160p
+│    ❌ WEB 2160p            └── ❌ WEBDL-2160p
+│    ├── ❌ WEBDL-2160p      ❌ HDTV-2160p
+│    └── ❌ WEBRip-2160p     ❌ Remux-1080p
+│    ❌ HDTV-2160p           ❌ HDTV-1080p
+│    ❌ HDTV-720p            ❌ HDTV-720p
+│    ❌ Bluray-576p          ❌ Bluray-576p
+│    ❌ Bluray-480p          ❌ Bluray-480p
+│    ❌ WEB 480p             ❌ WEB 480p
+│    ├── ❌ WEBDL-480p       ├── ❌ WEBRip-480p
+│    └── ❌ WEBRip-480p      └── ❌ WEBDL-480p
+│    ❌ DVD-R                ❌ DVD-R
+│    ❌ DVD                  ❌ DVD
+│    ❌ SDTV                 ❌ SDTV
+│    ❌ DVDSCR               ❌ DVDSCR
+│    ❌ REGIONAL             ❌ REGIONAL
+│    ❌ TELECINE             ❌ TELECINE
+│    ❌ TELESYNC             ❌ TELESYNC
+│    ❌ CAM                  ❌ CAM
+│    ❌ WORKPRINT            ❌ WORKPRINT
+│    ❌ Unknown              ❌ Unknown
+└── Score Updates
+    ┌───────────────┬─────────┬─────┬────────┐
+    │ Custom Format │ Current │ New │ Reason │
+    ├───────────────┼─────────┼─────┼────────┤
+    │ Upscaled      │ -10000  │ 0   │ Reset  │
+    └───────────────┴─────────┴─────┴────────┘
+
+
+── radarr-4k ───────────────────────────────────────────────────────────────────
+
+── Custom Format (Preview) [radarr-4k] ──
+Changes
+└── (from group: [Streaming Services] General [implicit via: SQP-3])
+    ┌────────┬──────┬──────────────────────────────────┐
+    │ Action │ Name │ Trash ID                         │
+    ├────────┼──────┼──────────────────────────────────┤
+    │ Create │ ATV  │ df13ed57843877b21ad969184ab6888f │
+    │ Create │ PLAY │ 350e9170619683a55cb9191d0b1ababa │
+    │ Create │ ROKU │ 44c2b54d7c81c1a442a8b2cabeaef54f │
+    └────────┴──────┴──────────────────────────────────┘
+Unchanged: 55
+
+── Quality Definition (Preview) [radarr-4k] ──
+No changes
+
+── Quality Profile (Preview) [radarr-4k] ──
+SQP-3 (Change Reason: Changed)
+├── Profile Updates
+│   ┌──────────────────────────────┬─────────────────┬─────────────────┐
+│   │ Profile Field                │ Current         │ New             │
+│   ├──────────────────────────────┼─────────────────┼─────────────────┤
+│   │ Name                         │ SQP-3           │ SQP-3           │
+│   │ Upgrades Allowed?            │ Yes             │ Yes             │
+│   │ Minimum Format Score         │ 550             │ 550             │
+│   │ Minimum Format Upgrade Score │ 1               │ 1               │
+│   │ Upgrade Until Quality        │ WEB|Remux|2160p │ WEB|Remux|2160p │
+│   │ Upgrade Until Score          │ 10000           │ 10000           │
+│   └──────────────────────────────┴─────────────────┴─────────────────┘
+├── Quality Updates (Sort Mode: Top)
+│    Current                 New
+│    ✔ WEB|Remux|2160p       ✔ WEB|Remux|2160p
+│    ├── ✔ WEBDL-2160p       ├── ✔ Remux-2160p
+│    ├── ✔ WEBRip-2160p      ├── ✔ WEBRip-2160p
+│    ├── ✔ Remux-2160p       ├── ✔ WEBDL-2160p
+│    ├── ✔ WEBDL-1080p       ├── ✔ WEBRip-1080p
+│    └── ✔ WEBRip-1080p      └── ✔ WEBDL-1080p
+│    ✔ Remux-1080p           ✔ Remux-1080p
+│    ❌ Raw-HD               ❌ Raw-HD
+│    ❌ Bluray-2160p         ❌ BR-DISK
+│    ❌ BR-DISK              ❌ Bluray-2160p
+│    ❌ HDTV-2160p           ❌ HDTV-2160p
+│    ❌ Bluray-1080p         ❌ Bluray-1080p
+│    ❌ HDTV-1080p           ❌ HDTV-1080p
+│    ❌ Bluray-720p          ❌ Bluray-720p
+│    ❌ WEB 720p             ❌ WEB 720p
+│    ├── ❌ WEBRip-720p      ├── ❌ WEBRip-720p
+│    └── ❌ WEBDL-720p       └── ❌ WEBDL-720p
+│    ❌ HDTV-720p            ❌ HDTV-720p
+│    ❌ Bluray-576p          ❌ Bluray-576p
+│    ❌ Bluray-480p          ❌ Bluray-480p
+│    ❌ WEB 480p             ❌ WEB 480p
+│    ├── ❌ WEBRip-480p      ├── ❌ WEBRip-480p
+│    └── ❌ WEBDL-480p       └── ❌ WEBDL-480p
+│    ❌ DVD-R                ❌ DVD-R
+│    ❌ DVD                  ❌ DVD
+│    ❌ SDTV                 ❌ SDTV
+│    ❌ DVDSCR               ❌ DVDSCR
+│    ❌ REGIONAL             ❌ REGIONAL
+│    ❌ TELECINE             ❌ TELECINE
+│    ❌ TELESYNC             ❌ TELESYNC
+│    ❌ CAM                  ❌ CAM
+│    ❌ WORKPRINT            ❌ WORKPRINT
+│    ❌ Unknown              ❌ Unknown
+└── Score Updates
+    No score changes
+
+
+── sonarr-series ───────────────────────────────────────────────────────────────
+
+── Custom Format (Preview) [sonarr-series] ──
+Changes
+├── (from custom_formats)
+│   ┌────────┬──────┬──────────────────────────────────┐
+│   │ Action │ Name │ Trash ID                         │
+│   ├────────┼──────┼──────────────────────────────────┤
+│   │ Delete │ DSCP │ dc5f2bb0e0262155b5fedd0f6c5d2b55 │
+│   └────────┴──────┴──────────────────────────────────┘
+├── (from group: [Required] Golden Rule UHD [implicit via: WEB-2160p])
+│   ┌────────┬──────────────────┬──────────────────────────────────┐
+│   │ Action │ Name             │ Trash ID                         │
+│   ├────────┼──────────────────┼──────────────────────────────────┤
+│   │ Create │ x265 (no HDR/DV) │ 9b64dff695c2115facf1b6ea59c9bd07 │
+│   └────────┴──────────────────┴──────────────────────────────────┘
+└── (from group: [Streaming Services] General [implicit via: WEB-1080p,
+    WEB-2160p])
+    ┌────────┬──────┬──────────────────────────────────┐
+    │ Action │ Name │ Trash ID                         │
+    ├────────┼──────┼──────────────────────────────────┤
+    │ Create │ ATV  │ d9e511921c8cedc7282e291b0209cdc5 │
+    │ Create │ PLAY │ 6eb71887a8db6e783dd398446eb0e65d │
+    │ Create │ ROKU │ da393fd4e2c0cce7c9dc2669c43e0593 │
+    └────────┴──────┴──────────────────────────────────┘
+Unchanged: 34
+
+── Quality Definition (Preview) [sonarr-series] ──
+No changes
+
+── Quality Profile (Preview) [sonarr-series] ──
+WEB-1080p (Change Reason: Changed)
+├── Profile Updates
+│   ┌──────────────────────────────┬───────────┬───────────┐
+│   │ Profile Field                │ Current   │ New       │
+│   ├──────────────────────────────┼───────────┼───────────┤
+│   │ Name                         │ WEB-1080p │ WEB-1080p │
+│   │ Upgrades Allowed?            │ Yes       │ Yes       │
+│   │ Minimum Format Score         │ 0         │ 0         │
+│   │ Minimum Format Upgrade Score │ 1         │ 1         │
+│   │ Upgrade Until Quality        │ WEB 1080p │ WEB 1080p │
+│   │ Upgrade Until Score          │ 10000     │ 10000     │
+│   └──────────────────────────────┴───────────┴───────────┘
+├── Quality Updates (Sort Mode: Top)
+│    Current                 New
+│    ✔ WEB 1080p             ✔ WEB 1080p
+│    ├── ✔ WEBDL-1080p       ├── ✔ WEBRip-1080p
+│    └── ✔ WEBRip-1080p      └── ✔ WEBDL-1080p
+│    ❌ WEB 720p             ❌ Bluray-2160p Remux
+│    ├── ❌ WEBDL-720p       ❌ Bluray-2160p
+│    ├── ❌ WEBRip-720p      ❌ WEB 2160p
+│    └── ❌ HDTV-720p        ├── ❌ WEBRip-2160p
+│    ❌ WEB 2160p            └── ❌ WEBDL-2160p
+│    ├── ❌ WEBDL-2160p      ❌ HDTV-2160p
+│    ├── ❌ WEBRip-2160p     ❌ Bluray-1080p Remux
+│    └── ❌ HDTV-2160p       ❌ Bluray-1080p
+│    ❌ Bluray-2160p Remux   ❌ Bluray-720p
+│    ❌ Bluray-2160p         ❌ WEB 720p
+│    ❌ Bluray-1080p Remux   ├── ❌ WEBRip-720p
+│    ❌ Bluray-1080p         └── ❌ WEBDL-720p
+│    ❌ Bluray-720p          ❌ Raw-HD
+│    ❌ Raw-HD               ❌ HDTV-1080p
+│    ❌ Bluray-576p          ❌ HDTV-720p
+│    ❌ DVD                  ❌ Bluray-576p
+│    ├── ❌ Bluray-480p      ❌ Bluray-480p
+│    └── ❌ DVD              ❌ DVD
+│    ❌ WEB 480p             ❌ WEB 480p
+│    ├── ❌ WEBDL-480p       ├── ❌ WEBRip-480p
+│    └── ❌ WEBRip-480p      └── ❌ WEBDL-480p
+│    ❌ SDTV                 ❌ SDTV
+│    ❌ Unknown              ❌ Unknown
+│    ❌ HDTV-1080p
+└── Score Updates
+    ┌────────────────────┬─────────┬────────┬─────────┐
+    │ Custom Format      │ Current │ New    │ Reason  │
+    ├────────────────────┼─────────┼────────┼─────────┤
+    │ BR-DISK            │ 0       │ -10000 │ Updated │
+    │ LQ                 │ 0       │ -10000 │ Updated │
+    │ LQ (Release Title) │ 0       │ -10000 │ Updated │
+    │ Extras             │ 0       │ -10000 │ Updated │
+    │ AV1                │ 0       │ -10000 │ Updated │
+    │ Repack/Proper      │ 0       │ 5      │ Updated │
+    │ Repack2            │ 0       │ 6      │ Updated │
+    │ Repack3            │ 0       │ 7      │ Updated │
+    │ HD Streaming Boost │ 0       │ 75     │ Updated │
+    │ WEB Tier 01        │ 0       │ 1700   │ Updated │
+    │ WEB Tier 02        │ 0       │ 1650   │ Updated │
+    │ WEB Tier 03        │ 0       │ 1600   │ Updated │
+    │ WEB Scene          │ 0       │ 1600   │ Updated │
+    │ AMZN               │ 0       │ 75     │ Updated │
+    │ ATV                │ 0       │ 75     │ New     │
+    │ ATVP               │ 0       │ 75     │ Updated │
+    │ CC                 │ 0       │ 75     │ Updated │
+    │ DCU                │ 0       │ 75     │ Updated │
+    │ DSNP               │ 0       │ 75     │ Updated │
+    │ HBO                │ 0       │ 75     │ Updated │
+    │ HMAX               │ 0       │ 75     │ Updated │
+    │ HULU               │ 0       │ 75     │ Updated │
+    │ iT                 │ 0       │ 75     │ Updated │
+    │ MAX                │ 0       │ 75     │ Updated │
+    │ NF                 │ 0       │ 75     │ Updated │
+    │ PCOK               │ 0       │ 75     │ Updated │
+    │ PMTP               │ 0       │ 75     │ Updated │
+    │ PLAY               │ 0       │ 75     │ New     │
+    │ ROKU               │ 0       │ 75     │ New     │
+    │ SHO                │ 0       │ 75     │ Updated │
+    │ STAN               │ 0       │ 75     │ Updated │
+    │ SYFY               │ 0       │ 75     │ Updated │
+    │ x265 (HD)          │ 0       │ -10000 │ Updated │
+    └────────────────────┴─────────┴────────┴─────────┘
+
+WEB-2160p (Change Reason: Changed)
+├── Profile Updates
+│   ┌──────────────────────────────┬───────────┬───────────┐
+│   │ Profile Field                │ Current   │ New       │
+│   ├──────────────────────────────┼───────────┼───────────┤
+│   │ Name                         │ WEB-2160p │ WEB-2160p │
+│   │ Upgrades Allowed?            │ Yes       │ Yes       │
+│   │ Minimum Format Score         │ 0         │ 0         │
+│   │ Minimum Format Upgrade Score │ 1         │ 1         │
+│   │ Upgrade Until Quality        │ WEB 2160p │ WEB 2160p │
+│   │ Upgrade Until Score          │ 10000     │ 10000     │
+│   └──────────────────────────────┴───────────┴───────────┘
+├── Quality Updates (Sort Mode: Top)
+│    Current                 New
+│    ✔ WEB 2160p             ✔ WEB 2160p
+│    ├── ✔ WEBDL-2160p       ├── ✔ WEBRip-2160p
+│    └── ✔ WEBRip-2160p      └── ✔ WEBDL-2160p
+│    ❌ WEB 1080p            ❌ Bluray-2160p Remux
+│    ├── ❌ WEBDL-1080p      ❌ Bluray-2160p
+│    ├── ❌ WEBRip-1080p     ❌ HDTV-2160p
+│    └── ❌ HDTV-1080p       ❌ Bluray-1080p Remux
+│    ❌ Bluray-2160p Remux   ❌ Bluray-1080p
+│    ❌ Bluray-2160p         ❌ WEB 1080p
+│    ❌ Bluray-1080p Remux   ├── ❌ WEBRip-1080p
+│    ❌ Bluray-1080p         └── ❌ WEBDL-1080p
+│    ❌ Bluray-720p          ❌ Bluray-720p
+│    ❌ WEB 720p             ❌ WEB 720p
+│    ├── ❌ WEBDL-720p       ├── ❌ WEBRip-720p
+│    ├── ❌ WEBRip-720p      └── ❌ WEBDL-720p
+│    └── ❌ HDTV-720p        ❌ Raw-HD
+│    ❌ Raw-HD               ❌ HDTV-1080p
+│    ❌ Bluray-576p          ❌ HDTV-720p
+│    ❌ DVD                  ❌ Bluray-576p
+│    ├── ❌ Bluray-480p      ❌ Bluray-480p
+│    └── ❌ DVD              ❌ DVD
+│    ❌ WEB 480p             ❌ WEB 480p
+│    ├── ❌ WEBDL-480p       ├── ❌ WEBRip-480p
+│    └── ❌ WEBRip-480p      └── ❌ WEBDL-480p
+│    ❌ SDTV                 ❌ SDTV
+│    ❌ Unknown              ❌ Unknown
+│    ❌ HDTV-2160p
+└── Score Updates
+    ┌──────────────────┬─────────┬────────┬────────┐
+    │ Custom Format    │ Current │ New    │ Reason │
+    ├──────────────────┼─────────┼────────┼────────┤
+    │ x265 (no HDR/DV) │ 0       │ -10000 │ New    │
+    │ ATV              │ 0       │ 75     │ New    │
+    │ PLAY             │ 0       │ 75     │ New    │
+    │ ROKU             │ 0       │ 75     │ New    │
+    │ x265 (HD)        │ -10000  │ 0      │ Reset  │
+    │ DSCP             │ 75      │ 0      │ Reset  │
+    └──────────────────┴─────────┴────────┴────────┘
+
+
+── radarr-anime ────────────────────────────────────────────────────────────────
+
+── Custom Format (Preview) [radarr-anime] ──
+Changes
+└── (from profile: Remux-1080p - Anime)
+    ┌────────┬──────┬──────────────────────────────────┐
+    │ Action │ Name │ Trash ID                         │
+    ├────────┼──────┼──────────────────────────────────┤
+    │ Create │ AV1  │ cae4ca30163749b891686f95532519bd │
+    └────────┴──────┴──────────────────────────────────┘
+Unchanged: 30
+
+── Quality Definition (Preview) [radarr-anime] ──
+No changes
+
+── Quality Profile (Preview) [radarr-anime] ──
+Remux-1080p - Anime (Change Reason: Changed)
+├── Profile Updates
+│   ┌──────────────────────────────┬─────────────────────┬─────────────────────┐
+│   │ Profile Field                │ Current             │ New                 │
+│   ├──────────────────────────────┼─────────────────────┼─────────────────────┤
+│   │ Name                         │ Remux-1080p - Anime │ Remux-1080p - Anime │
+│   │ Upgrades Allowed?            │ Yes                 │ Yes                 │
+│   │ Minimum Format Score         │ 100                 │ 100                 │
+│   │ Minimum Format Upgrade Score │ 1                   │ 1                   │
+│   │ Upgrade Until Quality        │ Remux-1080p         │ Remux 1080p         │
+│   │ Upgrade Until Score          │ 10000               │ 10000               │
+│   └──────────────────────────────┴─────────────────────┴─────────────────────┘
+├── Quality Updates (Sort Mode: Top)
+│    Current                 New
+│    ✔ Remux-1080p           ✔ Remux 1080p
+│    ├── ✔ Bluray-1080p      ├── ✔ Remux-1080p
+│    └── ✔ Remux-1080p       └── ✔ Bluray-1080p
+│    ✔ WEB 1080p             ✔ WEB 1080p
+│    ├── ✔ WEBDL-1080p       ├── ✔ HDTV-1080p
+│    ├── ✔ WEBRip-1080p      ├── ✔ WEBRip-1080p
+│    └── ✔ HDTV-1080p        └── ✔ WEBDL-1080p
+│    ✔ Bluray-720p           ✔ Bluray-720p
+│    ✔ WEB 720p              ✔ WEB 720p
+│    ├── ✔ WEBDL-720p        ├── ✔ HDTV-720p
+│    ├── ✔ WEBRip-720p       ├── ✔ WEBRip-720p
+│    └── ✔ HDTV-720p         └── ✔ WEBDL-720p
+│    ✔ Bluray-576p           ✔ Bluray-576p
+│    ✔ Bluray-480p           ✔ Bluray-480p
+│    ✔ WEB 480p              ✔ WEB 480p
+│    ├── ✔ WEBDL-480p        ├── ✔ WEBRip-480p
+│    └── ✔ WEBRip-480p       └── ✔ WEBDL-480p
+│    ✔ DVD                   ✔ DVD
+│    ✔ SDTV                  ✔ SDTV
+│    ❌ Raw-HD               ❌ Raw-HD
+│    ❌ BR-DISK              ❌ BR-DISK
+│    ❌ Remux-2160p          ❌ Remux-2160p
+│    ❌ Bluray-2160p         ❌ Bluray-2160p
+│    ❌ WEB 2160p            ❌ WEB 2160p
+│    ├── ❌ WEBRip-2160p     ├── ❌ WEBRip-2160p
+│    └── ❌ WEBDL-2160p      └── ❌ WEBDL-2160p
+│    ❌ HDTV-2160p           ❌ HDTV-2160p
+│    ❌ DVD-R                ❌ DVD-R
+│    ❌ DVDSCR               ❌ DVDSCR
+│    ❌ REGIONAL             ❌ REGIONAL
+│    ❌ TELECINE             ❌ TELECINE
+│    ❌ TELESYNC             ❌ TELESYNC
+│    ❌ CAM                  ❌ CAM
+│    ❌ WORKPRINT            ❌ WORKPRINT
+│    ❌ Unknown              ❌ Unknown
+└── Score Updates
+    ┌───────────────┬─────────┬────────┬────────┐
+    │ Custom Format │ Current │ New    │ Reason │
+    ├───────────────┼─────────┼────────┼────────┤
+    │ AV1           │ 0       │ -10000 │ New    │
+    └───────────────┴─────────┴────────┴────────┘
+
+
+── sonarr-anime ────────────────────────────────────────────────────────────────
+
+── Custom Format (Preview) [sonarr-anime] ──
+Changes
+└── (from custom_formats)
+    ┌────────┬───────────────────────┬──────────────────────────────────┐
+    │ Action │ Name                  │ Trash ID                         │
+    ├────────┼───────────────────────┼──────────────────────────────────┤
+    │ Delete │ HIDIVE                │ 570b03b3145a25011bf073274a407259 │
+    │ Delete │ DV (w/o HDR fallback) │ 9b27ab6498ec0f31a3353992e19434ca │
+    └────────┴───────────────────────┴──────────────────────────────────┘
+Unchanged: 39
+
+── Quality Definition (Preview) [sonarr-anime] ──
+No changes
+
+── Sonarr Media Naming (Preview) [sonarr-anime] ──
+┌─────────────────────────┬────────────────────────────────────────────────────┐
+│ Field                   │ Value                                              │
+├─────────────────────────┼────────────────────────────────────────────────────┤
+│ Enable Episode Renames? │ True                                               │
+│ Series Folder           │ {Series TitleYear} {imdb-{ImdbId}}                 │
+│ Season Folder           │ Season {season:00}                                 │
+│ Standard Episodes       │ {Series TitleYear} - S{season:00}E{episode:00} -   │
+│                         │ {Episode CleanTitle} [{Custom Formats }{Quality    │
+│                         │ Full}]{[MediaInfo VideoDynamicRangeType]}{[        │
+│                         │ Mediainfo AudioCodec}{ Mediainfo                   │
+│                         │ AudioChannels]}{MediaInfo AudioLanguages}{[        │
+│                         │ MediaInfo VideoCodec]}{-Release Group}             │
+│ Daily Episodes          │ {Series TitleYear} - {Air-Date} - {Episode         │
+│                         │ CleanTitle} [{Custom Formats }{Quality Full}]{[    │
+│                         │ MediaInfo VideoDynamicRangeType]}{[Mediainfo       │
+│                         │ AudioCodec}{ Mediainfo AudioChannels]}{MediaInfo   │
+│                         │ AudioLanguages}{[MediaInfo VideoCodec]}{-Release   │
+│                         │ Group}                                             │
+│ Anime Episodes          │ {Series TitleYear} - S{season:00}E{episode:00} -   │
+│                         │ {absolute:000} - {Episode CleanTitle:90} {[Custom  │
+│                         │ Formats]}{[Quality Full]}{[Mediainfo AudioCodec}{  │
+│                         │ Mediainfo AudioChannels]}{MediaInfo                │
+│                         │ AudioLanguages}{[MediaInfo VideoDynamicRangeType]} │
+│                         │ [{Mediainfo VideoCodec }{MediaInfo                 │
+│                         │ VideoBitDepth}bit]{-Release Group}                 │
+└─────────────────────────┴────────────────────────────────────────────────────┘
+
+── Quality Profile (Preview) [sonarr-anime] ──
+Remux-1080p - Anime (Change Reason: Changed)
+├── Profile Updates
+│   ┌──────────────────────────────┬─────────────────────┬─────────────────────┐
+│   │ Profile Field                │ Current             │ New                 │
+│   ├──────────────────────────────┼─────────────────────┼─────────────────────┤
+│   │ Name                         │ Remux-1080p - Anime │ Remux-1080p - Anime │
+│   │ Upgrades Allowed?            │ Yes                 │ Yes                 │
+│   │ Minimum Format Score         │ 100                 │ 100                 │
+│   │ Minimum Format Upgrade Score │ 1                   │ 1                   │
+│   │ Upgrade Until Quality        │ Bluray-1080p        │ Bluray 1080p        │
+│   │ Upgrade Until Score          │ 10000               │ 10000               │
+│   └──────────────────────────────┴─────────────────────┴─────────────────────┘
+├── Quality Updates (Sort Mode: Top)
+│    Current                 New
+│    ✔ Bluray-1080p          ✔ Bluray 1080p
+│    ├── ✔ Bluray-1080p      ├── ✔ Bluray-1080p
+│    │   Remux               │   Remux
+│    └── ✔ Bluray-1080p      └── ✔ Bluray-1080p
+│    ✔ WEB 1080p             ✔ WEB 1080p
+│    ├── ✔ WEBDL-1080p       ├── ✔ HDTV-1080p
+│    ├── ✔ WEBRip-1080p      ├── ✔ WEBRip-1080p
+│    └── ✔ HDTV-1080p        └── ✔ WEBDL-1080p
+│    ✔ Bluray-720p           ✔ Bluray-720p
+│    ✔ WEB 720p              ✔ WEB 720p
+│    ├── ✔ WEBDL-720p        ├── ✔ HDTV-720p
+│    ├── ✔ WEBRip-720p       ├── ✔ WEBRip-720p
+│    └── ✔ HDTV-720p         └── ✔ WEBDL-720p
+│    ✔ Bluray-480p           ✔ Bluray-480p
+│    ✔ WEB 480p              ✔ WEB 480p
+│    ├── ✔ WEBDL-480p        ├── ✔ WEBRip-480p
+│    └── ✔ WEBRip-480p       └── ✔ WEBDL-480p
+│    ✔ DVD                   ✔ DVD
+│    ✔ SDTV                  ✔ SDTV
+│    ❌ Bluray-576p          ❌ Bluray-2160p Remux
+│    ❌ Bluray-2160p Remux   ❌ Bluray-2160p
+│    ❌ Bluray-2160p         ❌ WEB 2160p
+│    ❌ WEB 2160p            ├── ❌ WEBRip-2160p
+│    ├── ❌ WEBDL-2160p      └── ❌ WEBDL-2160p
+│    └── ❌ WEBRip-2160p     ❌ HDTV-2160p
+│    ❌ HDTV-2160p           ❌ Raw-HD
+│    ❌ Raw-HD               ❌ Bluray-576p
+│    ❌ Unknown              ❌ Unknown
+└── Score Updates
+    ┌───────────────────────┬─────────┬─────┬────────┐
+    │ Custom Format         │ Current │ New │ Reason │
+    ├───────────────────────┼─────────┼─────┼────────┤
+    │ Anime Dual Audio      │ 10      │ 0   │ Reset  │
+    │ DV (w/o HDR fallback) │ -10000  │ 0   │ Reset  │
+    └───────────────────────┴─────────┴─────┴────────┘
+
+
+╭─Sync Diagnostics─────────────────────────────────────────────────────────────╮
+│ Warnings                                                                     │
+│ ────────                                                                     │
+│ • [radarr-1080p] Quality profile 'SQP-1 (1080p)' already existed in the      │
+│   service and was replaced by Recyclarr                                      │
+│ • [radarr-4k] Quality profile 'SQP-3' already existed in the service and was │
+│   replaced by Recyclarr                                                      │
+│ • [radarr-anime] Quality profile 'Remux-1080p - Anime' already existed in    │
+│   the service and was replaced by Recyclarr                                  │
+│ • [sonarr-anime] Quality profile 'Remux-1080p - Anime' already existed in    │
+│   the service and was replaced by Recyclarr                                  │
+│ • [sonarr-series] Quality profile 'WEB-1080p' already existed in the service │
+│   and was replaced by Recyclarr                                              │
+│ • [sonarr-series] Quality profile 'WEB-2160p' already existed in the service │
+│   and was replaced by Recyclarr                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
