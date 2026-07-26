@@ -39,7 +39,7 @@ def _out(data):
     click.echo(json.dumps(data, indent=2))
 
 
-def _fmt_bytes(n: int | float) -> str:
+def _fmt_bytes(n: float) -> str:
     """Format bytes to compact human-readable string."""
     for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
         if abs(n) < 1024:
@@ -59,7 +59,7 @@ def _tracker_domain(url: str) -> str:
         return ""
     try:
         return urlparse(url).hostname or ""
-    except Exception:
+    except ValueError:
         return url
 
 

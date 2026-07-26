@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import sys
-import yaml
-import re
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 import argparse
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+import yaml
 
 
 class ReloaderValidator:
@@ -19,7 +20,7 @@ class ReloaderValidator:
             r"\$\{[A-Z_][A-Z0-9_]*\}",  # ${SECRET_DOMAIN}, ${ADGUARD_HOME_PASSWORD}, etc.
         ]
 
-    def _load_yaml_document(self, file_path: Path) -> Optional[Dict[str, Any]]:
+    def _load_yaml_document(self, file_path: Path) -> dict[str, Any] | None:
         """Load the first relevant document from a YAML file."""
         try:
             with open(file_path, "r") as f:
@@ -32,7 +33,7 @@ class ReloaderValidator:
         except yaml.YAMLError as e:
             print(f"Warning: Could not parse {file_path}: {e}")
             return None
-        except Exception as e:
+        except OSError as e:
             print(f"Warning: Could not read {file_path}: {e}")
             return None
 
@@ -49,18 +50,21 @@ class ReloaderValidator:
                 if re.search(pattern, content):
                     return True
             return False
-        except Exception:
+        except (OSError, UnicodeDecodeError):
             return False
 
-    def _has_secret_references(self, helmrelease: Dict[str, Any]) -> bool:
+    def _has_secret_references(self, helmrelease: dict[str, Any]) -> bool:
         """Check if HelmRelease has direct secret references."""
 
         def search_dict(obj: Any) -> bool:
             if isinstance(obj, dict):
                 # Check for valueFrom.secretKeyRef pattern
-                if "valueFrom" in obj and isinstance(obj["valueFrom"], dict):
-                    if "secretKeyRef" in obj["valueFrom"]:
-                        return True
+                if (
+                    "valueFrom" in obj
+                    and isinstance(obj["valueFrom"], dict)
+                    and "secretKeyRef" in obj["valueFrom"]
+                ):
+                    return True
                 # Check for envFrom with secretRef
                 if "envFrom" in obj:
                     env_from = obj["envFrom"]
@@ -114,14 +118,14 @@ class ReloaderValidator:
 
         return False
 
-    def _find_helmrelease(self, app_dir: Path) -> Optional[Dict[str, Any]]:
+    def _find_helmrelease(self, app_dir: Path) -> dict[str, Any] | None:
         """Find and load the HelmRelease in an app directory."""
         helmrelease_path = app_dir / "helmrelease.yaml"
         if helmrelease_path.exists():
             return self._load_yaml_document(helmrelease_path)
         return None
 
-    def _has_reloader_annotation(self, helmrelease: Dict[str, Any]) -> bool:
+    def _has_reloader_annotation(self, helmrelease: dict[str, Any]) -> bool:
         """Check if HelmRelease has reloader annotation in controllers."""
         try:
             controllers = (
@@ -138,7 +142,7 @@ class ReloaderValidator:
                             if reloader_value == "true" or reloader_value is True:
                                 return True
             return False
-        except Exception:
+        except AttributeError:
             return False
 
     def _needs_reloader_annotation(self, app_dir: Path) -> bool:
@@ -155,20 +159,17 @@ class ReloaderValidator:
             return True
 
         # Pattern 3: ConfigMap generator with variables
-        if self._has_configmap_with_variables(app_dir):
-            return True
+        return bool(self._has_configmap_with_variables(app_dir))
 
-        return False
-
-    def _is_app_template_helmrelease(self, helmrelease: Dict[str, Any]) -> bool:
+    def _is_app_template_helmrelease(self, helmrelease: dict[str, Any]) -> bool:
         """Check if HelmRelease uses app-template chart."""
         try:
             chart_ref = helmrelease.get("spec", {}).get("chartRef", {})
             return chart_ref.get("name") == "app-template"
-        except Exception:
+        except AttributeError:
             return False
 
-    def _validate_app_from_ks(self, ks_path: Path) -> Optional[str]:
+    def _validate_app_from_ks(self, ks_path: Path) -> str | None:
         """Validate a single app based on its ks.yaml file."""
         app_dir = self._extract_app_dir_from_ks_path(ks_path)
 
@@ -199,7 +200,7 @@ class ReloaderValidator:
 
         return None
 
-    def validate_ks_files(self, ks_files: List[str]) -> bool:
+    def validate_ks_files(self, ks_files: list[str]) -> bool:
         """Validate apps based on their ks.yaml files."""
         if not ks_files:
             print("No ks.yaml files provided")

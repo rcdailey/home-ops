@@ -92,6 +92,7 @@ def run_vrl(vrl_file: Path, inputs: list[dict]) -> list[dict] | str:
             capture_output=True,
             text=True,
             timeout=30,
+            check=False,
         )
 
         if result.returncode != 0:

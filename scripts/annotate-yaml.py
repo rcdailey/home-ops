@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
 import argparse
+import difflib
+import json
 import os
+import subprocess
 import time
+from pathlib import Path
+
 import requests
 import yaml
-import subprocess
-import json
-import difflib
-from pathlib import Path
-from typing import Dict, List
 
 
 # ANSI color codes
@@ -44,7 +44,7 @@ def get_repo_relative_path(file_path: str) -> str:
             # If path is not relative to cwd, return the original path
             return file_path
 
-    except Exception:
+    except (OSError, ValueError):
         # Fallback to original path if anything fails
         return file_path
 
@@ -56,7 +56,7 @@ def get_relative_path_from_file(from_file: str, to_file: str) -> str:
         to_path = Path(to_file).resolve()
         relative_path = os.path.relpath(to_path, from_path)
         return relative_path
-    except Exception:
+    except (OSError, ValueError):
         # Fallback to repo-relative path
         return get_repo_relative_path(to_file)
 
@@ -73,7 +73,7 @@ def extract_resource_from_schema(
         if "_" not in base_name:
             return None
 
-        group_part, resource_part = base_name.split("_", 1)
+        group_part, _resource_part = base_name.split("_", 1)
 
         # Extract Kind from schema description
         # Pattern: "GpuDevicePlugin is the Schema..." or "AcceleratorFunction is a specification..."
@@ -96,7 +96,7 @@ def extract_resource_from_schema(
 
         return None
 
-    except Exception:
+    except (AttributeError, KeyError, TypeError, ValueError):
         return None
 
 
@@ -134,7 +134,7 @@ def download_cached_file(url: str, filename: str) -> str:
     return filepath
 
 
-def build_unified_schema_mapping() -> Dict[str, str]:
+def build_unified_schema_mapping() -> dict[str, str]:
     """Build unified schema mapping from all sources with priority order"""
     mapping = {}
 
@@ -166,7 +166,7 @@ def build_unified_schema_mapping() -> Dict[str, str]:
     return mapping
 
 
-def add_local_schemas(mapping: Dict[str, str]):
+def add_local_schemas(mapping: dict[str, str]):
     """Add local schemas (Priority 0) - highest priority from local schemas/ directory"""
     try:
         # Find the project root (where this script is located)
@@ -241,12 +241,15 @@ def add_local_schemas(mapping: Dict[str, str]):
 
         print(f"Added {local_count} local schemas")
 
-    except Exception as e:
+    except (OSError, AttributeError, TypeError, ValueError) as e:
+        # Unreadable schemas dir, or a schema file whose JSON is valid but
+        # shaped unexpectedly; one bad source must not abort the rest.
         print(f"Warning: Failed to load local schemas: {e}")
 
 
-def add_fluxcd_schemas(mapping: Dict[str, str]):
+def add_fluxcd_schemas(mapping: dict[str, str]):
     """Add FluxCD Community schemas (Priority 1) - dynamically discovered"""
+    schema_files: list[str] = []
     try:
         # Use gh CLI to list .json files in fluxcd-community/flux2-schemas
         result = subprocess.run(
@@ -254,6 +257,7 @@ def add_fluxcd_schemas(mapping: Dict[str, str]):
             capture_output=True,
             text=True,
             timeout=30,
+            check=False,
         )
 
         if result.returncode != 0:
@@ -271,6 +275,7 @@ def add_fluxcd_schemas(mapping: Dict[str, str]):
                 capture_output=True,
                 text=True,
                 timeout=30,
+                check=False,
             )
 
             if curl_result.returncode == 0:
@@ -281,7 +286,7 @@ def add_fluxcd_schemas(mapping: Dict[str, str]):
                     if item["name"].endswith(".json")
                     and item["name"] not in ["_definitions.json", "all.json"]
                 ]
-        except (subprocess.SubprocessError, json.JSONDecodeError, KeyError):
+        except (subprocess.SubprocessError, json.JSONDecodeError, KeyError, TypeError):
             print("Warning: Failed to discover FluxCD schema files")
             return
 
@@ -323,38 +328,33 @@ def add_fluxcd_schemas(mapping: Dict[str, str]):
                     if resource_key not in mapping:  # First match wins
                         mapping[resource_key] = FLUXCD_SCHEMAS_BASE + filename
 
-        flux_count = len([k for k in mapping.keys() if "toolkit.fluxcd.io" in k])
+        flux_count = len([k for k in mapping if "toolkit.fluxcd.io" in k])
         print(f"Added {flux_count} FluxCD schemas")
 
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError) as e:
+        # gh missing or the subprocess timing out must not abort the rest.
         print(f"Warning: Failed to discover FluxCD schemas: {e}")
 
 
-def add_specialized_crd_schemas(mapping: Dict[str, str]):
+def add_specialized_crd_schemas(mapping: dict[str, str]):
     """Add specialized CRD schemas (Priority 1.5) - hard-coded for corner cases"""
-    try:
-        # Hard-coded mappings for specialized CRDs that need direct schema references
-        specialized_schemas = {
-            # External-DNS schemas - reference JSON schema from vchirikov/dotfiles
-            "externaldns.k8s.io/v1alpha1/DNSEndpoint": "https://raw.githubusercontent.com/vchirikov/dotfiles/master/jsonschemas/dnsendpoints.externaldns.k8s.io.schema.json",
-            # Node Feature Discovery schemas - reference JSON schema from vchirikov/dotfiles
-            "nfd.k8s-sigs.io/v1alpha1/NodeFeatureRule": "https://raw.githubusercontent.com/vchirikov/dotfiles/master/jsonschemas/nodefeaturerules.nfd.k8s-sigs.io.schema.json",
-        }
+    # Hard-coded mappings for specialized CRDs that need direct schema references
+    specialized_schemas = {
+        # External-DNS schemas - reference JSON schema from vchirikov/dotfiles
+        "externaldns.k8s.io/v1alpha1/DNSEndpoint": "https://raw.githubusercontent.com/vchirikov/dotfiles/master/jsonschemas/dnsendpoints.externaldns.k8s.io.schema.json",
+        # Node Feature Discovery schemas - reference JSON schema from vchirikov/dotfiles
+        "nfd.k8s-sigs.io/v1alpha1/NodeFeatureRule": "https://raw.githubusercontent.com/vchirikov/dotfiles/master/jsonschemas/nodefeaturerules.nfd.k8s-sigs.io.schema.json",
+    }
 
-        for resource_key, schema_url in specialized_schemas.items():
-            if resource_key not in mapping:  # First match wins
-                mapping[resource_key] = schema_url
+    for resource_key, schema_url in specialized_schemas.items():
+        if resource_key not in mapping:  # First match wins
+            mapping[resource_key] = schema_url
 
-        specialized_count = len(
-            [k for k in mapping.keys() if "vchirikov/dotfiles" in mapping[k]]
-        )
-        print(f"Added {specialized_count} specialized CRD schemas")
-
-    except Exception as e:
-        print(f"Warning: Failed to add specialized CRD schemas: {e}")
+    specialized_count = len([k for k in mapping if "vchirikov/dotfiles" in mapping[k]])
+    print(f"Added {specialized_count} specialized CRD schemas")
 
 
-def add_datree_schemas(mapping: Dict[str, str]):
+def add_datree_schemas(mapping: dict[str, str]):
     """Add Datree CRD catalog schemas (Priority 2)"""
     try:
         filepath = download_cached_file(
@@ -363,7 +363,7 @@ def add_datree_schemas(mapping: Dict[str, str]):
         with open(filepath, "r") as f:
             datree_data = yaml.safe_load(f)
 
-        for _, entries in datree_data.items():
+        for entries in datree_data.values():
             for entry in entries:
                 api_version = entry.get("apiVersion", "")
                 kind = entry.get("kind", "")
@@ -373,59 +373,56 @@ def add_datree_schemas(mapping: Dict[str, str]):
                     if resource_key not in mapping:  # First match wins
                         mapping[resource_key] = DATREE_BASE_URL + filename
 
-        datree_count = len(
-            [k for k in mapping.keys() if "datreeio.github.io" in mapping[k]]
-        )
+        datree_count = len([k for k in mapping if "datreeio.github.io" in mapping[k]])
         print(f"Added {datree_count} Datree schemas")
 
-    except Exception as e:
+    except (
+        OSError,
+        requests.RequestException,
+        yaml.YAMLError,
+        AttributeError,
+        TypeError,
+    ) as e:
+        # Download, cache write, YAML parse, or unexpected catalog shape.
         print(f"Warning: Failed to load Datree schemas: {e}")
 
 
-def add_k8s_schemas(mapping: Dict[str, str]):
+def add_k8s_schemas(mapping: dict[str, str]):
     """Add Kubernetes JSON schemas (Priority 3) - using known core resources"""
-    try:
-        # Core v1 resources mapping to kubernetesjsonschema.dev patterns
-        k8s_core_resources = {
-            "v1/Namespace": "namespace-v1.json",
-            "v1/PersistentVolume": "persistentvolume-v1.json",
-            "v1/PersistentVolumeClaim": "persistentvolumeclaim-v1.json",
-            "v1/Secret": "secret-v1.json",
-            "v1/Service": "service-v1.json",
-            "v1/ConfigMap": "configmap-v1.json",
-            "v1/ServiceAccount": "serviceaccount-v1.json",
-            "apps/v1/Deployment": "deployment-apps-v1.json",
-            "apps/v1/StatefulSet": "statefulset-apps-v1.json",
-            "apps/v1/DaemonSet": "daemonset-apps-v1.json",
-            "batch/v1/Job": "job-batch-v1.json",
-            "batch/v1/CronJob": "cronjob-batch-v1.json",
-            "networking.k8s.io/v1/NetworkPolicy": "networkpolicy-networking-v1.json",
-            "rbac.authorization.k8s.io/v1/ClusterRole": "clusterrole-rbac-v1.json",
-            "rbac.authorization.k8s.io/v1/ClusterRoleBinding": "clusterrolebinding-rbac-v1.json",
-            "rbac.authorization.k8s.io/v1/Role": "role-rbac-v1.json",
-            "rbac.authorization.k8s.io/v1/RoleBinding": "rolebinding-rbac-v1.json",
-        }
+    # Core v1 resources mapping to kubernetesjsonschema.dev patterns
+    k8s_core_resources = {
+        "v1/Namespace": "namespace-v1.json",
+        "v1/PersistentVolume": "persistentvolume-v1.json",
+        "v1/PersistentVolumeClaim": "persistentvolumeclaim-v1.json",
+        "v1/Secret": "secret-v1.json",
+        "v1/Service": "service-v1.json",
+        "v1/ConfigMap": "configmap-v1.json",
+        "v1/ServiceAccount": "serviceaccount-v1.json",
+        "apps/v1/Deployment": "deployment-apps-v1.json",
+        "apps/v1/StatefulSet": "statefulset-apps-v1.json",
+        "apps/v1/DaemonSet": "daemonset-apps-v1.json",
+        "batch/v1/Job": "job-batch-v1.json",
+        "batch/v1/CronJob": "cronjob-batch-v1.json",
+        "networking.k8s.io/v1/NetworkPolicy": "networkpolicy-networking-v1.json",
+        "rbac.authorization.k8s.io/v1/ClusterRole": "clusterrole-rbac-v1.json",
+        "rbac.authorization.k8s.io/v1/ClusterRoleBinding": "clusterrolebinding-rbac-v1.json",
+        "rbac.authorization.k8s.io/v1/Role": "role-rbac-v1.json",
+        "rbac.authorization.k8s.io/v1/RoleBinding": "rolebinding-rbac-v1.json",
+    }
 
-        # Use known available version from kubernetesjsonschema.dev
-        k8s_version = "v1.14.0"  # Known available version
+    # Use known available version from kubernetesjsonschema.dev
+    k8s_version = "v1.14.0"  # Known available version
 
-        for resource_key, filename in k8s_core_resources.items():
-            if resource_key not in mapping:  # First match wins
-                schema_url = (
-                    f"https://kubernetesjsonschema.dev/{k8s_version}/{filename}"
-                )
-                mapping[resource_key] = schema_url
+    for resource_key, filename in k8s_core_resources.items():
+        if resource_key not in mapping:  # First match wins
+            schema_url = f"https://kubernetesjsonschema.dev/{k8s_version}/{filename}"
+            mapping[resource_key] = schema_url
 
-        k8s_count = len(
-            [k for k in mapping.keys() if "kubernetesjsonschema.dev" in mapping[k]]
-        )
-        print(f"Added {k8s_count} Kubernetes schemas")
-
-    except Exception as e:
-        print(f"Warning: Failed to add Kubernetes schemas: {e}")
+    k8s_count = len([k for k in mapping if "kubernetesjsonschema.dev" in mapping[k]])
+    print(f"Added {k8s_count} Kubernetes schemas")
 
 
-def add_schemastore_schemas(mapping: Dict[str, str]):
+def add_schemastore_schemas(mapping: dict[str, str]):
     """Add SchemaStore schemas (Priority 4) - dynamically discovered"""
     try:
         # Download and parse SchemaStore catalog
@@ -453,16 +450,17 @@ def add_schemastore_schemas(mapping: Dict[str, str]):
                             mapping[resource_key] = kustomization_url
 
             schemastore_count = len(
-                [k for k in mapping.keys() if "schemastore.org" in mapping.get(k, "")]
+                [k for k in mapping if "schemastore.org" in mapping.get(k, "")]
             )
             print(f"Added {schemastore_count} SchemaStore schemas")
 
-    except Exception as e:
+    except (requests.RequestException, AttributeError, TypeError, ValueError) as e:
+        # Network failure, or a catalog payload that is not the expected shape.
         print(f"Warning: Failed to discover SchemaStore schemas: {e}")
 
 
 def find_schema_url(
-    api_version: str, kind: str, schema_mapping: Dict[str, str], verbose: bool = False
+    api_version: str, kind: str, schema_mapping: dict[str, str], verbose: bool = False
 ) -> str | None:
     """Find schema URL using unified mapping"""
     resource_key = f"{api_version}/{kind}"
@@ -483,9 +481,9 @@ def find_schema_url(
 
 def annotate_file(
     file_path: str,
-    schema_mapping: Dict[str, str],
+    schema_mapping: dict[str, str],
     dry_run: bool = False,
-    missing_schemas: Dict[str, List[str]] = None,
+    missing_schemas: dict[str, list[str]] | None = None,
     single_file_mode: bool = False,
 ):
     docs = []
@@ -540,7 +538,7 @@ def annotate_file(
             else:
                 # No document separator
                 raw_docs.append(content.strip())
-    except Exception:
+    except (AttributeError, TypeError, ValueError):
         # Fallback to simple approach
         raw_docs = [content.strip()]
 
@@ -669,7 +667,7 @@ def annotate_file(
                 )
 
 
-def find_yaml_files(paths: List[str]) -> List[str]:
+def find_yaml_files(paths: list[str]) -> list[str]:
     """Find all YAML files from given paths (files or directories)"""
     yaml_files = []
 

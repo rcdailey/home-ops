@@ -24,18 +24,18 @@ Key design principles:
 - Simple, focused discovery without file fetching complexity
 """
 
-import sqlite3
-import sys
 import argparse
-import subprocess
 import json
 import os
-from pathlib import Path
-from typing import List, Dict
-from datetime import datetime, timedelta
-import urllib.request
-import urllib.error
 import shutil
+import sqlite3
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
 import httpx
 
 
@@ -46,7 +46,7 @@ class AppMigrationDiscovery:
     Provides discovery function: discover_app_landscape() - Complete landscape analysis
     """
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: str | None = None):
         if db_path is None:
             script_dir = Path(__file__).parent
             db_path = script_dir / "repos.db"
@@ -71,7 +71,7 @@ class AppMigrationDiscovery:
 
     async def discover_app_landscape(
         self, app_name: str, sample_count: int = 3
-    ) -> Dict:
+    ) -> dict:
         """
         Discover complete landscape for an application.
 
@@ -127,7 +127,7 @@ class AppMigrationDiscovery:
 
     async def _discover_dedicated_charts(
         self, app_name: str, sample_count: int
-    ) -> Dict:
+    ) -> dict:
         """
         Discover dedicated Helm chart usage for an application.
 
@@ -210,7 +210,7 @@ class AppMigrationDiscovery:
 
     async def _discover_app_template_usage(
         self, app_name: str, sample_count: int
-    ) -> Dict:
+    ) -> dict:
         """
         Discover app-template usage for an application.
 
@@ -285,7 +285,7 @@ class AppMigrationDiscovery:
         """Check if the database file is older than a week"""
         try:
             file_mtime = os.path.getmtime(db_path)
-            file_age = datetime.now().timestamp() - file_mtime
+            file_age = datetime.now(tz=UTC).timestamp() - file_mtime
             week_in_seconds = 7 * 24 * 60 * 60
 
             if file_age > week_in_seconds:
@@ -302,7 +302,7 @@ class AppMigrationDiscovery:
         """Download the kubesearch database if it doesn't exist"""
         # Try to download from recent releases (try up to 7 days back)
         for days_back in range(1, 8):
-            date_to_try = datetime.now() - timedelta(days=days_back)
+            date_to_try = datetime.now(tz=UTC) - timedelta(days=days_back)
             tag_name = date_to_try.strftime("%Y-%m-%d")
 
             db_url = f"https://github.com/whazor/k8s-at-home-search/releases/download/{tag_name}/repos.db"
@@ -312,9 +312,11 @@ class AppMigrationDiscovery:
             )
 
             try:
-                with urllib.request.urlopen(db_url) as response:
-                    with open(self.db_path, "wb") as f:
-                        shutil.copyfileobj(response, f)
+                with (
+                    urllib.request.urlopen(db_url) as response,
+                    open(self.db_path, "wb") as f,
+                ):
+                    shutil.copyfileobj(response, f)
 
                 print(
                     f"Database downloaded successfully from release {tag_name}",
@@ -331,7 +333,7 @@ class AppMigrationDiscovery:
                         file=sys.stderr,
                     )
                     continue
-            except Exception as e:
+            except (OSError, urllib.error.URLError) as e:
                 print(
                     f"Error downloading from release {tag_name}: {e}", file=sys.stderr
                 )
@@ -350,7 +352,9 @@ class AppMigrationDiscovery:
         """Get GitHub token using hybrid approach"""
         try:
             # Check if gh cli is installed and authenticated
-            result = subprocess.run(["gh", "--version"], capture_output=True, text=True)
+            result = subprocess.run(
+                ["gh", "--version"], capture_output=True, text=True, check=False
+            )
             if result.returncode != 0:
                 print("Error: GitHub CLI (gh) is not installed.", file=sys.stderr)
                 print("Install it from: https://cli.github.com/", file=sys.stderr)
@@ -358,7 +362,11 @@ class AppMigrationDiscovery:
 
             # Get token from gh CLI
             result = subprocess.run(
-                ["gh", "auth", "token"], capture_output=True, text=True, timeout=10
+                ["gh", "auth", "token"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
             )
             if result.returncode == 0:
                 return result.stdout.strip()
@@ -371,7 +379,7 @@ class AppMigrationDiscovery:
             print("Error: GitHub CLI (gh) is not installed.", file=sys.stderr)
             print("Install it from: https://cli.github.com/", file=sys.stderr)
             sys.exit(1)
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError) as e:
             print(f"Error getting GitHub token: {e}", file=sys.stderr)
             sys.exit(1)
 
@@ -383,11 +391,11 @@ class AppMigrationDiscovery:
             )
             response.raise_for_status()
             return response.json()
-        except Exception as e:
+        except httpx.HTTPError as e:
             print(f"GraphQL request failed: {e}", file=sys.stderr)
             return {"errors": [str(e)]}
 
-    async def _gh_get_repo_metadata_batch(self, repos: List[str]) -> Dict[str, Dict]:
+    async def _gh_get_repo_metadata_batch(self, repos: list[str]) -> dict[str, dict]:
         """Batch fetch repository metadata using GraphQL"""
         if not repos:
             return {}
@@ -426,8 +434,8 @@ class AppMigrationDiscovery:
         return results
 
     async def correlate_applications(
-        self, app_names: List[str], sample_count: int = 10
-    ) -> Dict:
+        self, app_names: list[str], sample_count: int = 10
+    ) -> dict:
         """
         Find repositories that contain multiple specific applications deployed together.
 
@@ -623,7 +631,7 @@ After discovery, use octocode MCP tools to inspect files:
         sys.exit(1)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise SystemExit(1) from e
     finally:
         await discovery.close()
 

@@ -92,7 +92,7 @@ def main():
         tree = fetch_tree()
     except Exception as e:
         print(f"Error fetching icon tree: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise SystemExit(1) from e
 
     all_results = {}
     any_found = False

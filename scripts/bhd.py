@@ -542,7 +542,7 @@ def grab(ids, url, instance, category, tags, limit, paused):
                 cmd += ["--tags", tags]
             if paused:
                 cmd.append("--paused")
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
             if result.returncode != 0:
                 click.echo(result.stderr, err=True, nl=False)
                 failures += 1
