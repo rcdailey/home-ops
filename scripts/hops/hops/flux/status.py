@@ -13,6 +13,7 @@ from hops.core.helm import (
 )
 from hops.core.runner import run, run_json
 from hops.flux import cli
+from hops.flux.release import chart_pairs
 
 
 @cli.command("status")
@@ -199,17 +200,7 @@ def helmrelease(name: str | None, namespace: str | None):
         ("Namespace", meta.get("namespace", "")),
     ]
 
-    # Chart info
-    chart_ref = spec.get("chartRef", {})
-    chart_spec = spec.get("chart", {}).get("spec", {})
-    if chart_ref:
-        pairs.append(("Chart", f"{chart_ref.get('name', '?')} (chartRef)"))
-    elif chart_spec:
-        pairs.append(
-            ("Chart", f"{chart_spec.get('chart', '?')} {chart_spec.get('version', '')}")
-        )
-
-    pairs.append(("Revision", status.get("lastAppliedRevision", "?")))
+    pairs.extend(chart_pairs(spec, status))
 
     # Conditions
     conditions = status.get("conditions", [])
