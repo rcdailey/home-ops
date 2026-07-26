@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, timezone
 
 import click
 
+MAX_RANGE_POINTS = 10000
+
 
 @dataclass
 class TimeRange:
@@ -46,16 +48,27 @@ class TimeRange:
             raise ValueError("Cannot convert None start to duration")
         if self._is_duration(self.start):
             return self.start
-        start_dt = datetime.fromisoformat(self.start.replace("Z", "+00:00"))
-        end_dt = self._parse_end_time()
-        delta = end_dt - start_dt
+        delta = self._parse_end_time() - self._parse_start_time()
         return f"{int(delta.total_seconds())}s"
 
     def to_promql_range(self) -> str:
         return f"[{self.to_duration()}]"
 
-    def to_range_params(self, step: str = "1m") -> dict[str, str]:
-        params: dict[str, str] = {"step": step}
+    def auto_step(self) -> str:
+        """Step sized so a range query stays under the backend point cap.
+
+        VictoriaMetrics rejects range queries yielding more than 30000 points
+        per series, so a fixed 1m step silently fails past ~20 days. Target a
+        lower ceiling than the hard cap: it keeps long ranges answerable and
+        the response small enough to stay useful in a context window.
+        """
+        if self.start is None:
+            return "1m"
+        span = int((self._parse_end_time() - self._parse_start_time()).total_seconds())
+        return f"{max(60, -(-span // MAX_RANGE_POINTS))}s"
+
+    def to_range_params(self, step: str = "auto") -> dict[str, str]:
+        params: dict[str, str] = {"step": self.auto_step() if step == "auto" else step}
         if self.start:
             params["start"] = (
                 f"-{self.start}" if self._is_duration(self.start) else self.start
@@ -63,6 +76,15 @@ class TimeRange:
         if self.end:
             params["end"] = f"-{self.end}" if self._is_duration(self.end) else self.end
         return params
+
+    def _parse_start_time(self) -> datetime:
+        if self.start is None:
+            return datetime.now(timezone.utc)
+        if self._is_duration(self.start):
+            return self._parse_end_time() - timedelta(
+                seconds=self._duration_to_seconds(self.start)
+            )
+        return datetime.fromisoformat(self.start.replace("Z", "+00:00"))
 
     def _parse_end_time(self) -> datetime:
         if self.end is None:

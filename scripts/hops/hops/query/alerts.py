@@ -237,7 +237,7 @@ def _analyze_absent_expression(expression: str) -> list[tuple[str, str]]:
 def _alert_historical(name: str, time_range: TimeRange, json_mode: bool) -> None:
     duration = time_range.to_duration()
     query_str = f'ALERTS{{alertname="{name}",alertstate="firing"}}'
-    params = time_range.to_range_params(step="1m")
+    params = time_range.to_range_params()
     params["query"] = query_str
     data = query_vm("/api/v1/query_range", params)
     results = data.get("data", {}).get("result", [])

@@ -137,7 +137,9 @@ def memory(
 
 @cli.command("query")
 @click.argument("promql")
-@click.option("--step", default="1m", help="Step interval for range queries")
+@click.option(
+    "--step", default="auto", help="Step interval for range queries (default: auto)"
+)
 @click.option("--hide-zero", is_flag=True, help="Hide all-zero series")
 @click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
 @time_options(support_at=True)

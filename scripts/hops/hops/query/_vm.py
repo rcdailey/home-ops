@@ -28,19 +28,29 @@ def query_vm(endpoint: str, params: dict[str, str] | None = None) -> dict[str, A
     url = f"{VMSINGLE_URL}{endpoint}"
     if params:
         url = f"{url}?{urlencode(params)}"
-    raw = tools_curl(url, service_name="VictoriaMetrics")
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        info("error: invalid JSON from VictoriaMetrics")
-        sys.exit(1)
+    return _parse(tools_curl(url, service_name="VictoriaMetrics"))
 
 
 def query_vmalert(endpoint: str) -> dict[str, Any]:
     """Query VMAlert API and return parsed JSON."""
-    raw = tools_curl(f"{VMALERT_URL}{endpoint}", service_name="VictoriaMetrics")
+    return _parse(
+        tools_curl(f"{VMALERT_URL}{endpoint}", service_name="VictoriaMetrics")
+    )
+
+
+def _parse(raw: str) -> dict[str, Any]:
+    """Parse an API response, failing loudly on a backend-reported error.
+
+    A rejected query still returns HTTP 200 with status=error, so callers that
+    only read data.result cannot distinguish "no matches" from "query refused"
+    and report a false negative.
+    """
     try:
-        return json.loads(raw)
+        data = json.loads(raw)
     except json.JSONDecodeError:
         info("error: invalid JSON from VictoriaMetrics")
         sys.exit(1)
+    if data.get("status") == "error":
+        info(f"error: VictoriaMetrics rejected the query: {data.get('error', '')}")
+        sys.exit(1)
+    return data
