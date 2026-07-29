@@ -52,6 +52,25 @@ blocking:
     # DoH/VPN/proxy bypass prevention (stops kids circumventing DNS filtering)
     bypass:
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-vpn-proxy-bypass.txt
+    - |
+      # Wayback Machine used as a web proxy to reach NSFW-blocked sites
+      *.archive.org
+      # Server-side video downloader/converter services (fetch blocked content remotely)
+      *.savethevideo.com
+      *.pastedownload.com
+      *.videodownloadtool.io
+      *.acethinker.ai
+      *.acethinker.info
+      *.snapwc.com
+      *.savenow.to
+      *.loader.do
+      *.videoproc.com
+      *.screenapp.io
+      *.flixier.com
+      *.flixier.xyz
+      # Generic image/HTML proxy services
+      *.wsrv.nl
+      *.html-load.com
     # Device/service telemetry trackers (HaGeZi native lists)
     telemetry:
     - https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.amazon.txt
