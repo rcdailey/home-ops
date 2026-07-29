@@ -45,6 +45,15 @@ LOG_FIELDS = [
     "answer",
 ]
 
+TOP_FIELDS = [
+    "question_name",
+    "count",
+    "clients",
+    "reason",
+    "first_seen",
+    "last_seen",
+]
+
 SEARCH_FIELDS = [
     "client_ip",
     "client_name",

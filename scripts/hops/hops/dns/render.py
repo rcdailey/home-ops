@@ -7,7 +7,7 @@ import json
 import click
 
 from hops.core.format import info, table, truncate
-from hops.dns.psql import LOG_FIELDS, build_where, parse_tsv, psql
+from hops.dns.psql import LOG_FIELDS, TOP_FIELDS, build_where, parse_tsv, psql
 
 
 def format_log_row(row: dict) -> list[str]:
@@ -67,3 +67,46 @@ def query_dns_logs(
         ["TIME", "CLIENT", "QTYPE", "STATUS", "DOMAIN", "REASON", "DUR", "ANSWER"],
         [format_log_row(r) for r in rows],
     )
+
+
+def query_top_domains(
+    time_from: str,
+    time_to: str | None,
+    client: str | None,
+    limit: int,
+    json_mode: bool,
+    blocked_only: bool = False,
+) -> None:
+    """Shared implementation for top-domains and top-blocked commands."""
+    where = build_where(time_from, time_to, client, blocked_only=blocked_only)
+    reason_expr = "STRING_AGG(DISTINCT reason, ', ')" if blocked_only else "''"
+    sql = (
+        "SELECT question_name, COUNT(*) AS count, "
+        "COUNT(DISTINCT client_ip) AS clients, "
+        f"{reason_expr} AS reason, "
+        "MIN(request_ts) AS first_seen, MAX(request_ts) AS last_seen "
+        f"FROM log_entries WHERE {where} "
+        f"GROUP BY question_name ORDER BY count DESC LIMIT {limit};"
+    )
+    output = psql(sql)
+    if not output:
+        info("No results")
+        return
+
+    rows = parse_tsv(output, TOP_FIELDS)
+    if json_mode:
+        for row in rows:
+            click.echo(json.dumps(row))
+        return
+
+    headers = ["DOMAIN", "COUNT", "CLIENTS", "FIRST SEEN", "LAST SEEN"]
+    if blocked_only:
+        headers.insert(3, "REASON")
+    table_rows = []
+    for r in rows:
+        row = [r["question_name"], r["count"], r["clients"]]
+        if blocked_only:
+            row.append(truncate(r.get("reason", ""), 80))
+        row.extend([r["first_seen"], r["last_seen"]])
+        table_rows.append(row)
+    table(headers, table_rows)

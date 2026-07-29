@@ -21,7 +21,7 @@ from hops.dns.psql import (
     psql,
     resolve_test_clients,
 )
-from hops.dns.render import query_dns_logs
+from hops.dns.render import query_dns_logs, query_top_domains
 
 
 @cli.command()
@@ -119,6 +119,36 @@ def search(
         ["CLIENT", "DOMAIN", "STATUS", "COUNT", "FIRST SEEN", "LAST SEEN"],
         table_rows,
     )
+
+
+@cli.command("top-domains")
+@click.option(
+    "-f", "--from", "time_from", default="24h", help="Start time (default: 24h)"
+)
+@click.option("-t", "--to", "time_to", default=None, help="End time")
+@click.option("-c", "--client", help="Client IP, device name, CIDR, or VLAN")
+@click.option("-l", "--limit", default=50, help="Max rows (default: 50)")
+@click.option("--json", "json_mode", is_flag=True, help="Output NDJSON")
+def top_domains(
+    time_from: str, time_to: str | None, client: str | None, limit: int, json_mode: bool
+):
+    """Top queried domains by count."""
+    query_top_domains(time_from, time_to, client, limit, json_mode)
+
+
+@cli.command("top-blocked")
+@click.option(
+    "-f", "--from", "time_from", default="24h", help="Start time (default: 24h)"
+)
+@click.option("-t", "--to", "time_to", default=None, help="End time")
+@click.option("-c", "--client", help="Client IP, device name, CIDR, or VLAN")
+@click.option("-l", "--limit", default=50, help="Max rows (default: 50)")
+@click.option("--json", "json_mode", is_flag=True, help="Output NDJSON")
+def top_blocked(
+    time_from: str, time_to: str | None, client: str | None, limit: int, json_mode: bool
+):
+    """Top blocked domains by count, with matching blocklist reason."""
+    query_top_domains(time_from, time_to, client, limit, json_mode, blocked_only=True)
 
 
 @cli.command("test")

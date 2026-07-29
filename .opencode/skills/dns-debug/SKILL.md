@@ -43,6 +43,10 @@ Run `./scripts/hops.sh dns --help` for full usage.
 # VLAN shorthand (lan, iot, kids, guest, work, cameras)
 ./scripts/hops.sh dns blocked -c kids -f 24h
 
+# Aggregations: top queried / top blocked domains (per client or fleet-wide)
+./scripts/hops.sh dns top-domains -c 192.168.3.200 -f 168h -l 100
+./scripts/hops.sh dns top-blocked -c kids -f 24h
+
 # Machine-readable
 ./scripts/hops.sh dns blocked --json -c 192.168.3.40
 ```
@@ -121,10 +125,6 @@ The following subcommands were deferred. If you need one during diagnosis, imple
 `./scripts/hops.sh dns` following the patterns of the existing subcommands, then update this skill
 file to move it from this list to the Quick Reference section above.
 
-- **top-domains**: Top queried domains by count. Flags: `-f`, `-c`, `-l`. GROUP BY `question_name`,
-  ORDER BY count DESC.
-- **top-blocked**: Top blocked domains by count. Same as top-domains but filtered to `response_type
-  = 'BLOCKED'`. Include the `reason` column to show which blocklist group matched.
 - **top-clients**: Top clients by query volume. Flags: `-f`, `-l`. GROUP BY `client_ip`,
   `client_name`, ORDER BY count DESC.
 - **slow**: Queries exceeding a duration threshold. Flags: `-f`, `-c`, `--threshold` (milliseconds,
