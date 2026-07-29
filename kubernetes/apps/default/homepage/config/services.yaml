@@ -170,11 +170,6 @@
       href: http://192.168.1.53/
       ping: 192.168.1.53
 
-  - Printer:
-      icon: brother
-      href: https://printer.${SECRET_DOMAIN}/
-      ping: 192.168.1.40
-
   - APC UPS:
       icon: apc
       href: http://192.168.1.31/

@@ -10,7 +10,7 @@ spec:
     interval: 30s
     rules:
     # Compliance: Catch unconfigured ports with active links
-    # Ports should follow naming convention: <description>-<speed> (e.g., NAS-10G, Printer-100M)
+    # Ports should follow naming convention: <description>-<speed> (e.g., NAS-10G)
     # Use -AUTO suffix for devices with variable link speeds (e.g., MacBook-AUTO for sleep modes)
     # Excludes APs - their uplink ports are uneditable and always show as "Port N"
     - alert: UnifiPortMissingSpeedLabel
