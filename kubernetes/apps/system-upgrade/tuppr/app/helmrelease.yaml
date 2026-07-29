@@ -18,6 +18,8 @@ spec:
       strategy: rollback
       retries: 3
   values:
+    deploymentAnnotations:
+      reloader.stakater.com/auto: "true"
     replicaCount: 2
     # Connection only; which alerts get silenced is authored per-run on
     # TalosUpgrade.spec.silences. VMAlertmanager speaks the v2 silences API and
