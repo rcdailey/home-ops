@@ -70,7 +70,6 @@ spec:
     loadBalancer:
       algorithm: maglev
       mode: dsr
-    localRedirectPolicy: true
     operator:
       dashboards:
         enabled: true
