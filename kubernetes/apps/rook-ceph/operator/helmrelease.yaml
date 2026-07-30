@@ -20,10 +20,6 @@ spec:
   values:
     # Rook Ceph Operator Configuration
     # Basic operator configuration with monitoring enabled
-    csi:
-      serviceMonitor:
-        enabled: true
-
     monitoring:
       enabled: true
 
