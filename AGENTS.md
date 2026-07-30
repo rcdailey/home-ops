@@ -7,13 +7,18 @@ drift.
 
 ### GitOps Mindset
 
-**Every cluster change MUST flow through git.** Imperative commands are diagnostic only.
+**Every persistent cluster change MUST flow through git.** Imperative commands are diagnostic only
+unless permitted below.
 
 - **NEVER run git commit/push without explicit user request** - GitOps requires user commits for
   accountability. This includes using the commit subagent. Always wait for explicit "commit"
   request.
 - **NEVER delete resources as a fix** - Deleting jobs, pods, or PVCs treats symptoms, not causes.
-  Find the manifest issue and fix it. Exception: cleanup after root cause is fixed.
+  Find the manifest issue and fix it.
+- **Orphan cleanup MUST be operational, not declarative** - An exact, non-data-bearing object absent
+  from Git and without an active GitOps owner MUST be deleted with the underlying cluster CLI after
+  verification through `hops`. NEVER create temporary manifests solely to adopt and prune orphans.
+  PVCs, PVs, and namespaces are excluded from this exception.
 - **NEVER adjust health probes to fix failures** - Probes detect problems, they don't cause them.
   Investigate WHY the probe fails (resource exhaustion, slow startup, missing deps).
 
@@ -30,9 +35,9 @@ drift.
 Recurring issues indicate incomplete root cause analysis.
 
 **All cluster queries MUST use `hops` commands** (`./scripts/hops.sh`). Direct use of kubectl,
-talosctl, helm, flux, and other cluster CLIs is prohibited except when `hops` lacks the needed
-functionality (see escape hatch below). `hops` produces LLM-optimized, token-compact output by
-design; raw CLI output wastes context on noise the LLM has to parse and discard.
+talosctl, helm, flux, and other cluster CLIs for queries is prohibited except when `hops` lacks the
+needed functionality (see escape hatch below). `hops` produces LLM-optimized, token-compact output
+by design; raw CLI output wastes context on noise the LLM has to parse and discard.
 
 **`hops` escape hatch:** `hops` is not feature-complete. When a command you need does not exist,
 produces too much or too little output, or has a bug: (1) load the `hops` skill, (2) update or add
