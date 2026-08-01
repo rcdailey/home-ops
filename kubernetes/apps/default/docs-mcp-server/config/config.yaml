@@ -1,0 +1,15 @@
+---
+app:
+  telemetryEnabled: false
+  embeddingModel: accounts/fireworks/models/qwen3-embedding-8b
+
+server:
+  protocol: http
+  host: 0.0.0.0
+  publicOrigin: https://aidocs.${SECRET_DOMAIN}
+
+scraper:
+  maxConcurrency: 3
+  security:
+    fileAccess:
+      mode: disabled
