@@ -143,7 +143,13 @@ def diagnose_pod(
                 )
                 out = (prev.stdout or "").strip()
                 info(f"--- {cname} (previous, last 30 lines) ---")
-                click.echo(out if out else "(none available)")
+                if prev.returncode != 0:
+                    error = (
+                        prev.stderr or prev.stdout or "kubectl logs failed"
+                    ).strip()
+                    click.echo(f"(unavailable: {truncate(error.splitlines()[0], 120)})")
+                else:
+                    click.echo(out if out else "(none available)")
 
         # Failed containers that never restarted (exit != 0, restartCount == 0).
         # Current logs contain the failure output; no --previous needed.
@@ -164,7 +170,13 @@ def diagnose_pod(
                 )
                 out = (result.stdout or "").strip()
                 info(f"--- {cname} (last 30 lines) ---")
-                click.echo(out if out else "(none available)")
+                if result.returncode != 0:
+                    error = (
+                        result.stderr or result.stdout or "kubectl logs failed"
+                    ).strip()
+                    click.echo(f"(unavailable: {truncate(error.splitlines()[0], 120)})")
+                else:
+                    click.echo(out if out else "(none available)")
 
     # Events scoped to this specific pod
     if show_events:

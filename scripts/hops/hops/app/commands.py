@@ -268,11 +268,18 @@ def diagnose(app: str, namespace: str | None, explain: bool):
         for step in target.explain:
             info(f"  {step}")
 
+    is_batch_workload = target.workload and target.workload.kind in {"cronjobs", "jobs"}
+
+    if target.kind == TargetKind.POD or is_batch_workload:
+        _diagnose_workload(target.name, target.namespace)
+        _diagnose_events(target.name, target.namespace)
+        return
+
     section("FLUX")
     _diagnose_flux(app, target.namespace)
     _diagnose_externalsecrets(app, target.namespace)
 
-    if target.kind in (TargetKind.WORKLOAD, TargetKind.POD):
+    if target.kind == TargetKind.WORKLOAD:
         _diagnose_services(app, target.namespace)
         _diagnose_workload(app, target.namespace)
     else:
