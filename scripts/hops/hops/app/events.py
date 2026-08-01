@@ -27,7 +27,7 @@ def diagnose_events(app: str, ns: str):
             continue
         obj = e.get("involvedObject", {})
         obj_name = obj.get("name", "")
-        if obj_name.startswith(app):
+        if app.lower() in obj_name.lower():
             app_events.append(e)
 
     # Deduplicate events with identical messages, keeping the most recent.

@@ -71,13 +71,14 @@ def diagnose_workload(app_name: str, ns: str):
     """Diagnose a workload-based app: pods, restarts, logs."""
     section("PODS")
     pod_data = kubectl_json("pods", namespace=ns)
+    matching_pods = [
+        item for item in pod_data.get("items", []) if _pod_matches_app(item, app_name)
+    ]
     pod_rows = []
     restart_details = []
-    for item in pod_data.get("items", []):
+    for item in matching_pods:
         meta = item.get("metadata", {})
         name = meta.get("name", "")
-        if not name.startswith(app_name):
-            continue
         spec = item.get("spec", {})
         status = item.get("status", {})
         phase = status.get("phase", "?")
@@ -123,14 +124,13 @@ def diagnose_workload(app_name: str, ns: str):
 
     # Recent logs
     section("LOGS (recent)")
-    matching_pods = [
+    running_pods = [
         item
-        for item in pod_data.get("items", [])
-        if item["metadata"]["name"].startswith(app_name)
-        and item.get("status", {}).get("phase") == "Running"
+        for item in matching_pods
+        if item.get("status", {}).get("phase") == "Running"
     ]
-    if matching_pods:
-        pod_name = matching_pods[0]["metadata"]["name"]
+    if running_pods:
+        pod_name = running_pods[0]["metadata"]["name"]
         result = run(
             [
                 "kubectl",
@@ -154,9 +154,9 @@ def diagnose_workload(app_name: str, ns: str):
         info("(no running pods)")
 
     # Previous crash logs (auto-shown when restarts detected)
-    if restart_details and matching_pods:
+    if restart_details and running_pods:
         section("LOGS (previous crash)")
-        pod_name = matching_pods[0]["metadata"]["name"]
+        pod_name = running_pods[0]["metadata"]["name"]
         shown = False
         for rd in restart_details:
             container_name = rd["container"]
@@ -182,6 +182,18 @@ def diagnose_workload(app_name: str, ns: str):
                 shown = True
         if not shown:
             info("(no previous logs available)")
+
+
+def _pod_matches_app(pod: dict, app_name: str) -> bool:
+    """Match chart subcomponents whose names may prefix the release name."""
+    meta = pod.get("metadata", {})
+    labels = meta.get("labels", {})
+    needle = app_name.lower()
+    return (
+        needle in meta.get("name", "").lower()
+        or labels.get("app.kubernetes.io/name") == app_name
+        or labels.get("app.kubernetes.io/instance") == app_name
+    )
 
 
 def diagnose_gateway(app: str, ns: str):

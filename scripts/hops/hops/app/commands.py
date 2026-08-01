@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Never
+
 import click
 
 from hops.app import cli
@@ -50,7 +52,7 @@ def _resolve(app_name: str, namespace: str | None) -> Workload:
     return wl
 
 
-def _not_found(name: str, namespace: str | None) -> None:
+def _not_found(name: str, namespace: str | None) -> Never:
     """Print error with near-match suggestions and exit."""
     hints = suggest_near_matches(name, namespace)
     info(f"error: could not find app {name!r}")
@@ -271,8 +273,8 @@ def diagnose(app: str, namespace: str | None, explain: bool):
     _diagnose_externalsecrets(app, target.namespace)
 
     if target.kind in (TargetKind.WORKLOAD, TargetKind.POD):
-        _diagnose_services(target.name, target.namespace)
-        _diagnose_workload(target.name, target.namespace)
+        _diagnose_services(app, target.namespace)
+        _diagnose_workload(app, target.namespace)
     else:
         _diagnose_gateway(app, target.namespace)
 
