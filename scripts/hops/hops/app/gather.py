@@ -146,7 +146,10 @@ def diagnose_workload(app_name: str, ns: str):
             check=False,
         )
         output = (result.stdout or "").strip()
-        if output:
+        if result.returncode != 0:
+            error = (result.stderr or result.stdout or "kubectl logs failed").strip()
+            info(f"(unavailable: {truncate(error.splitlines()[0], 120)})")
+        elif output:
             click.echo(output)
         else:
             info("(no recent logs)")
@@ -176,7 +179,16 @@ def diagnose_workload(app_name: str, ns: str):
                 check=False,
             )
             output = (result.stdout or "").strip()
-            if output:
+            if result.returncode != 0:
+                error = (
+                    result.stderr or result.stdout or "kubectl logs failed"
+                ).strip()
+                info(
+                    f"--- {container_name} (previous logs unavailable) ---\n"
+                    f"{truncate(error.splitlines()[0], 120)}"
+                )
+                shown = True
+            elif output:
                 info(f"--- {container_name} (previous, last 30 lines) ---")
                 click.echo(output)
                 shown = True

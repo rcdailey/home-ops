@@ -1,0 +1,262 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app docs-mcp-server
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      # Keep scraping outside the coordinators so worker load cannot block clients.
+      mcp:
+        annotations: &reloader
+          reloader.stakater.com/auto: "true"
+        pod:
+          securityContext: &pod-security
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+        initContainers: &wait-for-worker
+          worker-ready:
+            image:
+              repository: alpine
+              tag: latest
+            env:
+              WORKER_HOST: docs-mcp-server-worker.default
+            command: ["sh", "-c", "until nc -z \"$WORKER_HOST\" 8080; do sleep 2; done"]
+            securityContext: &container-security
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+        containers:
+          app:
+            image:
+              repository: &image ghcr.io/arabold/docs-mcp-server
+              tag: &tag 2.4.5
+            env:
+              TZ: America/Chicago
+              DOCS_MCP_CONFIG: /config/config.yaml
+              WORKER_URL: &worker-url http://docs-mcp-server-worker.default:8080/api
+              LOG_LEVEL: INFO
+              XDG_DATA_HOME: /tmp
+            args: ["mcp", "--protocol", "http", "--host", "0.0.0.0", "--port", "6280", "--server-url", *worker-url]
+            probes:
+              liveness:
+                enabled: true
+                type: TCP
+                port: 6280
+            resources:
+              requests:
+                cpu: 10m
+                memory: 256Mi
+              limits:
+                memory: 512Mi
+            securityContext: *container-security
+
+      web:
+        annotations: *reloader
+        pod:
+          securityContext: *pod-security
+        initContainers: *wait-for-worker
+        containers:
+          app:
+            image:
+              repository: *image
+              tag: *tag
+            args: ["web", "--host", "0.0.0.0", "--port", "6281", "--server-url", *worker-url]
+            env:
+              TZ: America/Chicago
+              DOCS_MCP_CONFIG: /config/config.yaml
+              LOG_LEVEL: INFO
+              XDG_DATA_HOME: /tmp
+            probes:
+              liveness:
+                enabled: true
+                type: TCP
+                port: 6281
+            resources:
+              requests:
+                cpu: 10m
+                memory: 256Mi
+              limits:
+                memory: 512Mi
+            securityContext: *container-security
+
+      docs-mcp-server:
+        strategy: Recreate
+        annotations: *reloader
+        pod:
+          securityContext: *pod-security
+        containers:
+          app:
+            image:
+              repository: *image
+              tag: *tag
+            args: ["worker", "--host", "0.0.0.0", "--port", "8080"]
+            env:
+              TZ: America/Chicago
+              DOCS_MCP_CONFIG: /config/config.yaml
+              LOG_LEVEL: INFO
+              OPENAI_API_BASE: https://api.fireworks.ai/inference/v1
+              XDG_DATA_HOME: /data
+            envFrom:
+            - secretRef:
+                name: docs-mcp-server-secret
+            probes:
+              liveness:
+                enabled: true
+                type: TCP
+                port: 8080
+            resources:
+              requests:
+                cpu: 100m
+                memory: 1Gi
+              limits:
+                memory: 2Gi
+            securityContext: *container-security
+
+      refresh:
+        type: cronjob
+        cronjob:
+          # Failed versions are fully re-scraped; completed versions use ETags.
+          schedule: "0 4 * * 0"
+          timeZone: America/Chicago
+          concurrencyPolicy: Forbid
+          backoffLimit: 0
+          successfulJobsHistory: 1
+          failedJobsHistory: 3
+          ttlSecondsAfterFinished: 86400
+        pod:
+          restartPolicy: Never
+          securityContext: *pod-security
+        containers:
+          app:
+            image:
+              repository: *image
+              tag: *tag
+            command: ["node", "/config/refresh-all.mjs"]
+            env:
+              TZ: America/Chicago
+              DOCS_MCP_CONFIG: /config/config.yaml
+              WORKER_URL: *worker-url
+              XDG_DATA_HOME: /tmp
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                memory: 256Mi
+            securityContext: *container-security
+
+    service:
+      mcp:
+        controller: mcp
+        ports:
+          http:
+            port: 6280
+      web:
+        controller: web
+        ports:
+          http:
+            port: 6281
+      worker:
+        controller: *app
+        ports:
+          http:
+            port: 8080
+
+    route:
+      app:
+        hostnames:
+        - aidocs.${SECRET_DOMAIN}
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: docs-mcp-server-mcp
+            port: 6280
+          matches:
+          - path:
+              type: PathPrefix
+              value: /mcp
+          - path:
+              type: PathPrefix
+              value: /sse
+          - path:
+              type: PathPrefix
+              value: /messages
+        - backendRefs:
+          - name: docs-mcp-server-web
+            port: 6281
+
+    persistence:
+      data:
+        existingClaim: *app
+        advancedMounts:
+          docs-mcp-server:
+            app:
+            - path: /data
+
+      config:
+        type: configMap
+        name: docs-mcp-server-config
+        advancedMounts:
+          mcp:
+            app:
+            - path: /config
+              readOnly: true
+          web:
+            app:
+            - path: /config
+              readOnly: true
+          docs-mcp-server:
+            app:
+            - path: /config
+              readOnly: true
+          refresh:
+            app:
+            - path: /config
+              readOnly: true
+
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          mcp:
+            app:
+            - path: /tmp
+          web:
+            app:
+            - path: /tmp
+          docs-mcp-server:
+            app:
+            - path: /tmp
+          refresh:
+            app:
+            - path: /tmp
+
+      shm:
+        type: emptyDir
+        medium: Memory
+        advancedMounts:
+          docs-mcp-server:
+            app:
+            - path: /dev/shm
