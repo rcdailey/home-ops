@@ -187,11 +187,14 @@ def search_envoy_errors(hostnames: list[str], limit: int = 10) -> list[dict]:
             entry = json.loads(line)
         except json.JSONDecodeError:
             continue
-        authority = entry.get(":authority", "")
+        authority = str(entry.get(":authority") or "")
         if not any(h in authority for h in hostnames):
             continue
-        code = entry.get("response_code", 200)
-        if isinstance(code, int) and code >= 400:
+        try:
+            code = int(entry.get("response_code", 200))
+        except (TypeError, ValueError):
+            continue
+        if code >= 400:
             errors.append(entry)
 
     return errors[-limit:]
