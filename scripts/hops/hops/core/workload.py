@@ -80,6 +80,16 @@ class Workload:
         labels = self.pod_labels()
         return labels.get("app.kubernetes.io/name", labels.get("app", ""))
 
+    def matches_pod(self, pod: dict) -> bool:
+        """Return whether a pod belongs to this workload."""
+        selector = self.raw.get("spec", {}).get("selector", {}).get("matchLabels", {})
+        labels = pod.get("metadata", {}).get("labels", {})
+
+        if selector:
+            return all(labels.get(key) == value for key, value in selector.items())
+
+        return pod.get("metadata", {}).get("name", "").startswith(self.name)
+
 
 def find_workloads(
     name: str,
@@ -194,11 +204,7 @@ def resolve_pods(
     wl = resolve_app(name, namespace)
     if wl:
         data = kubectl_json("pods", namespace=wl.namespace)
-        pods = [
-            p
-            for p in data.get("items", [])
-            if p["metadata"]["name"].startswith(wl.name)
-        ]
+        pods = [p for p in data.get("items", []) if wl.matches_pod(p)]
         pods.sort(
             key=lambda p: p["metadata"].get("creationTimestamp", ""),
             reverse=True,
@@ -238,8 +244,6 @@ def find_running_pod(wl: Workload) -> str | None:
     """Find a Running pod name for a workload. Returns None if not found."""
     data = kubectl_json("pods", namespace=wl.namespace)
     for p in data.get("items", []):
-        if p["metadata"]["name"].startswith(wl.name) and (
-            p.get("status", {}).get("phase") == "Running"
-        ):
+        if wl.matches_pod(p) and p.get("status", {}).get("phase") == "Running":
             return p["metadata"]["name"]
     return None

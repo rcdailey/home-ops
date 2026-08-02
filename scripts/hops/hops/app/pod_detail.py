@@ -9,8 +9,8 @@ from __future__ import annotations
 import click
 
 from hops.core.format import age_str, info, kv, section, table, truncate
+from hops.core.resolve import resolve
 from hops.core.runner import run, run_json
-from hops.core.workload import resolve_pods, suggest_near_matches
 
 
 def short_image(image: str) -> str:
@@ -56,14 +56,9 @@ def diagnose_pod(
     for diagnosing per-pod lifecycle issues (startup races, image pull delays,
     crash-then-succeed patterns).
     """
-    result = resolve_pods(app, namespace)
-    if not result:
-        hints = suggest_near_matches(app, namespace)
-        info(f"error: could not find app {app!r}")
-        if hints:
-            info(f"  similar: {', '.join(hints)}")
-        raise SystemExit(1)
-    ns, pods = result
+    target = resolve(app, namespace)
+    ns = target.namespace
+    pods = target.pods
 
     if pod_name:
         pods = [p for p in pods if p["metadata"]["name"] == pod_name]

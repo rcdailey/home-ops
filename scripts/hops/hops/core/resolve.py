@@ -63,11 +63,7 @@ class WorkloadResolver:
         from hops.core.runner import kubectl_json
 
         data = kubectl_json("pods", namespace=wl.namespace)
-        pods = [
-            p
-            for p in data.get("items", [])
-            if p["metadata"]["name"].startswith(wl.name)
-        ]
+        pods = [p for p in data.get("items", []) if wl.matches_pod(p)]
         pods.sort(
             key=lambda p: p["metadata"].get("creationTimestamp", ""),
             reverse=True,

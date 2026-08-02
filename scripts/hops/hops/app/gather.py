@@ -129,29 +129,28 @@ def diagnose_workload(app_name: str, ns: str):
         for item in matching_pods
         if item.get("status", {}).get("phase") == "Running"
     ]
-    if running_pods:
-        pod_name = running_pods[0]["metadata"]["name"]
-        result = run(
-            [
-                "kubectl",
-                "logs",
-                pod_name,
-                "-n",
-                ns,
-                "--all-containers",
-                "--since=1h",
-                "--tail=20",
-            ],
-            timeout=15,
-            check=False,
-        )
+    log_pods = running_pods or sorted(
+        matching_pods,
+        key=lambda item: item.get("metadata", {}).get("creationTimestamp", ""),
+        reverse=True,
+    )
+    if log_pods:
+        log_pod = log_pods[0]
+        pod_name = log_pod["metadata"]["name"]
+        args = ["kubectl", "logs", pod_name, "-n", ns, "--all-containers"]
+
+        if log_pod.get("status", {}).get("phase") == "Running":
+            args.append("--since=1h")
+
+        args.append("--tail=20")
+        result = run(args, timeout=15, check=False)
         output = (result.stdout or "").strip()
         if output:
             click.echo(output)
         else:
             info("(no recent logs)")
     else:
-        info("(no running pods)")
+        info("(no pods found)")
 
     # Previous crash logs (auto-shown when restarts detected)
     if restart_details and running_pods:
