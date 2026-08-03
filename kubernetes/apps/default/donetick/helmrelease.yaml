@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: docker.io/donetick/donetick
-              tag: v0.1.75
+              tag: v0.1.76
             env:
               TZ: America/Chicago
               DT_ENV: selfhosted
@@ -52,7 +52,8 @@ spec:
               DT_OAUTH2_USER_INFO_URL: https://auth.${SECRET_DOMAIN}/api/oidc/userinfo
               DT_OAUTH2_REDIRECT_URL: https://tasks.${SECRET_DOMAIN}/auth/oauth2
 
-              # Disable built-in user creation (OIDC only)
+              # Require OIDC and prevent creation of local users
+              DT_DISABLE_PASSWORD_AUTH: true
               DT_IS_USER_CREATION_DISABLED: true
 
             envFrom:
