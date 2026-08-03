@@ -10,6 +10,7 @@ import click
 
 from hops.app.endpoints import match_services
 from hops.app.events import compact_event_message
+from hops.app.volume_stats import diagnose_volumes
 from hops.core.format import age_str, info, section, table, truncate
 from hops.core.runner import kubectl_json, run, run_json
 
@@ -122,6 +123,8 @@ def diagnose_workload(app_name: str, ns: str):
                 f"({rd['finished']} ago)"
             )
 
+    diagnose_volumes(matching_pods)
+
     # Recent logs
     section("LOGS (recent)")
     running_pods = [
@@ -158,9 +161,9 @@ def diagnose_workload(app_name: str, ns: str):
     # Previous crash logs (auto-shown when restarts detected)
     if restart_details and running_pods:
         section("LOGS (previous crash)")
-        pod_name = running_pods[0]["metadata"]["name"]
         shown = False
         for rd in restart_details:
+            pod_name = rd["pod"]
             container_name = rd["container"]
             result = run(
                 [
