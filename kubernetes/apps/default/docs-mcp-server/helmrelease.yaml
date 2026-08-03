@@ -64,10 +64,10 @@ spec:
                 port: 6280
             resources:
               requests:
-                cpu: 10m
-                memory: 256Mi
-              limits:
+                cpu: 100m
                 memory: 512Mi
+              limits:
+                memory: 4Gi
             securityContext: *container-security
 
       web:
@@ -96,7 +96,7 @@ spec:
                 cpu: 10m
                 memory: 256Mi
               limits:
-                memory: 512Mi
+                memory: 4Gi
             securityContext: *container-security
 
       docs-mcp-server:
@@ -126,10 +126,10 @@ spec:
                 port: 8080
             resources:
               requests:
-                cpu: 100m
-                memory: 1Gi
-              limits:
+                cpu: 500m
                 memory: 2Gi
+              limits:
+                memory: 4Gi
             securityContext: *container-security
 
       refresh:
@@ -162,7 +162,7 @@ spec:
                 cpu: 10m
                 memory: 128Mi
               limits:
-                memory: 256Mi
+                memory: 4Gi
             securityContext: *container-security
 
     service:
