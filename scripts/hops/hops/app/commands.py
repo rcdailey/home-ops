@@ -23,6 +23,7 @@ from hops.app.gather import (
 from hops.app.gather import (
     diagnose_workload as _diagnose_workload,
 )
+from hops.app.log_history import previous_container_logs
 from hops.app.pod_detail import diagnose_pod as _diagnose_pod
 from hops.core.format import info, section
 from hops.core.resolve import TargetKind, resolve
@@ -147,6 +148,16 @@ def logs(
     pod = chosen["metadata"]["name"]
     phase = chosen.get("status", {}).get("phase", "?")
     terminated = phase in ("Succeeded", "Failed")
+
+    if previous and not container:
+        output = previous_container_logs(chosen, ns, lines)
+        if output is None:
+            info(f"No previous container instances found for {pod}")
+            return
+        if grep:
+            output = _grep_logs(output, grep, after_context, lines)
+        click.echo(output)
+        return
 
     args = [
         "kubectl",
