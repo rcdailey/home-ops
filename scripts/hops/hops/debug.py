@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import os
+import time
 
 import click
 
@@ -56,19 +58,7 @@ def _run_ephemeral(
             info(f"error: failed to create pod: {stderr}")
             return
 
-        run(
-            [
-                "kubectl",
-                "wait",
-                f"pod/{name}",
-                "-n",
-                namespace,
-                "--for=jsonpath={.status.phase}=Succeeded",
-                f"--timeout={timeout}s",
-            ],
-            timeout=timeout + 5,
-            check=False,
-        )
+        pod = _wait_for_termination(name, namespace, timeout)
 
         log_result = run(
             ["kubectl", "logs", name, "-n", namespace],
@@ -79,6 +69,16 @@ def _run_ephemeral(
             click.echo(log_result.stdout.rstrip())
         if log_result.stderr and log_result.returncode != 0:
             click.echo(log_result.stderr.rstrip(), err=True)
+
+        statuses = pod.get("status", {}).get("containerStatuses", [])
+        terminated = (
+            statuses[0].get("state", {}).get("terminated", {}) if statuses else {}
+        )
+        exit_code = terminated.get("exitCode")
+        if exit_code not in (None, 0):
+            reason = terminated.get("reason", "Error")
+            info(f"error: debug pod failed: exit={exit_code} reason={reason}")
+            raise SystemExit(1)
 
     finally:
         run(
@@ -98,6 +98,27 @@ def _run_ephemeral(
         )
 
 
+def _wait_for_termination(name: str, namespace: str, timeout: int) -> dict:
+    """Wait for a one-shot pod and return its terminal state."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        result = run(
+            ["kubectl", "get", "pod", name, "-n", namespace, "-o", "json"],
+            timeout=10,
+            check=False,
+        )
+        if result.returncode != 0:
+            time.sleep(0.5)
+            continue
+        pod = json.loads(result.stdout)
+        if pod.get("status", {}).get("phase") in ("Succeeded", "Failed"):
+            return pod
+        time.sleep(0.5)
+
+    info(f"error: debug pod did not finish within {timeout}s")
+    raise SystemExit(1)
+
+
 @click.group(cls=HelpfulGroup)
 def cli():
     """Ephemeral debug pods and gateway diagnostics."""
@@ -109,10 +130,15 @@ def cli():
 def dns(hostname: str, namespace: str):
     """DNS lookup via ephemeral busybox pod."""
     name = _pod_name("dns")
-    info(f"Resolving {hostname} ...")
+    lookup = hostname
+    if "." not in hostname:
+        lookup = f"{hostname}.{namespace}.svc.cluster.local"
+    elif hostname.endswith(f".{namespace}"):
+        lookup = f"{hostname}.svc.cluster.local"
+    info(f"Resolving {hostname} as {lookup} ...")
     _run_ephemeral(
         image="busybox:stable",
-        command=["nslookup", hostname],
+        command=["nslookup", lookup],
         name=name,
         namespace=namespace,
     )
