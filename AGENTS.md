@@ -28,7 +28,7 @@ unless permitted below.
 2. **History**: `git log -p --follow --invert-grep --author="renovate" -- path/to/file.yaml` for
    recent changes
 3. **Analyze**: Read manifests, check CRD specs, verify dependencies
-4. **Research**: Subagent for reference repos, Context7, upstream docs
+4. **Research**: Subagent for reference repositories and upstream documentation
 5. **Fix**: Modify manifests to address root cause
 6. **Validate**: `pre-commit run --files <changed-files>`
 
@@ -45,21 +45,6 @@ the command, (3) test the updated command, (4) use it to continue your original 
 around gaps by falling back to raw CLIs; fix the tool instead. If the gap is too complex to fix
 inline, document it as a TODO in the relevant hops source file and fall back to the raw CLI for that
 specific operation only.
-
-**`hops` stewardship obligation:** The escape hatch handles missing capability. The no-passthrough
-rule (`hops` commands MUST embody investigative workflows, not reformat single CLI calls) requires
-active stewardship. While running existing `hops` commands during diagnosis, if any of the following
-signals appear, MUST load the `hops` skill and act on them within the current session. MUST NOT
-defer the fix to a follow-up session.
-
-- A command's output is barely more useful than the raw kubectl/talosctl/flux call it wraps
-- You instinctively reach for a second command to fetch context the first should have included
-- A resolver rejects an edge case (orphan pod, terminated workload, fuzzy name) the caller would
-  reasonably expect to work
-- You catch yourself repeating a sequence of `hops` calls that should be a single command
-
-These signals are fix triggers, not curiosities. Acting on them while unrelated work is fresh in
-context is cheaper than a future audit.
 
 ### Storage, Volumes, and Resource Patterns
 
@@ -96,179 +81,100 @@ context is cheaper than a future audit.
 
 ### Scaling
 
-- NFS-dependent apps use native HPAs with external metrics (probe_success from prometheus-adapter)
-  to scale 0-1 based on NFS availability
-- The nfs-scaler kustomize component creates HPAs with minReplicas: 0, maxReplicas: 1
-- Requires HPAScaleToZero feature gate enabled in kube-apiserver
+NFS-dependent apps use the `nfs-scaler` component. It creates an HPA that scales from zero to one
+using the external `probe_success` metric. The API server has `HPAScaleToZero` enabled.
 
 ## Tier 2: Conventions
 
-Consistency patterns for maintainability and clarity.
+### Application configuration
 
-### Configuration Standards
+- Include the appropriate `# yaml-language-server:` directive in YAML files.
+- Use `reloader.stakater.com/auto: "true"`, never targeted reloader annotations.
+- Use rootless containers and prefer YAML defaults by omission.
+- Explain only non-obvious exceptions, limitations, and workarounds in comments.
+- Do not use the `cluster-apps-` prefix.
+- Use `${SECRET_DOMAIN}` instead of real homelab domains in examples and manifests.
+- Use `service.namespace` for internal addresses, without `svc.cluster.local`.
+- Use bracket notation for container commands and arguments.
+- Use America/Chicago when an application needs a timezone.
+- Use `smtp-relay.network:587` without application-specific SMTP credentials.
 
-- ALWAYS use chartRef (see Tier 1: Storage, Volumes, and Resource Patterns)
-- ALWAYS include appropriate `# yaml-language-server:` directive at top of YAML files
-- ALWAYS use reloader.stakater.com/auto: "true" for ALL apps (NEVER use targeted annotations)
-- ALWAYS use rootless containers (security requirement)
-- ALWAYS check existing applications before making changes
-- When removing, renaming, or restructuring an app, MUST run `rg "name|alias|keyword"` at repo root
-  to find all references (docs, AGENTS.md, Homepage, backup lists, S3 buckets, etc.) before
-  committing
-- PREFER YAML defaults by omission over explicit configuration (minimal config improves
-  maintainability)
-- Add comments explaining WHY special approaches were needed (e.g., chart limitations, upstream
-  issues)
-- NEVER use cluster-apps- prefix in service/app names
-- NEVER invent new patterns or adopt conventions from other repositories
-- NEVER reference real homelab domain names in documentation or config examples (use
-  `${SECRET_DOMAIN}` in YAML manifests)
-- Internal cluster hostnames: ONLY use `service.namespace`, without ending with `svc.cluster.local`
-- Service naming: Single `service:` entry uses HelmRelease name only; multiple entries append the
-  service key (e.g., `plex` vs `plex-main`, `plex-api`). Using `app` as a single service key is also
-  acceptable
-- Controller naming: Primary controller MUST match HelmRelease name (e.g., `controllers: plex:` for
-  release `plex`). This produces deployment `plex` instead of `plex-main`. App-template avoids
-  `{release}-{release}` duplication when controller matches release.
-- Primary: `ghcr.io/home-operations/*` containers (semantically versioned, rootless, multi-arch)
-- Secondary: `ghcr.io/onedr0p/*` containers (if home-operations unavailable)
-- Avoid: `ghcr.io/hotio/*` and containers using s6-overlay, gosu
-- Prefer semantic versions for all production containers. Rolling tags (like `latest`) are
-  acceptable for trivial init containers (e.g., alpine for file copying) where renovate upgrades add
-  no value
-- SHA256 digests: Automatically added by renovatebot
-- Container command/args: Use bracket notation `command: ["cmd", "arg"]` instead of multi-line dash
-  format for consistency
-- ALWAYS use America/Chicago (or equivalent representation) for timezone if needed.
-- SMTP: `smtp-relay.network:587` (no auth) - never configure app-specific SMTP credentials
+When removing, renaming, or restructuring an app, search the repository for its name, aliases, and
+related identifiers before finalizing the change. This includes Homepage, backups, and bucket names.
 
-### Topology Spread
+Load the `app-authoring` skill for new applications or structural application changes.
 
-The Talos scheduler is configured with a cluster-wide PodTopologySpread default: `ScheduleAnyway`,
-`maxSkew: 1`, `topologyKey: kubernetes.io/hostname`. All pods prefer spreading across nodes
-automatically. NEVER add explicit `topologySpreadConstraints` unless `DoNotSchedule` is required;
-NEVER use `podAntiAffinity` for topology spreading. `ScheduleAnyway` (the scheduler default) is
-sufficient for application-tier workloads. `DoNotSchedule` is for critical infrastructure where
-co-location defeats the purpose of HA (e.g., DNS servers, database operators).
+### Containers and topology
 
-### Health Probes
+Prefer semantically versioned, rootless, multi-architecture images from `ghcr.io/home-operations/*`,
+then `ghcr.io/onedr0p/*`. Avoid Hotio, s6-overlay, and gosu images. Renovate adds digests. Rolling
+tags are acceptable only for trivial init containers.
 
-- Probes default to off in app-template; only specify probes you need
-- Liveness: ALWAYS enable with simple httpGet returning 200 (e.g., `/status`, `/health`, `/ping`)
-- Readiness: OMIT for single-replica services (readiness controls traffic routing, irrelevant
-  without HA). Only add readiness for multi-replica deployments where it should perform a more
-  comprehensive check than liveness.
-- Startup: OMIT unless slow initialization requires extended startup time
-- Omit default values (initialDelaySeconds: 0, periodSeconds: 10, timeoutSeconds: 1,
-  failureThreshold: 3)
-- When liveness and readiness end up identical (no heavier endpoint exists): use a YAML anchor
-  (`&probe` / `*probe`) to share the spec, and add a comment above `readiness:` explaining why no
-  distinct endpoint is available
+The scheduler already applies `ScheduleAnyway` topology spreading with hostname skew 1. Do not add
+explicit topology spreading or pod anti-affinity unless critical infrastructure requires
+`DoNotSchedule`.
 
-### Security and Networking
+### Health probes
 
-- OIDC client IDs: Hardcode as app name in env vars (not secret); only client secret needs Infisical
-- HTTPRoute ONLY for all routing (never Ingress)
-- NEVER configure External-DNS on HTTPRoutes (Gateways only)
-- DNSEndpoint CRDs MUST carry `external-dns/provider: <provider>` label indicating which
-  external-dns instance should manage them
-- NEVER create LoadBalancer without explicit user discussion
-- MCP sidecar routing: `mcp-{service-subdomain}.${SECRET_DOMAIN}` where `{service-subdomain}` is the
-  app's existing hostname prefix
-- Route backendRefs: Use full service name (e.g., radarr-app), not identifier (e.g., app)
-- NEVER use wildcards for SecurityPolicy headers (always explicit headers)
-- NEVER specify explicit timeouts/intervals without justification (use Flux defaults)
-- Pod securityContext: runAsUser/runAsGroup 1000, runAsNonRoot true, fsGroup 1000,
-  fsGroupChangePolicy OnRootMismatch (identity + volume ownership for all containers)
-- Container securityContext: allowPrivilegeEscalation false, readOnlyRootFilesystem true,
-  capabilities drop ALL (hardening only; these fields have no pod-level equivalent)
-- NEVER duplicate identity fields (runAsUser, runAsGroup, runAsNonRoot) in container securityContext
-  unless containers in the same pod require different UIDs
+- Enable a simple HTTP liveness probe.
+- Omit readiness for single-replica services.
+- Add readiness for multiple replicas only when it is more comprehensive than liveness.
+- Omit startup probes unless initialization is slow.
+- Omit probe defaults.
+- If readiness must match liveness, share the spec with a YAML anchor and explain why.
 
-### Database and Logging
+### Security and networking
 
-- NEVER share databases between apps (dedicated instances per app)
-- Use CloudNativePG for PostgreSQL, MariaDB Operator for MariaDB
-- CNPG clusters MUST use `instances: 2` minimum. Single-instance clusters create a PDB with
-  `disruptionsAllowed: 0`, blocking node drains during Talos upgrades.
-- CNPG S3 backups are decided case by case (not every cluster warrants them). When backups are
-  warranted, use the `cnpg-backup` kustomize component: add to `kustomization.yaml` components and
-  add `dependsOn: garage-instance` (namespace: storage) to `ks.yaml`. The component provides the
-  GarageS3AccessKey, GarageS3Bucket, ScheduledBackup, `garage-s3-region` secret, and patches the
-  Cluster CR with backup config. The Garage operator creates the S3 credential secret
-  (`{accesskey}-gs3ak`) automatically; no Infisical/ExternalSecret needed.
-- NEVER create custom equivalents to standard Vector fields (message, timestamp, level, severity,
-  host, source_type)
-- VRL regex: Prefer non-greedy `.*?` over greedy `.*`
-- Sidecar pattern: Regular containers for Deployments, initContainers with restartPolicy: Always for
-  Jobs/CronJobs
-- Vector log collection uses two paths: (1) daemonset collection via pod label
-  `observability.home-ops/logs=true`, or (2) a Vector sidecar container for apps that need custom
-  log parsing (e.g., file-based logs). Both paths deliver to VictoriaLogs.
-- Multi-container pods: use `vector.dev/exclude-containers` pod annotation (comma-separated
-  container names) to skip noisy sidecar logs. The daemonset collects all containers by default;
-  exclude VPN tunnels, port-forward helpers, and other infrastructure sidecars.
-- Vector sidecar containers MUST be named `vector` (not `vector-sidecar` or other variants)
+- Hardcode an OIDC client ID as the app name; store only the client secret in Infisical.
+- Use HTTPRoute, never Ingress.
+- Configure External-DNS on Gateways, not HTTPRoutes.
+- Label DNSEndpoints with `external-dns/provider: <provider>`.
+- Discuss any new LoadBalancer with the user before creating it.
+- Route MCP sidecars at `mcp-{service-subdomain}.${SECRET_DOMAIN}`.
+- Use full generated service names in route backend references.
+- Use explicit SecurityPolicy headers, never wildcards.
+- Do not set timeouts or intervals without a concrete reason.
+
+Pod security contexts use UID and GID 1000, `runAsNonRoot`, `fsGroup: 1000`, and
+`fsGroupChangePolicy: OnRootMismatch`. Container contexts disable privilege escalation, use a
+read-only root filesystem, and drop all capabilities. Do not duplicate identity fields at container
+level unless containers need different identities.
+
+### Databases and logging
+
+- Give every application its own database.
+- Use CloudNativePG for PostgreSQL and MariaDB Operator for MariaDB.
+- CNPG clusters require at least two instances so their PDB does not block node drains.
+- Decide CNPG S3 backups case by case; when required, use the `cnpg-backup` component and follow
+  `docs/architecture/backup-strategy.md`.
+- Each CNPG cluster needs its own GarageS3Bucket to avoid permission races.
+- Use a regular Vector sidecar for Deployments and a native sidecar for Jobs and CronJobs.
+- Name Vector sidecars `vector`.
+- Exclude noisy infrastructure sidecars with `vector.dev/exclude-containers`.
+- Use `observability.home-ops/logs=true` for daemonset collection.
+
+Load the `vrl-authoring` skill for VRL programs and parser fixtures.
 
 ### Documentation
 
-- Validate markdown changes with `markdownlint-cli2` before committing
-- Links: reference-style `[text][anchor]` with definitions at section end (not inline)
-- NEVER use bold text as heading replacement - use actual `##` headings
-- MUST hard-wrap at column 100
-- Blank line required between headings, lists, code blocks, and other elements
+- Validate Markdown with `markdownlint-cli2`.
+- Use reference-style links, real headings, 100-column wrapping, and required blank lines.
 
-**Outline vs docs/ boundary:** Outline (`wiki.${SECRET_DOMAIN}`) is the household knowledge base for
-home maintenance, pool care, media room, homelab reference, and hobby documentation. Content lives
-in Outline when it changes independently of code, benefits from rich editing and search, or may be
-referenced by non-technical users. The `docs/` directory is for content tightly coupled to the
-codebase: ADRs, investigation journals, runbooks, and AGENTS.md directives that evolve through PRs
-alongside manifests. Litmus test: if the content needs PR review with code changes, it belongs in
-`docs/`; otherwise it belongs in Outline.
+Outline is for household and homelab knowledge that changes independently of code or serves
+non-technical readers. Repository `docs/` is for ADRs, investigations, runbooks, and reference
+material that evolves with code. Load `outline-cli` for Outline operations.
 
-**Outline access:** Manage Outline content through the `ol` CLI (`@doist/outline-cli`, installed via
-mise). See the `outline-cli` skill for commands. SHOULD proactively use `ol` when the user asks to
-create, update, search, or organize documentation that belongs in Outline per the boundary above.
+When documenting an investigation, read `docs/investigations/TEMPLATE.md`, create a dated document,
+move durable decisions into ADRs, and cross-reference them. Investigations are historical snapshots;
+do not update them when later decisions supersede their conclusions.
 
-### Investigations
+## Reference and operations
 
-When documenting a debugging session:
+This repository is `rcdailey/home-ops`. Current cluster inventory is in
+`docs/reference/cluster-inventory.md`.
 
-1. MUST read `docs/investigations/TEMPLATE.md` for structure
-2. Create `docs/investigations/{component}-{brief-description}-{YYYY-MM-DD}.md`
-3. Extract any durable design decisions into separate ADRs in `docs/decisions/`
-4. Cross-reference between investigation and ADR(s)
-
-Investigation docs are historical snapshots, not living documents. If conclusions become stale due
-to infrastructure changes, the ADR supersession chain captures that; do not update old investigation
-docs.
-
-### Skills
-
-Repo-scoped skills live under `.opencode/skills/`. Per-skill triggers (RFC 2119):
-
-- `dns-debug`: MUST load when diagnosing DNS resolution failures, investigating Blocky-blocked
-  domains, debugging "site X is broken" reports, or editing `kubernetes/apps/dns-private/blocky/`.
-- `home-assistant`: MUST load when querying Home Assistant state, firing automations/scripts,
-  editing HA automation or script YAML, or working with `./scripts/hass.sh` and `scripts/hass/`.
-- `hops`: MUST load when adding, modifying, or debugging commands in `scripts/hops/` (per the Tier 1
-  `hops` escape hatch) OR when the Tier 1 stewardship signals appear during diagnosis. MUST NOT load
-  to merely run existing `hops` commands when no signals are present.
-- `outline-cli`: MUST load when creating, updating, searching, moving, or deleting Outline wiki
-  content via the `ol` CLI.
-- `paperless-classify`: MUST load when classifying or triaging Paperless documents; reviewing the
-  paperless inbox; discussing taxonomy conventions; or running `./scripts/paperless.sh classify`.
-
-## Tier 3: Reference
-
-Implementation patterns, operational workflows, and environment details.
-
-This repository is at `rcdailey/home-ops` in github.
-
-### Reference Repositories
-
-Popular repositories to use as reliable reference implementations. You MUST reference these
-repositories often as documentation.
+Check local applications first. When no local pattern covers the requirement, consult these
+reference repositories before designing a new pattern:
 
 - onedr0p/home-ops
 - bjw-s-labs/home-ops
@@ -277,325 +183,19 @@ repositories often as documentation.
 - dsluo/homelab
 - aclerici38/home-ops
 
-### API Versions
+Agents MUST NOT run `just reconcile`, `flux reconcile`, `helm template`, `just talos diff-config`,
+or `just talos apply-node`. Use `hops flux values` and `hops flux defaults` instead of Helm values
+commands.
 
-- ExternalSecret: `external-secrets.io/v1`
+Run standalone script help before use rather than relying on a command catalog in this file.
 
-### Repository and File Organization
+### Conventional commits
 
-Pattern: `kubernetes/apps/namespace/app/`
+Choose the type by intent. Cluster behavior uses `feat`, `fix`, or `refactor`; developer tooling
+uses `chore`; CI uses `ci`; Renovate configuration uses `build`; prose-only documentation uses
+`docs`. Use `!` for incompatible API or CRD upgrades, storage migrations, and other breaking
+changes.
 
-- `kubernetes/apps/{namespace}/{app}/` -- app manifests
-  - `ks.yaml` -- Flux Kustomization (spec.targetNamespace)
-  - `kustomization.yaml` -- Kustomize resources list, components
-  - `helmrelease.yaml` -- HelmRelease (chartRef or chart.spec.sourceRef)
-  - `pvc.yaml` -- PersistentVolumeClaims
-  - `externalsecret.yaml` -- Infisical secrets
-  - `config/` -- files for configMapGenerator
-- `containers/` -- bespoke container images (one subdir per image)
-- `docs/`
-  - `architecture/` -- system design, rationale for technology choices
-  - `decisions/` -- ADRs; read TEMPLATE.md before creating/editing
-  - `investigations/` -- historical debugging journals (not prescriptive guides)
-  - `memory-bank/` -- ephemeral context, temporary workarounds (remove when stale)
-  - `reference/` -- standalone reference material (OIDC patterns, protocol guides)
-  - `runbooks/` -- step-by-step operational procedures
-
-- Namespace directories MUST match actual namespace names exactly
-- Use flat directory structure for YAML files
-- Use subdirectory for files used in configMapGenerator
-- Use straightforward naming matching directory structure (e.g., mariadb-operator NOT
-  cluster-apps-mariadb-operator)
-- App `ks.yaml` file (Flux Kustomization) must be listed in parent kustomization.yaml resources
-- App `kustomization.yaml` lists resources: `helmrelease.yaml`, `pvc.yaml`, `externalsecret.yaml`,
-  etc
-- ALWAYS include ./pvc.yaml in kustomization.yaml resources
-- PVC naming: Primary PVC matches app name, additional PVCs use {app}-{purpose}
-
-### App Templates
-
-Copy patterns from exemplary apps rather than using synthetic templates. These apps follow all Tier
-1 and Tier 2 conventions:
-
-**Canonical example (start here):** `kubernetes/apps/default/donetick/`
-
-- Complete app-template implementation with all best practices
-- Files: ks.yaml, kustomization.yaml, helmrelease.yaml, pvc.yaml, externalsecret.yaml
-- Patterns: chartRef, strategy: Recreate, advancedMounts, security context, liveness-only probe
-
-**ConfigMapGenerator pattern:** `kubernetes/apps/media/plex/`
-
-- Uses config/ subdirectory with configMapGenerator and disableNameSuffixHash: true
-
-**External chart pattern:** `kubernetes/apps/default/headlamp/`
-
-- Uses chart.spec.sourceRef with local HelmRepository (not app-template)
-
-#### File Requirements
-
-**ks.yaml (Flux Kustomization):**
-
-- `targetNamespace` sets namespace (NOT metadata.namespace)
-- `dependsOn: global-config` required if using cluster-secrets substitution
-- `dependsOn: rook-ceph-cluster` required if using ceph storage
-- `dependsOn: garage-instance` required if using Garage S3 backups (see Database and Logging)
-- `postBuild.substitute.APP` required if using volsync component
-
-**kustomization.yaml (Kustomize):**
-
-- NO namespace field (inherited from parent ks.yaml)
-- List all resources explicitly
-- Components (volsync, nfs-scaler) are optional based on app needs
-
-**helmrelease.yaml (App-Template):**
-
-- `chartRef.namespace: flux-system` REQUIRED (OCIRepository location)
-- Controller name MUST match HelmRelease metadata.name
-- `strategy: Recreate` REQUIRED for RWO volumes
-- ALWAYS use advancedMounts (format: `{controller}: {container}: - path: /path`)
-
-**helmrelease.yaml (External Chart):**
-
-- Use `chart.spec.sourceRef` with local HelmRepository defined in same directory
-- See headlamp for example with helmrepository.yaml alongside helmrelease.yaml
-
-**pvc.yaml:**
-
-- Primary PVC name matches app name; additional PVCs use {app}-{purpose}
-- Storage types: ceph-block (RWO, Recreate), ceph-filesystem (RWX, RollingUpdate), NFS (RWX,
-  RollingUpdate, media/large files)
-
-**externalsecret.yaml:**
-
-- Path format: `/namespace/app-name/secret-name`
-- Add secrets: `just infisical add-secret /namespace/app/key "value"`
-
-### Additional Patterns
-
-**Source repositories:**
-
-- GitRepository (Kustomization sources): ALWAYS in flux/meta/repos - ks.yaml can't deploy its own
-  source
-- OCIRepository/HelmRepository (chart sources): Shared (2+ apps) in flux/meta/repos with `namespace:
-  flux-system`; single-use local to app, omit namespace (inherits from ks.yaml)
-
-**Kustomize files:**
-
-- Parent kustomization.yaml: Sets namespace, lists app ks.yaml files, includes components (common,
-  drift-detection)
-- App kustomization.yaml: Lists resources, may include components (volsync), may define
-  configMapGenerator
-- Stable naming (disableNameSuffixHash: true): ONLY for cross-resource dependencies (Helm
-  valuesFrom, persistence.name)
-
-**Volsync component:**
-
-Add to app `kustomization.yaml` components; in `ks.yaml` add `postBuild.substituteFrom:
-cluster-secrets`. Variables: `APP` (required), `VOLSYNC_PVC` (default: APP),
-`VOLSYNC_STORAGECLASS`/`VOLSYNC_SNAPSHOTCLASS` (default: ceph-block/csi-ceph-blockpool). For
-ceph-filesystem PVCs: set both to ceph-filesystem/csi-ceph-filesystem
-
-**Secrets priority:** envFrom > env.valueFrom > HelmRelease valuesFrom
-
-### Multi-Controller Apps
-
-For apps with multiple processes (main + worker + redis pattern):
-
-**Reference implementation:** `kubernetes/apps/default/immich/`
-
-- Define separate controllers for each process (immich, machine-learning, redis)
-- Each controller gets its own service with `controller:` reference
-- Use advancedMounts to map persistence per-controller: `{controller}: {container}: - path:`
-- Each controller can have independent strategy, replicas, and security context
-
-### Intel GPU (DRA)
-
-For apps requiring Intel GPU acceleration:
-
-**Reference implementation:** `kubernetes/apps/default/immich/` (machine-learning controller)
-
-- ks.yaml: Add `dependsOn: intel-gpu-resource-driver` (namespace: kube-system)
-- Pod: nodeSelector `feature.node.kubernetes.io/custom-intel-gpu: "true"`
-- Pod: resourceClaims with resourceClaimTemplateName referencing app-specific ResourceClaimTemplate
-- Container: resources.claims to request the GPU
-- Values: resourceClaimTemplates with deviceClassName: gpu.intel.com
-- OpenVINO: Set OPENVINO_DEVICE: GPU for hardware acceleration
-
-### Operational Workflows
-
-**GitOps flow:** Modify manifests -> User commits/pushes -> Flux auto-applies -> Optional just
-reconcile
-
-**User-only commands** (agents MUST NOT run these): `just reconcile`, `flux reconcile`, `helm
-template`, `just talos diff-config`/`just talos apply-node`. Use `hops flux values` and `hops flux
-defaults` instead of `helm show values`/`helm get values`. Standalone scripts:
-`./scripts/test-vrl.py` (VRL validation), `./scripts/icon-search.py` (dashboard icons),
-`./scripts/hass.sh` (Home Assistant API), `./scripts/qui.py` (QUI/qBittorrent management API),
-`./scripts/arrapi.py` (Sonarr/Radarr API: `get`/`put`/`post`/`delete` verbs, `--all`/`--type`
-instance targeting, `indexer list`/`fix-seeds` subcommands; env: `SECRET_DOMAIN`,
-`{SONARR,SONARR_ANIME,RADARR,RADARR_4K,RADARR_ANIME}_API_KEY`)
-
-**`paperless` CLI:** `./scripts/paperless.sh` (subcommands: doc, bulk, tag, type, correspondent,
-field, workflow, config). Run `--help` on the relevant subcommand before use.
-
-**talosctl access:** Read-only diagnostic subcommands (`get`, `version`, `services`, `dmesg`,
-`logs`, `health`, `inspect`, `time`, `etcd members`, `etcd status`, `etcd snapshot`, `netstat`) are
-permitted for agents. Mutating subcommands are denied via permissions.
-
-**UniFi management:** `unifly` (github:hyperb1iss/unifly, installed via mise) is the CLI for the
-UniFi Network controller. Env vars: `UNIFI_URL`, `UNIFI_API_KEY`, `UNIFI_SITE`, `UNIFI_INSECURE`,
-`UNIFI_OUTPUT`. Use `unifly` for firewall policies, networks, clients, zones, and settings; MUST NOT
-fall back to raw `curl` or MongoDB when `unifly` covers the operation. `unifly settings set <key>
-<field> <value>` uses the session API for site settings. Known limitation: the mDNS site setting
-(`unifly settings set mdns enabled_for_network_ids [...]`) silently no-ops via all API paths
-(Integration, legacy REST, session); mDNS VLAN scope changes MUST be made through the UniFi UI
-(Settings > Networks > Gateway mDNS Proxy). `./scripts/unifi-ssh.sh` runs commands on UniFi devices
-via SSH. The UDM at 192.168.1.1 runs MongoDB on port 27117 (database `ace`) for direct queries when
-`unifly` lacks coverage; prefer `unifly` first.
-
-**Conventional commits:**
-
-Type is determined by intent (what the change accomplishes), not by filename. Path patterns below
-identify unambiguous cases where a single type always applies; everything else requires reading the
-diff.
-
-The primary product of this repository is the cluster. `feat` and `fix` describe changes to the
-cluster's behavior (new apps, bug fixes, alert resolutions). Changes that only affect developer
-tooling, CI, or documentation are never `feat` or `fix` unless they accompany a cluster change in
-the same commit.
-
-Path-determined types (path alone decides):
-
-- ci: `.github/workflows/**`, `.justfiles/**`, .justfile
-- build: renovate.json5, `.renovate/**`
-- chore: .editorconfig, .gitignore, .yamllint.yaml, .markdownlint-cli2.yaml, .pre-commit-config.yaml
-- docs: `docs/**`, LICENSE, SECURITY.md, CODEOWNERS
-
-Intent-determined types (diff content decides):
-
-- `kubernetes/**`: feat (new app/service directory), fix (bug fixes, crash loops, probe failures,
-  resource issues, alert resolutions), refactor (reorganization, no behavior change)
-- `scripts/**`: chore (new script or capability), fix (bug fix that fixes cluster behavior)
-- `.opencode/**`: chore (new skill, agent, or command), fix (bug fix that fixes cluster behavior)
-- Root `*.md` (AGENTS.md, README.md, etc.): docs when prose-only; use the type matching the
-  co-changed domain when the markdown change accompanies code (e.g., adding a skill + its AGENTS.md
-  routing entry is chore, not docs)
-- Breaking (append `!` after scope): API/CRD upgrades, incompatible Helm upgrades, storage
-  migrations
-
-Scope format by domain:
-
-- `kubernetes/**`: app name from directory (e.g., `plex`, `bookstack`)
-- `scripts/**`: script name without extension (e.g., `hass`, `hops`)
-- `.opencode/**`: component name (e.g., skill name `home-assistant`, agent name `commit`)
-- `flux/**`, `talos/**`: component or subsystem name
-- Omit scope for repo-wide changes that span multiple domains
-
-Mixed-path commits: when a single commit spans multiple domains (e.g., a script + its AGENTS.md
-entry), use the type and scope of the primary change. The primary change is the one that provides
-the new behavior; supporting changes (docs updates, routing entries) are secondary.
-
-Examples: `fix(plex): resolve crash loop`, `feat(bookstack): add wiki documentation app`,
-`chore(home-assistant): add API integration skill`, `docs: update investigation template`
-
-### Environment and Infrastructure
-
-**Stack components:**
-
-- OS: Talos Linux
-- Orchestration: Kubernetes with Flux v2 GitOps
-- Secrets: SOPS with Age encryption, External Secrets Operator with Infisical
-- Storage: Rook Ceph (distributed), NFS from Nezuko, Garage S3
-- Automation: just, mise, talhelper
-
-**Alerting:**
-
-- Pushover: VMAlertmanager sends alerts to Pushover app for mobile notifications
-- Healthchecks.io: Dead man's switch; Watchdog alert pings external endpoint every 5 minutes. If
-  cluster or monitoring stack goes down, Healthchecks.io detects missing pings and alerts via
-  Pushover.
-
-**Network topology:**
-
-- Main subnet: 192.168.1.0/24
-- BGP subnet (Cilium LoadBalancers): 192.168.50.0/24
-- AT&T Fiber Gateway: BGW320-505 (IP passthrough to UDMP)
-- Gateway (Unifi UDMP): 192.168.1.1
-- Kubernetes API: 192.168.1.70
-- LoadBalancer IPs (Cilium IPAM): 192.168.50.71-.99 (infrastructure), 192.168.50.100+ (applications)
-
-**Cluster nodes:**
-
-- Control plane: hanekawa (192.168.1.63), marin (192.168.1.59), sakura (192.168.1.62)
-- Workers: lucy (192.168.1.54), nami (192.168.1.50)
-
-**Node storage devices:**
-
-Every node has two physical drives: `sda` (SATA, Talos system disk) and `nvme0n1` (NVMe, Ceph OSD).
-When interpreting disk metrics, `sda` is always the OS disk and `nvme0n1` is always the Ceph data
-disk. The `rbd*` devices are Ceph RBD block devices mapped by CSI (not physical disks).
-
-| Node     | sda (Talos)          | nvme0n1 (Ceph OSD)               |
-| -------- | -------------------- | -------------------------------- |
-| hanekawa | Intel S3700 400GB    | Samsung 970 EVO Plus 1TB (OSD.5) |
-| marin    | Intel S3700 400GB    | Samsung 970 EVO Plus 1TB (OSD.2) |
-| sakura   | Intel S3700 400GB    | Samsung 970 EVO Plus 1TB (OSD.4) |
-| lucy     | Intel S3700 400GB    | Crucial P3 2TB (OSD.3)           |
-| nami     | Intel S3700 400GB    | Samsung 990 PRO 2TB (OSD.0)      |
-
-**Storage backends:**
-
-- Rook Ceph: Distributed block/filesystem storage across cluster nodes
-- NFS (Nezuko 192.168.1.58): Media (100Ti), Photos (10Ti)
-- Garage S3 (192.168.1.58:3900): Region garage, per-app buckets (e.g., `immich-postgres-backups`,
-  `home-assistant-postgres-backups`, `outline-postgres-backups`)
-- Volsync: Kopia repository on NFS (Nezuko /mnt/user/volsync), shared single repository with per-app
-  isolation via snapshot identity
-- CloudNativePG: Barman WAL archiving to per-app S3 buckets (e.g., `s3://immich-postgres-backups`).
-  Each CNPG cluster MUST have its own GarageS3Bucket CR to avoid permission races when multiple CRs
-  target the same underlying bucket.
-- Ceph toolbox: `./scripts/hops.sh storage ceph status` (or `osd`, `io`)
-
-**`hops` CLI:** Run `./scripts/hops.sh --help` for domains, `./scripts/hops.sh <domain> --help` for
-commands. Key entry points for debugging: `./scripts/hops.sh app diagnose APP [-n NS]` (workload or
-gateway-only scope, flux status + pods + events + recent logs), `./scripts/hops.sh app pod APP [-n
-NS]` (per-pod drill-down with container state machine, previous-termination table, auto-fetched
-crash logs for restarted containers and failure logs for non-zero exit containers, and pod-scoped
-event timeline), `./scripts/hops.sh app unhealthy [NS]` (cluster-wide pod health check; shows all
-non-Running/non-Succeeded pods with status reason, or a one-liner when everything is healthy; use
-during and after infrastructure changes to monitor recovery), `./scripts/hops.sh db status` (all
-CNPG clusters: instances, phase, PDB status, backup config, pod placement with role/node, memory
-request/actual/limit, PVC sizes, last backup time), `./scripts/hops.sh backup status` (unified
-backup health: Volsync last sync times for all ReplicationSources plus CNPG scheduled backup results
-with schedule and last completion), and `./scripts/hops.sh debug route APP [-n NS]` (gateway request
-path trace: HTTPRoute, Gateway, ClientTrafficPolicy, BackendTrafficPolicy, SecurityPolicy,
-EnvoyProxy config, and recent envoy access log errors for the route's hostnames). Use `app pod`
-whenever a specific pod misbehaves (crashloops, startup races, image pull failures, terminated
-Jobs). Use `app unhealthy` as a quick cluster health scan before or after any change. Use `db
-status` for CNPG health checks, replica audits, PDB readiness, and resource usage across all
-database clusters. Use `backup status` for backup health audits. Use `debug route` when requests to
-an app fail at the gateway layer (503s, upload failures, timeouts, TLS issues). Use `./scripts/hops.sh
-app addr APP [-n NS]` whenever a manifest needs an in-cluster address; it matches operator-generated
-service names by substring and lists `service.namespace:port` plus any external HTTPRoute hostnames,
-so never grep manifests for a service address. `app diagnose` and
-`app pod` accept workload names, app labels, pod-name prefixes, or full pod names, including orphan
-pods whose parent workload has been deleted (TTL'd Jobs, manually removed controllers) and
-operator-managed pods without parent workloads (CNPG Clusters, etc.). `debug route` accepts app
-names, HTTPRoute names, or hostname substrings. `app diagnose --explain` prints the resolver trace,
-showing which resolvers were tried and what matched (useful for debugging resolution failures). `app
-types` lists every resolvable resource category with a sample name from the cluster.
-
-**`hops` verification:** Python script projects under `scripts/` carry no test suites. After any
-hops change, MUST exercise the affected commands against the live cluster (success and failure
-paths) before reporting done. MUST NOT add pytest or a `tests/` directory to any script project.
-
-### New App Checklist
-
-1. Create directory `kubernetes/apps/{namespace}/{app}/`
-2. Create ks.yaml with correct path, targetNamespace, dependencies
-3. Create kustomization.yaml listing all resources
-4. Create helmrelease.yaml with correct chartRef pattern
-5. Create pvc.yaml if stateful (match storage type to strategy)
-6. Create externalsecret.yaml if secrets needed
-7. Add ks.yaml to parent `kubernetes/apps/{namespace}/kustomization.yaml`
-8. Add secrets to Infisical: `just infisical add-secret /namespace/app/key "value"`
+Use the app name as scope for `kubernetes/**`, script name for `scripts/**`, component name for
+`.opencode/**`, and subsystem for `flux/**` or `talos/**`. Omit scope for repository-wide changes.
+For mixed paths, use the type and scope of the change that provides the behavior.

@@ -100,6 +100,9 @@ For single-document updates, `doc update` is still available:
 The `--tag` flag uses replace semantics: specified tags become the complete tag set. The inbox tag
 is automatically removed on any `doc update` call, signaling that classification is done.
 
+After applying a batch, re-run `classify inbox` and inspect any documents that remain. Re-read a
+sample of updated documents when the command reports an individual failure or unexpected count.
+
 ### 5. Handle taxonomy gaps
 
 If a document needs a correspondent, type, or tag that does not exist:

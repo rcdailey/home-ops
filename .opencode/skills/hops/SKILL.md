@@ -38,127 +38,18 @@ Ceph passes (storage infrastructure). Blocky DNS passes (cluster DNS infrastruct
 Run `./scripts/hops.sh <domain> --help` for command details. Do not maintain a parallel command list
 in documentation; the CLI is authoritative.
 
-```txt
-scripts/hops.sh          Shell wrapper (invokes uv run)
-scripts/hops/
-  hops/                  Package root (nested layout)
-    cli.py               Root group with auto-discovery
-  core/                  Shared helpers (domains import from here, never from each other)
-    runner.py            Subprocess runner (JSON, JSONL, kubectl, tools_curl, ceph_json)
-    format.py            Tables, key-value, truncation, age_str, human_bytes
-    time.py              TimeRange dataclass, time_options decorator
-    nodes.py             Node name/IP resolution (cached per session)
-    workload.py          Workload resolution (cascading match strategies)
-    resolve.py           Unified resolver registry (Workload, Gateway, Pod)
-    helm.py              Helm chart resolution and YAML value helpers
-  app/                   Package domain (auto-discovered via __init__.py cli attribute)
-  flux/                  Package domain
-  dns/                   Package domain
-  query/                 Package domain (nested subgroups for logs)
-  node.py, storage.py, debug.py, db.py, backup.py, validate.py  Flat domains
-```
+Domains may be flat modules or packages. Both expose a Click `cli`; package domains register their
+commands through `__init__.py`. Root auto-discovery requires no central command registry.
 
-Domains are either flat files (`node.py`) or package directories (`app/`). Both expose a `cli` click
-Group. Package domains split commands across submodules that register on the shared group.
-
-## Auto-Discovery
-
-`cli.py` scans the package for modules and packages exposing a `cli` attribute (a click Group or
-Command). Modules starting with `_` are skipped. Adding a new domain means creating a `.py` file or
-a package directory with a `cli` click group in its `__init__.py`; no registration needed. For
-package-based domains (app/, flux/, dns/), the `__init__.py` defines the click group and imports
-submodules that register commands on it.
-
-## Module Structure
-
-### File Size
-
-All files MUST stay under 400 lines. When a module approaches the limit, split into a package
-directory or extract logic into a sibling module.
-
-Splitting signals: a file has grown past 300 lines, a single function exceeds 80 lines, or two
-functions in the same file share no imports or data flow. Flat modules (single `.py` file) that
-cross 400 lines MUST be converted to a package directory.
-
-### Core Layer (`core/`)
-
-Shared logic lives in `core/`. Domain modules import from `core.*`, never from each other. Before
-writing a new utility function, check whether one already exists:
-
-| Concern | Module | Examples |
-| --- | --- | --- |
-| Formatting, display | `core.format` | `table`, `kv`, `age_str`, `format_timestamp`, `human_bytes`, `truncate` |
-| Subprocess, HTTP | `core.runner` | `run`, `run_json`, `kubectl_json`, `tools_curl`, `ceph_json` |
-| Time ranges | `core.time` | `TimeRange`, `time_options` |
-| Workload resolution | `core.workload` | `resolve_app`, `resolve_pods`, `find_running_pod`, `pick_pod_for_logs` |
-| Unified resolution | `core.resolve` | `resolve`, `ResolvedTarget`, `TargetKind`, resolver registry |
-| Node resolution | `core.nodes` | `get_all`, `resolve_ip`, `resolve_name` |
-| Gateway introspection | `app.gateway` | `find_httproute`, `fetch_gateway`, `fetch_envoy_proxy` |
-| Service matching | `app.endpoints` | `match_services` |
-| Helm chart resolution | `core.helm` | `resolve_hr`, `helm_chart_args` |
-| VM API | `query._vm` | `query_vm`, `query_vmalert`, `is_ignored_alert` |
-| VL API | `query._client` | `VictoriaLogsClient` |
-
-MUST NOT duplicate logic that already exists in a helper. Common violations to watch for:
-
-- Timestamp-to-age conversion: use `core.format.age_str`, not a local `_age_str`
-- Bytes-to-human formatting: use `core.format.human_bytes`, not a local `format_memory`
-- In-cluster HTTP: use `core.runner.tools_curl`, not hand-rolled `kubectl exec ... curl` commands
-- Workload-to-pod resolution: use `core.workload.resolve_pods`, not local pod-fetching logic
-- Target resolution: use `core.resolve.resolve()` for the unified resolver, not ad-hoc fallback
-  chains
-
-### Unified Resolver (`core/resolve.py`)
-
-The resolver eliminates ad-hoc fallback chains for target resolution. It tries three resolvers in
-priority order (Workload, Gateway, Pod) and returns a `ResolvedTarget` dataclass with the matched
-kind, name, namespace, optional workload, and pods.
-
-To add a new resource category (e.g., a new operator-managed resource), create a class implementing
-the `Resolver` protocol with a `try_resolve` method and append it to `_REGISTRY`.
-
-The `--explain` flag on `app diagnose` prints the resolver trace, showing which resolvers were tried
-and what matched.
-
-### In-Cluster HTTP
-
-All HTTP requests to in-cluster services (VictoriaMetrics, VictoriaLogs, future services) MUST use
-`core.runner.tools_curl`. This function executes curl via the rook-ceph-tools pod with standardized
-connection timeout, error classification (unreachable vs. failed), and one-line error output.
-Callers parse the returned string into JSON or use it raw.
-
-Do not construct kubectl exec curl commands directly in domain modules.
-
-### Domain Module Boundaries
-
-- One click group per domain package or module. Package domains (app/, flux/, dns/) split commands
-  across submodules that all register on the shared `cli` group from `__init__.py`.
-- Click decorators and argument wiring stay in command modules. Implementation bodies exceeding ~30
-  lines SHOULD move to a sibling module (see `app.pod_detail` for pod diagnostics).
-- When multiple click commands share the same resolve-then-exec pattern, extract a shared helper
-  (see `app.commands._exec_in_pod` for ls/cat/du).
-- Commands that share 80%+ of their body MUST extract a shared implementation parameterized by the
-  difference (see `dns.render.query_dns_logs` for logs/blocked).
-
-### Data Fetching Discipline
-
-- MUST NOT fetch the same Kubernetes resource twice in one command. Store the result and reuse it.
-- When a command correlates multiple resources (e.g., HTTPRoute + Gateway + policies), fetch each
-  once and pass the data dict to helper functions rather than re-fetching inside helpers.
-- Tab-delimited or structured CLI output (psql, talosctl) SHOULD use a generic parser parameterized
-  by field names, not per-query parser functions.
-
-### SQL Safety
-
-The `dns/psql.py` module constructs SQL from user input for psql queries. All user-provided values
-(client names, domain patterns, timestamps) MUST be escaped via `sql_escape` before interpolation
-into SQL strings.
-
-### Alias and Redirect Commands
-
-Do not create commands that just delegate to another command without adding value. If `hops storage
-disks` would do exactly what `hops node disks` does, the command should not exist. Every command
-MUST add correlation, heuristics, or context beyond what the target already provides.
+- Keep files below 400 lines. Split a module before unrelated workflows accumulate in it.
+- Put shared logic in `core/`; domain modules do not import from one another.
+- Reuse helpers from `core.format`, `core.runner`, `core.time`, `core.nodes`, `core.workload`,
+  `core.resolve`, and `core.helm` instead of creating local equivalents.
+- Use `core.runner.tools_curl` for in-cluster HTTP.
+- Fetch each Kubernetes resource once per command and pass the result to helpers.
+- Escape every user-provided DNS query value with `dns.psql.sql_escape`.
+- Keep Click wiring in command modules; move substantial implementations into sibling modules.
+- Do not add aliases that only delegate to another command.
 
 ## Design Principles
 
@@ -198,36 +89,6 @@ Reference implementation: `hops app pod` (implemented in `app/pod_detail.py`). O
 target (workload or orphan pod), emits pod summary, container state machine, previous-termination
 table, auto-fetched `--previous` logs for each restarted container, and pod-scoped events. That is
 the bar.
-
-### Stewardship / Audit Obligation
-
-Loading this skill carries an obligation beyond the immediate task: passthrough drift in
-`scripts/hops/` MUST be audited and fixed even when unrelated to the reason the skill was loaded.
-The no-passthrough rule is a stewardship discipline, not a code-review checkbox; without active
-maintenance it decays into an aspirational comment while the codebase fills with thin wrappers.
-
-When this skill is loaded for any reason, MUST run this audit pass in the current session:
-
-1. MUST scan the domain module being edited plus one adjacent module in `scripts/hops/` for the
-   signals in the AGENTS.md `hops` stewardship obligation (thin wrappers, missing correlation,
-   strict resolvers rejecting reasonable edge cases, repeated call patterns that should be one
-   command).
-2. MUST fix bounded drift inline (single function, single module, clear intent).
-3. Drift requiring broader refactor MUST be surfaced explicitly in the session response so the user
-   can prioritize. MUST NOT silently widen scope. MUST NOT defer with a "TODO for later" that will
-   never be noticed.
-4. MUST cap audit-driven refactors at two per session. The goal is steady erosion of drift, not a
-   single-session rewrite that destabilizes the tool.
-
-A passthrough caught during an unrelated session is more valuable than a perfect refactor delayed
-until someone happens to notice. Err toward acting.
-
-The following rationalizations for skipping the audit MUST be rejected:
-
-- "The user did not ask for it." The AGENTS.md directive does; that is the mandate.
-- "It is out of scope for this change." Stewardship is cross-cutting by design.
-- "It is only a small passthrough; it is fine." Small passthroughs are how the rule dies.
-- "I will open a follow-up." Follow-ups without user action die in the backlog.
 
 ### Read-Only by Design
 

@@ -24,33 +24,6 @@ domain.
 
 Run `./scripts/hops.sh dns --help` for full usage.
 
-### Quick Reference
-
-```bash
-# Search: who queried a domain recently?
-./scripts/hops.sh dns search homedepot -f 24h
-
-# Logs: all queries from a specific client (by IP, name, or VLAN)
-./scripts/hops.sh dns logs -c 192.168.3.40 -f 1h
-./scripts/hops.sh dns logs -c pixel -f 1h
-
-# Blocked: only blocked queries for a client
-./scripts/hops.sh dns blocked -c 192.168.3.40 -f 1h
-
-# Combine filters
-./scripts/hops.sh dns logs -c 192.168.3.40 -d homedepot -f 2h
-
-# VLAN shorthand (lan, iot, kids, guest, work, cameras)
-./scripts/hops.sh dns blocked -c kids -f 24h
-
-# Aggregations: top queried / top blocked domains (per client or fleet-wide)
-./scripts/hops.sh dns top-domains -c 192.168.3.200 -f 168h -l 100
-./scripts/hops.sh dns top-blocked -c kids -f 24h
-
-# Machine-readable
-./scripts/hops.sh dns blocked --json -c 192.168.3.40
-```
-
 The `-c/--client` flag accepts: partial IP, partial device name (from reverse DNS), CIDR notation,
 or VLAN name. All matching is case-insensitive.
 
@@ -118,17 +91,6 @@ Read `kubernetes/apps/dns-private/blocky/data/config.yaml` for current:
 - VLAN-to-subnet mappings and which block groups apply to each
 - Denylist URLs and their group names
 - Any existing allowlist entries
-
-## Unimplemented Subcommands
-
-The following subcommands were deferred. If you need one during diagnosis, implement it in
-`./scripts/hops.sh dns` following the patterns of the existing subcommands, then update this skill
-file to move it from this list to the Quick Reference section above.
-
-- **top-clients**: Top clients by query volume. Flags: `-f`, `-l`. GROUP BY `client_ip`,
-  `client_name`, ORDER BY count DESC.
-- **slow**: Queries exceeding a duration threshold. Flags: `-f`, `-c`, `--threshold` (milliseconds,
-  default 500). Filter `duration_ms >= threshold`, ORDER BY `duration_ms` DESC.
 
 ## Pattern Detection
 

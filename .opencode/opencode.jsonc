@@ -23,8 +23,8 @@
       "*.local.*": "deny"
     },
     "bash": {
-      // override from global ask permission
-      "*git push*": "allow",
+      "*git commit*": "ask",
+      "*git push*": "ask",
 
       "kubectl apply*": "deny",
       "kubectl apply -f /tmp/*": "ask",
@@ -57,6 +57,7 @@
       "flux reconcile*": "deny",
 
       "helm install*": "deny",
+      "helm template*": "deny",
       "helm upgrade*": "deny",
       "helm uninstall*": "deny",
       "helm rollback*": "deny",
