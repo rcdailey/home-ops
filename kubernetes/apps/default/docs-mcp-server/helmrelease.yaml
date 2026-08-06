@@ -49,7 +49,7 @@ spec:
           app:
             image:
               repository: &image ghcr.io/arabold/docs-mcp-server
-              tag: &tag 2.4.5
+              tag: &tag 2.5.0
             env:
               TZ: America/Chicago
               DOCS_MCP_CONFIG: /config/config.yaml
