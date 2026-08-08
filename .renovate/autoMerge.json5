@@ -2,6 +2,13 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   packageRules: [
     {
+      description: "Auto-merge pre-commit patch updates",
+      matchManagers: ["pre-commit"],
+      automerge: true,
+      automergeType: "pr",
+      matchUpdateTypes: ["patch"],
+    },
+    {
       description: "Auto-merge GitHub Actions",
       matchManagers: ["github-actions"],
       automerge: true,
