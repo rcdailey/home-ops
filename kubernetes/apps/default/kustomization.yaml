@@ -7,7 +7,6 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
-- ./bentopdf/ks.yaml
 - ./claude-proxy/ks.yaml
 - ./forgejo/ks.yaml
 - ./homepage/ks.yaml
