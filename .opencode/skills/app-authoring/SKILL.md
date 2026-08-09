@@ -14,7 +14,7 @@ invariants. Do not introduce a pattern from another repository when a local exam
 
 ## Choose the example
 
-- Start with `kubernetes/apps/default/donetick/` for an app-template workload.
+- Start with `kubernetes/apps/default/bentopdf/` for an app-template workload.
 - Use `kubernetes/apps/media/plex/` for `configMapGenerator` and `config/` files.
 - Use `kubernetes/apps/default/headlamp/` for a single-use external HelmRepository chart.
 - Use `kubernetes/apps/default/immich/` for multiple controllers or Intel GPU DRA.

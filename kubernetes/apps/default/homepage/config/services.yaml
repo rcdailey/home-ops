@@ -42,11 +42,6 @@
       href: https://docs.${SECRET_DOMAIN}/
       siteMonitor: http://paperless-ngx-app.default:8000
 
-  - Donetick:
-      icon: donetick
-      href: https://tasks.${SECRET_DOMAIN}/
-      siteMonitor: http://donetick.default:2021/api/v1/ping
-
   - Forgejo:
       icon: forgejo
       href: https://git.${SECRET_DOMAIN}/

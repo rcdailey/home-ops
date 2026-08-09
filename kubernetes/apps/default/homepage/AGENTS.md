@@ -21,7 +21,7 @@ directly without URL or extension:
 ### Verification
 
 ```bash
-./scripts/icon-search.py donetick      # Check if icon exists
+./scripts/icon-search.py paperless-ngx # Check if icon exists
 ./scripts/icon-search.py --url plex    # Get CDN URL for debugging
 ```
 

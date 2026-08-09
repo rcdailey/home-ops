@@ -9,7 +9,6 @@ components:
 resources:
 - ./bentopdf/ks.yaml
 - ./claude-proxy/ks.yaml
-- ./donetick/ks.yaml
 - ./forgejo/ks.yaml
 - ./homepage/ks.yaml
 - ./immich/ks.yaml
