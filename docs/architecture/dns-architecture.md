@@ -2,9 +2,9 @@
 
 ## Overview
 
-This document describes the DNS architecture and resolution flow for services running in the
-cluster. The architecture uses Blocky for DNS filtering with CIDR-based client groups and
-conditional forwarding for local domain resolution.
+This document describes DNS resolution for home devices, internet clients, and cluster workloads.
+Blocky filters home device traffic, while CoreDNS handles cluster workloads without depending on
+Blocky. Both use UDMP records for local domain resolution.
 
 ## Design Challenges
 
@@ -14,6 +14,7 @@ The DNS architecture solves two fundamental problems:
   local cluster gateways instead of routing through external Cloudflare infrastructure
 - **Subnet-specific filtering**: Different VLANs require distinct content filtering policies,
   demanding DNS server solutions that preserve client source IPs
+- **Cluster independence**: Cluster DNS must resolve local services without depending on Blocky
 
 ## DNS Resolution Flow
 
@@ -42,13 +43,19 @@ flowchart LR
 
     subgraph ClusterServices["Cluster Services"]
         direction TB
+        Workload[Cluster Workload]
+        CoreDNS[CoreDNS<br/>Split DNS]
         ExtGW[External Gateway<br/>192.168.50.73<br/>Public Services]
         IntGW[Internal Gateway<br/>192.168.50.72<br/>Private Services]
+
+        Workload --> CoreDNS
     end
 
     %% Internal resolution paths
     UDMP -->|"service.domain.com<br/>CNAME: external.domain.com"| ExtGW
     UDMP -->|"internal-app.domain.com<br/>CNAME: internal.domain.com"| IntGW
+    CoreDNS -->|"*.domain.com<br/>A/CNAME only"| UDMP
+    CoreDNS -->|"Other public names"| Upstream
 
     %% External resolution path
     CFTunnel --> ExtGW
@@ -60,7 +67,7 @@ flowchart LR
 
     class Client,Blocky,UDMP,Upstream internal
     class ExternalClient,CloudflareDNS,CFTunnel external
-    class ExtGW,IntGW services
+    class Workload,CoreDNS,ExtGW,IntGW services
 ```
 
 ## External-DNS Integration Architecture
@@ -159,6 +166,8 @@ The architecture implements a dual-path DNS resolution system:
 
 - **Internal Path**: Home devices connect directly to Blocky for filtering and conditional
   forwarding to local DNS records
+- **Cluster Path**: Workloads use CoreDNS, which forwards local domain queries directly to UDMP and
+  public queries to Quad9
 - **External Path**: Internet clients resolve through Cloudflare DNS to tunnel endpoints
 - **Client IP Preservation**: Direct connections to Blocky enable real source IP visibility for
   CIDR-based filtering
@@ -204,6 +213,12 @@ forwarding. Deployed as a 2-replica Deployment with pod anti-affinity for node d
 Provider-agnostic LoadBalancer service that separates infrastructure from application concerns,
 enabling zero-downtime DNS provider switching.
 
+### CoreDNS
+
+CoreDNS is the independent resolver for cluster workloads. It forwards `${SECRET_DOMAIN}` A and
+CNAME queries to UDMP, returns NODATA for AAAA and HTTPS queries in that zone, and sends other
+public queries directly to Quad9. Taking Blocky down does not affect cluster DNS.
+
 ### Envoy Gateway Infrastructure
 
 Dual gateway architecture for service exposure:
@@ -235,6 +250,15 @@ When internet clients query DNS through Cloudflare:
 
 1. **Service domains** (`service.domain.com`): Cloudflare DNS to tunnel endpoint
 
+### Cluster Workload Resolution
+
+When a pod queries CoreDNS:
+
+1. **Local domains** (`*.domain.com`): CoreDNS returns NODATA for AAAA and HTTPS queries, then
+   forwards A and CNAME queries to UDMP
+2. **Gateway selection**: UDMP records direct each hostname to the external or internal gateway VIP
+3. **Internet domains** (`google.com`): CoreDNS forwards directly to Quad9
+
 ### Client IP Preservation
 
 Direct client connections to Blocky eliminate proxy masking:
@@ -263,7 +287,7 @@ Blocky applies subnet-specific filtering via `clientGroupsBlock` based on client
 - **Stateless HA**: Independent replicas with no coordination; Cilium random backend selection
 - **Pure GitOps**: YAML-only configuration with no imperative state or sync tooling
 - **Zero-Downtime Capable**: Infrastructure changes without service interruption
-- **IPv6 Leak Prevention**: `filterUnmappedTypes` blocks AAAA/HTTPS before UDMP forwarding
+- **IPv6 Leak Prevention**: Blocky and CoreDNS block AAAA/HTTPS before UDMP forwarding
 - **Query Logging**: PostgreSQL via CloudNativePG for structured query analysis
 - **Tunnel Compatible**: Proper CNAME chains for Cloudflare tunnel architecture
 - **Intelligent Forwarding**: Conditional forwarding for local domain resolution
@@ -271,6 +295,16 @@ Blocky applies subnet-specific filtering via `clientGroupsBlock` based on client
 ---
 
 ## Implementation Details
+
+### CoreDNS Configuration
+
+**Deployment**: `kubernetes/apps/kube-system/coredns/`
+
+- **Cluster DNS address**: `10.43.0.10`
+- **Local domain upstream**: UDMP at `192.168.1.1`
+- **Public upstreams**: Quad9 over TLS
+- **Local domain safeguards**: Authoritative NODATA responses for AAAA and HTTPS queries
+- **Blocky dependency**: None
 
 ### Blocky Configuration
 
@@ -493,6 +527,14 @@ Android -> Cloudflare DNS -> Returns Cloudflare IPs -> Tunnel -> .73 -> K8s exte
 MacBook -> Blocky (.71) -> Returns .72 -> Direct connection to .72 -> K8s internal gateway
 ```
 
+### Cluster Workload Access
+
+**Cluster Workload to Routed Service**:
+
+```txt
+Pod -> CoreDNS -> UDMP -> Returns .72 or .73 -> K8s gateway -> Service
+```
+
 ## DNS Record Distribution
 
 ### External HTTPRoutes
@@ -528,6 +570,7 @@ HTTPRoutes with `parentRefs: internal` create records only locally:
 - **Provider abstraction**: Use `app.kubernetes.io/component: dns-server` for service selection
 - **Zero-downtime migrations**: Enable seamless DNS provider switching
 - **Infrastructure separation**: Decouple dns-gateway service from dns-server applications
+- **Resolver independence**: Keep CoreDNS on direct UDMP and Quad9 paths instead of Blocky
 
 [opencloud-ipv6]: /docs/investigations/opencloud-desktop-ipv6-auth-failure-2026-01-25.md
 [cilium-27800]: https://github.com/cilium/cilium/issues/27800

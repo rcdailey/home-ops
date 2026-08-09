@@ -59,6 +59,16 @@ spec:
           fallthrough in-addr.arpa ip6.arpa
       - name: autopath
         parameters: "@kubernetes"
+      - name: template
+        parameters: IN AAAA ${SECRET_DOMAIN}
+        configBlock: |
+          rcode NOERROR
+      - name: template
+        parameters: IN HTTPS ${SECRET_DOMAIN}
+        configBlock: |
+          rcode NOERROR
+      - name: forward
+        parameters: ${SECRET_DOMAIN} 192.168.1.1
       - name: forward
         parameters: . tls://9.9.9.9 tls://149.112.112.112
         configBlock: |
