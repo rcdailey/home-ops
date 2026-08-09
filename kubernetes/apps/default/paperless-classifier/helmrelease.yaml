@@ -43,6 +43,7 @@ spec:
             image:
               repository: ghcr.io/rcdailey/paperless-classifier
               tag: latest
+              pullPolicy: Always
             env:
               PAPERLESS_URL: http://paperless-ngx-app.default:8000
             envFrom:
