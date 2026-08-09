@@ -45,8 +45,6 @@ spec:
               tag: latest
             env:
               PAPERLESS_URL: http://paperless-ngx-app.default:8000
-              CLAUDE_PROXY_URL: http://claude-proxy.default:8317/v1
-              CLAUDE_PROXY_API_KEY: sk-claude-proxy-internal
             envFrom:
             - secretRef:
                 name: paperless-classifier-secret

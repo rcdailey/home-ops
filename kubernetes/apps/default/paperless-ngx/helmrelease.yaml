@@ -89,13 +89,6 @@ spec:
               PAPERLESS_REDIRECT_LOGIN_TO_SSO: "true"
               PAPERLESS_DISABLE_REGULAR_LOGIN: "true"
 
-              # AI/LLM via claude-proxy (OpenAI-compatible proxy to Claude Max)
-              PAPERLESS_AI_ENABLED: "true"
-              PAPERLESS_AI_LLM_BACKEND: openai-like
-              PAPERLESS_AI_LLM_MODEL: claude-sonnet-4-6
-              PAPERLESS_AI_LLM_ENDPOINT: http://claude-proxy.default:8317/v1
-              PAPERLESS_AI_LLM_API_KEY: sk-claude-proxy-internal
-
             envFrom:
             - secretRef:
                 name: paperless-ngx-secret
