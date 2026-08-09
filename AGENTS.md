@@ -86,6 +86,11 @@ using the external `probe_success` metric. The API server has `HPAScaleToZero` e
 
 ## Tier 2: Conventions
 
+### Acceptance
+
+Changes in this repository MUST NOT receive an independent acceptance audit. The primary validates
+changes directly with repository checks.
+
 ### Application configuration
 
 - Include the appropriate `# yaml-language-server:` directive in YAML files.
