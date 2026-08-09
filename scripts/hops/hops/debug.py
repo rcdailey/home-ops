@@ -20,6 +20,7 @@ from hops.app.gateway import (
 )
 from hops.core.format import info, kv, section, table, truncate
 from hops.core.runner import run
+from hops.core.workload import find_running_pod, resolve_app
 
 
 def _pod_name(prefix: str) -> str:
@@ -32,9 +33,14 @@ def _run_ephemeral(
     *,
     name: str,
     namespace: str = "default",
+    node: str | None = None,
     timeout: int = 30,
 ) -> None:
     """Create a pod, wait for completion, capture logs, clean up."""
+    pod_spec: dict[str, object] = {"terminationGracePeriodSeconds": 0}
+    if node:
+        pod_spec["nodeName"] = node
+
     create_args = [
         "kubectl",
         "run",
@@ -46,7 +52,7 @@ def _run_ephemeral(
         namespace,
         "--override-type=strategic",
         "--overrides",
-        '{"spec":{"terminationGracePeriodSeconds":0}}',
+        json.dumps({"spec": pod_spec}),
         "--command",
         "--",
     ] + command
@@ -127,7 +133,8 @@ def cli():
 @cli.command()
 @click.argument("hostname")
 @click.option("-n", "--namespace", default="default", help="Namespace to run in")
-def dns(hostname: str, namespace: str):
+@click.option("--node", help="Run on a specific node")
+def dns(hostname: str, namespace: str, node: str | None):
     """DNS lookup via ephemeral busybox pod."""
     name = _pod_name("dns")
     lookup = hostname
@@ -141,6 +148,7 @@ def dns(hostname: str, namespace: str):
         command=["nslookup", lookup],
         name=name,
         namespace=namespace,
+        node=node,
     )
 
 
@@ -148,26 +156,108 @@ def dns(hostname: str, namespace: str):
 @click.argument("url")
 @click.option("-n", "--namespace", default="default", help="Namespace to run in")
 @click.option("--method", default="GET", help="HTTP method")
-def curl(url: str, namespace: str, method: str):
+@click.option("--node", help="Run on a specific node")
+@click.option("--family", type=click.Choice(["4", "6"]), help="Force IP family")
+def curl(
+    url: str,
+    namespace: str,
+    method: str,
+    node: str | None,
+    family: str | None,
+):
     """HTTP request via ephemeral curlimages/curl pod."""
     name = _pod_name("curl")
     info(f"{method} {url} ...")
-    _run_ephemeral(
-        image="curlimages/curl:latest",
-        command=[
-            "curl",
-            "-sS",
+    command = ["curl", "-sS"]
+    if family:
+        command.append(f"-{family}")
+    command.extend(
+        [
             "-X",
             method,
             "-o",
             "/dev/null",
             "-w",
-            "HTTP %{http_code} (%{time_total}s, %{size_download} bytes)\n",
+            (
+                "HTTP %{http_code} ip=%{remote_ip} "
+                "(%{time_total}s, %{size_download} bytes)\n"
+            ),
             url,
-        ],
+        ]
+    )
+    _run_ephemeral(
+        image="curlimages/curl:latest",
+        command=command,
         name=name,
         namespace=namespace,
+        node=node,
     )
+
+
+@cli.command("app-url")
+@click.argument("app")
+@click.argument("url")
+@click.option(
+    "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
+)
+@click.option("-c", "--container", default=None, help="Container name")
+def app_url(
+    app: str,
+    url: str,
+    namespace: str | None,
+    container: str | None,
+):
+    """Probe DNS, TCP, and HTTP from an application's own network namespace."""
+    workload = resolve_app(app, namespace)
+    if not workload:
+        info(f"error: could not find app {app!r}")
+        raise SystemExit(1)
+    pod = find_running_pod(workload)
+    if not pod:
+        info(f"error: no running pods for {workload.name!r}")
+        raise SystemExit(1)
+
+    script = """
+import socket
+import sys
+from urllib.parse import urlsplit
+
+import requests
+
+url = sys.argv[1]
+host = urlsplit(url).hostname
+if not host:
+    raise SystemExit("error: URL has no hostname")
+addresses = socket.getaddrinfo(host, 443, socket.AF_UNSPEC, socket.SOCK_STREAM)
+for family, _, _, _, address in addresses:
+    label = "IPv6" if family == socket.AF_INET6 else "IPv4"
+    sock = socket.socket(family, socket.SOCK_STREAM)
+    sock.settimeout(3)
+    try:
+        sock.connect(address)
+        print(f"tcp {label} {address[0]}: ok")
+    except OSError as exc:
+        print(f"tcp {label} {address[0]}: {exc}")
+    finally:
+        sock.close()
+try:
+    response = requests.get(url, timeout=5)
+    print(f"http {response.status_code} bytes={len(response.content)}")
+except requests.RequestException as exc:
+    print(f"http error: {exc}")
+    raise SystemExit(1)
+""".strip()
+    args = ["kubectl", "exec", pod, "-n", workload.namespace]
+    if container:
+        args.extend(["-c", container])
+    args.extend(["--", "python", "-c", script, url])
+    result = run(args, timeout=30, check=False)
+    if result.stdout:
+        click.echo(result.stdout.rstrip())
+    if result.returncode != 0:
+        error = (result.stderr or "probe failed").strip().splitlines()[-1]
+        info(f"error: {error}")
+        raise SystemExit(1)
 
 
 @cli.command()
