@@ -9,6 +9,8 @@
 #   -i           case-insensitive filter (applies to -f/-F)
 #   -n N         limit output to first N lines (remote head -n N)
 #
+# Set UNIFI_SSH_USER to override the controller's default device SSH user (admin).
+#
 # Filters exist because ripgrep is not available on UniFi devices; this wrapper
 # lets the caller avoid typing 'grep' / 'head' in the local command string.
 #
@@ -22,6 +24,7 @@ filter=""
 filter_v=""
 nocase=""
 head_n=""
+ssh_user="${UNIFI_SSH_USER:-admin}"
 
 while getopts "f:F:in:" opt; do
   case "$opt" in
@@ -55,5 +58,5 @@ ssh \
   -o ServerAliveInterval=5 \
   -o ServerAliveCountMax=2 \
   -o LogLevel=ERROR \
-  "root@${host}" \
-  "timeout 15 sh -c $(printf '%q' "$remote_cmd") 2>&1"
+  "${ssh_user}@${host}" \
+  "timeout -t 15 sh -c $(printf '%q' "$remote_cmd") 2>&1"
