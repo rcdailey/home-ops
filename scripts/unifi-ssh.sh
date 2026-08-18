@@ -51,6 +51,12 @@ if [[ -n "$head_n" ]]; then
   remote_cmd+=" | head -n $head_n"
 fi
 
+quoted_remote_cmd="$(printf '%q' "$remote_cmd")"
+legacy_timeout='timeout --help 2>&1 | grep -q -- "-t SECS"'
+remote_timeout="timeout 15 sh -c $quoted_remote_cmd"
+legacy_remote_timeout="timeout -t 15 sh -c $quoted_remote_cmd"
+remote_exec="if $legacy_timeout; then $legacy_remote_timeout; else $remote_timeout; fi"
+
 ssh \
   -o StrictHostKeyChecking=no \
   -o BatchMode=yes \
@@ -59,4 +65,4 @@ ssh \
   -o ServerAliveCountMax=2 \
   -o LogLevel=ERROR \
   "${ssh_user}@${host}" \
-  "timeout -t 15 sh -c $(printf '%q' "$remote_cmd") 2>&1"
+  "$remote_exec 2>&1"
