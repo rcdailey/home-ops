@@ -2,10 +2,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 components:
-- ../../../components/volsync
+- ../../../../components/volsync
 resources:
 - ./externalsecret.yaml
-- ./pocketidinstance.yaml
 - ./httproutefilter.yaml
 - ./pvc.yaml
 - ./usergroups.yaml

@@ -10,7 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: pocket-id-operator
   interval: 1h
-  path: ./kubernetes/apps/default/pocket-id-operator
+  path: ./kubernetes/apps/default/pocket-id/operator
   prune: true
   sourceRef:
     kind: GitRepository

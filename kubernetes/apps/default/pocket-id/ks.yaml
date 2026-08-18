@@ -10,7 +10,7 @@ spec:
     labels:
       app.kubernetes.io/name: pocket-id
   interval: 1h
-  path: ./kubernetes/apps/default/pocket-id
+  path: ./kubernetes/apps/default/pocket-id/resources
   prune: true
   sourceRef:
     kind: GitRepository

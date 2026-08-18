@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://github.com/aclerici38/pocket-id-operator/releases/latest/download/helmrelease_v2_pocket-id-operator.json
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pocket-id-operator
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: pocket-id-operator
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    pocket-id-instance:
+      instance:
+        enabled: true
+        name: pocket-id
+        spec:
+          annotations:
+            reloader.stakater.com/auto: "true"
+          image: ghcr.io/pocket-id/pocket-id:v2.13.0
+          appUrl: https://auth.${SECRET_DOMAIN}
+          timezone: America/Chicago
+          encryptionKey:
+            valueFrom:
+              secretKeyRef:
+                name: pocket-id-secret
+                key: ENCRYPTION_KEY
+          persistence:
+            enabled: true
+            existingClaim: pocket-id
+          route:
+            enabled: true
+            parentRefs:
+            - name: external
+              namespace: network
+              sectionName: https
+            template:
+              rules:
+              - matches:
+                - path:
+                    type: PathPrefix
+                    value: /setup
+                - path:
+                    type: PathPrefix
+                    value: /signup/setup
+                filters:
+                - type: ExtensionRef
+                  extensionRef:
+                    group: gateway.envoyproxy.io
+                    kind: HTTPRouteFilter
+                    name: pocket-id-block-setup
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          livenessProbe:
+            exec:
+              command: [/app/pocket-id, healthcheck]
+          podSecurityContext:
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+          containerSecurityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
