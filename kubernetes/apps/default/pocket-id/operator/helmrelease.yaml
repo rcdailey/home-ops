@@ -25,7 +25,7 @@ spec:
         spec:
           annotations:
             reloader.stakater.com/auto: "true"
-          image: ghcr.io/pocket-id/pocket-id:v2.13.0
+          image: ghcr.io/pocket-id/pocket-id:v2.14.0
           appUrl: https://auth.${SECRET_DOMAIN}
           timezone: America/Chicago
           encryptionKey:
