@@ -31,8 +31,8 @@ from hops.core.runner import run
 from hops.core.workload import (
     Workload,
     find_running_pod,
-    pick_pod_for_logs,
     resolve_pods,
+    select_pods_for_logs,
     suggest_near_matches,
 )
 
@@ -133,7 +133,7 @@ def logs(
     grep: str | None,
     after_context: int,
 ):
-    """Pod logs for an app. Auto-selects the first matching pod.
+    """Pod logs for every running replica of an app.
 
     With --grep, fetches all logs in the time window and filters by
     regex pattern (removes --tail limit so matches are not missed).
@@ -144,38 +144,46 @@ def logs(
     if not result:
         _not_found(app, namespace)
     ns, pods_list = result
-    chosen = pick_pod_for_logs(pods_list)
+    chosen_pods = select_pods_for_logs(pods_list)
+
+    if previous and not container:
+        for chosen in chosen_pods:
+            pod = chosen["metadata"]["name"]
+            output = previous_container_logs(chosen, ns, lines)
+            if output is None:
+                info(f"No previous container instances found for {pod}")
+                continue
+            if grep:
+                output = _grep_logs(output, grep, after_context, lines)
+            click.echo(output)
+        return
+
+    for chosen in chosen_pods:
+        _show_pod_logs(
+            chosen, ns, container, since, lines, previous, grep, after_context
+        )
+
+
+def _show_pod_logs(
+    chosen: dict,
+    namespace: str,
+    container: str | None,
+    since: str,
+    lines: int,
+    previous: bool,
+    grep: str | None,
+    after_context: int,
+) -> None:
+    """Fetch and display logs for one resolved pod."""
     pod = chosen["metadata"]["name"]
     phase = chosen.get("status", {}).get("phase", "?")
     terminated = phase in ("Succeeded", "Failed")
-
-    if previous and not container:
-        output = previous_container_logs(chosen, ns, lines)
-        if output is None:
-            info(f"No previous container instances found for {pod}")
-            return
-        if grep:
-            output = _grep_logs(output, grep, after_context, lines)
-        click.echo(output)
-        return
-
-    args = [
-        "kubectl",
-        "logs",
-        pod,
-        "-n",
-        ns,
-    ]
-    # With grep, fetch all logs in the window (no tail limit)
+    args = ["kubectl", "logs", pod, "-n", namespace]
     if not grep:
         args.append(f"--tail={lines}")
-    # --since is meaningless for --previous or terminated pods
     if not previous and not terminated:
         args.append(f"--since={since}")
-    if container:
-        args.extend(["-c", container])
-    else:
-        args.append("--all-containers")
+    args.extend(["-c", container] if container else ["--all-containers"])
     if previous:
         args.append("--previous")
 
@@ -186,21 +194,20 @@ def logs(
         return
 
     output = result.stdout.strip()
-
     if grep:
         output = _grep_logs(output, grep, after_context, lines)
-
-    if output:
-        info("note: prefer 'hops query logs' for apps with Vector support")
-        container_hint = f", container={container}" if container else ""
-        scope = "since boot" if terminated else f"since {since}"
-        grep_hint = f", grep={grep!r}" if grep else ""
-        info(f"--- {pod} [{phase}] ({scope}{container_hint}{grep_hint}) ---")
-        click.echo(output)
-    else:
+    if not output:
         window = "in this container" if terminated else f"in the last {since}"
         extra = f" matching {grep!r}" if grep else ""
         info(f"No logs from {pod} [{phase}] {window}{extra}")
+        return
+
+    info("note: prefer 'hops query logs' for apps with Vector support")
+    container_hint = f", container={container}" if container else ""
+    scope = "since boot" if terminated else f"since {since}"
+    grep_hint = f", grep={grep!r}" if grep else ""
+    info(f"--- {pod} [{phase}] ({scope}{container_hint}{grep_hint}) ---")
+    click.echo(output)
 
 
 def _grep_logs(output: str, pattern: str, after_context: int, max_lines: int) -> str:

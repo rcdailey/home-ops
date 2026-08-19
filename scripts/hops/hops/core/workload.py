@@ -227,17 +227,21 @@ def resolve_pods(
     return orphans[0]["metadata"]["namespace"], orphans
 
 
-def pick_pod_for_logs(pods: list[dict]) -> dict:
-    """Pick best pod for reading logs. Prefers Running > Succeeded > Failed.
+def select_pods_for_logs(pods: list[dict]) -> list[dict]:
+    """Select every running replica, or the best terminated pod.
 
-    Input list must be newest-first; stable sort preserves that within a
-    phase tier.
+    Input must be newest-first. Reading every running replica avoids blind
+    spots in load-balanced workloads without mixing in stale ReplicaSet pods.
     """
+    running = [pod for pod in pods if pod.get("status", {}).get("phase") == "Running"]
+    if running:
+        return running
+
     phase_priority = {"Running": 0, "Succeeded": 1, "Failed": 2}
-    return min(
-        pods,
-        key=lambda p: phase_priority.get(p.get("status", {}).get("phase", ""), 3),
+    chosen = min(
+        pods, key=lambda p: phase_priority.get(p.get("status", {}).get("phase", ""), 3)
     )
+    return [chosen]
 
 
 def find_running_pod(wl: Workload) -> str | None:
