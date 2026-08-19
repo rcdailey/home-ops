@@ -61,6 +61,56 @@ def disks(node: str | None):
     table(["NODE", "DEVICE", "SIZE", "TRANSPORT", "MODEL", "ROLE"], rows)
 
 
+@cli.command("audit-logs")
+@click.argument("node", required=False)
+def audit_logs(node: str | None) -> None:
+    """Audit-log ownership and permissions on control-plane nodes."""
+    nodes = get_all()
+    targets = (
+        [(item.name, item.ip) for item in nodes if item.role == "cp"]
+        if node is None
+        else [(node, resolve_ip(node))]
+    )
+    rows = []
+    for name, ip in targets:
+        result = run(
+            ["talosctl", "ls", "/var/log/audit/kube", "-l", "-n", ip],
+            timeout=15,
+        )
+        if result.returncode != 0:
+            message = (result.stderr or result.stdout).strip().splitlines()[0]
+            click.echo(f"error: talosctl failed for {name}: {message}", err=True)
+            raise SystemExit(1)
+        entries = [line.split() for line in result.stdout.splitlines()[1:]]
+        directory = next((entry for entry in entries if entry[-1] == "."), None)
+        active = next(
+            (entry for entry in entries if entry[-1] == "kube-apiserver.log"),
+            None,
+        )
+        if directory is None or active is None:
+            rows.append([name, "missing", "-", "-", "-", "no"])
+            continue
+        files = [entry for entry in entries if entry[-1] != "."]
+        total_size = sum(int(entry[4]) for entry in files)
+        group_zero = (
+            directory[3] == "0"
+            and directory[1][6] == "x"
+            and active[3] == "0"
+            and active[1][4] == "r"
+        )
+        rows.append(
+            [
+                name,
+                f"{directory[2]}:{directory[3]}",
+                directory[1],
+                active[1],
+                f"{len(files)} / {human_bytes(total_size)}",
+                "yes" if group_zero else "no",
+            ]
+        )
+    table(["NODE", "OWNER", "DIR", "FILE", "FILES/SIZE", "GROUP 0"], rows)
+
+
 @cli.command()
 @click.argument("node", required=False)
 def status(node: str | None):

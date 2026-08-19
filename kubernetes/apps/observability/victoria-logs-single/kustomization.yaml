@@ -23,5 +23,6 @@ configMapGenerator:
       reloader.stakater.com/match: "true"
   files:
   - parse-default.vrl=./vrl/parse-default.vrl
+  - parse-audit.vrl=./vrl/parse-audit.vrl
   - parse-ceph.vrl=./vrl/parse-ceph.vrl
   - parse-talos.vrl=./vrl/parse-talos.vrl

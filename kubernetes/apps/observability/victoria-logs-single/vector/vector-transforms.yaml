@@ -68,6 +68,16 @@ transforms:
         .app != "machined" ||
           !match!(string!(.message), r'^machined (OK \[/machine\.MachineService/|/authz/authorizer authorized)')
 
+  audit_enrich:
+    type: remap
+    inputs: [audit]
+    source: '.node = get_env_var!("VECTOR_NODE_NAME")'
+
+  audit_parser:
+    type: remap
+    inputs: [audit_enrich]
+    file: /etc/vector/parse-audit.vrl
+
   # Default fallback for any opt-in pod that isn't Ceph.
   default_filter:
     type: filter

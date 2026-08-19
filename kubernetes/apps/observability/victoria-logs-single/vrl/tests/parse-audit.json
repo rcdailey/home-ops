@@ -1,0 +1,39 @@
+[
+  {
+    "name": "metadata-request",
+    "input": {
+      "message": "{\"level\":\"Metadata\",\"user\":{\"username\":\"controller\"}}"
+    },
+    "expect": {
+      "message": "{\"level\":\"Metadata\",\"user\":{\"username\":\"controller\"}}",
+      "app": "kube-apiserver",
+      "log_type": "kubernetes-audit",
+      "audit_level": "Metadata",
+      "level": "info",
+      "user": {
+        "username": "controller"
+      }
+    }
+  },
+  {
+    "name": "stage-timestamp",
+    "input": {
+      "message": "{\"stageTimestamp\":\"2026-08-18T14:03:30.001Z\"}"
+    },
+    "expect": {
+      "timestamp": "2026-08-18T14:03:30.001Z"
+    }
+  },
+  {
+    "name": "malformed-event-preserves-message",
+    "input": {
+      "message": "truncated audit event"
+    },
+    "expect": {
+      "message": "truncated audit event",
+      "app": "kube-apiserver",
+      "log_type": "kubernetes-audit",
+      "level": "warning"
+    }
+  }
+]

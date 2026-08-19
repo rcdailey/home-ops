@@ -20,5 +20,12 @@ sources:
     mode: tcp
     decoding:
       codec: json
+  audit:
+    type: file
+    include:
+    - /var/log/audit/kube/kube-apiserver.log
+    read_from: end
+    fingerprint:
+      strategy: device_and_inode
   internal_metrics:
     type: internal_metrics
