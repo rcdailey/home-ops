@@ -11,7 +11,7 @@ default:
     @just --list bootstrap
 
 [doc('Full Talos cluster bootstrap (fresh install)')]
-talos: talos-apply talos-bootstrap talos-kubeconfig
+talos: talos-apply talos-bootstrap kubeconfig
     @just log info "Talos cluster bootstrap complete"
 
 [doc('Apply Talos config to all nodes')]
@@ -44,8 +44,7 @@ talos-bootstrap:
     done
 
 [doc('Fetch kubeconfig from cluster')]
-[private]
-talos-kubeconfig:
+kubeconfig:
     #!/usr/bin/env bash
     set -euo pipefail
     controller=$(yq '.nodes | to_entries | map(select(.value.controller == true)) | .[0].value.ip' "{{nodes_file}}")
