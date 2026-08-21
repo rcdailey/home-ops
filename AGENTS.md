@@ -178,6 +178,9 @@ do not update them when later decisions supersede their conclusions.
 This repository is `rcdailey/home-ops`. Current cluster inventory is in
 `docs/reference/cluster-inventory.md`.
 
+Before researching or building an external integration, check `.mise.toml` for an existing CLI.
+YNAB uses `ynab` from `npm:@stephendolan/ynab-cli`.
+
 Check local applications first. When no local pattern covers the requirement, consult these
 reference repositories before designing a new pattern:
 
