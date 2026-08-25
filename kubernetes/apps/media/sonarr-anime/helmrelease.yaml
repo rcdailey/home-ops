@@ -29,7 +29,7 @@ spec:
             nameOverride: sonarr-anime
             image:
               repository: ghcr.io/home-operations/sonarr
-              tag: 4.0.19.3001
+              tag: 4.0.19.3006
             env:
               UMASK: "022"
               SONARR__APP__INSTANCENAME: "Sonarr Anime"
