@@ -10,8 +10,8 @@
     {
       description: "Flux Operator Group",
       groupName: "Flux Operator",
-      matchPackageNames: ["/flux-operator/", "/flux-instance/", "/flux-operator-manifests/"],
-      minimumGroupSize: 3,
+      matchPackageNames: ["/flux-operator/"],
+      minimumGroupSize: 2,
     },
     {
       description: "Immich Group",

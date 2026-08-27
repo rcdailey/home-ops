@@ -51,7 +51,7 @@ kubeconfig:
     talosctl kubeconfig -n "$controller" -f --force-context-name home-ops "{{parent_directory(source_directory())}}"
 
 [doc('Full apps bootstrap sequence')]
-apps: wait namespaces resources crds helm-releases
+apps: wait namespaces resources crds helm-releases flux-instance
     @just log info "Apps bootstrap complete - Flux is now syncing"
 
 [doc('Wait for nodes to be available')]
@@ -133,3 +133,10 @@ crds:
 helm-releases:
     @just log info "Syncing Helm releases..."
     @helmfile --file "{{bootstrap_dir}}/helmfile.yaml" sync --hide-notes
+
+[doc('Apply the Flux instance')]
+[private]
+flux-instance:
+    @just log info "Applying Flux instance..."
+    @kubectl apply --server-side --namespace flux-system \
+        --filename "{{kubernetes_dir}}/apps/flux-system/flux-instance/fluxinstance.yaml"
