@@ -6,6 +6,7 @@ metadata:
   name: flux
 spec:
   distribution:
+    # renovate: datasource=github-releases depName=fluxcd/flux2
     version: 2.x
     registry: ghcr.io/fluxcd
   cluster:
