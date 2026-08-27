@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import re
 
 import click
 
 from hops._click import HelpfulGroup
 from hops.core.format import human_bytes, info, kv
+from hops.core.runner import run
 from hops.core.time import TimeRange, time_options
+from hops.core.workload import resolve_pods, select_pods_for_logs, suggest_near_matches
 from hops.query._vm import query_vm
 from hops.query.metrics_render import (
     _print_matrix,
@@ -38,7 +41,7 @@ def container_stats(
     data = query_vm("/api/v1/query", {"query": expr})
     results = data.get("data", {}).get("result", [])
     if results:
-        stats["current"] = float(results[0]["value"][1])
+        stats["current"] = max(float(result["value"][1]) for result in results)
 
     data = query_vm("/api/v1/query", {"query": f"max_over_time({expr}[{duration}:])"})
     results = data.get("data", {}).get("result", [])
@@ -53,6 +56,104 @@ def container_stats(
     return stats
 
 
+def _resolve_container(
+    app: str, namespace: str | None, container: str | None
+) -> tuple[str, str, str, list[str]]:
+    """Resolve an app to its running pod regex and one container."""
+    resolved = resolve_pods(app, namespace)
+    if not resolved:
+        hints = suggest_near_matches(app, namespace)
+        info(f"error: could not find app {app!r}")
+        if hints:
+            info(f"  similar: {', '.join(hints)}")
+        raise SystemExit(1)
+
+    ns, pods = resolved
+    chosen = select_pods_for_logs(pods)
+    pod_names = [pod.get("metadata", {}).get("name", "") for pod in chosen]
+    pod_names = [name for name in pod_names if name]
+    containers = sorted(
+        {
+            item.get("name", "")
+            for pod in chosen
+            for item in pod.get("spec", {}).get("containers", [])
+            if item.get("name")
+        }
+    )
+    if container is None:
+        if len(containers) != 1:
+            info(f"error: choose a container with -c: {', '.join(containers)}")
+            raise SystemExit(1)
+        container = containers[0]
+    elif container not in containers:
+        info(
+            f"error: container {container!r} not found; choose: {', '.join(containers)}"
+        )
+        raise SystemExit(1)
+
+    assert container is not None
+    escaped_names = [
+        re.escape(name).replace(r"\-", "-").replace("\\", "\\\\") for name in pod_names
+    ]
+    pod_regex = "(?:" + "|".join(escaped_names) + ")"
+    return ns, pod_regex, container, pod_names
+
+
+def _metrics_server_current(
+    namespace: str, pod_names: list[str], container: str, resource: str
+) -> float | None:
+    """Return current usage when VictoriaMetrics has not scraped the pod yet."""
+    result = run(
+        [
+            "kubectl",
+            "top",
+            "pods",
+            "-n",
+            namespace,
+            "--no-headers",
+            "--containers",
+        ],
+        timeout=15,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+
+    values = []
+    for line in result.stdout.splitlines():
+        parts = line.split()
+        if len(parts) < 4 or parts[0] not in pod_names or parts[1] != container:
+            continue
+        value = parts[2] if resource == "cpu" else parts[3]
+        parsed = _parse_cpu(value) if resource == "cpu" else _parse_memory(value)
+        if parsed is not None:
+            values.append(parsed)
+    return max(values) if values else None
+
+
+def _parse_cpu(value: str) -> float | None:
+    """Parse kubectl CPU quantities into cores."""
+    try:
+        return float(value[:-1]) / 1000 if value.endswith("m") else float(value)
+    except ValueError:
+        return None
+
+
+def _parse_memory(value: str) -> float | None:
+    """Parse kubectl binary memory quantities into bytes."""
+    units = {"Ki": 1024, "Mi": 1024**2, "Gi": 1024**3}
+    for suffix, multiplier in units.items():
+        if value.endswith(suffix):
+            try:
+                return float(value[: -len(suffix)]) * multiplier
+            except ValueError:
+                return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
 # --- Click commands ---
 
 
@@ -62,14 +163,20 @@ def cli():
 
 
 @cli.command()
-@click.argument("namespace")
-@click.argument("pod", metavar="POD_REGEX")
-@click.argument("container")
+@click.argument("app")
+@click.option("-n", "--namespace", help="Namespace (auto-detected if omitted)")
+@click.option("-c", "--container", help="Container (inferred when unambiguous)")
 @time_options(default_from="7d")
 def cpu(
-    namespace: str, pod: str, container: str, time_from: str, time_to: str | None, **_
+    app: str,
+    namespace: str | None,
+    container: str | None,
+    time_from: str,
+    time_to: str | None,
+    **_,
 ):
     """CPU usage and throttling for a container."""
+    namespace, pod, container, pod_names = _resolve_container(app, namespace, container)
     time_range = TimeRange.from_options(time_from, time_to)
     duration = time_range.to_duration()
 
@@ -81,6 +188,10 @@ def cpu(
         "container_cpu_usage_seconds_total",
         rate="5m",
     )
+    if stats["current"] is None:
+        stats["current"] = _metrics_server_current(
+            namespace, pod_names, container, "cpu"
+        )
 
     selector = f'namespace="{namespace}",pod=~"{pod}",container="{container}"'
     throttle_query = (
@@ -107,20 +218,30 @@ def cpu(
 
 
 @cli.command()
-@click.argument("namespace")
-@click.argument("pod", metavar="POD_REGEX")
-@click.argument("container")
+@click.argument("app")
+@click.option("-n", "--namespace", help="Namespace (auto-detected if omitted)")
+@click.option("-c", "--container", help="Container (inferred when unambiguous)")
 @time_options(default_from="7d")
 def memory(
-    namespace: str, pod: str, container: str, time_from: str, time_to: str | None, **_
+    app: str,
+    namespace: str | None,
+    container: str | None,
+    time_from: str,
+    time_to: str | None,
+    **_,
 ):
     """Memory usage for a container."""
+    namespace, pod, container, pod_names = _resolve_container(app, namespace, container)
     time_range = TimeRange.from_options(time_from, time_to)
     duration = time_range.to_duration()
 
     stats = container_stats(
         namespace, pod, container, time_range, "container_memory_working_set_bytes"
     )
+    if stats["current"] is None:
+        stats["current"] = _metrics_server_current(
+            namespace, pod_names, container, "memory"
+        )
 
     pairs = []
     if stats["current"] is not None:
@@ -225,9 +346,7 @@ def labels(name: str | None, json_mode: bool):
 
 
 @cli.command("metrics")
-@click.option(
-    "-f", "--filter", "pattern", default=None, help="Filter pattern (case-insensitive)"
-)
+@click.argument("pattern", required=False)
 @click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
 def list_metrics(pattern: str | None, json_mode: bool):
     """List metric names with optional filter."""

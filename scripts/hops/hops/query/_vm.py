@@ -12,6 +12,7 @@ from hops.core.runner import tools_curl
 
 VMSINGLE_URL = "http://vmsingle-victoria-metrics-k8s-stack.observability:8428"
 VMALERT_URL = "http://vmalert-victoria-metrics-k8s-stack.observability:8080"
+VMAGENT_URL = "http://vmagent-victoria-metrics-k8s-stack.observability:8429"
 
 IGNORED_ALERTS = {"Watchdog", "InfoInhibitor"}
 IGNORED_ALERT_PREFIXES = ("Unifi",)
@@ -36,6 +37,11 @@ def query_vmalert(endpoint: str) -> dict[str, Any]:
     return _parse(
         tools_curl(f"{VMALERT_URL}{endpoint}", service_name="VictoriaMetrics")
     )
+
+
+def query_vmagent(endpoint: str) -> dict[str, Any]:
+    """Query VMAgent API and return parsed JSON."""
+    return _parse(tools_curl(f"{VMAGENT_URL}{endpoint}", service_name="VMAgent"))
 
 
 def _parse(raw: str) -> dict[str, Any]:

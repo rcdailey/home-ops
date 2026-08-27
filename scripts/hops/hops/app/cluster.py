@@ -63,7 +63,7 @@ def list_apps(namespace: str | None):
 
 
 @cli.command()
-@click.argument("namespace", required=False)
+@click.option("-n", "--namespace", help="Namespace filter")
 def unhealthy(namespace: str | None):
     """Pods not Running/Succeeded cluster-wide (or in a namespace).
 

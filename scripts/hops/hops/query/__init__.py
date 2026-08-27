@@ -8,7 +8,7 @@ from hops._click import HelpfulGroup
 from hops.query.alerts import cli as alerts_cli
 from hops.query.logs import cli as logs_cli
 from hops.query.metrics import cli as metrics_cli
-from hops.query.scrape_pools import scrape_pools
+from hops.query.scrape_pools import scrapes
 
 # The query group exposes all metrics commands directly (no `metrics`
 # subgroup) because raw PromQL is the most common operation and triple-
@@ -29,5 +29,5 @@ for name, cmd in list(metrics_cli.commands.items()):
 for name, cmd in list(alerts_cli.commands.items()):
     cli.add_command(cmd, name)
 
-cli.add_command(scrape_pools)
+cli.add_command(scrapes)
 cli.add_command(logs_cli, "logs")

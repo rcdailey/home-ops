@@ -10,6 +10,7 @@ import click
 
 from hops.app.endpoints import match_services
 from hops.app.events import compact_event_message
+from hops.app.log_history import compact_crash_logs
 from hops.app.volume_stats import diagnose_volumes
 from hops.core.format import age_str, info, section, table, truncate
 from hops.core.runner import kubectl_json, run, run_json
@@ -175,7 +176,7 @@ def diagnose_workload(app_name: str, ns: str):
                     "-c",
                     container_name,
                     "--previous",
-                    "--tail=30",
+                    "--tail=200",
                 ],
                 timeout=15,
                 check=False,
@@ -191,8 +192,8 @@ def diagnose_workload(app_name: str, ns: str):
                 )
                 shown = True
             elif output:
-                info(f"--- {container_name} (previous, last 30 lines) ---")
-                click.echo(output)
+                info(f"--- {container_name} (previous crash) ---")
+                click.echo(compact_crash_logs(output))
                 shown = True
         if not shown:
             info("(no previous logs available)")

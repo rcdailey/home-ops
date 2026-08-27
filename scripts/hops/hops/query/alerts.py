@@ -10,9 +10,11 @@ import click
 
 from hops._click import HelpfulGroup
 from hops.core.format import format_labels_list, format_timestamp, info, kv, table
+from hops.core.runner import kubectl_json
 from hops.core.time import TimeRange, time_options
 from hops.query import rules_render
 from hops.query._vm import is_ignored_alert, query_vm, query_vmalert
+from hops.query.scrape_health import active_target_health, target_identity
 
 
 @click.group(cls=HelpfulGroup)
@@ -76,6 +78,7 @@ def _alerts_current(state: str, json_mode: bool) -> None:
         info(f"No alerts in {state} state")
         return
 
+    pod_states = _pod_states(filtered)
     for alert in filtered:
         labels = alert.get("labels", {})
         annotations = alert.get("annotations", {})
@@ -85,12 +88,55 @@ def _alerts_current(state: str, json_mode: bool) -> None:
             f"  {annotations.get('summary', annotations.get('description', 'No description'))}"
         )
         click.echo(f"  Expression: {alert.get('expression', 'N/A')}")
-        relevant = format_labels_list(
-            labels, exclude={"alertname", "alertgroup", "prometheus", "severity"}
-        )
+        relevant = _relevant_labels(labels)
         if relevant:
             click.echo(f"  Labels: {', '.join(relevant[:5])}")
+        pod = labels.get("pod")
+        namespace = labels.get("namespace")
+        if pod and namespace:
+            click.echo(f"  Target: {pod_states.get((namespace, pod), 'missing')}")
+        if labels.get("alertname") == "TooManyScrapeErrors":
+            count, unhealthy = active_target_health(namespace)
+            if unhealthy:
+                preview = ", ".join(target_identity(target) for target in unhealthy[:3])
+                click.echo(f"  Scrapes: {len(unhealthy)}/{count} unhealthy ({preview})")
+            else:
+                click.echo(f"  Scrapes: all {count} active targets healthy")
         click.echo()
+
+
+def _relevant_labels(labels: dict[str, str]) -> list[str]:
+    """Put workload identity labels before lower-value scrape metadata."""
+    excluded = {"alertname", "alertgroup", "prometheus", "severity"}
+    priority = ("namespace", "pod", "container", "job", "instance")
+    result = [f"{key}={labels[key]}" for key in priority if key in labels]
+    result.extend(format_labels_list(labels, exclude=excluded | set(priority)))
+    return result
+
+
+def _pod_states(alerts: list[dict]) -> dict[tuple[str, str], str]:
+    """Resolve pod labels on alerts to current phase and restart state."""
+    wanted = {
+        (labels.get("namespace", ""), labels.get("pod", ""))
+        for alert in alerts
+        if (labels := alert.get("labels", {})).get("namespace") and labels.get("pod")
+    }
+    if not wanted:
+        return {}
+
+    pods = kubectl_json("pods").get("items", [])
+    states = {}
+    for pod in pods:
+        metadata = pod.get("metadata", {})
+        key = (metadata.get("namespace", ""), metadata.get("name", ""))
+        if key not in wanted:
+            continue
+        status = pod.get("status", {})
+        restarts = sum(
+            item.get("restartCount", 0) for item in status.get("containerStatuses", [])
+        )
+        states[key] = f"{status.get('phase', '?')}, restarts={restarts}"
+    return states
 
 
 def _alerts_historical(time_range: TimeRange, json_mode: bool) -> None:

@@ -1,4 +1,4 @@
-"""App-specific Click commands: pods, logs, resources, diagnose, exec (ls/cat/du)."""
+"""App-specific Click commands for logs and diagnostics."""
 
 from __future__ import annotations
 
@@ -28,29 +28,7 @@ from hops.app.pod_detail import diagnose_pod as _diagnose_pod
 from hops.core.format import info, section
 from hops.core.resolve import TargetKind, resolve
 from hops.core.runner import run
-from hops.core.workload import (
-    Workload,
-    find_running_pod,
-    resolve_pods,
-    select_pods_for_logs,
-    suggest_near_matches,
-)
-
-
-def _resolve(app_name: str, namespace: str | None) -> Workload:
-    """Resolve app name to a workload or exit with error.
-
-    Used by exec-based commands that require a live parent controller
-    (ls/cat/du/resources). Commands that operate on pods directly
-    should use `resolve_pods` instead so they survive TTL'd Jobs and
-    other orphan-pod cases.
-    """
-    from hops.core.workload import resolve_app
-
-    wl = resolve_app(app_name, namespace)
-    if not wl:
-        _not_found(app_name, namespace)
-    return wl
+from hops.core.workload import resolve_pods, select_pods_for_logs, suggest_near_matches
 
 
 def _not_found(name: str, namespace: str | None) -> Never:
@@ -62,45 +40,6 @@ def _not_found(name: str, namespace: str | None) -> Never:
     raise SystemExit(1)
 
 
-def _find_running_pod(wl: Workload) -> str:
-    """Find a Running pod for a workload (for exec). Exits if none."""
-    pod = find_running_pod(wl)
-    if not pod:
-        info(f"error: no running pods for {wl.name!r} in {wl.namespace}")
-        raise SystemExit(1)
-    return pod
-
-
-def _exec_in_pod(
-    app: str,
-    namespace: str | None,
-    container: str | None,
-    command: list[str],
-    timeout: int = 15,
-) -> None:
-    """Resolve app, find a running pod, exec command, print output."""
-    wl = _resolve(app, namespace)
-    pod = _find_running_pod(wl)
-    args = ["kubectl", "exec", pod, "-n", wl.namespace]
-    if container:
-        args.extend(["-c", container])
-    args.extend(["--"] + command)
-    result = run(args, timeout=timeout, check=False)
-    if result.returncode != 0:
-        stderr = result.stderr or ""
-        # Strip informational "Defaulted container" lines
-        cleaned = "\n".join(
-            ln
-            for ln in stderr.strip().splitlines()
-            if not ln.startswith("Defaulted container")
-        ).strip()
-        info(f"error: {cleaned}" if cleaned else f"error: exec failed in {pod}")
-        raise SystemExit(1)
-    output = (result.stdout or "").strip()
-    if output:
-        click.echo(output)
-
-
 @cli.command()
 @click.argument("app")
 @click.option(
@@ -108,7 +47,12 @@ def _exec_in_pod(
 )
 @click.option("-c", "--container", default=None, help="Container name (default: all)")
 @click.option("--since", default="1h", help="Time window (default: 1h)")
-@click.option("--lines", default=50, help="Max lines to show")
+@click.option(
+    "--lines",
+    default=50,
+    type=click.IntRange(min=1),
+    help="Max lines across all replicas",
+)
 @click.option("--previous", is_flag=True, help="Show previous container logs")
 @click.option(
     "-g",
@@ -145,23 +89,58 @@ def logs(
         _not_found(app, namespace)
     ns, pods_list = result
     chosen_pods = select_pods_for_logs(pods_list)
+    per_pod_lines = max(1, lines // len(chosen_pods))
 
     if previous and not container:
+        found = False
         for chosen in chosen_pods:
-            pod = chosen["metadata"]["name"]
-            output = previous_container_logs(chosen, ns, lines)
+            output = previous_container_logs(chosen, ns, per_pod_lines)
             if output is None:
-                info(f"No previous container instances found for {pod}")
                 continue
+            found = True
             if grep:
-                output = _grep_logs(output, grep, after_context, lines)
+                output = _grep_logs(output, grep, after_context, per_pod_lines)
             click.echo(output)
+        if not found:
+            info("No previous container instances found.")
         return
 
+    if previous and container:
+        chosen_pods = [
+            pod for pod in chosen_pods if _has_previous_instance(pod, container)
+        ]
+        if not chosen_pods:
+            info(f"No previous instances found for container {container!r}.")
+            return
+
+    shown = 0
     for chosen in chosen_pods:
-        _show_pod_logs(
-            chosen, ns, container, since, lines, previous, grep, after_context
+        shown += _show_pod_logs(
+            chosen,
+            ns,
+            container,
+            since,
+            per_pod_lines,
+            previous,
+            grep,
+            after_context,
         )
+    if not shown:
+        extra = f" matching {grep!r}" if grep else ""
+        info(f"No logs from {len(chosen_pods)} pods in the last {since}{extra}.")
+
+
+def _has_previous_instance(pod: dict, container: str) -> bool:
+    """Return whether a named container has a terminated previous instance."""
+    status = pod.get("status", {})
+    containers = [
+        *status.get("containerStatuses", []),
+        *status.get("initContainerStatuses", []),
+    ]
+    return any(
+        item.get("name") == container and item.get("lastState", {}).get("terminated")
+        for item in containers
+    )
 
 
 def _show_pod_logs(
@@ -173,7 +152,7 @@ def _show_pod_logs(
     previous: bool,
     grep: str | None,
     after_context: int,
-) -> None:
+) -> int:
     """Fetch and display logs for one resolved pod."""
     pod = chosen["metadata"]["name"]
     phase = chosen.get("status", {}).get("phase", "?")
@@ -191,23 +170,20 @@ def _show_pod_logs(
     if result.returncode != 0:
         stderr = (result.stderr or "").strip()
         info(f"error: {stderr}" if stderr else f"error: kubectl logs failed for {pod}")
-        return
+        return 0
 
     output = result.stdout.strip()
     if grep:
         output = _grep_logs(output, grep, after_context, lines)
     if not output:
-        window = "in this container" if terminated else f"in the last {since}"
-        extra = f" matching {grep!r}" if grep else ""
-        info(f"No logs from {pod} [{phase}] {window}{extra}")
-        return
+        return 0
 
-    info("note: prefer 'hops query logs' for apps with Vector support")
     container_hint = f", container={container}" if container else ""
     scope = "since boot" if terminated else f"since {since}"
     grep_hint = f", grep={grep!r}" if grep else ""
     info(f"--- {pod} [{phase}] ({scope}{container_hint}{grep_hint}) ---")
     click.echo(output)
+    return 1
 
 
 def _grep_logs(output: str, pattern: str, after_context: int, max_lines: int) -> str:
@@ -304,47 +280,3 @@ def diagnose(app: str, namespace: str | None, explain: bool):
         _diagnose_gateway(app, target.namespace)
 
     _diagnose_events(app, target.namespace)
-
-
-@cli.command("ls")
-@click.argument("app")
-@click.argument("path")
-@click.option(
-    "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
-)
-@click.option("-c", "--container", default=None, help="Container name")
-def ls_path(app: str, path: str, namespace: str | None, container: str | None):
-    """List files at a path inside an app container."""
-    _exec_in_pod(app, namespace, container, ["ls", "-la", path])
-
-
-@cli.command("cat")
-@click.argument("app")
-@click.argument("path")
-@click.option(
-    "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
-)
-@click.option("-c", "--container", default=None, help="Container name")
-@click.option("--lines", default=200, help="Max lines to show (default: 200)")
-def cat_file(
-    app: str, path: str, namespace: str | None, container: str | None, lines: int
-):
-    """Read a file from inside an app container."""
-    _exec_in_pod(app, namespace, container, ["head", "-n", str(lines), path])
-
-
-@cli.command("du")
-@click.argument("app")
-@click.argument("path")
-@click.option(
-    "-n", "--namespace", default=None, help="Namespace (auto-detected if omitted)"
-)
-@click.option("-c", "--container", default=None, help="Container name")
-@click.option("-d", "--depth", default=1, help="Directory depth (default: 1)", type=int)
-def du_path(
-    app: str, path: str, namespace: str | None, container: str | None, depth: int
-):
-    """Disk usage at a path inside an app container."""
-    _exec_in_pod(
-        app, namespace, container, ["du", "-h", f"-d{depth}", path], timeout=30
-    )

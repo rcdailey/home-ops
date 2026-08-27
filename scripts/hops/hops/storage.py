@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+from datetime import datetime
+
 import click
 
 from hops._click import HelpfulGroup
@@ -312,6 +315,33 @@ def _security_identity(spec: dict, fallback: dict | None = None) -> str:
     return ",".join(f"{key}={value}" for key, value in values.items())
 
 
+def _avc_denials_since(output: str, since: str | None) -> list[str]:
+    """Return SELinux denials emitted since the selected pod started."""
+    if not since:
+        return [line for line in output.splitlines() if "avc:  denied" in line]
+    try:
+        cutoff = datetime.fromisoformat(since.replace("Z", "+00:00"))
+    except ValueError:
+        return [line for line in output.splitlines() if "avc:  denied" in line]
+
+    denials = []
+    for line in output.splitlines():
+        if "avc:  denied" not in line:
+            continue
+        match = re.search(r"\[([^]]+Z)\]", line)
+        if not match:
+            denials.append(line)
+            continue
+        try:
+            timestamp = datetime.fromisoformat(match.group(1).replace("Z", "+00:00"))
+        except ValueError:
+            denials.append(line)
+            continue
+        if timestamp >= cutoff:
+            denials.append(line)
+    return denials
+
+
 @cli.command("selinux")
 @click.argument("app")
 @click.option("-n", "--namespace", default=None, help="Namespace filter")
@@ -378,8 +408,8 @@ def selinux_volume(app: str, namespace: str | None) -> None:
         message = (result.stderr or result.stdout).strip().splitlines()[0]
         click.echo(f"error: talosctl failed for {node_name}: {message}", err=True)
         raise SystemExit(1)
-    denials = [line for line in result.stdout.splitlines() if "avc:  denied" in line]
-    section("SELINUX AVC DENIALS")
+    denials = _avc_denials_since(result.stdout, pod.get("status", {}).get("startTime"))
+    section("SELINUX AVC DENIALS (since pod start)")
     if denials:
         for line in denials[-10:]:
             click.echo(line)

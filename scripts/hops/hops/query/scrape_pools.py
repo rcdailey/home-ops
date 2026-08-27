@@ -7,9 +7,10 @@ from typing import Any
 
 import click
 
-from hops.core.format import info, table
+from hops.core.format import age_str, info, table, truncate
 from hops.core.runner import kubectl_json
 from hops.query._vm import query_vm
+from hops.query.scrape_health import active_target_health, target_identity
 
 _SCRAPE_RESOURCES = (
     "vmservicescrapes,vmpodscrapes,vmnodescrapes,vmprobes,vmstaticscrapes"
@@ -44,13 +45,14 @@ def _owner(resource: dict[str, Any]) -> str:
     )
 
 
-@click.command("scrape-pools")
+@click.command("scrapes")
 @click.option("-n", "--namespace", help="Filter by scrape resource namespace")
 @click.option(
     "--json", "as_json", is_flag=True, help="Output correlated findings as JSON"
 )
-def scrape_pools(namespace: str | None, as_json: bool) -> None:
-    """Show zero-target pools with their live scrape resources and owners."""
+def scrapes(namespace: str | None, as_json: bool) -> None:
+    """Show failed targets and zero-target pools with owning resources."""
+    target_count, unhealthy_targets = active_target_health(namespace)
     data = query_vm(
         "/api/v1/query",
         {"query": ("sum by (scrape_job) (vm_promscrape_scrape_pool_targets) == 0")},
@@ -65,35 +67,63 @@ def scrape_pools(namespace: str | None, as_json: bool) -> None:
     resources = kubectl_json(_SCRAPE_RESOURCES).get("items", [])
     resource_index = {_resource_key(item): item for item in resources}
 
-    findings = []
+    pool_findings = []
     for pool in pools:
         key = _pool_key(pool)
         if namespace and (not key or key[1] != namespace):
             continue
         if not key:
-            findings.append({"pool": pool, "resource": None, "state": "STALE"})
+            pool_findings.append({"pool": pool, "resource": None, "state": "STALE"})
             continue
         resource = resource_index.get(key)
         if not resource:
-            findings.append({"pool": pool, "resource": None, "state": "STALE"})
+            pool_findings.append({"pool": pool, "resource": None, "state": "STALE"})
             continue
         owner = _owner(resource)
         state = "ORPHAN" if owner == "-" else "OWNED"
-        findings.append(
+        pool_findings.append(
             {"pool": pool, "resource": resource, "owner": owner, "state": state}
         )
 
     if as_json:
-        click.echo(json.dumps(findings, indent=2))
+        click.echo(
+            json.dumps(
+                {
+                    "activeTargetCount": target_count,
+                    "unhealthyTargets": unhealthy_targets,
+                    "zeroTargetPools": pool_findings,
+                },
+                indent=2,
+            )
+        )
         return
 
-    if not findings:
+    if not unhealthy_targets and not pool_findings:
         suffix = f" in namespace {namespace}" if namespace else ""
-        info(f"No zero-target scrape pools{suffix}")
+        if not target_count:
+            info(f"No active scrape targets{suffix}.")
+            return
+        info(
+            f"All {target_count} active scrape targets healthy; no zero-target pools{suffix}."
+        )
         return
+
+    if unhealthy_targets:
+        info(f"Unhealthy scrape targets: {len(unhealthy_targets)}/{target_count}")
+        rows = []
+        for target in unhealthy_targets:
+            rows.append(
+                [
+                    target.get("scrapePool", "?"),
+                    target_identity(target),
+                    age_str(target.get("lastScrape")),
+                    truncate(target.get("lastError", "unknown error")),
+                ]
+            )
+        table(["POOL", "TARGET", "LAST", "ERROR"], rows)
 
     rows = []
-    for finding in findings:
+    for finding in pool_findings:
         resource = finding["resource"]
         live_resource = "-"
         if resource:
@@ -108,5 +138,6 @@ def scrape_pools(namespace: str | None, as_json: bool) -> None:
             ]
         )
 
-    info(f"Zero-target scrape pools: {len(findings)}")
-    table(["POOL", "LIVE RESOURCE", "OWNER", "STATE"], rows)
+    if rows:
+        info(f"Zero-target scrape pools: {len(pool_findings)}")
+        table(["POOL", "LIVE RESOURCE", "OWNER", "STATE"], rows)
