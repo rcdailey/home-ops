@@ -119,32 +119,10 @@ spec:
           # changes and connection errors; level 5 ring buffer preserves
           # detail for crash dumps.
           debug_ms: 0/5
-          # Disable the LogMonitor's cluster-log stderr forwarder. Rook
-          # starts mon daemons with --default-mon-cluster-log-to-stderr=true
-          # (see rook/pkg/operator/ceph/config/defaults.go), which causes
-          # every cluster/audit channel entry to be written to stderr a
-          # second time in the "cluster <ts> mon.X ..." / "audit <ts> ..."
-          # format, on top of the dout trace ("debug <ts> ... log_channel(X)
-          # log [Y] : ...") that log_to_stderr already emits. Roughly 20%
-          # of mon stderr lines were exact consecutive duplicates of this
-          # forwarder output. Disabling it at the central config store
-          # overrides Rook's --default- cmdline flag and leaves the dout
-          # stream as the single source of truth, which is also the only
-          # format our VRL parser matches. Rook's mon health check uses
-          # `ceph status` + admin socket, not log scraping, so removing the
-          # forwarder output has no operator-side impact. Upstream cephadm
-          # recommends the same setting when file logging is enabled.
-          # Ref: ceph/doc/cephadm/operations.rst ("logged twice")
+          # Avoid duplicate cluster and audit entries while retaining local logs.
           mon_cluster_log_to_stderr: "false"
       cleanupPolicy:
         wipeDevicesFromOtherClusters: false
-      # Opt mon pods into Vector log collection via label gate.
-      # See kubernetes/apps/observability/victoria-logs-single/ for the
-      # collector config. Only mon daemons are labeled for now; extend to
-      # mgr/osd later if the incident signal requires it.
-      labels:
-        mon:
-          observability.home-ops/logs: "true"
       mon:
         count: 3
         allowMultiplePerNode: false

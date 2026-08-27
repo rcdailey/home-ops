@@ -5,8 +5,10 @@ from __future__ import annotations
 import click
 
 from hops._click import HelpfulGroup
-from hops.core.format import human_bytes, info, kv, table
-from hops.core.runner import ceph_json, kubectl_json
+from hops.core.format import human_bytes, info, kv, section, table
+from hops.core.nodes import resolve_ip
+from hops.core.runner import ceph_json, kubectl_json, run
+from hops.core.workload import resolve_pods
 
 
 @click.group(cls=HelpfulGroup)
@@ -269,3 +271,186 @@ def pvcs(app_or_ns: str | None, namespace: str | None, problems: bool):
     if has_problems:
         info("")
         info("(!) = PV lost or missing; (?) = PVC pending, not yet bound")
+
+
+def _selinux_context(spec: dict) -> str:
+    """Format SELinux options from a pod or container security context."""
+    options = spec.get("securityContext", {}).get("seLinuxOptions", {})
+    if not options:
+        return "unset"
+    return ",".join(f"{key}={value}" for key, value in sorted(options.items()))
+
+
+def _selinux_host_mount(daemonset: dict) -> str:
+    """Summarize whether a CSI node plugin mounts the host SELinux policy."""
+    spec = daemonset.get("spec", {}).get("template", {}).get("spec", {})
+    host_volumes = {
+        volume.get("name", "")
+        for volume in spec.get("volumes", [])
+        if volume.get("hostPath", {}).get("path") == "/etc/selinux"
+    }
+    if not host_volumes:
+        return "absent"
+
+    for container in spec.get("containers", []):
+        for mount in container.get("volumeMounts", []):
+            if mount.get("name") in host_volumes:
+                read_only = "ro" if mount.get("readOnly") else "rw"
+                return f"{mount.get('mountPath', '?')} ({read_only})"
+    return "volume only"
+
+
+def _security_identity(spec: dict, fallback: dict | None = None) -> str:
+    """Format the effective runtime identity from a security context."""
+    context = spec.get("securityContext", {})
+    fallback = fallback or {}
+    values = {
+        "uid": context.get("runAsUser", fallback.get("runAsUser", "?")),
+        "gid": context.get("runAsGroup", fallback.get("runAsGroup", "?")),
+        "nonroot": context.get("runAsNonRoot", fallback.get("runAsNonRoot", "?")),
+    }
+    return ",".join(f"{key}={value}" for key, value in values.items())
+
+
+@cli.command("selinux")
+@click.argument("app")
+@click.option("-n", "--namespace", default=None, help="Namespace filter")
+def selinux_volume(app: str, namespace: str | None) -> None:
+    """Correlate an app's SELinux context with its CSI volume contract."""
+    resolved = resolve_pods(app, namespace)
+    if not resolved:
+        click.echo(f"error: app {app!r} not found", err=True)
+        raise SystemExit(1)
+
+    ns, pods = resolved
+    pod = pods[0]
+    pod_name = pod.get("metadata", {}).get("name", "?")
+    pod_spec = pod.get("spec", {})
+    node_name = pod_spec.get("nodeName", "?")
+    pod_security = pod_spec.get("securityContext", {})
+    container_contexts = [
+        f"{container.get('name', '?')}={_selinux_context(container)}"
+        for container in pod_spec.get("containers", [])
+    ]
+    container_identities = [
+        f"{container.get('name', '?')}={_security_identity(container, pod_security)}"
+        for container in pod_spec.get("containers", [])
+    ]
+    kv(
+        [
+            ("pod", f"{ns}/{pod_name}"),
+            ("node", node_name),
+            ("pod identity", _security_identity(pod_spec)),
+            ("fsGroup", pod_security.get("fsGroup", "?")),
+            ("container identity", ", ".join(container_identities) or "none"),
+            ("pod SELinux", _selinux_context(pod_spec)),
+            ("container SELinux", ", ".join(container_contexts) or "none"),
+            (
+                "change policy",
+                pod_spec.get("securityContext", {}).get("seLinuxChangePolicy", "unset"),
+            ),
+        ]
+    )
+
+    host_rows = []
+    for volume in pod_spec.get("volumes", []):
+        host_path = volume.get("hostPath", {}).get("path")
+        if not host_path:
+            continue
+        mounts = []
+        for container in pod_spec.get("containers", []):
+            for mount in container.get("volumeMounts", []):
+                if mount.get("name") != volume.get("name"):
+                    continue
+                mode = "ro" if mount.get("readOnly") else "rw"
+                mounts.append(
+                    f"{container.get('name', '?')}:{mount.get('mountPath', '?')}:{mode}"
+                )
+        host_rows.append(
+            [volume.get("name", "?"), host_path, ",".join(mounts) or "unmounted"]
+        )
+    if host_rows:
+        section("HOST VOLUMES")
+        table(["VOLUME", "HOST PATH", "CONTAINER:MOUNT:MODE"], host_rows)
+
+    result = run(["talosctl", "dmesg", "-n", resolve_ip(node_name)], timeout=15)
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout).strip().splitlines()[0]
+        click.echo(f"error: talosctl failed for {node_name}: {message}", err=True)
+        raise SystemExit(1)
+    denials = [line for line in result.stdout.splitlines() if "avc:  denied" in line]
+    section("SELINUX AVC DENIALS")
+    if denials:
+        for line in denials[-10:]:
+            click.echo(line)
+    else:
+        click.echo("None found.")
+
+    pv_data = kubectl_json("pv")
+    pv_map = {item["metadata"]["name"]: item for item in pv_data.get("items", [])}
+    sc_data = kubectl_json("storageclasses")
+    sc_map = {item["metadata"]["name"]: item for item in sc_data.get("items", [])}
+    drivers = kubectl_json("csidrivers")
+    driver_map = {item["metadata"]["name"]: item for item in drivers.get("items", [])}
+
+    rows = []
+    used_drivers: set[str] = set()
+    for volume in pod_spec.get("volumes", []):
+        claim = volume.get("persistentVolumeClaim", {}).get("claimName")
+        if not claim:
+            continue
+        pvc = kubectl_json(f"pvc/{claim}", namespace=ns)
+        pvc_spec = pvc.get("spec", {})
+        pv = pv_map.get(pvc_spec.get("volumeName", ""), {})
+        pv_spec = pv.get("spec", {})
+        csi = pv_spec.get("csi", {})
+        driver = csi.get("driver", "?")
+        used_drivers.add(driver)
+        sc = sc_map.get(pvc_spec.get("storageClassName", ""), {})
+        mount_options = sc.get("mountOptions", [])
+        rows.append(
+            [
+                volume.get("name", "?"),
+                claim,
+                ",".join(pvc_spec.get("accessModes", [])) or "?",
+                pvc_spec.get("storageClassName", "?"),
+                driver,
+                csi.get("fsType", "?"),
+                ",".join(mount_options) or "none",
+            ]
+        )
+
+    info("")
+    table(
+        ["VOLUME", "PVC", "ACCESS", "CLASS", "DRIVER", "FS", "MOUNT OPTIONS"],
+        rows,
+    )
+
+    info("")
+    for driver in sorted(used_drivers):
+        csi_driver = driver_map.get(driver, {}).get("spec", {})
+        kv(
+            [
+                ("CSI driver", driver),
+                ("seLinuxMount", str(csi_driver.get("seLinuxMount", "unset"))),
+                ("fsGroupPolicy", csi_driver.get("fsGroupPolicy", "unset")),
+            ]
+        )
+
+    daemonsets = kubectl_json("daemonsets")
+    for daemonset in daemonsets.get("items", []):
+        template = daemonset.get("spec", {}).get("template", {}).get("spec", {})
+        text = str(template)
+        if not any(driver in text for driver in used_drivers):
+            continue
+        metadata = daemonset.get("metadata", {})
+        info("")
+        kv(
+            [
+                (
+                    "node plugin",
+                    f"{metadata.get('namespace', '?')}/{metadata.get('name', '?')}",
+                ),
+                ("host SELinux", _selinux_host_mount(daemonset)),
+            ]
+        )

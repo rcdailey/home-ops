@@ -20,6 +20,7 @@ import sys
 import unicodedata
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any, Literal, Protocol, Self, TypeVar
 from urllib.parse import urlsplit
 
@@ -39,6 +40,24 @@ INBOX_TAG_NAME = "inbox"
 FAMILY_GROUP_NAME = "family"
 DEFAULT_TAG_COLOR = "#a6cee3"
 LOGGER = logging.getLogger("paperless-classifier")
+
+
+class JsonFormatter(logging.Formatter):
+    """Format standard logging records as one-line JSON."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        timestamp = datetime.fromtimestamp(record.created, UTC).isoformat(
+            timespec="milliseconds"
+        )
+        payload = {
+            "timestamp": timestamp.replace("+00:00", "Z"),
+            "level": record.levelname.lower(),
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 
 class StrictModel(BaseModel):
@@ -766,9 +785,11 @@ async def run() -> int:
 
 
 def main() -> int:
+    handler = logging.StreamHandler()
+    handler.setFormatter(JsonFormatter())
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=[handler],
     )
     try:
         return asyncio.run(run())

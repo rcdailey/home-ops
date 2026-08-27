@@ -34,6 +34,7 @@ spec:
     - --crd-source-kind=DNSEndpoint
     - --gateway-name=external
     - --zone-id-filter=a4c8686f819a8bb98c874518b1f7df02
+    logFormat: json
     sources: ["crd", "gateway-httproute"]
     triggerLoopOnEvent: true
     policy: sync

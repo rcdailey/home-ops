@@ -7,12 +7,9 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
-# Observability stack re-enabled with Ceph write amplification mitigation:
-# - Storage: hostPath on worker nodes (not Ceph) for metrics/logs
-# - Metrics: Opt-in collection (infrastructure + media/default/home namespaces only)
-# - Logs: Disabled centralized Vector; using sidecar pattern (Plex example)
 - ./victoria-metrics-k8s-stack/ks.yaml
 - ./victoria-logs-single/ks.yaml
+- ./victoria-logs-collector/ks.yaml
 - ./grafana-operator/ks.yaml
 - ./grafana/ks.yaml
 - ./silence-operator/ks.yaml

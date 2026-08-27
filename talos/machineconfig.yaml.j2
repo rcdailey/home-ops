@@ -67,10 +67,6 @@ machine:
       permissions: 0o644
       path: /etc/cri/conf.d/20-customization.part
       op: create
-  logging:
-    destinations:
-      - endpoint: "tcp://127.0.0.1:6170/"
-        format: json_lines
   sysctls:
     fs.inotify.max_user_instances: "8192"
     fs.inotify.max_user_watches: "1048576"
@@ -152,6 +148,9 @@ cluster:
       omitStages:
         - RequestReceived
       rules:
+        - level: None
+          userGroups:
+            - system:serviceaccounts
         - level: Metadata
   controllerManager:
     image: registry.k8s.io/kube-controller-manager:{{ ENV.KUBERNETES_VERSION }}
@@ -254,11 +253,6 @@ nameservers:
   - address: 1.0.0.1
 searchDomains:
   disableDefault: true
----
-apiVersion: v1alpha1
-kind: KmsgLogConfig
-name: remote-log
-url: tcp://127.0.0.1:6170/
 ---
 apiVersion: v1alpha1
 kind: TimeSyncConfig

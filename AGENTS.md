@@ -7,14 +7,19 @@ drift.
 
 ### GitOps Mindset
 
-**Every persistent cluster change MUST flow through git.** Imperative commands are diagnostic only
-unless permitted below.
+**Persistent desired state MUST flow through git.** Imperative commands are allowed for diagnostics
+and bounded operational transitions that declarative controllers cannot safely express. Do not use
+commit-and-revert pairs solely to toggle temporary operational state. Verify the durable result
+matches Git.
 
 - **NEVER run git commit/push without explicit user request** - GitOps requires user commits for
   accountability. This includes using the commit subagent. Always wait for explicit "commit"
   request.
-- **NEVER delete resources as a fix** - Deleting jobs, pods, or PVCs treats symptoms, not causes.
-  Find the manifest issue and fix it.
+- **NEVER delete resources as a symptom fix** - Deleting jobs, pods, or PVCs treats symptoms, not
+  causes. Find the manifest issue and fix it.
+- **Immutable controller migrations MAY use orphan replacement** - Put the replacement state in Git,
+  verify data-bearing resources will be retained, and delete only the controller. NEVER delete PVCs
+  or PVs.
 - **Orphan cleanup MUST be operational, not declarative** - An exact, non-data-bearing object absent
   from Git and without an active GitOps owner MUST be deleted with the underlying cluster CLI after
   verification through `hops`. NEVER create temporary manifests solely to adopt and prune orphans.
@@ -95,7 +100,7 @@ changes directly with repository checks.
 
 - Include the appropriate `# yaml-language-server:` directive in YAML files.
 - Use `reloader.stakater.com/auto: "true"`, never targeted reloader annotations.
-- Use rootless containers and prefer YAML defaults by omission.
+- Prefer YAML defaults by omission.
 - Explain only non-obvious exceptions, limitations, and workarounds in comments.
 - Do not use the `cluster-apps-` prefix.
 - Use `${SECRET_DOMAIN}` instead of real homelab domains in examples and manifests.
@@ -140,10 +145,15 @@ explicit topology spreading or pod anti-affinity unless critical infrastructure 
 - Use explicit SecurityPolicy headers, never wildcards.
 - Do not set timeouts or intervals without a concrete reason.
 
-Pod security contexts use UID and GID 1000, `runAsNonRoot`, `fsGroup: 1000`, and
-`fsGroupChangePolicy: OnRootMismatch`. Container contexts disable privilege escalation, use a
-read-only root filesystem, and drop all capabilities. Do not duplicate identity fields at container
-level unless containers need different identities.
+App-template workloads and locally authored containers use UID and GID 1000, `runAsNonRoot`,
+`fsGroup: 1000`, and `fsGroupChangePolicy: OnRootMismatch`. For third-party charts and operators,
+preserve the upstream identity and volume-ownership model when forcing UID or GID 1000 would require
+a root init container, host filesystem ownership changes, or unsupported chart customization.
+
+Apply chart-supported container hardening: disable privilege escalation, use a read-only root
+filesystem, and drop all capabilities. Document workload requirements that prevent a control or
+require root. Do not duplicate identity fields at container level unless containers need different
+identities.
 
 ### Databases and logging
 
@@ -191,9 +201,10 @@ reference repositories before designing a new pattern:
 - dsluo/homelab
 - aclerici38/home-ops
 
-Agents MUST NOT run `just reconcile`, `flux reconcile`, `helm template`, `just talos diff-config`,
-or `just talos apply-node`. Use `hops flux values` and `hops flux defaults` instead of Helm values
-commands.
+Agents MUST NOT run broad `just reconcile`, `helm template`, `just talos diff-config`, or
+`just talos apply-node` commands. Targeted `flux reconcile` is allowed for a bounded operational
+transition after its durable state is in Git. Use `hops flux values` and `hops flux defaults` instead
+of Helm values commands.
 
 Run standalone script help before use rather than relying on a command catalog in this file.
 

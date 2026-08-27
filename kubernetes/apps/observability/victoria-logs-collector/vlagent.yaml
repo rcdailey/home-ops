@@ -1,0 +1,45 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vlagent_v1.json
+apiVersion: operator.victoriametrics.com/v1
+kind: VLAgent
+metadata:
+  name: victoria-logs-collector
+spec:
+  useLegacyNaming: true
+  useStrictSecurity: true
+  # k8sCollector runs as root; this read-only capability is needed for Talos audit logs.
+  containers:
+  - name: vlagent
+    securityContext:
+      capabilities:
+        add: [DAC_READ_SEARCH]
+        drop: [ALL]
+  image:
+    repository: victoriametrics/vlagent
+    tag: v1.52.0
+  remoteWrite:
+  - url: http://victoria-logs-single:9428/internal/insert
+  extraEnvs:
+  - name: HOSTNAME
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.name
+  k8sCollector:
+    enabled: true
+    excludeFilter: >-
+      (NOT kubernetes.pod_labels.observability.home-ops/logs:=true)
+      OR kubernetes.pod_name:=%{HOSTNAME}
+    extraFields: '{"collector":"vlagent"}'
+  extraArgs:
+    fileCollector.checkpointsPath: /var/lib/vlagent-data/audit-checkpoints.json
+    fileCollector.extraFields: '{"app":"kube-apiserver","log_type":"kubernetes-audit"}'
+    # Glob syntax avoids warnings on workers, where this control-plane file is absent.
+    fileCollector.glob: /var/log/audit/kube/kube-apiserver.lo?
+    fileCollector.streamFields: app,log_type
+    fileCollector.timeField: stageTimestamp,requestReceivedTimestamp
+  resources:
+    limits:
+      memory: 256Mi
+    requests:
+      cpu: 20m
+      memory: 64Mi

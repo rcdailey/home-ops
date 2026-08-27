@@ -1,3 +1,5 @@
+import json
+import logging
 import unittest
 from collections.abc import Sequence
 
@@ -5,6 +7,7 @@ from classifier import (
     Classification,
     ClassificationBatch,
     DeferredClassification,
+    JsonFormatter,
     PaperlessDocument,
     Taxonomy,
     TaxonomyItem,
@@ -14,6 +17,28 @@ from classifier import (
     sanitize_content,
     validate_batch,
 )
+
+
+class JsonFormatterTest(unittest.TestCase):
+    def test_emits_one_line_structured_log(self) -> None:
+        record = logging.LogRecord(
+            "paperless-classifier",
+            logging.WARNING,
+            __file__,
+            1,
+            "classified %s",
+            ("document\n42",),
+            None,
+        )
+
+        output = JsonFormatter().format(record)
+        payload = json.loads(output)
+
+        self.assertNotIn("\n", output)
+        self.assertEqual(payload["level"], "warning")
+        self.assertEqual(payload["logger"], "paperless-classifier")
+        self.assertEqual(payload["message"], "classified document\n42")
+        self.assertRegex(payload["timestamp"], r"^\d{4}-\d{2}-\d{2}T.*Z$")
 
 
 class ValidateBatchTest(unittest.TestCase):

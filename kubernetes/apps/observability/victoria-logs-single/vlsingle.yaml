@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vlsingle_v1.json
+apiVersion: operator.victoriametrics.com/v1
+kind: VLSingle
+metadata:
+  name: victoria-logs-single
+spec:
+  useLegacyNaming: true
+  useStrictSecurity: true
+  image:
+    repository: victoriametrics/victoria-logs
+    tag: v1.52.0
+  retentionPeriod: 90d
+  extraArgs:
+    memory.allowedPercent: "40"
+  storage:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 50Gi
+    storageClassName: ceph-block
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 9428
