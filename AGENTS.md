@@ -24,7 +24,7 @@ unless permitted below.
 
 ### Troubleshooting Approach
 
-1. **Query**: Gather symptoms via subagent (alerts, logs, events, pod status)
+1. **Query**: Gather symptoms directly with `hops`; MUST NOT delegate cluster investigation
 2. **History**: `git log -p --follow --invert-grep --author="renovate" -- path/to/file.yaml` for
    recent changes
 3. **Analyze**: Read manifests, check CRD specs, verify dependencies
