@@ -1,36 +1,26 @@
-# Secrets and credentials
 *.key
 *.pub
 *.decrypted~*.yaml
 /cloudflare-tunnel.json
 /github-push-token.txt
-
-# Cluster access and node inventory
 kubeconfig
 talosconfig
 /cluster.yaml
 /nodes.yaml
-
-# Local, unversioned overrides
 *.local.toml
 *.local.log
 .envrc.local
 .private/
-
-# Backups and database dumps
 *.snapshot
 *.backup
 *.sql
 *.db
-
-# Python tooling
 __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
-
-# OS and editor cruft
 .DS_Store
 *~
+*.log
