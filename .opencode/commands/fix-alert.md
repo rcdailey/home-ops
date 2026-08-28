@@ -2,18 +2,12 @@
 description: Fix one or more alerts
 ---
 
-You are an alert responder. Query current alerts and fix them with GitOps-based solutions.
+Query current alerts and fix the selected root cause through repository configuration.
 
 Arguments: "$ARGUMENTS"
 
 If empty, run `./scripts/hops.sh query alerts` to list firing alerts and pick one. For specific
 alerts, run `./scripts/hops.sh query alert <name>` for each.
-
-## Critical Rule
-
-**NEVER adjust health probes as a fix.** No adding, modifying, or restoring probe configurations.
-Probes detect failures; they don't fix root causes. If you want to touch probes, stop and
-investigate the underlying failure instead.
 
 ## Workflow
 
@@ -25,11 +19,4 @@ investigate the underlying failure instead.
 5. **Fix**: Apply GitOps solution (silence useless alerts, fix thresholds, fix config, fix infra)
 6. **Validate**: Run `pre-commit run --files <files>`
 
-## Query Reference
-
-```bash
-./scripts/hops.sh query alerts                    # Firing alerts
-./scripts/hops.sh query alerts --state pending    # Pending alerts
-./scripts/hops.sh query alert <name>              # Details for specific alert
-./scripts/hops.sh query alert <name> --from 24h   # Historical alert details
-```
+Follow the troubleshooting and probe rules in `AGENTS.md`.

@@ -11,12 +11,12 @@ Run these checks immediately on command invocation. Stop and report a failed pre
 
 | Tool | Binary | Purpose |
 | --- | --- | --- |
-| smartctl | `/usr/sbin/smartctl` | SMART health data |
-| fio | `/usr/bin/fio` | Performance benchmarks |
-| badblocks | `/usr/sbin/badblocks` | Surface scan |
+| smartctl | `smartctl` | SMART health data |
+| fio | `fio` | Performance benchmarks |
+| badblocks | `badblocks` | Surface scan |
 
-Check each binary with `which`. The Homebrew packages are `smartmontools`, `fio`, and `e2fsprogs`.
-Report a missing tool instead of installing it without an explicit request.
+Resolve each binary with `command -v`. The Homebrew packages are `smartmontools`, `fio`, and
+`e2fsprogs`. Report a missing tool instead of installing it without an explicit request.
 
 ### Group membership
 
@@ -25,11 +25,11 @@ the user (requires a one-time `usermod` and session restart).
 
 ### Capabilities
 
-Check `getcap /usr/sbin/smartctl /usr/bin/fio`. Both must show `cap_sys_rawio=ep`.
+Run `getcap` against the paths returned by `command -v smartctl fio`. Both must show
+`cap_sys_rawio=ep`.
 
-A systemd path unit (`disk-diag-caps.path`) watches these binaries and re-applies capabilities
-after package upgrades. If capabilities are missing, report that
-`disk-diag-caps.service` needs to run.
+A systemd path unit (`disk-diag-caps.path`) watches these binaries and re-applies capabilities after
+package upgrades. If capabilities are missing, report that `disk-diag-caps.service` needs to run.
 
 ### USB dock driver mode
 
@@ -273,16 +273,3 @@ When reporting results, evaluate:
 4. **Consistency**: latency percentiles (p99, p99.9); spikes indicate degradation (dying NAND cells
    for SSDs, mechanical issues for HDDs) or firmware bugs
 5. **Verdict**: keep, return, or test further (with reasoning)
-
-## Rules
-
-- MUST run `lsblk` first to identify the target device; never assume `/dev/sdX`
-- MUST NOT write to a drive without explicit user confirmation
-- MUST check `getcap` before assuming smartctl/fio have the needed capabilities
-- MUST note when USB bottleneck affects results vs native SATA expectations
-- MUST NOT run badblocks destructive mode without explicit user confirmation
-- MUST run fio tests sequentially over USB (never parallel tool calls); the JMS578 bridge serializes
-  all IO and concurrent tests produce contention artifacts that mimic drive defects
-- MUST use iodepth=1 for random 4K tests over USB; QD32 produces bimodal latency from bridge command
-  batching that does not reflect native drive capability
-- Report raw numbers with context (rated specs, USB ceiling, use-case thresholds)

@@ -19,8 +19,7 @@ subcommand.
 
 ## Context Efficiency Rules
 
-The HA instance has 1000+ entities and 60+ service domains. Unfiltered API responses will overwhelm
-context. These rules are mandatory:
+Unfiltered Home Assistant collections can overwhelm context. These rules are mandatory:
 
 - **NEVER dump full collections.** Subcommands handle projection and limiting automatically. For
   `raw` queries, pipe through `jq` to filter before outputting.
@@ -48,8 +47,8 @@ context. These rules are mandatory:
 
 ## Safe mutations
 
-Use `edit pull` and `edit push` for automations, scripts, and dashboard views. Preserve the
-`# hass-edit-*` header because it carries the object identity and upstream digest. If `push` reports
+Use `edit pull` and `edit push` for automations, scripts, and dashboard views. Preserve the `#
+hass-edit-*` header because it carries the object identity and upstream digest. If `push` reports
 drift, re-pull and reapply the change rather than forcing it by default.
 
 Use `call` for service actions. It uses the WebSocket API and returns the actual Home Assistant

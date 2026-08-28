@@ -9,8 +9,8 @@ description: >-
 
 # Application authoring
 
-Create applications from current repository examples while preserving the root AGENTS.md
-invariants. Do not introduce a pattern from another repository when a local example covers it.
+Create applications from current repository examples while preserving the root AGENTS.md invariants.
+Do not introduce a pattern from another repository when a local example covers it.
 
 ## Choose the example
 
@@ -21,7 +21,7 @@ invariants. Do not introduce a pattern from another repository when a local exam
 
 ## Create the application
 
-1. Create `kubernetes/apps/{namespace}/{app}/` with flat YAML resources.
+1. Create `kubernetes/apps/{namespace}/{app}/` using the selected example's structure.
 2. Add `ks.yaml` with `spec.targetNamespace` and the required dependencies.
 3. Add `kustomization.yaml` with every resource listed explicitly.
 4. Add `helmrelease.yaml` using the chart pattern selected below.
@@ -60,20 +60,19 @@ For app-template, use `chartRef` and set `chartRef.namespace: flux-system`. Do n
 `chart.spec.sourceRef`.
 
 For an external chart, use `chart.spec.sourceRef`. Keep a single-use HelmRepository beside the
-application; put a source shared by multiple apps in `flux/meta/repos` with namespace
-`flux-system`.
+application; put a source shared by multiple apps in `flux/meta/repos` with namespace `flux-system`.
 
 Put GitRepository sources for Flux Kustomizations in `flux/meta/repos`; an app Kustomization cannot
 deploy the source it needs to build itself.
 
 ## Persistence
 
-- The primary PVC matches the app name; additional PVCs use `{app}-{purpose}`.
+- Name PVCs for their persisted purpose, following the selected local example.
 - `ceph-block` is RWO and requires `Recreate` plus `advancedMounts`.
 - `ceph-filesystem` and NFS are RWX and use `RollingUpdate`.
 - Use NFS for media and other large shared files.
-- Jobs and CronJobs with an RWO PVC use an init container with `restartPolicy: Always` as the
-  native sidecar.
+- Jobs and CronJobs with an RWO PVC use an init container with `restartPolicy: Always` as the native
+  sidecar.
 
 For Volsync, add the component and substitute `APP`. The defaults are `ceph-block` and
 `csi-ceph-blockpool`. For CephFS, set `VOLSYNC_STORAGECLASS: ceph-filesystem` and
@@ -83,14 +82,12 @@ For Volsync, add the component and substitute `APP`. The defaults are `ceph-bloc
 
 - Name the primary controller after the HelmRelease.
 - A single service uses the release name. Multiple services append their service key.
-- Give each process its own controller when an app has independent main, worker, or cache
-  processes.
+- Give each process its own controller when an app has independent main, worker, or cache processes.
 - Map persistence through `advancedMounts` for each controller and container.
 
 ## Secrets and configuration
 
-- Use `ExternalSecret` with `external-secrets.io/v1` and path
-  `/namespace/app-name/secret-name`.
+- Use `ExternalSecret` with `external-secrets.io/v1` and path `/namespace/app-name/secret-name`.
 - Prefer `envFrom`, then `env.valueFrom`, then HelmRelease `valuesFrom`.
 - Use `configMapGenerator`; do not create raw ConfigMap resources.
 - Use `postBuild.substituteFrom` only for the centrally managed `cluster-secrets` and
@@ -98,6 +95,6 @@ For Volsync, add the component and substitute `APP`. The defaults are `ceph-bloc
 
 ## Optional patterns
 
-For Intel GPU DRA, follow the Immich machine-learning controller. Include its Flux dependency,
-node selector, ResourceClaimTemplate, pod resource claim, container claim, and OpenVINO device
-setting as one pattern; do not copy only part of it.
+For Intel GPU DRA, follow the Immich machine-learning controller. Include its Flux dependency, node
+selector, ResourceClaimTemplate, pod resource claim, container claim, and OpenVINO device setting as
+one pattern; do not copy only part of it.

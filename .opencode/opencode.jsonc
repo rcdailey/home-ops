@@ -20,7 +20,7 @@
   },
   "permission": {
     "read": {
-      "*.local.*": "deny"
+      "*.local*": "deny"
     },
     "bash": {
       "*git commit*": "ask",
@@ -62,7 +62,7 @@
       "helm uninstall*": "deny",
       "helm rollback*": "deny",
 
-      // others: complete deny
+      // just commands: deny by default
       "just *": "deny",
       "just infisical add-secret*": "ask",
     }

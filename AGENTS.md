@@ -51,6 +51,9 @@ around gaps by falling back to raw CLIs; fix the tool instead. If the gap is too
 inline, document it as a TODO in the relevant hops source file and fall back to the raw CLI for that
 specific operation only.
 
+The `hops` skill owns the bounded exceptions for developing commands, ephemeral debug pods, and Flux
+suspend/resume. Those exceptions do not permit unrelated direct cluster operations.
+
 ### Storage, Volumes, and Resource Patterns
 
 - **RWO volumes MUST use strategy: Recreate** - RollingUpdate causes Multi-Attach errors during pod
@@ -78,8 +81,6 @@ specific operation only.
   secrets managed centrally)
 - **NEVER use raw ConfigMap resources** - ALWAYS use configMapGenerator in kustomization.yaml with
   files from config/ subdirectory
-- **NEVER inline VRL source in vector.yaml** - Separate VRL file required for testing and validation
-- **ALWAYS include test data for VRL validation** - Use ./scripts/test-vrl.py for validation
 - **NEVER read, reference, or document `.local` files** (e.g., `.mise.local.toml`, `.envrc.local`).
   These are unversioned and contain secrets/credentials that MUST NOT appear in agent output,
   commits, or documentation.
@@ -168,8 +169,6 @@ identities.
 - Exclude noisy infrastructure sidecars with `vector.dev/exclude-containers`.
 - Use `observability.home-ops/logs=true` for daemonset collection.
 
-Load the `vrl-authoring` skill for VRL programs and parser fixtures.
-
 ### Documentation
 
 - Validate Markdown with `markdownlint-cli2`.
@@ -188,8 +187,8 @@ do not update them when later decisions supersede their conclusions.
 This repository is `rcdailey/home-ops`. Current cluster inventory is in
 `docs/reference/cluster-inventory.md`.
 
-Before researching or building an external integration, check `.mise.toml` for an existing CLI.
-YNAB uses `ynab` from `npm:@stephendolan/ynab-cli`.
+Before researching or building an external integration, check `.mise.toml` for an existing CLI. YNAB
+uses `ynab` from `npm:@stephendolan/ynab-cli`.
 
 Check local applications first. When no local pattern covers the requirement, consult these
 reference repositories before designing a new pattern:
@@ -201,10 +200,10 @@ reference repositories before designing a new pattern:
 - dsluo/homelab
 - aclerici38/home-ops
 
-Agents MUST NOT run broad `just reconcile`, `helm template`, `just talos diff-config`, or
-`just talos apply-node` commands. Targeted `flux reconcile` is allowed for a bounded operational
-transition after its durable state is in Git. Use `hops flux values` and `hops flux defaults` instead
-of Helm values commands.
+Agents MUST NOT run broad `just reconcile`, `helm template`, `just talos diff-config`, or `just
+talos apply-node` commands. Targeted `flux reconcile` is allowed for a bounded operational
+transition after its durable state is in Git. Use `hops flux values` and `hops flux defaults`
+instead of Helm values commands.
 
 Run standalone script help before use rather than relying on a command catalog in this file.
 

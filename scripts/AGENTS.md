@@ -3,8 +3,8 @@
 ## Lint and type-check suppression
 
 Suppression is prohibited. This covers `# noqa`, `# ruff: ignore`, `# ruff: disable`, `# type:
-ignore`, `# pyright: ignore`, `# nosec`, `# pylint: disable`, `# shellcheck disable`, and
-per-rule `select`/`ignore`/`extend-select` entries in `ruff.toml`.
+ignore`, `# pyright: ignore`, `# nosec`, `# pylint: disable`, `# shellcheck disable`, and per-rule
+`select`/`ignore`/`extend-select` entries in `ruff.toml`.
 
 A finding names a real defect or a design smell. MUST fix the cause: narrow the exception to what
 the block can actually raise, give the function the return type it really has, restructure a
@@ -19,6 +19,6 @@ approved suppression MUST carry the approved rationale as its comment text.
 
 ## Verification
 
-These projects carry no test suites. See the repo-root `hops` verification rule, which applies to
-every script project here: exercise the affected commands directly, on both success and failure
-paths, before reporting done.
+These projects carry no durable test suites. Exercise affected commands directly on both success and
+failure paths before reporting done. Load the governing skill when one defines a more specific
+verification workflow.

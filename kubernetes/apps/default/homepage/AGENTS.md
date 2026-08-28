@@ -6,10 +6,12 @@ Homepage automatically resolves icons from [Dashboard Icons][dashboard-icons]. U
 directly without URL or extension:
 
 ```yaml
-- MyApp:
-    icon: plex          # Resolved from dashboard-icons
-    icon: mdi-flask     # Material Design Icons prefix
-    icon: si-github     # Simple Icons prefix
+- Dashboard Icon:
+    icon: plex
+- Material Design Icon:
+    icon: mdi-flask
+- Simple Icon:
+    icon: si-github
 ```
 
 ### Requirements

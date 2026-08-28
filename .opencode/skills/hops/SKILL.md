@@ -41,13 +41,13 @@ parallel command list in documentation; Click metadata is authoritative.
 Domains may be flat modules or packages. Both expose a Click `cli`; package domains register their
 commands through `__init__.py`. Root auto-discovery requires no central command registry.
 
-- Keep files below 400 lines. Split a module before unrelated workflows accumulate in it.
+- Split a module before unrelated workflows accumulate in it.
 - Put shared logic in `core/`; domain modules do not import from one another.
 - Reuse helpers from `core.format`, `core.runner`, `core.time`, `core.nodes`, `core.workload`,
   `core.resolve`, and `core.helm` instead of creating local equivalents.
 - Use `core.runner.tools_curl` for in-cluster HTTP.
 - Fetch each Kubernetes resource once per command and pass the result to helpers.
-- Escape every user-provided DNS query value with `dns.psql.sql_escape`.
+- Escape every user-provided DNS query value with `dns.psql._sql_escape`.
 - Keep Click wiring in command modules; move substantial implementations into sibling modules.
 - Do not add aliases that only delegate to another command.
 
@@ -100,6 +100,10 @@ exist:
   migrations, immutable field changes). Finds Kustomization + HelmRelease namespaces automatically
   and handles both in one call.
 
+While developing a command, direct read-only calls to its underlying cluster CLI are allowed only to
+establish expected behavior or compare output. Persistent and unrelated operations remain subject to
+the root `AGENTS.md` rules.
+
 ### Output Standards
 
 All output is plain text optimized for LLM token efficiency:
@@ -114,8 +118,8 @@ All output is plain text optimized for LLM token efficiency:
 
 ### Click Conventions
 
-- All Groups default to `no_args_is_help=True` (shows help without subcommand)
-- Use `@click.group()` for domain modules, `@cli.command()` for leaf commands
+- Groups use `HelpfulGroup` or `AutoGroup` so empty and invalid invocations show useful help.
+- Use `@cli.command()` for leaf commands.
 - Common patterns: `-n/--namespace`, `--json` for raw output, `--limit`
 - Time options via the `time_options()` decorator factory in `core.time`
 
@@ -142,10 +146,10 @@ All output is plain text optimized for LLM token efficiency:
    run to fully answer the question. If the list has one item, reconsider whether the command
    belongs in `hops`.
 2. Decide which domain module the command belongs to (or create a new one).
-3. Check the core layer (see Module Structure) for existing utilities before writing new ones.
-    Common needs: `core.workload.resolve_app` for app resolution, `core.runner.tools_curl` for
-    in-cluster HTTP, `core.format.age_str` for timestamp display, `core.time.TimeRange` for time
-    range options, `core.resolve.resolve` for unified target resolution.
+3. Check the core layer described under Architecture before writing new utilities. Common needs:
+    `core.workload.resolve_app` for app resolution, `core.runner.tools_curl` for in-cluster HTTP,
+    `core.format.age_str` for timestamp display, `core.time.TimeRange` for time range options,
+    `core.resolve.resolve` for unified target resolution.
 4. Add a click command function with appropriate arguments and options.
 5. Use `core.runner.run_json()` or `core.runner.kubectl_json()` for data fetching.
 6. Fold the full workflow (correlation, heuristics, flexible resolution, auto-fetch of downstream
@@ -158,8 +162,8 @@ All output is plain text optimized for LLM token efficiency:
 
 ## Verification
 
-No test suite exists; validate adhoc against the live cluster (see `python-scripting` skill,
-Adhoc Verification). Every change MUST be exercised before reporting done:
+No test suite exists; validate adhoc against the live cluster (see `python-scripting` skill, Adhoc
+Verification). Every change MUST be exercised before reporting done:
 
 ```bash
 # Run the changed command, plus a failure path (nonexistent target)
