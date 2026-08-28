@@ -35,8 +35,8 @@ Ceph passes (storage infrastructure). Blocky DNS passes (cluster DNS infrastruct
 
 ## Architecture
 
-Run `./scripts/hops.sh <domain> --help` for command details. Do not maintain a parallel command list
-in documentation; the CLI is authoritative.
+Run `./scripts/hops.sh --help` once for the generated leaf-command catalog. Do not maintain a
+parallel command list in documentation; Click metadata is authoritative.
 
 Domains may be flat modules or packages. Both expose a Click `cli`; package domains register their
 commands through `__init__.py`. Root auto-discovery requires no central command registry.
