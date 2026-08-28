@@ -9,7 +9,7 @@ Personal Kubernetes homelab managed with Talos Linux and Flux GitOps.
 - **Storage**: Rook Ceph
 - **Secrets**: External Secrets + Infisical
 - **Networking**: Cilium, Envoy Gateway
-- **Observability**: VictoriaMetrics + Logs, Grafana
+- **Observability**: OpenTelemetry, VictoriaMetrics, VictoriaLogs, VictoriaTraces, Grafana
 - **Databases**: CloudNativePG
 - **Backups**: Volsync, Kopia
 

@@ -81,6 +81,8 @@ spec:
                 memory: 2Gi
 
     defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true

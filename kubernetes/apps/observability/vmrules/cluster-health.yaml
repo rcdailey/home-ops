@@ -10,53 +10,67 @@ spec:
     interval: 30s
     rules:
     - alert: NodeDown
-      expr: up{job="node-exporter"} == 0
+      expr: otel_k8s_node_condition{condition="Ready"} != 1
       for: 5m
       labels:
         severity: critical
       annotations:
-        summary: "Node {{ $labels.instance }} is down"
-        description: "Node {{ $labels.instance }} has been down for more than 5 minutes"
+        summary: "Node {{ $labels.k8s_node_name }} is down"
+        description: "Node {{ $labels.k8s_node_name }} has not been ready for 5 minutes"
 
-    # Exclude iowait from CPU usage calculation since high iowait indicates I/O bottleneck,
-    # not actual CPU processing load. iowait represents time CPUs are idle waiting for I/O.
-    - alert: NodeHighCPU
+    - alert: NodePressure
       expr: |
-        (
-          sum by (instance) (irate(node_cpu_seconds_total{mode!="idle",mode!="iowait"}[5m]))
-          / on (instance) group_left
-          count by (instance) (node_cpu_seconds_total{mode="idle"})
-        ) * 100 > 80
+        otel_k8s_node_condition{condition=~"MemoryPressure|DiskPressure|PIDPressure"} == 1
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Node {{ $labels.k8s_node_name }} has {{ $labels.condition }}"
+
+    - alert: NodeHighCPU
+      expr: 100 * otel:node_cpu_usage:ratio > 80
       for: 10m
       labels:
         severity: warning
       annotations:
-        summary: "High CPU usage on {{ $labels.instance }}"
-        description: "CPU usage is above 80% for more than 10 minutes on {{ $labels.instance }}"
+        summary: "High CPU usage on {{ $labels.host_name }}"
+        description: "CPU usage is above 80% for 10 minutes on {{ $labels.host_name }}"
 
     - alert: NodeHighMemory
-      expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+      expr: 100 * otel:node_memory_usage:ratio > 90
       for: 10m
       labels:
         severity: critical
       annotations:
-        summary: "High memory usage on {{ $labels.instance }}"
-        description: "Memory usage is above 90% for more than 10 minutes on {{ $labels.instance }}"
+        summary: "High memory usage on {{ $labels.k8s_node_name }}"
+        description: "Memory usage is above 90% for 10 minutes on {{ $labels.k8s_node_name }}"
 
     - alert: NodeDiskSpaceLow
-      expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 85
-      for: 5m
+      expr: |
+        100 * sum by (host_name, mountpoint, device) (
+          otel_system_filesystem_usage_bytes{state="used",type!="tmpfs"}
+        )
+          / sum by (host_name, mountpoint, device) (
+            otel_system_filesystem_usage_bytes{type!="tmpfs"}
+          ) > 85
+      for: 15m
       labels:
         severity: warning
       annotations:
-        summary: "Low disk space on {{ $labels.instance }}"
-        description: "Disk usage is above 85% on filesystem {{ $labels.mountpoint }} ({{ $labels.instance }})"
+        summary: "Disk usage above 85% on {{ $labels.host_name }}"
+        description: "Filesystem {{ $labels.mountpoint }} is above 85% usage"
 
     - alert: NodeDiskSpaceCritical
-      expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 95
-      for: 5m
+      expr: |
+        100 * sum by (host_name, mountpoint, device) (
+          otel_system_filesystem_usage_bytes{state="used",type!="tmpfs"}
+        )
+          / sum by (host_name, mountpoint, device) (
+            otel_system_filesystem_usage_bytes{type!="tmpfs"}
+          ) > 95
+      for: 10m
       labels:
         severity: critical
       annotations:
-        summary: "Critical disk space on {{ $labels.instance }}"
-        description: "Disk usage is above 95% on filesystem {{ $labels.mountpoint }} ({{ $labels.instance }})"
+        summary: "Disk usage above 95% on {{ $labels.host_name }}"
+        description: "Filesystem {{ $labels.mountpoint }} is above 95% usage"

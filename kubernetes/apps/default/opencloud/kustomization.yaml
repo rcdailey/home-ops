@@ -10,6 +10,7 @@ resources:
 - externalsecret.yaml
 - oidcclient.yaml
 - pvc.yaml
+- servicemonitor.yaml
 configMapGenerator:
 - name: opencloud-config
   files:

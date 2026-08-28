@@ -1,0 +1,104 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/opentelemetry.io/opentelemetrycollector_v1beta1.json
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-cluster
+spec:
+  mode: deployment
+  replicas: 1
+  serviceAccount: otel-cluster
+  upgradeStrategy: none
+  deploymentUpdateStrategy:
+    type: Recreate
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  volumes:
+  - name: storage
+    persistentVolumeClaim:
+      claimName: otel-cluster
+  volumeMounts:
+  - name: storage
+    mountPath: /var/lib/otelcol
+  ports:
+  - name: metrics
+    port: 8888
+    protocol: TCP
+  - name: health
+    port: 13133
+    protocol: TCP
+  config:
+    receivers:
+      k8s_cluster:
+        auth_type: serviceAccount
+        collection_interval: 20s
+        node_conditions_to_report: [Ready, MemoryPressure, DiskPressure, PIDPressure]
+        metrics:
+          k8s.container.status.reason:
+            enabled: true
+          k8s.container.status.state:
+            enabled: true
+          k8s.node.condition:
+            enabled: true
+          k8s.persistentvolume.status.phase:
+            enabled: true
+          k8s.persistentvolume.storage.capacity:
+            enabled: true
+          k8s.persistentvolumeclaim.status.phase:
+            enabled: true
+          k8s.persistentvolumeclaim.storage.capacity:
+            enabled: true
+          k8s.persistentvolumeclaim.storage.request:
+            enabled: true
+          k8s.pod.status_reason:
+            enabled: true
+      k8s_objects:
+        auth_type: serviceAccount
+        storage: file_storage/cluster
+        objects:
+        - name: events
+          mode: watch
+          group: events.k8s.io
+    processors: {}
+    exporters:
+      otlp/gateway:
+        endpoint: otel-gateway-collector.observability:4317
+        tls:
+          insecure: true
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 0s
+        sending_queue:
+          storage: file_storage/cluster
+    extensions:
+      file_storage/cluster:
+        directory: /var/lib/otelcol
+        create_directory: true
+        fsync: true
+        max_size: 536870912
+    service:
+      extensions: [file_storage/cluster, health_check]
+      pipelines:
+        metrics:
+          receivers: [k8s_cluster]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/gateway]
+        logs/events:
+          receivers: [k8s_objects]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/gateway]

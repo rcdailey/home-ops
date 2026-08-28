@@ -119,6 +119,8 @@ spec:
                 memory: 128Mi
 
     defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000

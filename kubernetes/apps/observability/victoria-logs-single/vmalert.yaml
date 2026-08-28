@@ -1,0 +1,36 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmalert_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMAlert
+metadata:
+  name: vl
+spec:
+  disableSelfServiceScrape: true
+  evaluationInterval: 15s
+  selectAllByDefault: false
+  ruleNamespaceSelector: {}
+  ruleSelector:
+    matchLabels:
+      observability.home-ops/datasource: logs
+  datasource:
+    url: http://vl.observability:9428
+  notifier:
+    url: http://vmalertmanager-vm.observability:9093
+  remoteWrite:
+    url: http://vmsingle-vm.observability:8428
+  remoteRead:
+    url: http://vmsingle-vm.observability:8428
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi
+  configReloaderResources:
+    limits:
+      memory: 64Mi
+    requests:
+      cpu: 10m
+      memory: 25Mi
+  extraArgs:
+    remoteWrite.disablePathAppend: "false"

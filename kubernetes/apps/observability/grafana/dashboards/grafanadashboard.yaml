@@ -2,10 +2,10 @@
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
-  name: container-memory-usage
+  name: otel-kubernetes
 spec:
   allowCrossNamespaceImport: true
-  folder: General
+  folder: Observability
   instanceSelector:
     matchLabels:
       grafana.internal/instance: grafana
@@ -13,25 +13,8 @@ spec:
   - datasourceName: VictoriaMetrics
     inputName: DS_PROMETHEUS
   configMapRef:
-    name: container-memory-usage-dashboard
-    key: container-memory-usage.json
----
-apiVersion: grafana.integreatly.org/v1beta1
-kind: GrafanaDashboard
-metadata:
-  name: cp-disk-correlation
-spec:
-  allowCrossNamespaceImport: true
-  folder: General
-  instanceSelector:
-    matchLabels:
-      grafana.internal/instance: grafana
-  datasources:
-  - datasourceName: VictoriaMetrics
-    inputName: DS_PROMETHEUS
-  configMapRef:
-    name: cp-disk-correlation-dashboard
-    key: ceph-etcd-incident-overview.json
+    name: otel-kubernetes-dashboard
+    key: otel-kubernetes.json
 ---
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard

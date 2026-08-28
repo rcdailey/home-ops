@@ -1,0 +1,16 @@
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: vt
+spec:
+  allowCrossNamespaceImport: true
+  folder: Observability
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+  - datasourceName: VictoriaMetrics
+    inputName: DS_PROMETHEUS
+  url: >-
+    https://github.com/VictoriaMetrics/VictoriaTraces/raw/v0.11.0/dashboards/victoriatraces.json

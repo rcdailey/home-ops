@@ -9,9 +9,10 @@ spec:
       grafana.internal/instance: grafana
   datasource:
     name: VictoriaMetrics
+    uid: VictoriaMetrics
     type: prometheus
     access: proxy
-    url: http://vmsingle-victoria-metrics-k8s-stack.observability:8428
+    url: http://vmsingle-vm.observability:8428
     isDefault: true
     jsonData:
       prometheusType: Prometheus
@@ -26,11 +27,46 @@ spec:
       grafana.internal/instance: grafana
   datasource:
     name: VictoriaLogs
+    uid: VictoriaLogs
     type: victoriametrics-logs-datasource
     access: proxy
-    url: http://victoria-logs-single.observability:9428
+    url: http://vl.observability:9428
     jsonData:
       maxLines: 1000
+      derivedFields:
+      - name: Trace
+        matcherRegex: 'trace_id[=:]"?([a-f0-9]{32})'
+        datasourceUid: VictoriaTraces
+        url: '$${__value.raw}'
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: victoriatraces
+spec:
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasource:
+    name: VictoriaTraces
+    uid: VictoriaTraces
+    type: tempo
+    access: proxy
+    url: http://vt.observability:10428/select/tempo
+    jsonData:
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false
+      tracesToLogsV2:
+        datasourceUid: VictoriaLogs
+        filterByTraceID: true
+        filterBySpanID: true
+        tags:
+        - key: service.name
+          value: service.name
+        - key: k8s.namespace.name
+          value: k8s.namespace.name
 ---
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource
@@ -42,8 +78,9 @@ spec:
       grafana.internal/instance: grafana
   datasource:
     name: VMAlertmanager
+    uid: VMAlertmanager
     type: alertmanager
     access: proxy
-    url: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093
+    url: http://vmalertmanager-vm.observability:9093
     jsonData:
       implementation: prometheus

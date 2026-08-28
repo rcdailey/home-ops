@@ -73,6 +73,8 @@ spec:
                 drop: [ALL]
 
     defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
       securityContext:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch

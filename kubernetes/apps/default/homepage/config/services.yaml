@@ -174,22 +174,22 @@
   - VictoriaMetrics:
       icon: victoriametrics
       href: https://victoria-metrics.${SECRET_DOMAIN}/
-      siteMonitor: http://vmsingle-victoria-metrics-k8s-stack.observability:8428/health
+      siteMonitor: http://vmsingle-vm.observability:8428/health
 
   - VictoriaLogs:
       icon: victorialogs
       href: https://victoria-logs.${SECRET_DOMAIN}/
-      siteMonitor: http://victoria-logs-single.observability:9428/health
+      siteMonitor: http://vl.observability:9428/health
 
   - VM AlertManager:
       icon: alertmanager
       href: https://vmalertmanager.${SECRET_DOMAIN}/
-      siteMonitor: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093/-/healthy
+      siteMonitor: http://vmalertmanager-vm.observability:9093/-/healthy
 
   - VM Alert:
       icon: mdi-alert-octagon
       href: https://vmalert.${SECRET_DOMAIN}/
-      siteMonitor: http://vmalert-victoria-metrics-k8s-stack.observability:8080/-/healthy
+      siteMonitor: http://vmalert-vm.observability:8080/-/healthy
 
   - Ceph Dashboard:
       icon: ceph

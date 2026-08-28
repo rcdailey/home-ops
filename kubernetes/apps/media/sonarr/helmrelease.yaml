@@ -11,6 +11,10 @@ spec:
     name: app-template
     namespace: flux-system
   values:
+    defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
+
     controllers:
       sonarr:
         # CRITICAL: Recreate strategy required for RWO volumes (ceph-block storage)

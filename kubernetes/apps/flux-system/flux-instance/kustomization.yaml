@@ -7,4 +7,4 @@ resources:
 - httproute.yaml
 - receiver.yaml
 - externalsecret.yaml
-- vmpodscrape.yaml
+- podmonitor.yaml

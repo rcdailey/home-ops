@@ -87,6 +87,8 @@ spec:
                 - ALL
 
     defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

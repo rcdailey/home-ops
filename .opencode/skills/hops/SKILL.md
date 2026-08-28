@@ -28,7 +28,7 @@ Commands that fail the test (stay standalone):
 
 - App-specific utilities that happen to use kubectl exec (Home Assistant API, Recyclarr config)
 - Pure utility scripts (icon search, YAML annotation, git hooks)
-- Dev tooling (Vector testing, pre-commit hooks)
+- Dev tooling (pre-commit hooks)
 
 Ceph passes (storage infrastructure). Blocky DNS passes (cluster DNS infrastructure). hass fails
 (application-level automation).

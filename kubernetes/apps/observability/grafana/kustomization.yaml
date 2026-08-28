@@ -9,18 +9,9 @@ resources:
 - ./grafanadatasource.yaml
 - ./dashboards/grafanadashboard.yaml
 configMapGenerator:
-- name: container-memory-usage-dashboard
+- name: otel-kubernetes-dashboard
   files:
-  - container-memory-usage.json=dashboards/container-memory-usage.json
-  options:
-    disableNameSuffixHash: true
-    labels:
-      app.kubernetes.io/managed-by: grafana-operator
-    annotations:
-      kustomize.toolkit.fluxcd.io/substitute: disabled
-- name: cp-disk-correlation-dashboard
-  files:
-  - ceph-etcd-incident-overview.json=dashboards/ceph-etcd-incident-overview.json
+  - otel-kubernetes.json=dashboards/otel-kubernetes.json
   options:
     disableNameSuffixHash: true
     labels:

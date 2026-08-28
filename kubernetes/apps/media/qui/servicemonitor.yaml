@@ -1,0 +1,12 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/monitoring.coreos.com/servicemonitor_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: qui
+spec:
+  selector:
+    matchLabels:
+      observability.home-ops/metrics: qui
+  endpoints:
+  - port: metrics

@@ -18,6 +18,9 @@ from hops.app.gather import (
     diagnose_gateway as _diagnose_gateway,
 )
 from hops.app.gather import (
+    diagnose_network_policies as _diagnose_network_policies,
+)
+from hops.app.gather import (
     diagnose_services as _diagnose_services,
 )
 from hops.app.gather import (
@@ -82,7 +85,7 @@ def logs(
     With --grep, fetches all logs in the time window and filters by
     regex pattern (removes --tail limit so matches are not missed).
 
-    Prefer 'hops query logs' for apps with VictoriaLogs/Vector support.
+    Prefer 'hops query logs' for apps collected by OpenTelemetry.
     """
     result = resolve_pods(app, namespace)
     if not result:
@@ -275,6 +278,7 @@ def diagnose(app: str, namespace: str | None, explain: bool):
 
     if target.kind == TargetKind.WORKLOAD:
         _diagnose_services(app, target.namespace)
+        _diagnose_network_policies(app, target.namespace)
         _diagnose_workload(app, target.namespace)
     else:
         _diagnose_gateway(app, target.namespace)

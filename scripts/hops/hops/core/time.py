@@ -94,6 +94,13 @@ class TimeRange:
             params["end"] = f"-{self.end}" if self._is_duration(self.end) else self.end
         return params
 
+    def to_epoch_range_params(self) -> dict[str, str]:
+        """Return start and end as Unix seconds for APIs without relative times."""
+        return {
+            "start": str(int(self._parse_start_time().timestamp())),
+            "end": str(int(self._parse_end_time().timestamp())),
+        }
+
     def _parse_start_time(self) -> datetime:
         if self.start is None:
             return datetime.now(timezone.utc)

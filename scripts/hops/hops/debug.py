@@ -34,12 +34,15 @@ def _run_ephemeral(
     name: str,
     namespace: str = "default",
     node: str | None = None,
+    service_account: str | None = None,
     timeout: int = 30,
 ) -> None:
     """Create a pod, wait for completion, capture logs, clean up."""
     pod_spec: dict[str, object] = {"terminationGracePeriodSeconds": 0}
     if node:
         pod_spec["nodeName"] = node
+    if service_account:
+        pod_spec["serviceAccountName"] = service_account
 
     create_args = [
         "kubectl",
@@ -140,7 +143,7 @@ def dns(hostname: str, namespace: str, node: str | None):
     lookup = hostname
     if "." not in hostname:
         lookup = f"{hostname}.{namespace}.svc.cluster.local"
-    elif hostname.endswith(f".{namespace}"):
+    elif hostname.count(".") == 1:
         lookup = f"{hostname}.svc.cluster.local"
     info(f"Resolving {hostname} as {lookup} ...")
     _run_ephemeral(
@@ -207,7 +210,7 @@ def app_url(
     namespace: str | None,
     container: str | None,
 ):
-    """Probe DNS, TCP, and HTTP from an application's own network namespace."""
+    """Probe a URL from an app's namespace, node, and service account."""
     workload = resolve_app(app, namespace)
     if not workload:
         info(f"error: could not find app {app!r}")
@@ -217,47 +220,31 @@ def app_url(
         info(f"error: no running pods for {workload.name!r}")
         raise SystemExit(1)
 
-    script = """
-import socket
-import sys
-from urllib.parse import urlsplit
-
-import requests
-
-url = sys.argv[1]
-host = urlsplit(url).hostname
-if not host:
-    raise SystemExit("error: URL has no hostname")
-addresses = socket.getaddrinfo(host, 443, socket.AF_UNSPEC, socket.SOCK_STREAM)
-for family, _, _, _, address in addresses:
-    label = "IPv6" if family == socket.AF_INET6 else "IPv4"
-    sock = socket.socket(family, socket.SOCK_STREAM)
-    sock.settimeout(3)
-    try:
-        sock.connect(address)
-        print(f"tcp {label} {address[0]}: ok")
-    except OSError as exc:
-        print(f"tcp {label} {address[0]}: {exc}")
-    finally:
-        sock.close()
-try:
-    response = requests.get(url, timeout=5)
-    print(f"http {response.status_code} bytes={len(response.content)}")
-except requests.RequestException as exc:
-    print(f"http error: {exc}")
-    raise SystemExit(1)
-""".strip()
-    args = ["kubectl", "exec", pod, "-n", workload.namespace]
-    if container:
-        args.extend(["-c", container])
-    args.extend(["--", "python", "-c", script, url])
-    result = run(args, timeout=30, check=False)
-    if result.stdout:
-        click.echo(result.stdout.rstrip())
-    if result.returncode != 0:
-        error = (result.stderr or "probe failed").strip().splitlines()[-1]
-        info(f"error: {error}")
-        raise SystemExit(1)
+    pod_result = run(
+        ["kubectl", "get", "pod", pod, "-n", workload.namespace, "-o", "json"],
+        timeout=10,
+    )
+    pod_spec = json.loads(pod_result.stdout).get("spec", {})
+    service_account = pod_spec.get("serviceAccountName", "default")
+    node = pod_spec.get("nodeName")
+    name = _pod_name("app-url")
+    info(f"GET {url} as {workload.namespace}/{service_account} on {node} ...")
+    _run_ephemeral(
+        image="curlimages/curl:latest",
+        command=[
+            "curl",
+            "-ksS",
+            "-o",
+            "/dev/null",
+            "-w",
+            "HTTP %{http_code} ip=%{remote_ip} (%{time_total}s)\n",
+            url,
+        ],
+        name=name,
+        namespace=workload.namespace,
+        node=node,
+        service_account=service_account,
+    )
 
 
 @cli.command()

@@ -21,6 +21,17 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
+  postRenderers:
+  - kustomize:
+      patches:
+      - target:
+          version: v1
+          kind: Deployment
+          name: forgejo
+        patch: |-
+          - op: add
+            path: /spec/template/metadata/labels/observability.home-ops~1logs
+            value: "true"
   values:
     image:
       rootless: true

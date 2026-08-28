@@ -18,8 +18,9 @@ matches Git.
 - **NEVER delete resources as a symptom fix** - Deleting jobs, pods, or PVCs treats symptoms, not
   causes. Find the manifest issue and fix it.
 - **Immutable controller migrations MAY use orphan replacement** - Put the replacement state in Git,
-  verify data-bearing resources will be retained, and delete only the controller. NEVER delete PVCs
-  or PVs.
+  verify data-bearing resources will be retained, and delete only the controller. Delete PVCs or PVs
+  only for an explicitly user-approved reset of disposable telemetry that contains no application
+  state.
 - **Orphan cleanup MUST be operational, not declarative** - An exact, non-data-bearing object absent
   from Git and without an active GitOps owner MUST be deleted with the underlying cluster CLI after
   verification through `hops`. NEVER create temporary manifests solely to adopt and prune orphans.
@@ -94,8 +95,8 @@ using the external `probe_success` metric. The API server has `HPAScaleToZero` e
 
 ### Acceptance
 
-Changes in this repository MUST NOT receive an independent acceptance audit. The primary validates
-changes directly with repository checks.
+The primary validates changes directly with repository checks. Run an independent acceptance audit
+only when the user explicitly requests one.
 
 ### Application configuration
 
@@ -156,7 +157,20 @@ filesystem, and drop all capabilities. Document workload requirements that preve
 require root. Do not duplicate identity fields at container level unless containers need different
 identities.
 
-### Databases and logging
+### Telemetry
+
+- Choose metric ingestion from documented workload support. Send native OTLP directly to the
+  gateway; scrape Prometheus endpoints with ServiceMonitor or PodMonitor. Assign one owner per
+  metric family; never ingest equivalent metrics through both paths.
+- OpenTelemetry environment variables configure existing instrumentation; they do not instrument
+  an application or require a Collector sidecar.
+- Use auto-instrumentation for owned code with tests. Inject agents into third-party workloads only
+  after app-specific runtime and startup validation; never enable agents cluster-wide.
+- Keep application-specific log parsing in app-owned OpenTelemetry Collector sidecars.
+- Use `observability.home-ops/logs=true` for node collection. It includes every container; do not
+  add container exclusions.
+
+### Databases
 
 - Give every application its own database.
 - Use CloudNativePG for PostgreSQL and MariaDB Operator for MariaDB.
@@ -164,10 +178,6 @@ identities.
 - Decide CNPG S3 backups case by case; when required, use the `cnpg-backup` component and follow
   `docs/architecture/backup-strategy.md`.
 - Each CNPG cluster needs its own GarageS3Bucket to avoid permission races.
-- Use a regular Vector sidecar for Deployments and a native sidecar for Jobs and CronJobs.
-- Name Vector sidecars `vector`.
-- Exclude noisy infrastructure sidecars with `vector.dev/exclude-containers`.
-- Use `observability.home-ops/logs=true` for daemonset collection.
 
 ### Documentation
 

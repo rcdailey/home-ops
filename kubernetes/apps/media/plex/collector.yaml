@@ -1,0 +1,123 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/opentelemetry.io/opentelemetrycollector_v1beta1.json
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: plex
+spec:
+  mode: sidecar
+  upgradeStrategy: none
+  command: [/otelcol-k8s, --feature-gates=filelog.mtimeSortType]
+  livenessProbe: {}
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+  resources:
+    limits:
+      memory: 256Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi
+  volumeMounts:
+  - name: logs
+    mountPath: /config/Library/Application Support/Plex Media Server/Logs
+    readOnly: true
+  - name: telemetry-data
+    mountPath: /var/lib/otelcol
+  config:
+    receivers:
+      file_log/plex:
+        include:
+        - /config/Library/Application Support/Plex Media Server/Logs/*.log
+        start_at: beginning
+        include_file_name: false
+        include_file_path: true
+        max_concurrent_files: 1
+        ordering_criteria:
+          regex: '.*'
+          # Plex retains fewer than 100 files; increase this if its rotation policy changes.
+          top_n: 100
+          sort_by:
+          - sort_type: mtime
+            ascending: true
+        storage: file_storage/plex
+        operators:
+        - type: copy
+          from: body
+          to: attributes.raw_message
+        - type: add
+          field: attributes.plex.parse_status
+          value: unparsed
+        - type: regex_parser
+          parse_from: body
+          parse_to: attributes
+          regex: >-
+            ^(?P<timestamp>\w+ \d+, \d+ \d+:\d+:\d+\.\d+)
+            \[(?P<thread_id>\d+)\] (?P<level>\w+) - (?P<parsed_message>.*)$
+          on_error: send_quiet
+          timestamp:
+            parse_from: attributes.timestamp
+            layout_type: strptime
+            layout: '%b %d, %Y %H:%M:%S.%L'
+          severity:
+            parse_from: attributes.level
+        - type: add
+          field: attributes.plex.parse_status
+          value: parsed
+          if: attributes.parsed_message != nil
+        - type: move
+          from: attributes.parsed_message
+          to: body
+          if: attributes.parsed_message != nil
+        - type: regex_parser
+          parse_from: attributes["log.file.path"]
+          parse_to: attributes
+          regex: ^.*/(?P<log_file>[^/]+)$
+    processors:
+      resourcedetection/kubernetes:
+        detectors: [env]
+        override: false
+      resource/plex:
+        attributes:
+        - key: service.name
+          action: upsert
+          value: plex
+        - key: service.namespace
+          action: upsert
+          value: media
+        - key: k8s.container.name
+          action: upsert
+          value: app
+        - key: k8s.deployment.name
+          action: upsert
+          value: plex
+    exporters:
+      otlp_http/gateway:
+        endpoint: http://otel-gateway-collector.observability:4318
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 0s
+        sending_queue:
+          storage: file_storage/plex
+    extensions:
+      file_storage/plex:
+        directory: /var/lib/otelcol
+        create_directory: true
+        fsync: true
+        max_size: 536870912
+    service:
+      extensions: [file_storage/plex, health_check]
+      pipelines:
+        logs:
+          receivers: [file_log/plex]
+          processors:
+          - memory_limiter
+          - resourcedetection/kubernetes
+          - resource/plex
+          - batch
+          exporters: [otlp_http/gateway]

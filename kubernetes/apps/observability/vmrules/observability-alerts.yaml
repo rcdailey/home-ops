@@ -1,0 +1,201 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: observability-alerts
+spec:
+  groups:
+  - name: observability-health
+    interval: 30s
+    rules:
+    - record: otel:node_cpu_usage:ratio
+      expr: |
+        1 - (
+          sum by (host_name) (
+            rate(otel_system_cpu_time_seconds_total{state=~"idle|wait"}[5m])
+          )
+            / sum by (host_name) (rate(otel_system_cpu_time_seconds_total[5m]))
+        )
+
+    - record: otel:node_memory_usage:ratio
+      expr: |
+        otel_k8s_node_memory_working_set_bytes
+          / (
+            otel_k8s_node_memory_working_set_bytes
+            + otel_k8s_node_memory_available_bytes
+          )
+
+    - record: otel:pvc_usage:ratio
+      expr: |
+        1 - max by (k8s_namespace_name, k8s_persistentvolumeclaim_name) (
+          otel_k8s_volume_available_bytes
+        )
+          / max by (k8s_namespace_name, k8s_persistentvolumeclaim_name) (
+            otel_k8s_volume_capacity_bytes
+          )
+
+    - record: otel:collector_export_failures:rate5m
+      expr: |
+        sum by (service_instance_id, exporter) (
+          rate({__name__=~"otelcol_exporter_send_failed_(log_records|metric_points|spans)_total"}[5m])
+        )
+
+    - record: otel:collector_queue_exhaustion_seconds
+      expr: |
+        (
+          otelcol_exporter_queue_capacity - otelcol_exporter_queue_size
+        ) / clamp_min(deriv(otelcol_exporter_queue_size[15m]), 0.001)
+          and deriv(otelcol_exporter_queue_size[15m]) > 0
+
+    - alert: Watchdog
+      expr: vector(1)
+      labels:
+        severity: none
+        hidden: "true"
+      annotations:
+        summary: Alerting pipeline health check
+
+    - alert: ScrapeTargetDown
+      expr: up == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Scrape target {{ $labels.service_name }}/{{ $labels.service_instance_id }} is down
+
+    - alert: VictoriaMetricsMissing
+      expr: absent(up{service_name="victoria-metrics"})
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: VictoriaMetrics has no scrape target
+
+    - alert: VictoriaLogsMissing
+      expr: absent(up{service_name="victoria-logs"})
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: VictoriaLogs has no scrape target
+
+    - alert: VictoriaTracesMissing
+      expr: absent(up{service_name="victoria-traces"})
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: VictoriaTraces has no scrape target
+
+    - alert: OpenTelemetryTargetAllocatorMissing
+      expr: absent(up{server_address="otel-scrape-targetallocator.observability"})
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: OpenTelemetry Target Allocator has no scrape target
+
+    - alert: VictoriaMetricsDiskSpaceLow
+      expr: |
+        vm_free_disk_space_bytes
+          / (vm_free_disk_space_bytes + vm_data_size_bytes) < 0.15
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: VictoriaMetrics has less than 15% disk space available
+
+    - alert: VictoriaLogsDiskSpaceLow
+      expr: vl_free_disk_space_bytes / vl_total_disk_space_bytes < 0.15
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: VictoriaLogs has less than 15% disk space available
+
+    - alert: VictoriaTracesStorageNearLimit
+      expr: vt_data_size_bytes / vt_max_disk_space_usage_bytes > 0.8
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: VictoriaTraces is above 80% of its storage limit
+
+    - alert: OpenTelemetryExportFailures
+      expr: |
+        sum by (service_instance_id, exporter) (
+          rate({__name__=~"otelcol_exporter_send_failed_(log_records|metric_points|spans)_total"}[5m])
+        ) > 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Collector {{ $labels.service_instance_id }} cannot export telemetry"
+
+    - alert: OpenTelemetryReceiverRefusals
+      expr: |
+        sum by (service_instance_id, receiver) (
+          rate({__name__=~"otelcol_receiver_refused_(log_records|metric_points|spans)_total"}[5m])
+        ) > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Collector {{ $labels.service_instance_id }} is refusing telemetry"
+
+    - alert: OpenTelemetryDroppedTelemetry
+      expr: |
+        sum by (service_instance_id, exporter) (
+          rate({__name__=~"otelcol_exporter_enqueue_failed_(log_records|metric_points|spans)_total"}[5m])
+        ) > 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Collector {{ $labels.service_instance_id }} dropped telemetry before queuing"
+
+    - alert: OpenTelemetryQueueNearCapacity
+      expr: otelcol_exporter_queue_size / otelcol_exporter_queue_capacity > 0.8
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Collector export queue {{ $labels.exporter }} is above 80% capacity"
+
+    - alert: OpenTelemetryQueueFull
+      expr: otelcol_exporter_queue_size >= otelcol_exporter_queue_capacity
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Collector export queue {{ $labels.exporter }} is full"
+
+    - alert: NfsProbeFailed
+      expr: probe_success{service_instance_id="192.168.1.58:2049"} == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: NFS server probe failed, storage is unavailable
+
+    - alert: KubeHpaMaxedOut
+      expr: |
+        otel_k8s_hpa_current_replicas == otel_k8s_hpa_max_replicas
+          and otel_k8s_hpa_max_replicas > 1
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "HPA {{ $labels.k8s_hpa_name }} is running at max replicas"
+
+    - alert: TooHighChurnRate24h
+      expr: |
+        sum(increase(vm_new_timeseries_created_total[24h])) by (service_name)
+          > sum(vm_cache_entries{type="storage/hour_metric_ids"}) by (service_name) * 10
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High time series churn for {{ $labels.service_name }}"

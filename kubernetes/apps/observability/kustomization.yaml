@@ -7,9 +7,15 @@ components:
 - ../../components/common
 - ../../components/drift-detection
 resources:
+- ./opentelemetry-operator/ks.yaml
+- ./opentelemetry-gateway/ks.yaml
+- ./opentelemetry-instrumentation/ks.yaml
+- ./opentelemetry-node/ks.yaml
+- ./opentelemetry-cluster/ks.yaml
+- ./opentelemetry-scrape/ks.yaml
 - ./victoria-metrics-k8s-stack/ks.yaml
 - ./victoria-logs-single/ks.yaml
-- ./victoria-logs-collector/ks.yaml
+- ./victoria-traces-single/ks.yaml
 - ./grafana-operator/ks.yaml
 - ./grafana/ks.yaml
 - ./silence-operator/ks.yaml

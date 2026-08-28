@@ -27,4 +27,4 @@ spec:
     silences:
       enabled: true
       alertmanager:
-        address: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093
+        address: http://vmalertmanager-vm.observability:9093

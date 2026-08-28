@@ -11,6 +11,10 @@ spec:
     name: app-template
     namespace: flux-system
   values:
+    defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
+
     controllers:
       qui:
         # RWO volume requires Recreate strategy
@@ -34,6 +38,9 @@ spec:
               QUI__PORT: &port 7476
               QUI__LOG_LEVEL: INFO
               QUI__LOG_PATH: /tmp/logs
+              QUI__METRICS_ENABLED: "true"
+              QUI__METRICS_HOST: 0.0.0.0
+              QUI__METRICS_PORT: &metricsPort 9074
               # OIDC via pocket-id
               QUI__OIDC_ENABLED: "true"
               QUI__OIDC_ISSUER: https://auth.${SECRET_DOMAIN}
@@ -68,9 +75,13 @@ spec:
 
     service:
       app:
+        labels:
+          observability.home-ops/metrics: qui
         ports:
           http:
             port: *port
+          metrics:
+            port: *metricsPort
 
     route:
       app:

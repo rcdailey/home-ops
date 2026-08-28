@@ -208,7 +208,7 @@ def helmrelease(name: str | None, namespace: str | None):
         ctype = cond.get("type", "")
         cstatus = cond.get("status", "")
         msg = cond.get("message", "")
-        pairs.append((ctype, f"{cstatus} - {truncate(msg, 100)}" if msg else cstatus))
+        pairs.append((ctype, f"{cstatus} - {msg}" if msg else cstatus))
 
     kv(pairs)
 
@@ -350,6 +350,6 @@ def kustomization(name: str | None, namespace: str | None):
         ctype = cond.get("type", "")
         cstatus = cond.get("status", "")
         msg = cond.get("message", "")
-        pairs.append((ctype, f"{cstatus} - {truncate(msg, 100)}" if msg else cstatus))
+        pairs.append((ctype, f"{cstatus} - {msg}" if msg else cstatus))
 
     kv(pairs)

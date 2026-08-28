@@ -35,15 +35,16 @@ def build_query_from_filters(
     if app_identity:
         filters.append(f"({app_identity})")
     elif app:
-        filters.append(f"app:={json.dumps(app)}")
+        filters.append(f'"service.name":={json.dumps(app)}')
     if namespace:
-        filters.append(f"kubernetes.pod_namespace:={json.dumps(namespace)}")
+        filters.append(f'"k8s.namespace.name":={json.dumps(namespace)}')
     if pod:
-        filters.append(f"kubernetes.pod_name:={json.dumps(pod)}")
+        filters.append(f'"k8s.pod.name":={json.dumps(pod)}')
     if container:
-        filters.append(f"kubernetes.container_name:={json.dumps(container)}")
+        filters.append(f'"k8s.container.name":={json.dumps(container)}')
     if level:
-        filters.append(f"level:={json.dumps(level)}")
+        pattern = json.dumps(rf"(?i)^{re.escape(level)}$")
+        filters.append(f'(level:={json.dumps(level)} or "severity_text":~{pattern})')
     query = " ".join(filters) if filters else "*"
     if search:
         query = f"{query} AND {search}"
@@ -51,7 +52,7 @@ def build_query_from_filters(
 
 
 _LOG_OPT_IN_LABEL = "observability.home-ops/logs"
-_VECTOR_SIDECAR_NAME = "vector"
+_OTEL_SIDECAR_ANNOTATION = "sidecar.opentelemetry.io/inject"
 
 _PLAIN_LEVELS: dict[str, tuple[re.Pattern[str], dict[str, str]]] = {
     "recyclarr": (
@@ -82,13 +83,11 @@ _PLAIN_LEVELS: dict[str, tuple[re.Pattern[str], dict[str, str]]] = {
 }
 
 
-def _has_vector_sidecar(pod_spec: dict) -> bool:
-    """Check if the pod spec includes a Vector sidecar container."""
-    for container_list in ("containers", "initContainers"):
-        for c in pod_spec.get(container_list, []):
-            if c.get("name") == _VECTOR_SIDECAR_NAME:
-                return True
-    return False
+def _has_otel_sidecar(workload: Workload) -> bool:
+    """Check whether the pod template requests an OpenTelemetry sidecar."""
+    annotations = workload.pod_template().get("metadata", {}).get("annotations", {})
+    value = annotations.get(_OTEL_SIDECAR_ANNOTATION)
+    return value not in (None, "false")
 
 
 def _require_log_collection(app: str) -> Workload:
@@ -99,68 +98,52 @@ def _require_log_collection(app: str) -> Workload:
         raise SystemExit(1)
 
     labels = wl.pod_labels()
-    pod_spec = wl.pod_spec()
-
-    # Path 1: daemonset collection via opt-in label
     if labels.get(_LOG_OPT_IN_LABEL) == "true":
         return wl
-    # Path 2: Vector sidecar container
-    if _has_vector_sidecar(pod_spec):
+    if _has_otel_sidecar(wl):
         return wl
 
     info(
         f"error: {wl.name} (namespace: {wl.namespace}) has no log collection; "
         "add pod label "
         f'"{_LOG_OPT_IN_LABEL}=true" for node collection '
-        "or a Vector sidecar container"
+        "or inject an OpenTelemetry sidecar"
     )
     info("hint: use 'hops app logs' for immediate kubectl-based access")
     raise SystemExit(1)
 
 
 def _app_identity_filter(app: str, workload: Workload) -> str:
-    """Build a query that matches both Vector and vlagent app identity fields."""
-    terms = {f"app:={json.dumps(app)}"}
+    """Build a query from canonical OpenTelemetry resource identity."""
+    terms = {f'"service.name":={json.dumps(app)}'}
     if app_label := workload.app_label():
-        terms.add(f"app:={json.dumps(app_label)}")
-    labels = workload.pod_labels()
-    for key in ("app", "app.kubernetes.io/name"):
-        value = labels.get(key)
-        if not value:
-            continue
-        field = f"kubernetes.pod_labels.{key}"
-        terms.add(f"{json.dumps(field)}:={json.dumps(value)}")
+        terms.add(f'"service.name":={json.dumps(app_label)}')
 
     pod_pattern = rf"^{re.escape(workload.name)}(?:-|$)"
     pod_identity = (
-        f"kubernetes.pod_namespace:={json.dumps(workload.namespace)} "
-        f"kubernetes.pod_name:~{json.dumps(pod_pattern)}"
+        f'"k8s.namespace.name":={json.dumps(workload.namespace)} '
+        f'"k8s.pod.name":~{json.dumps(pod_pattern)}'
     )
     terms.add(f"({pod_identity})")
 
     for container in workload.pod_spec().get("containers", []):
         name = container.get("name")
-        if name in (None, "app", "main", "vector"):
+        if name in (None, "app", "main"):
             continue
         container_identity = (
-            f"kubernetes.pod_namespace:={json.dumps(workload.namespace)} "
-            f"kubernetes.container_name:={json.dumps(name)}"
+            f'"k8s.namespace.name":={json.dumps(workload.namespace)} '
+            f'"k8s.container.name":={json.dumps(name)}'
         )
         terms.add(f"({container_identity})")
     return " or ".join(sorted(terms))
 
 
 def _log_app(log: dict) -> str:
-    """Return the effective app identity from old and new collector fields."""
-    for field in (
-        "app",
-        "kubernetes.pod_labels.app",
-        "kubernetes.pod_labels.app.kubernetes.io/name",
-    ):
-        if value := log.get(field):
-            return str(value)
+    """Return the effective app identity from OpenTelemetry resource fields."""
+    if value := log.get("service.name"):
+        return str(value)
 
-    pod_name = str(log.get("kubernetes.pod_name", ""))
+    pod_name = str(log.get("k8s.pod.name", ""))
     for app in _PLAIN_LEVELS:
         if pod_name == app or pod_name.startswith(f"{app}-"):
             return app
@@ -186,8 +169,8 @@ def normalize_log(log: dict, app_hint: str | None = None) -> dict:
     app = _log_app(result) or app_hint or ""
     if app and not result.get("app"):
         result["app"] = app
-    if not result.get("namespace") and result.get("kubernetes.pod_namespace"):
-        result["namespace"] = result["kubernetes.pod_namespace"]
+    if not result.get("namespace") and result.get("k8s.namespace.name"):
+        result["namespace"] = result["k8s.namespace.name"]
 
     if result.get("log_type") == "kubernetes-audit" or (
         result.get("kind") == "Event" and result.get("apiVersion") == "audit.k8s.io/v1"
@@ -203,7 +186,7 @@ def normalize_log(log: dict, app_hint: str | None = None) -> dict:
         result["level"] = levels.get(match.group(1), "unknown") if match else "unknown"
         return result
 
-    level = str(result.get("level", "")).lower()
+    level = str(result.get("level") or result.get("severity_text", "")).lower()
     result["level"] = {"warn": "warning", "fatal": "critical"}.get(
         level, level or "unknown"
     )
@@ -220,7 +203,7 @@ def cli():
 
 @cli.command("query")
 @click.argument("logsql", required=False)
-@click.option("--app", help="Filter by app label")
+@click.option("--app", help="Filter by service name")
 @click.option("--namespace", help="Filter by Kubernetes namespace")
 @click.option("--pod", help="Filter by pod name")
 @click.option("--container", help="Filter by container name")
@@ -233,7 +216,7 @@ def cli():
 @click.option("-n", "--limit", type=int, help="Max results")
 @click.option("--from", "time_from", help="Start time (e.g., 5m, 1h, ISO timestamp)")
 @click.option("--to", "time_to", help="End time")
-@click.option("--detail", is_flag=True, help="Show all VRL-processed fields")
+@click.option("--detail", is_flag=True, help="Show all structured fields")
 @click.option("--all-fields", is_flag=True, help="Show raw JSON per entry")
 @click.option("--json", "json_mode", is_flag=True, help="Output NDJSON")
 def query_cmd(

@@ -1,0 +1,33 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vtsingle_v1.json
+apiVersion: operator.victoriametrics.com/v1
+kind: VTSingle
+metadata:
+  name: vt
+spec:
+  disableSelfServiceScrape: true
+  useLegacyNaming: true
+  useStrictSecurity: true
+  image:
+    repository: victoriametrics/victoria-traces
+    tag: v0.11.0
+  retentionPeriod: 7d
+  retentionMaxDiskSpaceUsageBytes: 8GB
+  # The operator always renders VTSingle Deployments with Recreate, as required by this RWO claim.
+  storage:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 10Gi
+    storageClassName: ceph-block
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 10428

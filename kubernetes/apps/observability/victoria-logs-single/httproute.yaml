@@ -13,5 +13,5 @@ spec:
     sectionName: https
   rules:
   - backendRefs:
-    - name: victoria-logs-single
+    - name: vl
       port: 9428

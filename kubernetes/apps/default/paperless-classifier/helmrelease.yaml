@@ -28,6 +28,9 @@ spec:
           reloader.stakater.com/auto: "true"
 
         pod:
+          annotations:
+            instrumentation.opentelemetry.io/inject-python: observability/home-ops
+            instrumentation.opentelemetry.io/otel-python-platform: musl
           labels:
             observability.home-ops/logs: "true"
           restartPolicy: Never
@@ -46,6 +49,7 @@ spec:
               pullPolicy: Always
             env:
               PAPERLESS_URL: http://paperless-ngx-app.default:8000
+              OTEL_SERVICE_NAME: paperless-classifier
             envFrom:
             - secretRef:
                 name: paperless-classifier-secret

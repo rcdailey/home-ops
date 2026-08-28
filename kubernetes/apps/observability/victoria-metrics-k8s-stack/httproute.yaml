@@ -13,7 +13,7 @@ spec:
     sectionName: https
   rules:
   - backendRefs:
-    - name: vmsingle-victoria-metrics-k8s-stack
+    - name: vmsingle-vm
       port: 8428
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.networking.k8s.io/httproute_v1.json
@@ -30,7 +30,7 @@ spec:
     sectionName: https
   rules:
   - backendRefs:
-    - name: vmalert-victoria-metrics-k8s-stack
+    - name: vmalert-vm
       port: 8080
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.networking.k8s.io/httproute_v1.json
@@ -47,5 +47,5 @@ spec:
     sectionName: https
   rules:
   - backendRefs:
-    - name: vmalertmanager-victoria-metrics-k8s-stack
+    - name: vmalertmanager-vm
       port: 9093

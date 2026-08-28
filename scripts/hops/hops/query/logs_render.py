@@ -44,14 +44,10 @@ def format_log_entry(log: dict, detail: bool = False, all_fields: bool = False) 
         core_fields = {"timestamp", "level", "stream", "message", "app"}
         internal_fields = {"_time", "_msg", "_stream", "_stream_id"}
         for key, value in sorted(log.items()):
-            if (
-                key in core_fields
-                or key in internal_fields
-                or key.startswith("kubernetes.")
-            ):
+            if key in core_fields or key in internal_fields or key.startswith("k8s."):
                 continue
             parts.append(f"  {key}: {value}")
-        for key in sorted(k for k in log if k.startswith("kubernetes.")):
+        for key in sorted(k for k in log if k.startswith("k8s.")):
             parts.append(f"  {key}: {log[key]}")
         return "\n".join(parts)
 

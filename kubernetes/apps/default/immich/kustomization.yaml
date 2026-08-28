@@ -13,3 +13,4 @@ resources:
 - pvc.yaml
 - resourceclaimtemplate.yaml
 - externalsecret.yaml
+- servicemonitor.yaml

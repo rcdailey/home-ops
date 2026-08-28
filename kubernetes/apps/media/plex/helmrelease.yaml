@@ -18,6 +18,10 @@ spec:
           reloader.stakater.com/auto: "true"
 
         pod:
+          annotations:
+            # Sidecar configuration is injected only when the pod is created.
+            observability.home-ops/collector-revision: "1"
+            sidecar.opentelemetry.io/inject: plex
           # Block Plex telemetry at the pod level (server-side tracking)
           hostAliases:
           - ip: 0.0.0.0
@@ -83,36 +87,6 @@ spec:
               capabilities:
                 drop: ["ALL"]
 
-          vector:
-            image:
-              repository: timberio/vector
-              tag: 0.57.0-alpine
-            env:
-              TZ: America/Chicago
-              VECTOR_CONFIG_PATH: /etc/vector/vector.yaml
-              POD_NAME:
-                valueFrom:
-                  fieldRef:
-                    fieldPath: metadata.name
-              NODE_NAME:
-                valueFrom:
-                  fieldRef:
-                    fieldPath: spec.nodeName
-            resources:
-              requests:
-                cpu: 10m
-                memory: 32Mi
-              limits:
-                memory: 256Mi
-            securityContext:
-              runAsUser: 1000
-              runAsGroup: 1000
-              runAsNonRoot: true
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities:
-                drop: ["ALL"]
-
     persistence:
       config:
         existingClaim: plex-config
@@ -120,9 +94,6 @@ spec:
           plex:
             app:
             - path: /config
-            vector:
-            - path: /config
-              readOnly: true
 
       config-cache:
         existingClaim: plex-cache
@@ -147,9 +118,6 @@ spec:
           plex:
             app:
             - path: /config/Library/Application Support/Plex Media Server/Logs
-            vector:
-            - path: /config/Library/Application Support/Plex Media Server/Logs
-              readOnly: true
 
       tmpfs:
         type: emptyDir
@@ -161,21 +129,10 @@ spec:
             - path: /transcode
               subPath: transcode
 
-      vector-config:
-        type: configMap
-        name: plex-vector-config
-        advancedMounts:
-          plex:
-            vector:
-            - path: /etc/vector
-              readOnly: true
-
-      vector-data:
+      telemetry-data:
+        # Retain the existing claim identity so Flux never prunes its durable checkpoints.
         existingClaim: plex-vector-data
-        advancedMounts:
-          plex:
-            vector:
-            - path: /var/lib/vector
+        globalMounts: []
 
     route:
       app:

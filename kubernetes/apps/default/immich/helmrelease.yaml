@@ -24,6 +24,10 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
+
     controllers:
       immich:
         replicas: 1
@@ -48,6 +52,8 @@ spec:
             image:
               repository: ghcr.io/immich-app/immich-server
               tag: v3.1.0@sha256:b434cb9287eea1471c9974845914d4dd328c9c2d652e446ed4930f99944f0ceb
+            env:
+              IMMICH_TELEMETRY_INCLUDE: all
             envFrom:
             - secretRef:
                 name: immich-secret
@@ -141,9 +147,15 @@ spec:
     service:
       immich:
         controller: immich
+        labels:
+          observability.home-ops/metrics: immich
         ports:
           http:
             port: 2283
+          metrics-api:
+            port: 8081
+          metrics-ms:
+            port: 8082
       machine-learning:
         controller: machine-learning
         ports:

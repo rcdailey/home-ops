@@ -1,0 +1,152 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "VictoriaMetrics"},
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [{
+        "expr": "100 * otel:node_cpu_usage:ratio",
+        "legendFormat": "{{host_name}}",
+        "refId": "A"
+      }],
+      "title": "Node CPU usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "VictoriaMetrics"},
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "targets": [{
+        "expr": "100 * otel:node_memory_usage:ratio",
+        "legendFormat": "{{k8s_node_name}}",
+        "refId": "A"
+      }],
+      "title": "Node memory usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "VictoriaMetrics"},
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 3,
+      "targets": [{
+        "expr": "100 * otel:pvc_usage:ratio",
+        "legendFormat": "{{k8s_namespace_name}}/{{k8s_persistentvolumeclaim_name}}",
+        "refId": "A"
+      }],
+      "title": "PVC usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "VictoriaMetrics"},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 4,
+      "targets": [{
+        "expr": "topk(20, otel_k8s_container_memory_limit_ratio)",
+        "legendFormat": "{{k8s_namespace_name}}/{{k8s_pod_name}}/{{k8s_container_name}}",
+        "refId": "A"
+      }],
+      "title": "Container memory limit usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "VictoriaMetrics"},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "id": 5,
+      "targets": [{
+        "expr": "otelcol_exporter_queue_size / otelcol_exporter_queue_capacity",
+        "legendFormat": "{{service_instance_id}} {{exporter}} {{data_type}}",
+        "refId": "A"
+      }],
+      "title": "Collector queue utilization",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "VictoriaMetrics"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "id": 6,
+      "targets": [{
+        "expr": "otel:collector_export_failures:rate5m",
+        "legendFormat": "{{service_instance_id}} {{exporter}}",
+        "refId": "A"
+      }],
+      "title": "Collector export failures",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "VictoriaMetrics"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "id": 7,
+      "targets": [{
+        "expr": "sum by (job) (up)",
+        "legendFormat": "{{job}}",
+        "refId": "A"
+      }],
+      "title": "Healthy scrape targets",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "VictoriaMetrics"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "id": 8,
+      "targets": [{
+        "expr": "otel_k8s_deployment_desired - otel_k8s_deployment_available",
+        "legendFormat": "{{k8s_namespace_name}}/{{k8s_deployment_name}}",
+        "refId": "A"
+      }],
+      "title": "Unavailable deployment replicas",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "VictoriaMetrics"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
+      "id": 9,
+      "targets": [{
+        "expr": "otel:collector_queue_exhaustion_seconds",
+        "legendFormat": "{{service_instance_id}} {{exporter}} {{data_type}}",
+        "refId": "A"
+      }],
+      "title": "Collector queue exhaustion estimate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "tempo", "uid": "VictoriaTraces"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+      "id": 10,
+      "targets": [{
+        "datasource": {"type": "tempo", "uid": "VictoriaTraces"},
+        "filters": [],
+        "limit": 20,
+        "query": "{ resource.service.name = \"${service}\" }",
+        "queryType": "traceql",
+        "refId": "A",
+        "tableType": "traces"
+      }],
+      "title": "Recent service traces",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": ["opentelemetry", "kubernetes"],
+  "templating": {"list": [{
+    "current": {"text": "paperless-classifier", "value": "paperless-classifier"},
+    "label": "Service",
+    "name": "service",
+    "query": "paperless-classifier",
+    "type": "textbox"
+  }]},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "OpenTelemetry Kubernetes",
+  "uid": "otel-kubernetes",
+  "version": 1
+}

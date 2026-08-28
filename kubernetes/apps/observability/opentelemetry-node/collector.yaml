@@ -1,0 +1,212 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/opentelemetry.io/opentelemetrycollector_v1beta1.json
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-node
+spec:
+  mode: daemonset
+  serviceAccount: otel-node
+  upgradeStrategy: none
+  env:
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+  - name: K8S_NODE_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  # Host CRI and audit files retain node ownership, so this collector requires root file access.
+  securityContext:
+    runAsUser: 0
+    runAsNonRoot: false
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      add: [DAC_READ_SEARCH]
+      drop: [ALL]
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  tolerations:
+  - operator: Exists
+  volumes:
+  - name: pod-logs
+    hostPath:
+      path: /var/log/pods
+      type: Directory
+  - name: audit-logs
+    hostPath:
+      path: /var/log/audit
+      type: DirectoryOrCreate
+  - name: hostfs
+    hostPath:
+      path: /
+      type: Directory
+  - name: storage
+    hostPath:
+      path: /var/lib/opentelemetry
+      type: DirectoryOrCreate
+  volumeMounts:
+  - name: pod-logs
+    mountPath: /var/log/pods
+    readOnly: true
+  - name: audit-logs
+    mountPath: /var/log/audit
+    readOnly: true
+  - name: hostfs
+    mountPath: /hostfs
+    readOnly: true
+  - name: storage
+    mountPath: /var/lib/otelcol
+  ports:
+  - name: metrics
+    port: 8888
+    protocol: TCP
+  - name: health
+    port: 13133
+    protocol: TCP
+  config:
+    receivers:
+      file_log/pods:
+        include: ["/var/log/pods/*/*/*.log"]
+        start_at: end
+        include_file_name: false
+        include_file_path: true
+        storage: file_storage/node
+        operators:
+        - type: container
+      file_log/audit:
+        include: ["/var/log/audit/kube/kube-apiserver.lo?"]
+        start_at: end
+        include_file_name: false
+        include_file_path: true
+        storage: file_storage/node
+        resource:
+          service.name: kube-apiserver
+          log.type: kubernetes-audit
+        operators:
+        - type: json_parser
+          parse_from: body
+          parse_to: body
+          timestamp:
+            parse_from: body.stageTimestamp
+            layout_type: gotime
+            layout: '2006-01-02T15:04:05.999999999Z07:00'
+      kubelet_stats:
+        collection_interval: 20s
+        auth_type: serviceAccount
+        endpoint: ${env:K8S_NODE_IP}:10250
+        node: ${env:K8S_NODE_NAME}
+        insecure_skip_verify: true
+        k8s_api_config:
+          auth_type: serviceAccount
+        metric_groups: [node, pod, container, volume]
+        extra_metadata_labels: [k8s.volume.type]
+        metrics:
+          k8s.container.cpu_limit_utilization:
+            enabled: true
+          k8s.container.memory_limit_utilization:
+            enabled: true
+          k8s.pod.cpu_limit_utilization:
+            enabled: true
+          k8s.pod.memory_limit_utilization:
+            enabled: true
+      host_metrics:
+        collection_interval: 20s
+        root_path: /hostfs
+        scrapers:
+          cpu: {}
+          disk: {}
+          filesystem: {}
+          load: {}
+          memory: {}
+          network: {}
+          paging: {}
+          processes: {}
+    processors:
+      k8s_attributes:
+        auth_type: serviceAccount
+        filter:
+          node_from_env_var: K8S_NODE_NAME
+        extract:
+          metadata:
+          - k8s.namespace.name
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.deployment.name
+          - k8s.node.name
+          - k8s.container.name
+          - container.image.name
+          - container.image.tag
+          - service.namespace
+          - service.name
+          - service.version
+          - service.instance.id
+          labels:
+          - tag_name: observability.home-ops/logs
+            key: observability.home-ops/logs
+            from: pod
+        pod_association:
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.name
+          - from: resource_attribute
+            name: k8s.namespace.name
+        - sources:
+          - from: connection
+      filter/log-opt-in:
+        error_mode: ignore
+        log_conditions:
+        - resource.attributes["observability.home-ops/logs"] != "true"
+      resource/node:
+        attributes:
+        - key: host.name
+          action: upsert
+          value: ${env:K8S_NODE_NAME}
+        - key: k8s.node.name
+          action: upsert
+          value: ${env:K8S_NODE_NAME}
+      resource/node-metrics:
+        attributes:
+        - key: service.name
+          action: upsert
+          value: otel-node
+    exporters:
+      otlp/gateway:
+        endpoint: otel-gateway-collector.observability:4317
+        tls:
+          insecure: true
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 0s
+        sending_queue:
+          storage: file_storage/node
+    extensions:
+      file_storage/node:
+        directory: /var/lib/otelcol
+        create_directory: true
+        fsync: true
+        max_size: 1073741824
+    service:
+      extensions: [file_storage/node, health_check]
+      pipelines:
+        metrics:
+          receivers: [kubelet_stats, host_metrics]
+          processors: [memory_limiter, resource/node, resource/node-metrics, batch]
+          exporters: [otlp/gateway]
+        logs/pods:
+          receivers: [file_log/pods]
+          processors: [memory_limiter, k8s_attributes, filter/log-opt-in, batch]
+          exporters: [otlp/gateway]
+        logs/audit:
+          receivers: [file_log/audit]
+          processors: [memory_limiter, resource/node, batch]
+          exporters: [otlp/gateway]

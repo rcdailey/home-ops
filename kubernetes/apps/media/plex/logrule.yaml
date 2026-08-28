@@ -1,43 +1,57 @@
 ---
-groups:
-- name: plex
-  rules:
-  - alert: PlexDatabaseIsBusy
-    expr: |-
-      sum by (app) (count_over_time({app="plex"} |~ "(?i)retry busy DB"[5m])) > 0
-    for: 5m
-    annotations:
-      summary: >-
-        {{ $labels.app }} is experiencing database issues
-    labels:
-      severity: critical
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: plex-logs
+  labels:
+    observability.home-ops/datasource: logs
+spec:
+  groups:
+  - name: plex
+    type: vlogs
+    interval: 1m
+    rules:
+    - alert: PlexDatabaseIsBusy
+      expr: |-
+        _time:5m "service.name":="plex" _msg:~"(?i)retry busy DB"
+          | stats count() as hits
+          | filter hits:>0
+      for: 5m
+      annotations:
+        summary: Plex is experiencing database issues
+      labels:
+        severity: critical
 
-  - alert: PlexTranscodingErrors
-    expr: |-
-      sum by (app) (count_over_time({app="plex"} |~ "(?i)transcode.*error"[10m])) > 5
-    for: 5m
-    annotations:
-      summary: >-
-        {{ $labels.app }} is experiencing frequent transcoding errors
-    labels:
-      severity: warning
+    - alert: PlexTranscodingErrors
+      expr: |-
+        _time:10m "service.name":="plex" _msg:~"(?i)transcode.*error"
+          | stats count() as hits
+          | filter hits:>5
+      for: 5m
+      annotations:
+        summary: Plex is experiencing frequent transcoding errors
+      labels:
+        severity: warning
 
-  - alert: PlexHighMemoryUsage
-    expr: |-
-      sum by (app) (count_over_time({app="plex"} |~ "(?i)out of memory|memory.*full"[5m])) > 0
-    for: 2m
-    annotations:
-      summary: >-
-        {{ $labels.app }} is running out of memory
-    labels:
-      severity: warning
+    - alert: PlexHighMemoryUsage
+      expr: |-
+        _time:5m "service.name":="plex" _msg:~"(?i)out of memory|memory.*full"
+          | stats count() as hits
+          | filter hits:>0
+      for: 2m
+      annotations:
+        summary: Plex is running out of memory
+      labels:
+        severity: warning
 
-  - alert: PlexAuthenticationFailures
-    expr: |-
-      sum by (app) (count_over_time({app="plex"} |~ "(?i)authentication.*failed|invalid.*token"[15m])) > 10
-    for: 5m
-    annotations:
-      summary: >-
-        {{ $labels.app }} is experiencing authentication failures
-    labels:
-      severity: warning
+    - alert: PlexAuthenticationFailures
+      expr: |-
+        _time:15m "service.name":="plex" _msg:~"(?i)authentication.*failed|invalid.*token"
+          | stats count() as hits
+          | filter hits:>10
+      for: 5m
+      annotations:
+        summary: Plex is experiencing authentication failures
+      labels:
+        severity: warning

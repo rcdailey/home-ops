@@ -44,12 +44,4 @@ spec:
       selfMonitor:
         enabled: true
     prometheusRule:
-      enabled: true
-      rules:
-      - alert: NfsProbeFailed
-        expr: probe_success{instance="192.168.1.58:2049"} == 0
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: NFS server probe failed - storage unavailable
+      enabled: false

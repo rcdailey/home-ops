@@ -11,6 +11,6 @@ spec:
   interval: 30m
   maxHistory: 3
   values:
-    alertmanagerAddress: http://vmalertmanager-victoria-metrics-k8s-stack.observability:9093
+    alertmanagerAddress: http://vmalertmanager-vm.observability:9093
     networkPolicy:
       enabled: false

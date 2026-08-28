@@ -11,6 +11,10 @@ spec:
     name: app-template
     namespace: flux-system
   values:
+    defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
+
     controllers:
       opencloud:
         strategy: Recreate
@@ -54,6 +58,10 @@ spec:
               OC_URL: https://cloud.${SECRET_DOMAIN}
               PROXY_TLS: false
               OC_LOG_LEVEL: debug
+              OTEL_TRACES_EXPORTER: otlp
+              OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-gateway-collector.observability:4317
+              OTEL_RESOURCE_ATTRIBUTES: service.namespace=default
+              PROXY_DEBUG_ADDR: 0.0.0.0:9205
               # Disable OpenCloud Mesh federation (not federating with other instances)
               OC_ENABLE_OCM: false
               # Disable default app/settings assignments for OIDC-provisioned users
@@ -83,9 +91,13 @@ spec:
     service:
       opencloud:
         controller: opencloud
+        labels:
+          observability.home-ops/metrics: opencloud
         ports:
           http:
             port: 9200
+          metrics:
+            port: 9205
     route:
       opencloud:
         parentRefs:

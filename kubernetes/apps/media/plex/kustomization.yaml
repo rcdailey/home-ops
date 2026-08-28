@@ -4,23 +4,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 components:
 - ../../../components/nfs-scaler
+- ../../../components/otel-collector-baseline
 - ../../../components/volsync
 resources:
+- ./collector.yaml
 - ./helmrelease.yaml
+- ./logrule.yaml
 - ./pvc.yaml
 - ./resourceclaimtemplate.yaml
 - ./loadbalancer-service.yaml
-configMapGenerator:
-- name: plex-victorialogs-rules
-  files:
-  - plex.yaml=./logrule.yaml
-  options:
-    labels:
-      victorialogs_rule: "true"
-- name: plex-vector-config
-  files:
-  - vector.yaml=./config/vector.yaml
-generatorOptions:
-  disableNameSuffixHash: true
-  annotations:
-    kustomize.toolkit.fluxcd.io/substitute: disabled

@@ -37,6 +37,7 @@
       "kubectl cordon*": "deny",
       "kubectl uncordon*": "deny",
       "kubectl port-forward*": "deny",
+      "kubectl delete*": "ask",
 
       "talosctl apply-config*": "deny",
       "talosctl upgrade*": "deny",

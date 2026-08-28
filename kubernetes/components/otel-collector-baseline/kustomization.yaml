@@ -1,0 +1,44 @@
+---
+# yaml-language-server: $schema=https://www.schemastore.org/kustomization.json
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+# Consumers keep role-specific pipelines and reference these shared component names explicitly.
+patches:
+- target:
+    group: opentelemetry.io
+    version: v1beta1
+    kind: OpenTelemetryCollector
+  patch: |-
+    - op: add
+      path: /spec/networkPolicy
+      value:
+        enabled: false
+    - op: add
+      path: /spec/observability
+      value:
+        metrics:
+          enableMetrics: true
+          disablePrometheusAnnotations: true
+    - op: add
+      path: /spec/config/processors/memory_limiter
+      value:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+    - op: add
+      path: /spec/config/processors/batch
+      value: {}
+    - op: add
+      path: /spec/config/extensions/health_check
+      value:
+        endpoint: 0.0.0.0:13133
+    - op: add
+      path: /spec/config/service/telemetry
+      value:
+        metrics:
+          readers:
+          - pull:
+              exporter:
+                prometheus:
+                  host: 0.0.0.0
+                  port: 8888

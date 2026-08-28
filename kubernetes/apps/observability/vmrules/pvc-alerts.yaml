@@ -10,57 +10,23 @@ spec:
     interval: 30s
     rules:
     - alert: PVCNearCapacity
-      expr: |
-        (
-          sum by (namespace, persistentvolumeclaim) (
-            container_fs_usage_bytes{job="kubelet", metrics_path="/metrics/cadvisor", device=~"/dev/rbd.*"}
-            * on (namespace, pod) group_left(persistentvolumeclaim)
-            kube_pod_spec_volumes_persistentvolumeclaims_info
-          )
-          /
-          sum by (namespace, persistentvolumeclaim) (
-            container_fs_limit_bytes{job="kubelet", metrics_path="/metrics/cadvisor", device=~"/dev/rbd.*"}
-            * on (namespace, pod) group_left(persistentvolumeclaim)
-            kube_pod_spec_volumes_persistentvolumeclaims_info
-          )
-        ) * 100 > 85
+      expr: 100 * otel:pvc_usage:ratio > 85
       for: 10m
       labels:
         severity: warning
       annotations:
-        summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is nearing capacity"
-        description: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+        summary: >-
+          PVC {{ $labels.k8s_namespace_name }}/{{ $labels.k8s_persistentvolumeclaim_name }}
+          is nearing capacity
+        description: The claim is {{ printf "%.1f" $value }}% full
 
     - alert: PVCCriticalCapacity
-      expr: |
-        (
-          sum by (namespace, persistentvolumeclaim) (
-            container_fs_usage_bytes{job="kubelet", metrics_path="/metrics/cadvisor", device=~"/dev/rbd.*"}
-            * on (namespace, pod) group_left(persistentvolumeclaim)
-            kube_pod_spec_volumes_persistentvolumeclaims_info
-          )
-          /
-          sum by (namespace, persistentvolumeclaim) (
-            container_fs_limit_bytes{job="kubelet", metrics_path="/metrics/cadvisor", device=~"/dev/rbd.*"}
-            * on (namespace, pod) group_left(persistentvolumeclaim)
-            kube_pod_spec_volumes_persistentvolumeclaims_info
-          )
-        ) * 100 > 95
+      expr: 100 * otel:pvc_usage:ratio > 95
       for: 5m
       labels:
         severity: critical
       annotations:
-        summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is critically full"
-        description: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full - immediate action required"
-
-    - alert: PVCReadOnly
-      expr: |
-        kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyMany"} == 1
-        or
-        kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyOnce"} == 1
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is read-only"
-        description: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has been mounted read-only, possibly due to full capacity or filesystem errors"
+        summary: >-
+          PVC {{ $labels.k8s_namespace_name }}/{{ $labels.k8s_persistentvolumeclaim_name }}
+          is critically full
+        description: The claim is {{ printf "%.1f" $value }}% full

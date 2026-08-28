@@ -4,6 +4,7 @@
 # dependencies = [
 #   "ftfy==6.3.1",
 #   "httpx==0.28.1",
+#   "opentelemetry-api==1.44.0",
 #   "pydantic==2.12.5",
 #   "pydantic-ai-slim[openai]==2.0.0",
 # ]
@@ -26,6 +27,8 @@ from urllib.parse import urlsplit
 
 import ftfy
 import httpx
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_ai import Agent, ModelRetry, ModelSettings, RunContext, UsageLimits
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -40,6 +43,7 @@ INBOX_TAG_NAME = "inbox"
 FAMILY_GROUP_NAME = "family"
 DEFAULT_TAG_COLOR = "#a6cee3"
 LOGGER = logging.getLogger("paperless-classifier")
+TRACER = trace.get_tracer("paperless-classifier")
 
 
 class JsonFormatter(logging.Formatter):
@@ -49,12 +53,18 @@ class JsonFormatter(logging.Formatter):
         timestamp = datetime.fromtimestamp(record.created, UTC).isoformat(
             timespec="milliseconds"
         )
-        payload = {
+        payload: dict[str, Any] = {
             "timestamp": timestamp.replace("+00:00", "Z"),
             "level": record.levelname.lower(),
             "logger": record.name,
             "message": record.getMessage(),
         }
+        trace_id = getattr(record, "otelTraceID", None)
+        span_id = getattr(record, "otelSpanID", None)
+        if trace_id and trace_id != "0":
+            payload["trace_id"] = trace_id
+            payload["span_id"] = span_id
+            payload["trace_sampled"] = getattr(record, "otelTraceSampled", False)
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
@@ -791,14 +801,23 @@ def main() -> int:
         level=logging.INFO,
         handlers=[handler],
     )
-    try:
-        return asyncio.run(run())
-    except (httpx.HTTPError, TypeError, ValueError, RuntimeError) as error:
-        LOGGER.error("classification failed: %s", error)
-        return 1
-    except Exception:
-        LOGGER.exception("classification failed unexpectedly")
-        return 1
+    with TRACER.start_as_current_span("paperless.classify") as span:
+        try:
+            result = asyncio.run(run())
+        except (httpx.HTTPError, TypeError, ValueError, RuntimeError) as error:
+            span.set_attribute("classification.outcome", "failed")
+            span.set_attribute("exception.type", type(error).__name__)
+            span.set_status(Status(StatusCode.ERROR, type(error).__name__))
+            LOGGER.error("classification failed: %s", error)
+            return 1
+        except Exception as error:
+            span.set_attribute("classification.outcome", "failed")
+            span.set_attribute("exception.type", type(error).__name__)
+            span.set_status(Status(StatusCode.ERROR, type(error).__name__))
+            LOGGER.exception("classification failed unexpectedly")
+            return 1
+        span.set_attribute("classification.outcome", "success")
+        return result
 
 
 if __name__ == "__main__":

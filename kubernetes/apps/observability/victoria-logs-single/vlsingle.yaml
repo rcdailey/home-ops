@@ -3,8 +3,9 @@
 apiVersion: operator.victoriametrics.com/v1
 kind: VLSingle
 metadata:
-  name: victoria-logs-single
+  name: vl
 spec:
+  disableSelfServiceScrape: true
   useLegacyNaming: true
   useStrictSecurity: true
   image:

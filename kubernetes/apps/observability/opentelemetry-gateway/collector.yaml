@@ -1,0 +1,245 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/opentelemetry.io/opentelemetrycollector_v1beta1.json
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-gateway
+spec:
+  mode: statefulset
+  replicas: 2
+  upgradeStrategy: none
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  volumeClaimTemplates:
+  - metadata:
+      name: queue
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: 5Gi
+      storageClassName: ceph-block
+  volumeMounts:
+  - name: queue
+    mountPath: /var/lib/otelcol
+  ports:
+  - name: otlp-grpc
+    port: 4317
+    protocol: TCP
+  - name: otlp-http
+    port: 4318
+    protocol: TCP
+  - name: metrics
+    port: 8888
+    protocol: TCP
+  - name: health
+    port: 13133
+    protocol: TCP
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      resource/cluster:
+        attributes:
+        - key: k8s.cluster.name
+          action: upsert
+          value: home-ops
+      transform/resource-identity:
+        error_mode: ignore
+        metric_statements: &resource_identity
+        - context: resource
+          statements:
+          - >-
+            set(attributes["service.namespace"], attributes["k8s.namespace.name"])
+            where attributes["service.namespace"] == nil
+          - >-
+            set(attributes["service.instance.id"], attributes["k8s.pod.uid"])
+            where attributes["service.instance.id"] == nil
+        log_statements: *resource_identity
+        trace_statements: *resource_identity
+      transform/redact:
+        error_mode: ignore
+        trace_statements:
+        - context: span
+          statements:
+          - delete_key(attributes, "http.request.header.authorization")
+          - delete_key(attributes, "http.request.header.cookie")
+          - delete_key(attributes, "http.response.header.set-cookie")
+          - delete_key(attributes, "url.query")
+        log_statements:
+        - context: log
+          statements:
+          - delete_key(attributes, "http.request.header.authorization")
+          - delete_key(attributes, "http.request.header.cookie")
+          - delete_key(attributes, "http.response.header.set-cookie")
+          - delete_key(attributes, "url.query")
+      transform/metric-cardinality:
+        error_mode: ignore
+        metric_statements:
+        - context: resource
+          statements:
+          - delete_key(attributes, "container.id")
+          - delete_key(attributes, "k8s.pod.uid")
+          - delete_key(attributes, "process.command_line")
+          - delete_key(attributes, "process.pid")
+      transform/metric-contract:
+        error_mode: ignore
+        metric_statements:
+        - context: metric
+          statements:
+          - >-
+            set(metric.name, "otel_system_cpu_time_seconds_total")
+            where metric.name == "system.cpu.time"
+          - set(metric.unit, "") where metric.name == "otel_system_cpu_time_seconds_total"
+          - >-
+            set(metric.name, "otel_system_memory_usage_bytes")
+            where metric.name == "system.memory.usage"
+          - set(metric.unit, "") where metric.name == "otel_system_memory_usage_bytes"
+          - >-
+            set(metric.name, "otel_system_filesystem_usage_bytes")
+            where metric.name == "system.filesystem.usage"
+          - set(metric.unit, "") where metric.name == "otel_system_filesystem_usage_bytes"
+          - set(metric.name, "otel_k8s_node_condition") where metric.name == "k8s.node.condition"
+          - set(metric.unit, "") where metric.name == "otel_k8s_node_condition"
+          - >-
+            set(metric.name, "otel_k8s_node_memory_working_set_bytes")
+            where metric.name == "k8s.node.memory.working_set"
+          - set(metric.unit, "") where metric.name == "otel_k8s_node_memory_working_set_bytes"
+          - >-
+            set(metric.name, "otel_k8s_node_memory_available_bytes")
+            where metric.name == "k8s.node.memory.available"
+          - set(metric.unit, "") where metric.name == "otel_k8s_node_memory_available_bytes"
+          - >-
+            set(metric.name, "otel_k8s_container_restarts")
+            where metric.name == "k8s.container.restarts"
+          - set(metric.unit, "") where metric.name == "otel_k8s_container_restarts"
+          - set(metric.name, "otel_k8s_container_ready") where metric.name == "k8s.container.ready"
+          - set(metric.unit, "") where metric.name == "otel_k8s_container_ready"
+          - set(metric.name, "otel_k8s_pod_phase") where metric.name == "k8s.pod.phase"
+          - set(metric.unit, "") where metric.name == "otel_k8s_pod_phase"
+          - >-
+            set(metric.name, "otel_k8s_deployment_available")
+            where metric.name == "k8s.deployment.available"
+          - set(metric.unit, "") where metric.name == "otel_k8s_deployment_available"
+          - >-
+            set(metric.name, "otel_k8s_deployment_desired")
+            where metric.name == "k8s.deployment.desired"
+          - set(metric.unit, "") where metric.name == "otel_k8s_deployment_desired"
+          - >-
+            set(metric.name, "otel_k8s_hpa_current_replicas")
+            where metric.name == "k8s.hpa.current_replicas"
+          - set(metric.unit, "") where metric.name == "otel_k8s_hpa_current_replicas"
+          - >-
+            set(metric.name, "otel_k8s_hpa_max_replicas")
+            where metric.name == "k8s.hpa.max_replicas"
+          - set(metric.unit, "") where metric.name == "otel_k8s_hpa_max_replicas"
+          - >-
+            set(metric.name, "otel_k8s_pvc_phase")
+            where metric.name == "k8s.persistentvolumeclaim.status.phase"
+          - set(metric.unit, "") where metric.name == "otel_k8s_pvc_phase"
+          - >-
+            set(metric.name, "otel_k8s_container_cpu_limit_ratio")
+            where metric.name == "k8s.container.cpu_limit_utilization"
+          - set(metric.unit, "") where metric.name == "otel_k8s_container_cpu_limit_ratio"
+          - >-
+            set(metric.name, "otel_k8s_container_memory_limit_ratio")
+            where metric.name == "k8s.container.memory_limit_utilization"
+          - set(metric.unit, "") where metric.name == "otel_k8s_container_memory_limit_ratio"
+          - >-
+            set(metric.name, "otel_k8s_volume_available_bytes")
+            where metric.name == "k8s.volume.available"
+          - set(metric.unit, "") where metric.name == "otel_k8s_volume_available_bytes"
+          - >-
+            set(metric.name, "otel_k8s_volume_capacity_bytes")
+            where metric.name == "k8s.volume.capacity"
+          - set(metric.unit, "") where metric.name == "otel_k8s_volume_capacity_bytes"
+    exporters:
+      otlp_http/victoria-metrics:
+        metrics_endpoint: >-
+          http://vmsingle-vm.observability:8428/opentelemetry/v1/metrics
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 0s
+        sending_queue:
+          queue_size: 10000
+          storage: file_storage/queue
+      otlp_http/victoria-logs:
+        logs_endpoint: >-
+          http://vl.observability:9428/insert/opentelemetry/v1/logs
+        headers:
+          VL-Stream-Fields: service.name,k8s.namespace.name,k8s.container.name
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 0s
+        sending_queue:
+          queue_size: 10000
+          storage: file_storage/queue
+      otlp_http/victoria-traces:
+        traces_endpoint: >-
+          http://vt.observability:10428/insert/opentelemetry/v1/traces
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 0s
+        sending_queue:
+          queue_size: 10000
+          storage: file_storage/queue
+    extensions:
+      file_storage/queue:
+        directory: /var/lib/otelcol/queue
+        create_directory: true
+        fsync: true
+        max_size: 4294967296
+        compaction:
+          on_start: true
+          directory: /var/lib/otelcol/compaction
+    service:
+      extensions: [file_storage/queue, health_check]
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          processors:
+          - memory_limiter
+          - resource/cluster
+          - transform/resource-identity
+          - transform/metric-cardinality
+          - transform/metric-contract
+          - batch
+          exporters: [otlp_http/victoria-metrics]
+        logs:
+          receivers: [otlp]
+          processors:
+          - memory_limiter
+          - resource/cluster
+          - transform/resource-identity
+          - transform/redact
+          - batch
+          exporters: [otlp_http/victoria-logs]
+        traces:
+          receivers: [otlp]
+          processors:
+          - memory_limiter
+          - resource/cluster
+          - transform/resource-identity
+          - transform/redact
+          - batch
+          exporters: [otlp_http/victoria-traces]

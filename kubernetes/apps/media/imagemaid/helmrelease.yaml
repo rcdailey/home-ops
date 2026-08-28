@@ -11,6 +11,10 @@ spec:
     name: app-template
     namespace: flux-system
   values:
+    defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
+
     controllers:
       imagemaid:
         type: cronjob

@@ -39,6 +39,34 @@ class JsonFormatterTest(unittest.TestCase):
         self.assertEqual(payload["logger"], "paperless-classifier")
         self.assertEqual(payload["message"], "classified document\n42")
         self.assertRegex(payload["timestamp"], r"^\d{4}-\d{2}-\d{2}T.*Z$")
+        self.assertNotIn("trace_id", payload)
+
+    def test_includes_injected_trace_context(self) -> None:
+        class InstrumentedLogRecord(logging.LogRecord):
+            otelTraceID: str
+            otelSpanID: str
+            otelTraceSampled: bool
+
+        record = InstrumentedLogRecord(
+            "paperless-classifier",
+            logging.INFO,
+            __file__,
+            1,
+            "classified document",
+            (),
+            None,
+        )
+        trace_id = "0123456789abcdef0123456789abcdef"
+        span_id = "0123456789abcdef"
+        record.otelTraceID = trace_id
+        record.otelSpanID = span_id
+        record.otelTraceSampled = True
+
+        payload = json.loads(JsonFormatter().format(record))
+
+        self.assertEqual(payload["trace_id"], trace_id)
+        self.assertEqual(payload["span_id"], span_id)
+        self.assertTrue(payload["trace_sampled"])
 
 
 class ValidateBatchTest(unittest.TestCase):

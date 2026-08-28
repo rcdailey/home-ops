@@ -24,6 +24,8 @@ spec:
   values:
     podAnnotations:
       reloader.stakater.com/auto: "true"
+    podLabels:
+      observability.home-ops/logs: "true"
 
     replicaCount: 1
 

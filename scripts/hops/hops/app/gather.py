@@ -36,6 +36,23 @@ def diagnose_services(app_name: str, ns: str):
         info(f"No services found for {app_name!r}")
 
 
+def diagnose_network_policies(app_name: str, ns: str) -> None:
+    """Show generated NetworkPolicies associated with an app."""
+    rows = []
+    for item in kubectl_json("networkpolicies", namespace=ns).get("items", []):
+        metadata = item.get("metadata", {})
+        name = metadata.get("name", "")
+        if not name.startswith(app_name):
+            continue
+        spec = item.get("spec", {})
+        selector = spec.get("podSelector", {}).get("matchLabels", {})
+        labels = ",".join(f"{key}={value}" for key, value in sorted(selector.items()))
+        rows.append([name, ",".join(spec.get("policyTypes", [])), labels])
+    if rows:
+        section("NETWORK POLICIES")
+        table(["NAME", "TYPES", "POD SELECTOR"], rows)
+
+
 def diagnose_externalsecrets(app_name: str, ns: str):
     """Show ExternalSecret sync status for an app."""
     es_data = kubectl_json("externalsecrets", namespace=ns)

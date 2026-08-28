@@ -1,0 +1,244 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/opentelemetry.io/opentelemetrycollector_v1beta1.json
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-scrape
+spec:
+  mode: statefulset
+  replicas: 2
+  serviceAccount: otel-scrape
+  upgradeStrategy: none
+  targetAllocator:
+    enabled: true
+    replicas: 2
+    serviceAccount: otel-scrape
+    allocationStrategy: consistent-hashing
+    prometheusCR:
+      enabled: true
+      serviceMonitorSelector: {}
+      serviceMonitorNamespaceSelector: {}
+      podMonitorSelector: {}
+      podMonitorNamespaceSelector: {}
+    resources:
+      limits:
+        memory: 256Mi
+      requests:
+        cpu: 20m
+        memory: 64Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: [ALL]
+    podSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  volumeClaimTemplates:
+  - metadata:
+      name: queue
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: ceph-block
+  volumeMounts:
+  - name: queue
+    mountPath: /var/lib/otelcol
+  ports:
+  - name: metrics
+    port: 8888
+    protocol: TCP
+  - name: health
+    port: 13133
+    protocol: TCP
+  config:
+    receivers:
+      prometheus:
+        config:
+          global:
+            scrape_interval: 20s
+          scrape_configs:
+          - job_name: kubernetes-api-server
+            scheme: https
+            authorization:
+              credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            tls_config:
+              ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            kubernetes_sd_configs:
+            - role: endpoints
+              namespaces:
+                names: [default]
+            relabel_configs:
+            - action: keep
+              source_labels:
+              - __meta_kubernetes_service_name
+              - __meta_kubernetes_endpoint_port_name
+              regex: kubernetes;https
+          - job_name: kubelet
+            scheme: https
+            authorization:
+              credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            tls_config:
+              insecure_skip_verify: true
+            kubernetes_sd_configs:
+            - role: node
+            relabel_configs:
+            - action: replace
+              source_labels: [__meta_kubernetes_node_address_InternalIP]
+              target_label: __address__
+              regex: (.+)
+              replacement: $1:10250
+            - action: replace
+              source_labels: [__meta_kubernetes_node_name]
+              target_label: instance
+            - action: replace
+              source_labels: [__meta_kubernetes_node_name]
+              target_label: node
+          - job_name: kube-controller-manager
+            scheme: https
+            authorization:
+              credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            tls_config:
+              insecure_skip_verify: true
+            kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names: [kube-system]
+            relabel_configs:
+            - action: keep
+              source_labels: [__meta_kubernetes_pod_label_component]
+              regex: kube-controller-manager
+            - action: replace
+              source_labels: [__meta_kubernetes_pod_ip]
+              target_label: __address__
+              regex: (.+)
+              replacement: $1:10257
+          - job_name: kube-scheduler
+            scheme: https
+            authorization:
+              credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            tls_config:
+              insecure_skip_verify: true
+            kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names: [kube-system]
+            relabel_configs:
+            - action: keep
+              source_labels: [__meta_kubernetes_pod_label_component]
+              regex: kube-scheduler
+            - action: replace
+              source_labels: [__meta_kubernetes_pod_ip]
+              target_label: __address__
+              regex: (.+)
+              replacement: $1:10259
+          - job_name: kube-etcd
+            scheme: http
+            kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names: [kube-system]
+            relabel_configs:
+            - action: keep
+              source_labels: [__meta_kubernetes_pod_label_component]
+              regex: kube-apiserver
+            - action: replace
+              source_labels: [__meta_kubernetes_pod_ip]
+              target_label: __address__
+              regex: (.+)
+              replacement: $1:2381
+          - job_name: coredns
+            kubernetes_sd_configs:
+            - role: endpoints
+              namespaces:
+                names: [kube-system]
+            relabel_configs:
+            - action: keep
+              source_labels:
+              - __meta_kubernetes_service_label_k8s_app
+              - __meta_kubernetes_endpoint_port_name
+              regex: kube-dns;metrics
+          - job_name: nfs_probe
+            metrics_path: /probe
+            params:
+              module: [tcp_connect]
+            static_configs:
+            - targets: ['192.168.1.58:2049']
+            relabel_configs:
+            - action: replace
+              source_labels: [__address__]
+              target_label: __param_target
+            - action: replace
+              source_labels: [__param_target]
+              target_label: instance
+            - action: replace
+              target_label: __address__
+              replacement: blackbox-exporter.observability:9115
+            - action: replace
+              target_label: service
+              replacement: blackbox-exporter
+          - job_name: victoria-metrics
+            static_configs:
+            - targets: ['vmsingle-vm.observability:8428']
+          - job_name: victoria-logs
+            static_configs:
+            - targets: ['vl.observability:9428']
+          - job_name: victoria-traces
+            static_configs:
+            - targets: ['vt.observability:10428']
+          - job_name: vmalert
+            static_configs:
+            - targets: ['vmalert-vm.observability:8080']
+          - job_name: vmalert-vl
+            static_configs:
+            - targets: ['vmalert-vl.observability:8080']
+          - job_name: alertmanager
+            static_configs:
+            - targets: ['vmalertmanager-vm.observability:9093']
+          - job_name: opentelemetry-target-allocator
+            static_configs:
+            - targets: ['otel-scrape-targetallocator.observability:80']
+    processors: {}
+    exporters:
+      otlp/gateway:
+        endpoint: otel-gateway-collector.observability:4317
+        tls:
+          insecure: true
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 0s
+        sending_queue:
+          storage: file_storage/scrape
+    extensions:
+      file_storage/scrape:
+        directory: /var/lib/otelcol
+        create_directory: true
+        fsync: true
+        max_size: 536870912
+    service:
+      extensions: [file_storage/scrape, health_check]
+      pipelines:
+        metrics:
+          receivers: [prometheus]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/gateway]

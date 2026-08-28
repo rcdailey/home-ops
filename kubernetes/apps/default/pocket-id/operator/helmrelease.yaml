@@ -18,16 +18,38 @@ spec:
       strategy: rollback
       retries: 3
   values:
+    operator:
+      labels:
+        observability.home-ops/logs: "true"
+
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+
     pocket-id-instance:
       instance:
         enabled: true
         name: pocket-id
         spec:
+          labels:
+            observability.home-ops/logs: "true"
           annotations:
             reloader.stakater.com/auto: "true"
           image: ghcr.io/pocket-id/pocket-id:v2.13.0
           appUrl: https://auth.${SECRET_DOMAIN}
           timezone: America/Chicago
+          metrics:
+            enabled: true
+          env:
+          - name: OTEL_TRACES_EXPORTER
+            value: otlp
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-gateway-collector.observability:4318
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: http/protobuf
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: service.namespace=default
           encryptionKey:
             valueFrom:
               secretKeyRef:

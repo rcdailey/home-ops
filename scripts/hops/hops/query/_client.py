@@ -10,7 +10,7 @@ from typing import Any
 from hops.core.format import info
 from hops.core.runner import tools_curl
 
-VL_URL = "http://victoria-logs-single.observability:9428"
+VL_URL = "http://vl.observability:9428"
 
 
 class VictoriaLogsClient:

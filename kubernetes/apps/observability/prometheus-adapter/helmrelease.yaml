@@ -32,7 +32,7 @@ spec:
       retries: 3
   values:
     prometheus:
-      url: http://vmsingle-victoria-metrics-k8s-stack.observability
+      url: http://vmsingle-vm.observability
       port: 8428
     rules:
       default: false

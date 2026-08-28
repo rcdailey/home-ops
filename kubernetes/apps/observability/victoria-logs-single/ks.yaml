@@ -21,11 +21,11 @@ spec:
   healthChecks:
   - apiVersion: apps/v1
     kind: Deployment
-    name: victoria-logs-single
+    name: vl
     namespace: observability
   - apiVersion: v1
     kind: Service
-    name: victoria-logs-single
+    name: vl
     namespace: observability
   dependsOn:
   - name: global-config

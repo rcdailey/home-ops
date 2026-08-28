@@ -1,4 +1,4 @@
-"""Correlate zero-target vmagent pools with live scrape resources."""
+"""Correlate OpenTelemetry scrape assignments with live monitor resources."""
 
 from __future__ import annotations
 
@@ -9,18 +9,13 @@ import click
 
 from hops.core.format import age_str, info, table, truncate
 from hops.core.runner import kubectl_json
-from hops.query._vm import query_vm
+from hops.query._vm import query_target_allocator
 from hops.query.scrape_health import active_target_health, target_identity
 
-_SCRAPE_RESOURCES = (
-    "vmservicescrapes,vmpodscrapes,vmnodescrapes,vmprobes,vmstaticscrapes"
-)
+_SCRAPE_RESOURCES = "servicemonitors,podmonitors"
 _POOL_KINDS = {
-    "serviceScrape": "VMServiceScrape",
-    "podScrape": "VMPodScrape",
-    "nodeScrape": "VMNodeScrape",
-    "probe": "VMProbe",
-    "staticScrape": "VMStaticScrape",
+    "serviceMonitor": "ServiceMonitor",
+    "podMonitor": "PodMonitor",
 }
 
 
@@ -34,6 +29,15 @@ def _pool_key(pool: str) -> tuple[str, str, str] | None:
     if len(parts) < 3 or parts[0] not in _POOL_KINDS:
         return None
     return _POOL_KINDS[parts[0]], parts[1], parts[2]
+
+
+def _target_count(assignments: dict[str, Any]) -> int:
+    """Count endpoints assigned across all scrape collectors."""
+    return sum(
+        len(target.get("targets", []))
+        for collector in assignments.values()
+        for target in collector.get("targets", [])
+    )
 
 
 def _owner(resource: dict[str, Any]) -> str:
@@ -53,17 +57,13 @@ def _owner(resource: dict[str, Any]) -> str:
 def scrapes(namespace: str | None, as_json: bool) -> None:
     """Show failed targets and zero-target pools with owning resources."""
     target_count, unhealthy_targets = active_target_health(namespace)
-    data = query_vm(
-        "/api/v1/query",
-        {"query": ("sum by (scrape_job) (vm_promscrape_scrape_pool_targets) == 0")},
-    )
-    pools = sorted(
-        {
-            result.get("metric", {}).get("scrape_job", "")
-            for result in data.get("data", {}).get("result", [])
-            if result.get("metric", {}).get("scrape_job")
-        }
-    )
+    jobs = query_target_allocator("/jobs")
+    pools = []
+    for pool, job in jobs.items():
+        assignments = query_target_allocator(job.get("_link", f"/jobs/{pool}/targets"))
+        if _target_count(assignments) == 0:
+            pools.append(pool)
+    pools.sort()
     resources = kubectl_json(_SCRAPE_RESOURCES).get("items", [])
     resource_index = {_resource_key(item): item for item in resources}
 
@@ -73,14 +73,14 @@ def scrapes(namespace: str | None, as_json: bool) -> None:
         if namespace and (not key or key[1] != namespace):
             continue
         if not key:
-            pool_findings.append({"pool": pool, "resource": None, "state": "STALE"})
+            pool_findings.append({"pool": pool, "resource": None, "state": "STATIC"})
             continue
         resource = resource_index.get(key)
         if not resource:
             pool_findings.append({"pool": pool, "resource": None, "state": "STALE"})
             continue
         owner = _owner(resource)
-        state = "ORPHAN" if owner == "-" else "OWNED"
+        state = "DIRECT" if owner == "-" else "OWNED"
         pool_findings.append(
             {"pool": pool, "resource": resource, "owner": owner, "state": state}
         )
