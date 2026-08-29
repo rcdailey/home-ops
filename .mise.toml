@@ -24,7 +24,13 @@ kubectl = "1.37.0"
 kustomize = "latest"
 markdownlint-cli2 = "latest"
 "github:mitsuhiko/minijinja" = "latest"
-"npm:renovate" = "latest"
+"npm:renovate" = {
+    version = "latest",
+    trust_policy_excludes = [
+      "@yarnpkg/libzip@3.2.2",
+      "fastq@1.20",
+    ],
+}
 pre-commit = "latest"
 python = "3.14"
 ripgrep = "latest"
