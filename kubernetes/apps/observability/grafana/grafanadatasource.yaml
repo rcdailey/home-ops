@@ -58,6 +58,9 @@ spec:
         enabled: true
       search:
         hide: false
+      streamingEnabled:
+        search: false
+        metrics: false
       tracesToLogsV2:
         datasourceUid: VictoriaLogs
         filterByTraceID: true
