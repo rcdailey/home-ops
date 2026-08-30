@@ -1,16 +1,15 @@
 # Media Flex Mini uplink port flapping
 
 - **Date:** 2026-04-18
-- **Status:** MONITORING (recrimped 2026-05-16; 97% reduction, 6 drops/day residual)
+- **Status:** MONITORING (media-cabinet keystone replaced 2026-08-30)
 
 ## Summary
 
-The Media Flex Mini's uplink to Switch Pro 48 port 6 has been dropping link ~8 times per hour over
-the past 10 days. PoE stays up through the drops, so the Flex never fully reboots, but data
-connectivity cuts out. Disabling auto-negotiation changed the symptom (previously auto-negotiated
-down to 100M and stuck there) but did not fix the underlying cause. Evidence points to a
-physical-layer fault somewhere on the 1000BASE-T path, most likely a failing pair at one of the
-hand-terminated punchdowns. No fix yet; diagnostic plan is below.
+The Media Flex Mini's uplink to Switch Pro 48 port 6 dropped link ~8 times per hour while PoE stayed
+up. Re-crimping the server-room RJ45 reduced the rate from ~196 to ~6 drops per day. A temporary
+direct cable then held the link stable for more than 50 hours. On 2026-08-30, the media-cabinet
+keystone was replaced and the original in-wall path was restored for monitoring. If flapping
+returns, the in-wall cable is the remaining untested part of the permanent path.
 
 ## Symptoms
 
@@ -163,8 +162,15 @@ including sustained 4K Plex streaming with no visible buffering. That's ~6/day v
 contributors: the owner-punched keystone in the media cabinet (suspect #2) or a marginal pair on
 the in-wall run itself.
 
-**TODO:** Continue monitoring. If drops climb or buffering returns, re-terminate the media cabinet
-keystone (Step 6).
+**Temporary bypass:** A direct cable from Switch Pro 48 port 6 to the Media Flex held
+`link_down_count` at 832 for 50 hours and 57 minutes. The bypass still accumulated TX discards, so
+those discards were not evidence of corruption in the permanent cable path.
+
+**Step 6 (replace media-cabinet keystone):** On 2026-08-30, replaced the female keystone jack in the
+media cabinet and restored the original in-wall path. The link returned at 1 Gbps full duplex with
+zero MAC errors. The new monitoring baseline is `link_down_count=834`; the count increased during
+the disconnect and reconnection. If link flapping returns, the in-wall cable itself is the leading
+remaining cause.
 
 ### Original diagnostic plan
 
