@@ -17,18 +17,18 @@ spec:
         severity: warning
       annotations:
         summary: >-
-          VolSync backup {{ $labels.namespace }}/{{ $labels.replicationsource }} failed
+          VolSync backup {{ $labels.obj_namespace }}/{{ $labels.obj_name }} failed
 
     - alert: VolSyncBackupStale
       expr: |
         time() - volsync_replicationsource_last_sync_time > 12 * 60 * 60
-          or volsync_replicationsource_info
-            unless on (namespace, replicationsource)
+          or volsync_replicationsource_generation
+            unless on (obj_namespace, obj_name)
               volsync_replicationsource_last_sync_time
       for: 15m
       labels:
         severity: warning
       annotations:
         summary: >-
-          VolSync backup {{ $labels.namespace }}/{{ $labels.replicationsource }} is stale
+          VolSync backup {{ $labels.obj_namespace }}/{{ $labels.obj_name }} is stale
         description: The last successful sync was more than 12 hours ago or has never completed

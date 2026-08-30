@@ -147,14 +147,15 @@ spec:
                 kind: ReplicationSource
               metricNamePrefix: volsync
               labelsFromPath:
-                namespace: [metadata, namespace]
-                replicationsource: [metadata, name]
+                obj_namespace: [metadata, namespace]
+                obj_name: [metadata, name]
               metrics:
-              - name: replicationsource_info
-                help: Information about a VolSync ReplicationSource.
+              - name: replicationsource_generation
+                help: Current metadata generation of a VolSync ReplicationSource.
                 each:
-                  type: Info
-                  info: {}
+                  type: Gauge
+                  gauge:
+                    path: [metadata, generation]
               - name: replicationsource_last_sync_time
                 help: Unix timestamp of the last completed VolSync synchronization.
                 each:
