@@ -129,6 +129,8 @@ spec:
 
     kube-state-metrics:
       enabled: true
+      annotations:
+        reloader.stakater.com/auto: "true"
       vmScrape:
         enabled: false
       collectors: []
