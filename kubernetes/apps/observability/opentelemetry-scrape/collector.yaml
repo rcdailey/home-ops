@@ -220,7 +220,7 @@ spec:
             - targets: ['otel-scrape-targetallocator.observability:80']
     processors: {}
     exporters:
-      otlp/gateway:
+      otlp_grpc/gateway:
         endpoint: otel-gateway-collector.observability:4317
         tls:
           insecure: true
@@ -241,4 +241,4 @@ spec:
         metrics:
           receivers: [prometheus]
           processors: [memory_limiter, batch]
-          exporters: [otlp/gateway]
+          exporters: [otlp_grpc/gateway]

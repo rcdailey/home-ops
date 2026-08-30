@@ -25,12 +25,33 @@ spec:
 
     - alert: PlexTranscodingErrors
       expr: |-
-        _time:10m "service.name":="plex" _msg:~"(?i)transcode.*error"
+        _time:5m "service.name":="plex" _msg:~"(?i)transcode.*error"
           | stats count() as hits
-          | filter hits:>5
-      for: 5m
+          | filter hits:>100
       annotations:
         summary: Plex is experiencing frequent transcoding errors
+      labels:
+        severity: warning
+
+    - alert: PlexMediaAnalysisFailures
+      expr: |-
+        _time:15m "service.name":="plex"
+          _msg:~"Exception analyzing media file.*No such file or directory"
+          | stats count() as hits
+          | filter hits:>5
+      annotations:
+        summary: Plex cannot access media files during analysis
+      labels:
+        severity: warning
+
+    - alert: PlexCreditsDetectionSkipped
+      expr: |-
+        _time:1h "service.name":="plex"
+          _msg:="[CreditsDetectionManager] Mis-matching media items detected, skipping"
+          | stats count() as hits
+          | filter hits:>10
+      annotations:
+        summary: Plex skipped credits detection for multiple media versions
       labels:
         severity: warning
 

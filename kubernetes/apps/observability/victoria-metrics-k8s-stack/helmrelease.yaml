@@ -128,7 +128,58 @@ spec:
       enabled: false
 
     kube-state-metrics:
-      enabled: false
+      enabled: true
+      vmScrape:
+        enabled: false
+      collectors: []
+      prometheus:
+        monitor:
+          enabled: true
+      customResourceState:
+        enabled: true
+        config:
+          kind: CustomResourceStateMetrics
+          spec:
+            resources:
+            - groupVersionKind:
+                group: volsync.backube
+                version: v1alpha1
+                kind: ReplicationSource
+              metricNamePrefix: volsync
+              labelsFromPath:
+                namespace: [metadata, namespace]
+                replicationsource: [metadata, name]
+              metrics:
+              - name: replicationsource_info
+                help: Information about a VolSync ReplicationSource.
+                each:
+                  type: Info
+                  info: {}
+              - name: replicationsource_last_sync_time
+                help: Unix timestamp of the last completed VolSync synchronization.
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [status, lastSyncTime]
+              - name: replicationsource_latest_mover_status
+                help: Result of the latest VolSync mover job.
+                each:
+                  type: StateSet
+                  stateSet:
+                    path: [status, latestMoverStatus, result]
+                    labelName: result
+                    list: [Successful, Failed]
+      rbac:
+        extraRules:
+        - apiGroups: [volsync.backube]
+          resources: [replicationsources]
+          verbs: [list, watch]
+      resources:
+        limits:
+          memory: 128Mi
+        requests:
+          cpu: 10m
+          memory: 32Mi
 
     defaultRules:
       enabled: false

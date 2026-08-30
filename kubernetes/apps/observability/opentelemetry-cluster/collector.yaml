@@ -74,9 +74,14 @@ spec:
         - name: events
           mode: watch
           group: events.k8s.io
-    processors: {}
+    processors:
+      resource/events:
+        attributes:
+        - key: service.name
+          action: upsert
+          value: kubernetes-events
     exporters:
-      otlp/gateway:
+      otlp_grpc/gateway:
         endpoint: otel-gateway-collector.observability:4317
         tls:
           insecure: true
@@ -97,8 +102,8 @@ spec:
         metrics:
           receivers: [k8s_cluster]
           processors: [memory_limiter, batch]
-          exporters: [otlp/gateway]
+          exporters: [otlp_grpc/gateway]
         logs/events:
           receivers: [k8s_objects]
-          processors: [memory_limiter, batch]
-          exporters: [otlp/gateway]
+          processors: [memory_limiter, resource/events, batch]
+          exporters: [otlp_grpc/gateway]

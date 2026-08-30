@@ -1,0 +1,34 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: backup-alerts
+spec:
+  groups:
+  - name: volsync-backups
+    interval: 30s
+    rules:
+    - alert: VolSyncBackupFailed
+      expr: |
+        volsync_replicationsource_latest_mover_status{result="Failed"} == 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          VolSync backup {{ $labels.namespace }}/{{ $labels.replicationsource }} failed
+
+    - alert: VolSyncBackupStale
+      expr: |
+        time() - volsync_replicationsource_last_sync_time > 12 * 60 * 60
+          or volsync_replicationsource_info
+            unless on (namespace, replicationsource)
+              volsync_replicationsource_last_sync_time
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          VolSync backup {{ $labels.namespace }}/{{ $labels.replicationsource }} is stale
+        description: The last successful sync was more than 12 hours ago or has never completed

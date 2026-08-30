@@ -10,7 +10,10 @@ spec:
     interval: 30s
     rules:
     - alert: PVCNearCapacity
-      expr: 100 * otel:pvc_usage:ratio > 85
+      expr: |
+        100 * otel:pvc_usage:ratio{
+          k8s_persistentvolumeclaim_name!~"volsync-src-.*-cache"
+        } > 85
       for: 10m
       labels:
         severity: warning
@@ -21,7 +24,10 @@ spec:
         description: The claim is {{ printf "%.1f" $value }}% full
 
     - alert: PVCCriticalCapacity
-      expr: 100 * otel:pvc_usage:ratio > 95
+      expr: |
+        100 * otel:pvc_usage:ratio{
+          k8s_persistentvolumeclaim_name!~"volsync-src-.*-cache"
+        } > 95
       for: 5m
       labels:
         severity: critical

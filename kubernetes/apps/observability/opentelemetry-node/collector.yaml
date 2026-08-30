@@ -180,7 +180,7 @@ spec:
           action: upsert
           value: otel-node
     exporters:
-      otlp/gateway:
+      otlp_grpc/gateway:
         endpoint: otel-gateway-collector.observability:4317
         tls:
           insecure: true
@@ -201,12 +201,12 @@ spec:
         metrics:
           receivers: [kubelet_stats, host_metrics]
           processors: [memory_limiter, resource/node, resource/node-metrics, batch]
-          exporters: [otlp/gateway]
+          exporters: [otlp_grpc/gateway]
         logs/pods:
           receivers: [file_log/pods]
           processors: [memory_limiter, k8s_attributes, filter/log-opt-in, batch]
-          exporters: [otlp/gateway]
+          exporters: [otlp_grpc/gateway]
         logs/audit:
           receivers: [file_log/audit]
           processors: [memory_limiter, resource/node, batch]
-          exporters: [otlp/gateway]
+          exporters: [otlp_grpc/gateway]
