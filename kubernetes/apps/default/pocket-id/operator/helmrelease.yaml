@@ -36,7 +36,6 @@ spec:
             observability.home-ops/logs: "true"
           annotations:
             reloader.stakater.com/auto: "true"
-          image: ghcr.io/pocket-id/pocket-id:v2.14.0
           appUrl: https://auth.${SECRET_DOMAIN}
           timezone: America/Chicago
           metrics:
