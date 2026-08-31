@@ -32,6 +32,7 @@ spec:
     remediation:
       retries: 3
   values:
+    hostUsers: false
     args:
     - --kubelet-insecure-tls
     - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname

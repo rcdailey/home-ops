@@ -9,6 +9,10 @@ spec:
     kind: OCIRepository
     name: grafana-operator
   interval: 1h
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
   values:
     serviceMonitor:
       enabled: true
