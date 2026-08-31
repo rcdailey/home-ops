@@ -43,6 +43,7 @@ talosctl = "1.13.8"
 "github:home-operations/flate" = "latest"
 "github:home-operations/yayamlls" = "latest"
 "github:hyperb1iss/unifly" = "latest"
+"github:Tyrrrz/DiscordChatExporter" = { version = "latest", matching = "Cli" }
 yamlfmt = "latest"
 yamllint = "latest"
 yq = "latest"
