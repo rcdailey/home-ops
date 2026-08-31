@@ -29,6 +29,13 @@ Run exactly one command, substituting the URL verbatim:
 .opencode/skills/discord-chat/export.py '<discord-url>'
 ```
 
+When the rolling window is insufficient, bound a channel export with ISO-8601 timestamps:
+
+```sh
+.opencode/skills/discord-chat/export.py '<discord-channel-url>' \
+  --after '2026-08-17T16:06:00Z' --before '2026-08-24T16:06:00Z'
+```
+
 Example for a channel link:
 
 ```sh
@@ -48,6 +55,7 @@ The command invokes `DiscordChatExporter.Cli` through mise and writes the export
 
 - Channel link: seven days ending when the command starts
 - Message link: seven days preceding the linked message, including that message
+- Explicit channel range: `--after` through `--before`
 - Format: plain text, without media downloads
 - Filename: `discord-<channel-id>-latest.txt` or
   `discord-<channel-id>-<message-id>.txt`

@@ -5,10 +5,10 @@
 # dependencies = []
 # ///
 
+import argparse
 import os
 import re
 import subprocess
-import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import NoReturn
@@ -28,14 +28,29 @@ def format_time(value: datetime) -> str:
     return value.isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
+def parse_time(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
 def main() -> None:
-    if len(sys.argv) != 2:
-        fail(f"Usage: {Path(sys.argv[0]).name} <discord-channel-or-message-url>")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("url")
+    parser.add_argument("--after", type=parse_time)
+    parser.add_argument("--before", type=parse_time)
+    args = parser.parse_args()
+
+    if (args.after is None) != (args.before is None):
+        fail("--after and --before must be specified together")
+    if args.after and args.after >= args.before:
+        fail("--after must be earlier than --before")
 
     if not os.environ.get("DISCORD_TOKEN"):
         fail("DISCORD_TOKEN is not set")
 
-    match = URL_PATTERN.fullmatch(sys.argv[1])
+    match = URL_PATTERN.fullmatch(args.url)
     if match is None:
         fail("Expected https://discord.com/channels/<server>/<channel>[/<message>]")
 
@@ -45,11 +60,18 @@ def main() -> None:
     suffix = "latest"
 
     if message_id:
+        if args.after:
+            fail("explicit ranges require a channel URL")
         timestamp_ms = (int(message_id) >> 22) + DISCORD_EPOCH_MS
         before = datetime.fromtimestamp(timestamp_ms / 1000, UTC) + timedelta(seconds=1)
         suffix = message_id
 
-    after = before - timedelta(days=7)
+    if args.after:
+        after = args.after
+        before = args.before
+        suffix = f"{after:%Y%m%d}-{before:%Y%m%d}"
+    else:
+        after = before - timedelta(days=7)
     output = Path("/tmp/opencode") / f"discord-{channel_id}-{suffix}.txt"
 
     subprocess.run(
