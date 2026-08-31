@@ -72,6 +72,11 @@ spec:
       enabled: true
 
     cephClusterSpec:
+      security:
+        cephx:
+          daemon:
+            keyRotationPolicy: KeyGeneration
+            keyGeneration: 2
       # Recovery/backfill tuning for NVMe OSDs (Samsung 990 PRO/970 EVO Plus)
       # Aggressive settings to prevent backfill_wait queue buildup and slow ops
       # Default osd_recovery_max_active=1 causes cascading delays with client I/O
