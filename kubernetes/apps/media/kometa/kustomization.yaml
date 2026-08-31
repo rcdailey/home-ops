@@ -18,5 +18,8 @@ configMapGenerator:
   - ./config/kids-movies.yml
   - ./config/kids-anime.yml
   - ./config/monogatari.yml
+- name: kometa-otel-config
+  files:
+  - ./config/collector.yaml
 generatorOptions:
   disableNameSuffixHash: true

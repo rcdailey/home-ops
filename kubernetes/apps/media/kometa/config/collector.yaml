@@ -1,0 +1,205 @@
+---
+extensions:
+  file_storage/kometa:
+    directory: /config/.otelcol
+    create_directory: true
+    fsync: true
+    max_size: 536870912
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  file_log/kometa:
+    include: [/config/logs/meta*.log]
+    start_at: beginning
+    include_file_name: true
+    include_file_path: true
+    storage: file_storage/kometa
+    operators:
+    - type: recombine
+      combine_field: body
+      combine_with: "\n"
+      force_flush_period: 1s
+      source_identifier: attributes["log.file.path"]
+      is_first_entry: >-
+        body matches "^\\[\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2},\\d{3}\\]"
+    - type: add
+      field: attributes["kometa.parse_status"]
+      value: unparsed
+    - type: regex_parser
+      parse_from: body
+      parse_to: attributes
+      regex: '(?s)^\[(?P<ts>[^]]+)] (?P<src>\[[^]]+]) +\[(?P<sev>[A-Z]+)] +(?P<msg>.*)$'
+      on_error: send_quiet
+      severity:
+        parse_from: attributes.sev
+        preset: none
+        mapping:
+          trace: TRACE
+          debug: DEBUG
+          info: INFO
+          warn: WARNING
+          error: ERROR
+          fatal: CRITICAL
+    - type: add
+      field: attributes["kometa.parse_status"]
+      value: parsed
+      if: attributes.msg != nil
+    - type: regex_parser
+      parse_from: attributes.src
+      parse_to: attributes
+      regex: '^\[(?P<source_file>[^]:]+):(?P<source_line>\d+)]$'
+      on_error: send_quiet
+    - type: move
+      from: attributes.ts
+      to: attributes["kometa.timestamp"]
+      if: attributes.ts != nil
+    - type: move
+      from: attributes.source_file
+      to: attributes["code.file.path"]
+      if: attributes.source_file != nil
+    - type: move
+      from: attributes.source_line
+      to: attributes["code.line.number"]
+      if: attributes.source_line != nil
+    - type: move
+      from: attributes.msg
+      to: body
+      if: attributes.msg != nil
+    - type: add
+      field: attributes["kometa.log.source"]
+      value: file
+
+  file_log/console:
+    include: [/config/logs/console.log]
+    start_at: beginning
+    include_file_name: false
+    include_file_path: true
+    storage: file_storage/kometa
+    operators:
+    - type: filter
+      expr: 'body matches "^\\|.*\\|[[:space:]]*$" or body matches "^[[:space:]]*$"'
+    - type: recombine
+      combine_field: body
+      combine_with: "\n"
+      force_flush_period: 1s
+      source_identifier: attributes["log.file.path"]
+      is_first_entry: >-
+        body matches "^(Traceback|\\[WARNING\\]|Requirements Error:|Config Error:|
+        Argument Error:)"
+    - type: add
+      field: attributes["kometa.log.source"]
+      value: console
+
+processors:
+  filter/boilerplate:
+    error_mode: ignore
+    log_conditions:
+    - log.body.string == ""
+    - >-
+      log.attributes["kometa.log.source"] == "file" and
+      log.severity_number < SEVERITY_NUMBER_INFO
+    - >-
+      log.attributes["kometa.log.source"] == "file" and
+      log.severity_number < SEVERITY_NUMBER_WARN and
+      (IsMatch(log.body, "^[=|[:space:]-]+$") or
+      IsMatch(log.body, "^=+.*=+$") or
+      IsMatch(log.body, "^\\(\\d+/\\d+\\)") or
+      IsMatch(log.body, "^Overlay Update Not Needed") or
+      IsMatch(log.body, "^Metadata: .* update not needed$") or
+      IsMatch(log.body, "^No .* Edits$") or
+      IsMatch(log.body, "^Validation Successful$") or
+      IsMatch(log.body, "^(Collection Metadata Edits|Sync Mode:.*)$") or
+      IsMatch(log.body, "^(Validating Method:|Processing Plex All )") or
+      IsMatch(log.body, ".*[[:space:]]\\|[[:space:]].*") or
+      IsMatch(log.body, "^(__  ___|\\|  |\\|__)") or
+      IsMatch(log.body, "^(.* Summary|Summary|.* Playlist Report|Version:)") or
+      IsMatch(log.body, "^The following errors and warnings were identified") or
+      IsMatch(log.body, "^Search your log for any of the messages below"))
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 192
+    spike_limit_mib: 48
+  resource/kometa:
+    attributes:
+    - key: service.name
+      action: upsert
+      value: kometa
+    - key: service.namespace
+      action: upsert
+      value: media
+    - key: service.instance.id
+      action: upsert
+      value: ${env:K8S_POD_UID}
+    - key: k8s.namespace.name
+      action: upsert
+      value: ${env:K8S_NAMESPACE}
+    - key: k8s.pod.name
+      action: upsert
+      value: ${env:K8S_POD_NAME}
+    - key: k8s.pod.uid
+      action: upsert
+      value: ${env:K8S_POD_UID}
+    - key: k8s.job.name
+      action: upsert
+      value: ${env:K8S_JOB_NAME}
+    - key: k8s.container.name
+      action: upsert
+      value: app
+    - key: k8s.node.name
+      action: upsert
+      value: ${env:K8S_NODE_NAME}
+  transform/kometa:
+    error_mode: ignore
+    log_statements:
+    - >-
+      set(log.attributes["code.line.number"], Int(log.attributes["code.line.number"]))
+      where log.attributes["code.line.number"] != nil
+    - delete_key(log.attributes, "src")
+    - delete_key(log.attributes, "sev")
+    - >-
+      replace_pattern(log.body, "(?m)^ *\\| ?", "")
+      where log.attributes["kometa.log.source"] == "file"
+    - >-
+      replace_pattern(log.body, "(?m)[ \\t]*\\|[ \\t]*$", "")
+      where log.attributes["kometa.log.source"] == "file"
+    - replace_pattern(log.body, "^[[:space:]]+|[[:space:]]+$", "")
+    - >-
+      set(log.severity_number, SEVERITY_NUMBER_WARN)
+      where log.attributes["kometa.log.source"] == "console" and
+      IsMatch(log.body, "^(\\[WARNING\\]|.*Warning:)")
+    - >-
+      set(log.severity_text, "WARNING")
+      where log.attributes["kometa.log.source"] == "console" and
+      log.severity_number == SEVERITY_NUMBER_WARN
+    - >-
+      set(log.severity_number, SEVERITY_NUMBER_ERROR)
+      where log.attributes["kometa.log.source"] == "console" and
+      IsMatch(log.body, "^(Traceback|Requirements Error:|Config Error:|Argument Error:)")
+    - >-
+      set(log.severity_text, "ERROR")
+      where log.attributes["kometa.log.source"] == "console" and
+      log.severity_number == SEVERITY_NUMBER_ERROR
+  batch: {}
+
+exporters:
+  otlp_http/gateway:
+    endpoint: http://otel-gateway-collector.observability:4318
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0s
+    sending_queue:
+      storage: file_storage/kometa
+
+service:
+  extensions: [file_storage/kometa, health_check]
+  pipelines:
+    logs:
+      receivers: [file_log/kometa, file_log/console]
+      processors:
+      - memory_limiter
+      - transform/kometa
+      - filter/boilerplate
+      - resource/kometa
+      - batch
+      exporters: [otlp_http/gateway]
