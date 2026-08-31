@@ -20,6 +20,7 @@
     "github>rcdailey/home-ops//.renovate/semanticCommits.json5",
     "github>rcdailey/home-ops//.renovate/customManagers.json5",
   ],
+  schedule: ["* 1-4 * * *"],
   dependencyDashboardTitle: "Renovate Dashboard 🤖",
   suppressNotifications: ["prEditedNotification", "prIgnoreNotification"],
   configMigration: true,
