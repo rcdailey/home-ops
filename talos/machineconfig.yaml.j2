@@ -78,6 +78,7 @@ machine:
     # Preserve congestion window after idle (improves perf for bursty traffic)
     net.ipv4.tcp_slow_start_after_idle: "0"
     net.ipv4.tcp_wmem: 4096 262144 67108864
+    user.max_user_namespaces: "11255"
   features:
 {% if n.controller %}
     kubernetesTalosAPIAccess:
