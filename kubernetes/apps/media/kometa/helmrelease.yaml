@@ -36,6 +36,57 @@ spec:
           # Cleanup completed jobs after 6 hours (matches schedule interval)
           ttlSecondsAfterFinished: 21600
 
+        initContainers:
+          collector:
+            image:
+              repository: otel/opentelemetry-collector-k8s
+              tag: 0.159.0@sha256:3a8f46e1ff33546d36ddd94ef8721c5807718e25825f3e3f6eb5d552fd24e422
+            args: [--config=/etc/otelcol/config.yaml]
+            env:
+              K8S_NAMESPACE:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+              K8S_NODE_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+              K8S_POD_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
+              K8S_POD_UID:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.uid
+              K8S_JOB_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.labels['batch.kubernetes.io/job-name']
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 13133
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 256Mi
+            restartPolicy: Always
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: [ALL]
+
         containers:
           app:
             image:
@@ -46,9 +97,16 @@ spec:
             - -c
             args:
             - |
-              python3 kometa.py --run --read-only-config --run-libraries "Anime Series";
-              python3 kometa.py --run --read-only-config --run-libraries "Movies";
-              python3 kometa.py --run --read-only-config --run-libraries "TV Shows";
+              python3 kometa.py --run --read-only-config --run-libraries "Anime Series" \
+                >> /config/logs/console.log 2>&1;
+              python3 kometa.py --run --read-only-config --run-libraries "Movies" \
+                >> /config/logs/console.log 2>&1;
+              python3 kometa.py --run --read-only-config --run-libraries "TV Shows" \
+                >> /config/logs/console.log 2>&1;
+              status=$?;
+              # Allow the file tailer to ingest final records before Kubernetes stops it.
+              sleep 2;
+              exit "$status";
             env:
               TZ: America/Chicago
               # Reduce log verbosity: hide progress bars and minimize box width
@@ -73,8 +131,6 @@ spec:
                 drop: [ALL]
 
     defaultPodOptions:
-      labels:
-        observability.home-ops/logs: "true"
       securityContext:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
@@ -87,6 +143,8 @@ spec:
           kometa:
             app:
             - path: /config
+            collector:
+            - path: /config
 
       config-file:
         type: configMap
@@ -96,6 +154,16 @@ spec:
             app:
             - path: /config/config.yml
               subPath: config.yml
+              readOnly: true
+
+      collector-config:
+        type: configMap
+        name: kometa-otel-config
+        advancedMounts:
+          kometa:
+            collector:
+            - path: /etc/otelcol/config.yaml
+              subPath: collector.yaml
               readOnly: true
 
       metadata-files:
@@ -112,5 +180,8 @@ spec:
         advancedMounts:
           kometa:
             app:
+            - path: /config/logs
+              subPath: logs
+            collector:
             - path: /config/logs
               subPath: logs
