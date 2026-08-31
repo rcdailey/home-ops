@@ -31,6 +31,8 @@ def ceph():
 def ceph_status():
     """Compact Ceph health, PG, OSD, and capacity summary."""
     data = ceph_json(["status"])
+    cluster = kubectl_json("cephcluster", "rook-ceph", namespace="rook-ceph")
+    release = kubectl_json("helmrelease", "rook-ceph-cluster", namespace="rook-ceph")
 
     health = data.get("health", {})
     health_status = health.get("status", "UNKNOWN")
@@ -72,6 +74,44 @@ def ceph_status():
     # Objects
     num_objects = pgmap.get("num_objects", 0)
     info(f"  Objects: {num_objects:,}")
+
+    cluster_spec = cluster.get("spec", {})
+    cluster_status = cluster.get("status", {})
+    release_values = release.get("spec", {}).get("values", {})
+    chart_daemon = (
+        release_values.get("cephClusterSpec", {})
+        .get("security", {})
+        .get("cephx", {})
+        .get("daemon", {})
+    )
+    live_daemon = cluster_spec.get("security", {}).get("cephx", {}).get("daemon", {})
+    overall = cluster_status.get("ceph", {}).get("versions", {}).get("overall", {})
+    versions = []
+    for version, count in overall.items():
+        match = re.search(r"ceph version ([^ ]+)", version)
+        versions.append(f"{match.group(1) if match else version}: {count}")
+
+    section("UPGRADE")
+    kv(
+        [
+            (
+                "Phase",
+                f"{cluster_status.get('phase', '?')}/{cluster_status.get('state', '?')}",
+            ),
+            ("Desired image", cluster_spec.get("cephVersion", {}).get("image", "?")),
+            ("Running", ", ".join(sorted(versions)) or "unknown"),
+            ("Chart rotation", _cephx_rotation(chart_daemon)),
+            ("Live rotation", _cephx_rotation(live_daemon)),
+        ]
+    )
+
+
+def _cephx_rotation(config: dict) -> str:
+    policy = config.get("keyRotationPolicy")
+    generation = config.get("keyGeneration")
+    if not policy:
+        return "disabled"
+    return f"{policy} generation {generation}"
 
 
 @ceph.command("osd")

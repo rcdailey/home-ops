@@ -6,6 +6,8 @@ metadata:
   name: rook-ceph-cluster
 spec:
   interval: 1h
+  # Five serial OSD upgrades can each wait up to 10m before the remaining daemons rotate keys.
+  timeout: 1h
   chartRef:
     kind: OCIRepository
     name: rook-ceph-cluster
@@ -18,8 +20,8 @@ spec:
       retries: -1
   upgrade:
     cleanupOnFail: true
-    remediation:
-      retries: 3
+    strategy:
+      name: RetryOnFailure
   values:
     # Rook Ceph Cluster Configuration
     # 3-node cluster with device selectors for each node
