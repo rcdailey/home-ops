@@ -74,6 +74,15 @@ spec:
       enabled: true
 
     cephClusterSpec:
+      # AES256K client keys require Linux 7.0; keep these warnings muted until Talos provides it.
+      healthCheck:
+        muteHealthWarning:
+          AUTH_INSECURE_CLIENT_KEY_TYPE:
+            policy: mute
+          AUTH_INSECURE_KEYS_ALLOWED:
+            policy: mute
+          AUTH_INSECURE_KEYS_CREATABLE:
+            policy: mute
       security:
         cephx:
           daemon:
