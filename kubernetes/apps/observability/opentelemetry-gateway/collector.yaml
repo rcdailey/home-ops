@@ -40,6 +40,7 @@ spec:
   ports:
   - name: otlp-grpc
     port: 4317
+    appProtocol: grpc
     protocol: TCP
   - name: otlp-http
     port: 4318

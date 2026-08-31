@@ -6,3 +6,4 @@ components:
 - ../../../components/otel-collector-baseline
 resources:
 - ./collector.yaml
+- ./referencegrant.yaml

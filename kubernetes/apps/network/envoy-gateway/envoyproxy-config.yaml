@@ -6,6 +6,14 @@ metadata:
   name: cluster-traffic-policy
   namespace: network
 spec:
+  telemetry:
+    tracing:
+      provider:
+        type: OpenTelemetry
+        backendRefs:
+        - name: otel-gateway-collector
+          namespace: observability
+          port: 4317
   provider:
     type: Kubernetes
     kubernetes:

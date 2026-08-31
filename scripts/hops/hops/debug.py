@@ -161,12 +161,14 @@ def dns(hostname: str, namespace: str, node: str | None):
 @click.option("--method", default="GET", help="HTTP method")
 @click.option("--node", help="Run on a specific node")
 @click.option("--family", type=click.Choice(["4", "6"]), help="Force IP family")
+@click.option("--body", is_flag=True, help="Include the response body")
 def curl(
     url: str,
     namespace: str,
     method: str,
     node: str | None,
     family: str | None,
+    body: bool,
 ):
     """HTTP request via ephemeral curlimages/curl pod."""
     name = _pod_name("curl")
@@ -174,15 +176,14 @@ def curl(
     command = ["curl", "-sS"]
     if family:
         command.append(f"-{family}")
+    command.extend(["-X", method])
+    if not body:
+        command.extend(["-o", "/dev/null"])
     command.extend(
         [
-            "-X",
-            method,
-            "-o",
-            "/dev/null",
             "-w",
             (
-                "HTTP %{http_code} ip=%{remote_ip} "
+                "\nHTTP %{http_code} ip=%{remote_ip} "
                 "(%{time_total}s, %{size_download} bytes)\n"
             ),
             url,

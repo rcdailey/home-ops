@@ -9,6 +9,26 @@ spec:
   targetSelectors:
   - group: gateway.networking.k8s.io
     kind: Gateway
+  headers:
+    earlyRequestHeaders:
+      remove:
+      - baggage
+      - b3
+      - grpc-trace-bin
+      - ot-tracer-sampled
+      - ot-tracer-spanid
+      - ot-tracer-traceid
+      - traceparent
+      - tracestate
+      - uber-trace-id
+      - x-amzn-trace-id
+      - x-b3-flags
+      - x-b3-parentspanid
+      - x-b3-sampled
+      - x-b3-spanid
+      - x-b3-traceid
+      - x-cloud-trace-context
+      - x-ot-span-context
   clientIPDetection:
     xForwardedFor:
       # Trust pod CIDR for X-Forwarded-For evaluation (prevents external IP spoofing)

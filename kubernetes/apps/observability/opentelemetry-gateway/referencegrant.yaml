@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/referencegrant_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: envoy-gateway-telemetry
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    namespace: network
+  to:
+  - group: ""
+    kind: Service
+    name: otel-gateway-collector
