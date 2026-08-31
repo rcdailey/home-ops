@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import click
 
 from hops._click import HelpfulGroup
@@ -109,6 +111,67 @@ def audit_logs(node: str | None) -> None:
             ]
         )
     table(["NODE", "OWNER", "DIR", "FILE", "FILES/SIZE", "GROUP 0"], rows)
+
+
+@cli.command()
+@click.argument("node")
+def etcd(node: str) -> None:
+    """Correlate local etcd service, cluster status, membership, and warnings."""
+    target = next(
+        (item for item in get_all() if item.name == node or item.ip == node),
+        None,
+    )
+    if target is None:
+        click.echo(f"error: node {node!r} not found", err=True)
+        raise SystemExit(1)
+    if target.role != "cp":
+        click.echo(f"error: node {target.name!r} is not a control-plane node", err=True)
+        raise SystemExit(1)
+    ip = target.ip
+    commands = {
+        "LOCAL SERVICE": ["talosctl", "service", "etcd", "-n", ip],
+        "CLUSTER STATUS": ["talosctl", "etcd", "status", "-n", ip],
+        "MEMBERS": ["talosctl", "etcd", "members", "-n", ip],
+    }
+    failed = False
+    for heading, command in commands.items():
+        result = run(command, timeout=20, check=False)
+        section(heading)
+        if result.returncode != 0:
+            message = (result.stderr or result.stdout or "talosctl failed").strip()
+            click.echo(f"error: {message.splitlines()[0]}", err=True)
+            failed = True
+            continue
+        click.echo(result.stdout.strip())
+
+    logs = run(
+        ["talosctl", "logs", "etcd", "-n", ip, "--tail", "100"],
+        timeout=20,
+        check=False,
+    )
+    section("RECENT WARNINGS")
+    if logs.returncode != 0:
+        message = (logs.stderr or logs.stdout or "talosctl failed").strip()
+        click.echo(f"error: {message.splitlines()[0]}", err=True)
+        raise SystemExit(1)
+    warnings = []
+    for line in logs.stdout.splitlines():
+        payload = line.split(": ", 1)[-1]
+        try:
+            entry = json.loads(payload)
+        except json.JSONDecodeError:
+            continue
+        if entry.get("level") not in {"warn", "error", "fatal"}:
+            continue
+        warnings.append(
+            [entry.get("ts", "?"), entry.get("level", "?"), entry.get("msg", "?")]
+        )
+    if warnings:
+        table(["TIME", "LEVEL", "MESSAGE"], warnings[-20:])
+    else:
+        click.echo("(none)")
+    if failed:
+        raise SystemExit(1)
 
 
 @cli.command()

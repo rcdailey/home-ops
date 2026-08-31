@@ -136,6 +136,7 @@ def events(namespace: str | None, show_all: bool, limit: int):
         return
 
     rows = []
+    long_messages = []
     for e in items:
         meta = e.get("metadata", {})
         ns = meta.get("namespace", "")
@@ -143,13 +144,20 @@ def events(namespace: str | None, show_all: bool, limit: int):
         reason = e.get("reason", "?")
         obj_ref = e.get("involvedObject", {})
         obj = f"{obj_ref.get('kind', '?')}/{obj_ref.get('name', '?')}"
-        msg = truncate(e.get("message", ""), 120)
+        message = e.get("message", "")
+        msg = truncate(message, 120)
         last_seen = age_str(e.get("lastTimestamp"))
         count = e.get("count", 1)
         count_str = f"x{count}" if count > 1 else ""
         rows.append([last_seen, ns, etype, reason, obj, count_str, msg])
+        if len(message) > 120 and message not in long_messages:
+            long_messages.append(message)
 
     table(["AGE", "NS", "TYPE", "REASON", "OBJECT", "#", "MESSAGE"], rows)
+    if long_messages:
+        section("EVENT DETAILS")
+        for message in long_messages:
+            click.echo(message)
 
 
 @cli.command()

@@ -201,14 +201,22 @@ def diagnose_pod(
             info("(none)")
         else:
             rows = []
+            long_messages = []
             for e in items:
+                message = e.get("message", "")
                 rows.append(
                     [
                         age_str(e.get("lastTimestamp") or e.get("eventTime")),
                         e.get("type", "?"),
                         e.get("reason", "?"),
                         f"x{e.get('count', 1)}" if e.get("count", 1) > 1 else "",
-                        truncate(e.get("message", ""), 100),
+                        truncate(message, 100),
                     ]
                 )
+                if len(message) > 100 and message not in long_messages:
+                    long_messages.append(message)
             table(["AGE", "TYPE", "REASON", "#", "MESSAGE"], rows)
+            if long_messages:
+                section("EVENT DETAILS")
+                for message in long_messages:
+                    click.echo(message)
