@@ -62,6 +62,8 @@ spec:
               limits:
                 memory: 256Mi
     defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
