@@ -1,0 +1,94 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: telemetry-storage-alerts
+spec:
+  groups:
+  - name: telemetry-storage
+    interval: 30s
+    rules:
+    - record: observability:telemetry_storage_write_bytes:rate5m
+      expr: |
+        sum(
+          rate(process_io_storage_written_bytes_total{
+            service_name=~"victoria-(logs|metrics|traces)"
+          }[5m])
+        )
+
+    - record: ceph:osd_write_latency_seconds:rate5m
+      expr: |
+        sum(rate(ceph_osd_op_w_latency_sum[5m]))
+          / sum(rate(ceph_osd_op_w_latency_count_total[5m]))
+
+    - record: vl:insert_flush_duration_seconds:rate5m
+      expr: |
+        sum(rate(vl_insert_flush_duration_seconds_sum[5m]))
+          / sum(rate(vl_insert_flush_duration_seconds_count[5m]))
+
+    - alert: TelemetryStorageWriteRateHigh
+      expr: observability:telemetry_storage_write_bytes:rate5m > 2 * 1024 * 1024
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Telemetry storage writes exceed 2 MiB/s
+        description: >-
+          VictoriaMetrics, VictoriaLogs, and VictoriaTraces have sustained
+          {{ printf "%.0f" $value }} bytes/s of combined storage writes.
+
+    - alert: CephWriteLatencyHigh
+      expr: ceph:osd_write_latency_seconds:rate5m > 0.05
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Ceph write latency exceeds 50 ms
+        description: >-
+          Average Ceph OSD write latency has remained above 50 ms, indicating
+          cluster-wide storage contention.
+
+    - alert: TelemetryStorageContention
+      expr: |
+        observability:telemetry_storage_write_bytes:rate5m > 512 * 1024
+          and ceph:osd_write_latency_seconds:rate5m > 0.05
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: Telemetry writes correlate with Ceph contention
+        description: >-
+          Victoria storage writes are elevated while Ceph write latency exceeds
+          50 ms, indicating that telemetry may be contributing to contention.
+
+    - alert: VictoriaLogsFlushSlow
+      expr: vl:insert_flush_duration_seconds:rate5m > 0.05
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: VictoriaLogs storage flushes exceed 50 ms
+
+    - alert: VictoriaRowsDropped
+      expr: |
+        sum by (service_name, reason) (
+          rate({__name__=~"vl_rows_dropped_total|vt_rows_dropped_total"}[5m])
+        ) > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: '{{ $labels.service_name }} is dropping telemetry rows'
+        description: Rows are being dropped because of {{ $labels.reason }}.
+
+    - alert: VictoriaStorageReadOnly
+      expr: |
+        max by (service_name) (
+          {__name__=~"(vl|vm|vt)_storage_is_read_only"}
+        ) == 1
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: '{{ $labels.service_name }} storage is read-only'

@@ -5,4 +5,5 @@ kind: Kustomization
 resources:
 - ./vlsingle.yaml
 - ./vmalert.yaml
+- ./log-volume-alerts.yaml
 - ./httproute.yaml
