@@ -1,7 +1,7 @@
 ---
 extensions:
   file_storage/kometa:
-    directory: /config/.otelcol
+    directory: /config/logs/.otelcol
     create_directory: true
     fsync: true
     max_size: 536870912
@@ -103,7 +103,6 @@ processors:
       log.attributes["kometa.log.source"] == "file" and
       log.severity_number < SEVERITY_NUMBER_WARN and
       (IsMatch(log.body, "^[=|[:space:]-]+$") or
-      IsMatch(log.body, "^=+.*=+$") or
       IsMatch(log.body, "^\\(\\d+/\\d+\\)") or
       IsMatch(log.body, "^Overlay Update Not Needed") or
       IsMatch(log.body, "^Metadata: .* update not needed$") or
@@ -111,6 +110,9 @@ processors:
       IsMatch(log.body, "^Validation Successful$") or
       IsMatch(log.body, "^(Collection Metadata Edits|Sync Mode:.*)$") or
       IsMatch(log.body, "^(Validating Method:|Processing Plex All )") or
+      IsMatch(log.body, "^Building Definition From Templates$") or
+      IsMatch(log.body, "^Validating .* Attributes$") or
+      IsMatch(log.body, "^Gathering Items for .* Overlay$") or
       IsMatch(log.body, ".*[[:space:]]\\|[[:space:]].*") or
       IsMatch(log.body, "^(__  ___|\\|  |\\|__)") or
       IsMatch(log.body, "^(.* Summary|Summary|.* Playlist Report|Version:)") or
@@ -162,6 +164,12 @@ processors:
       where log.attributes["kometa.log.source"] == "file"
     - >-
       replace_pattern(log.body, "(?m)[ \\t]*\\|[ \\t]*$", "")
+      where log.attributes["kometa.log.source"] == "file"
+    - >-
+      replace_pattern(log.body, "^=+[[:space:]]*", "")
+      where log.attributes["kometa.log.source"] == "file"
+    - >-
+      replace_pattern(log.body, "[[:space:]]*=+$", "")
       where log.attributes["kometa.log.source"] == "file"
     - replace_pattern(log.body, "^[[:space:]]+|[[:space:]]+$", "")
     - >-
