@@ -11,6 +11,7 @@ resources:
 - ./cluster-health.yaml
 - ./kubernetes-alerts.yaml
 - ./observability-alerts.yaml
+- ./telemetry-storage-alerts.yaml
 - ./ceph-alerts.yaml
 - ./pvc-alerts.yaml
 - ./unifi-alerts.yaml
