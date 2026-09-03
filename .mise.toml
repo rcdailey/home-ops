@@ -8,7 +8,7 @@ FLATE_PATH = "{{config_root}}/kubernetes/flux/cluster"
 [tools]
 crane = "latest"
 delta = "latest"
-flux2 = "2.9.4"
+flux2 = "2.9.5"
 fzf = "latest"
 gh = "latest"
 gitleaks = "latest"
