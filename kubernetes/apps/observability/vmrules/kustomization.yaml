@@ -8,6 +8,7 @@ labels:
     observability.home-ops/datasource: metrics
 resources:
 - ./backup-alerts.yaml
+- ./certificate-alerts.yaml
 - ./cluster-health.yaml
 - ./kubernetes-alerts.yaml
 - ./observability-alerts.yaml

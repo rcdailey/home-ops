@@ -1,0 +1,42 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: certificate-alerts
+spec:
+  groups:
+  - name: certificates
+    interval: 30s
+    rules:
+    - alert: CertificateRenewalStalled
+      expr: |
+        certmanager_certificate_renewal_timestamp_seconds < time()
+          and certmanager_certificate_expiration_timestamp_seconds > time()
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} renewal is stalled
+        description: The scheduled renewal has not replaced the certificate within 15 minutes
+
+    - alert: CertificateExpiringSoon
+      expr: |
+        certmanager_certificate_expiration_timestamp_seconds - time() < 24 * 60 * 60
+          and certmanager_certificate_expiration_timestamp_seconds - time() > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: >-
+          Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} expires within 24 hours
+
+    - alert: CertificateExpired
+      expr: certmanager_certificate_expiration_timestamp_seconds < time()
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: >-
+          Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} has expired

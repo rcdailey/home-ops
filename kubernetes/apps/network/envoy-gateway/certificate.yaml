@@ -16,5 +16,4 @@ spec:
     algorithm: ECDSA
   usages:
   - digital signature
-  commonName: "${SECRET_DOMAIN}"
-  dnsNames: ["${SECRET_DOMAIN}", "*.${SECRET_DOMAIN}"]
+  dnsNames: ["*.${SECRET_DOMAIN}"]
