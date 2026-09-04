@@ -30,6 +30,7 @@ spec:
               tag: 2026.8.2
             env:
               NO_AUTOUPDATE: true
+              TUNNEL_LOG_OUTPUT: json
               TUNNEL_METRICS: 0.0.0.0:8080
               TUNNEL_ORIGIN_ENABLE_HTTP2: true
               TUNNEL_POST_QUANTUM: true
@@ -63,6 +64,7 @@ spec:
                 memory: 256Mi
     defaultPodOptions:
       labels:
+        observability.home-ops/log-format: json
         observability.home-ops/logs: "true"
       securityContext:
         runAsNonRoot: true

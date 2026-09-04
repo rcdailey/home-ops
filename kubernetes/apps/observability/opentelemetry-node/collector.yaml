@@ -148,6 +148,9 @@ spec:
           - service.version
           - service.instance.id
           labels:
+          - tag_name: observability.home-ops/log-format
+            key: observability.home-ops/log-format
+            from: pod
           - tag_name: observability.home-ops/logs
             key: observability.home-ops/logs
             from: pod
@@ -166,6 +169,68 @@ spec:
         error_mode: ignore
         log_conditions:
         - resource.attributes["observability.home-ops/logs"] != "true"
+      transform/logs:
+        error_mode: ignore
+        log_statements:
+        - context: log
+          statements:
+          - >-
+            replace_pattern(log.body,
+            "(?i)([?&](?:x-plex-token|token|api[_-]?key)=)[^&\\s\"]+",
+            "$1[REDACTED]") where IsString(log.body)
+          - >-
+            merge_maps(log.cache, ParseJSON(log.body), "upsert") where
+            resource.attributes["observability.home-ops/log-format"] == "json"
+            and IsString(log.body)
+          - >-
+            merge_maps(log.attributes, log.cache, "insert") where
+            resource.attributes["observability.home-ops/log-format"] == "json"
+          - set(log.severity_text, "DEBUG") where log.cache["level"] == "debug"
+          - >-
+            set(log.severity_number, SEVERITY_NUMBER_DEBUG) where
+            log.cache["level"] == "debug"
+          - set(log.severity_text, "INFO") where log.cache["level"] == "info"
+          - >-
+            set(log.severity_number, SEVERITY_NUMBER_INFO) where
+            log.cache["level"] == "info"
+          - >-
+            set(log.severity_text, "WARN") where
+            log.cache["level"] == "warn" or log.cache["level"] == "warning"
+          - >-
+            set(log.severity_number, SEVERITY_NUMBER_WARN) where
+            log.cache["level"] == "warn" or log.cache["level"] == "warning"
+          - set(log.severity_text, "ERROR") where log.cache["level"] == "error"
+          - >-
+            set(log.severity_number, SEVERITY_NUMBER_ERROR) where
+            log.cache["level"] == "error"
+          - >-
+            set(log.severity_text, "FATAL") where
+            log.cache["level"] == "fatal" or log.cache["level"] == "panic"
+          - >-
+            set(log.severity_number, SEVERITY_NUMBER_FATAL) where
+            log.cache["level"] == "fatal" or log.cache["level"] == "panic"
+          - set(log.body, log.cache["msg"]) where log.cache["msg"] != nil
+          - >-
+            set(log.body, log.cache["message"]) where
+            log.cache["message"] != nil
+          - >-
+            set(log.severity_text, "INFO") where
+            IsString(log.body) and IsMatch(log.body, "^\\[INFO\\]")
+          - >-
+            set(log.severity_number, SEVERITY_NUMBER_INFO) where
+            IsString(log.body) and IsMatch(log.body, "^\\[INFO\\]")
+          - >-
+            set(log.severity_text, "WARN") where
+            IsString(log.body) and IsMatch(log.body, "^\\[WARNING\\]")
+          - >-
+            set(log.severity_number, SEVERITY_NUMBER_WARN) where
+            IsString(log.body) and IsMatch(log.body, "^\\[WARNING\\]")
+          - >-
+            set(log.severity_text, "ERROR") where
+            IsString(log.body) and IsMatch(log.body, "^\\[ERROR\\]")
+          - >-
+            set(log.severity_number, SEVERITY_NUMBER_ERROR) where
+            IsString(log.body) and IsMatch(log.body, "^\\[ERROR\\]")
       resource/node:
         attributes:
         - key: host.name
@@ -204,7 +269,12 @@ spec:
           exporters: [otlp_grpc/gateway]
         logs/pods:
           receivers: [file_log/pods]
-          processors: [memory_limiter, k8s_attributes, filter/log-opt-in, batch]
+          processors:
+          - memory_limiter
+          - k8s_attributes
+          - filter/log-opt-in
+          - transform/logs
+          - batch
           exporters: [otlp_grpc/gateway]
         logs/audit:
           receivers: [file_log/audit]

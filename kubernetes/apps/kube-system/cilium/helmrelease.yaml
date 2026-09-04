@@ -70,10 +70,13 @@ spec:
     loadBalancer:
       algorithm: maglev
       mode: dsr
+    logOptions:
+      format: json
     operator:
       dashboards:
         enabled: true
       podLabels:
+        observability.home-ops/log-format: json
         observability.home-ops/logs: "true"
       prometheus:
         enabled: true
@@ -100,6 +103,7 @@ spec:
         enabled: true
         trustCRDsExist: true
     podLabels:
+      observability.home-ops/log-format: json
       observability.home-ops/logs: "true"
     rollOutCiliumPods: true
     routingMode: native
