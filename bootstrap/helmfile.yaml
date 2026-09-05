@@ -46,6 +46,6 @@ releases:
   namespace: flux-system
   atomic: true
   chart: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator
-  version: 0.58.1
+  version: 0.59.0
   values: [templates/values.yaml.gotmpl]
   needs: ['cert-manager/cert-manager']
