@@ -9,3 +9,9 @@ resources:
 - ./helmrelease.yaml
 - ./postgres-cluster.yaml
 - ./pvc.yaml
+configMapGenerator:
+- name: home-assistant-config
+  files:
+  - recorder.yaml=./config/recorder.yaml
+generatorOptions:
+  disableNameSuffixHash: true

@@ -1,0 +1,2 @@
+---
+db_url: !env_var RECORDER_DB_URL
