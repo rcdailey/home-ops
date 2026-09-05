@@ -12,6 +12,9 @@ spec:
   interval: 1h
   path: ./kubernetes/apps/observability/grafana
   postBuild:
+    substitute:
+      APP: *app
+      VOLSYNC_PVC: grafana-pvc
     substituteFrom:
     - name: cluster-secrets
       kind: Secret
