@@ -116,10 +116,14 @@ def kubectl_exec(
     command: list[str],
     *,
     namespace: str,
+    container: str | None = None,
     timeout: int = 30,
 ) -> subprocess.CompletedProcess[str]:
     """Run a command inside a pod via kubectl exec."""
-    args = ["kubectl", "exec", "-n", namespace, pod_or_deploy, "--"]
+    args = ["kubectl", "exec", "-n", namespace, pod_or_deploy]
+    if container:
+        args.extend(["-c", container])
+    args.append("--")
     args.extend(command)
     return run(args, timeout=timeout, check=False)
 

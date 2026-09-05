@@ -5,6 +5,7 @@ from __future__ import annotations
 import click
 
 from hops._click import HelpfulGroup
+from hops.backup_inspect import inspect_backup, list_backups
 from hops.core.format import age_str, info, section, table
 from hops.core.runner import kubectl_json, run
 
@@ -72,6 +73,45 @@ def status():
     cnpg_rows.sort(key=lambda r: (r[0], r[1]))
     section("CNPG Backups")
     table(["NAMESPACE", "CLUSTER", "SCHEDULE", "LAST STATUS", "LAST BACKUP"], cnpg_rows)
+
+
+@cli.command("list")
+@click.option(
+    "-n",
+    "--namespace",
+    "namespaces",
+    multiple=True,
+    help="Include a namespace; repeat to include more than one.",
+)
+@click.option(
+    "--sort",
+    "sort_by",
+    type=click.Choice(["size", "last-snapshot"]),
+    default="size",
+    show_default=True,
+)
+def list_command(namespaces: tuple[str, ...], sort_by: str):
+    """List the latest Kopia backup for each source."""
+    list_backups(namespaces, sort_by)
+
+
+@cli.command("inspect")
+@click.argument("app")
+@click.option("-n", "--namespace", help="Namespace containing the ReplicationSource.")
+@click.option(
+    "--path", default="", help="Directory below the snapshot root to inspect."
+)
+@click.option("--limit", type=click.IntRange(min=1), default=30, show_default=True)
+@click.option("--json", "as_json", is_flag=True, help="Emit machine-readable JSON.")
+def inspect_command(
+    app: str,
+    namespace: str | None,
+    path: str,
+    limit: int,
+    as_json: bool,
+):
+    """Rank contents and mounts for an app's latest Kopia backup."""
+    inspect_backup(app, namespace, path, limit, as_json)
 
 
 @cli.command()
