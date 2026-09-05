@@ -12,6 +12,7 @@ talosconfig
 .envrc.local
 .private/
 *.snapshot
+*.snapshot.sha256
 *.backup
 *.sql
 *.db

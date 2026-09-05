@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/main/pkg/machinery/config/schemas/config.schema.json
+---
+machine:
+  type: worker
+---
+apiVersion: v1alpha1
+kind: KubeAPIServerCAConfig
+acceptedCAs:
+  - |
+{{ ENV.TALOS_K8S_CA_PEM | indent(4, true) }}

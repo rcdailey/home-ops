@@ -2,6 +2,7 @@ set quiet := true
 set shell := ['bash', '-euo', 'pipefail', '-c']
 
 talos_dir := source_directory()
+root_dir := parent_directory(talos_dir)
 nodes_file := talos_dir / "nodes.yaml"
 versions_file := talos_dir / "talenv.yaml"
 
@@ -96,7 +97,52 @@ render-config node:
     set -euo pipefail
     export TALOS_VERSION=$(yq '.talosVersion' "{{versions_file}}")
     export KUBERNETES_VERSION=$(yq '.kubernetesVersion' "{{versions_file}}")
-    just template "{{talos_dir}}/machineconfig.yaml.j2" -D node={{node}} "{{nodes_file}}"
+    if [[ $(yq '.nodes.{{node}}.controller' "{{nodes_file}}") == "true" ]]; then
+        role=controlplane
+    else
+        role=worker
+    fi
+    just ensure-login
+    infisical run --env=prod --path=/bootstrap -- bash -c '
+        set -euo pipefail
+        export TALOS_K8S_CA_PEM=$(printf "%s" "$TALOS_K8S_CA_CRT" | base64 --decode)
+        export TALOS_K8S_CA_KEY_PEM=$(printf "%s" "$TALOS_K8S_CA_KEY" | base64 --decode)
+        export TALOS_K8S_AGGREGATOR_CA_PEM=$(
+            printf "%s" "$TALOS_K8S_AGGREGATOR_CA_CRT" | base64 --decode
+        )
+        export TALOS_K8S_AGGREGATOR_CA_KEY_PEM=$(
+            printf "%s" "$TALOS_K8S_AGGREGATOR_CA_KEY" | base64 --decode
+        )
+        export TALOS_K8S_SERVICEACCOUNT_KEY_PEM=$(
+            printf "%s" "$TALOS_K8S_SERVICEACCOUNT_KEY" | base64 --decode
+        )
+        talosctl machineconfig patch \
+            <(minijinja-cli "$1") \
+            -p @<(minijinja-cli "$2") \
+            -p @<(minijinja-cli "$3" -D "node=$4" "$5")
+    ' _ \
+        "{{talos_dir}}/machine/cluster.yaml.j2" \
+        "{{talos_dir}}/machine/$role.yaml.j2" \
+        "{{talos_dir}}/machine/node.yaml.j2" \
+        "{{node}}" \
+        "{{nodes_file}}"
+
+[doc('Validate rendered Talos configs')]
+validate-config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for node in $(yq '.nodes | keys | .[]' "{{nodes_file}}"); do
+        output=$(just talos render-config "$node" |
+            talosctl validate --config /dev/stdin --mode metal 2>&1) || {
+            printf '%s: %s\n' "$node" "$output" >&2
+            exit 1
+        }
+        if rg -q '^WARNING:' <<< "$output"; then
+            printf '%s: %s\n' "$node" "$output" >&2
+            exit 1
+        fi
+        just log info "$node config is valid"
+    done
 
 [doc('Diff rendered config against applied config on node')]
 diff-config node="":
@@ -157,10 +203,15 @@ etcd-snapshot:
     just talos require-etcd-healthy
     cp_ip=$(just talos cp-ip)
     timestamp=$(date +%Y%m%d-%H%M%S)
-    output="/tmp/etcd-backup-${timestamp}.snapshot"
+    output="{{root_dir}}/etcd-backup-${timestamp}.snapshot"
+    checksum="${output}.sha256"
     just log info "Taking etcd snapshot..."
     talosctl etcd snapshot -n "$cp_ip" "$output"
-    just log info "Snapshot saved to $output"
+    chmod 600 "$output"
+    sha256sum "$output" > "$checksum"
+    chmod 600 "$checksum"
+    sha256sum --check "$checksum"
+    just log info "Snapshot and checksum saved" snapshot="$output" checksum="$checksum"
 
 [doc('Reboot a node')]
 reboot-node node="":
@@ -225,7 +276,10 @@ upgrade-node node="":
     #!/usr/bin/env bash
     set -euo pipefail
     read -r node ip _ <<< "$(just talos resolve-node "{{node}}" "Select node to upgrade")"
-    image=$(just talos render-config "$node" | yq '.machine.install.image')
+    image=$(
+        just talos render-config "$node" |
+            yq 'select(.kind == "UnattendedInstallConfig").installer.image'
+    )
     just log info "Upgrading $node ($ip)..." image="$image"
     talosctl upgrade -n "$ip" --image "$image" --timeout=10m
 
