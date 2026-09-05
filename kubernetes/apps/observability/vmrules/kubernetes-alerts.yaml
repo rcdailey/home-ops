@@ -10,14 +10,19 @@ spec:
     interval: 30s
     rules:
     - alert: PodCrashLooping
-      expr: changes(otel_k8s_container_restarts[10m]) >= 3
+      expr: |
+        changes(otel_k8s_container_restarts[10m]) >= 3
+          and on (k8s_namespace_name, k8s_pod_name, k8s_container_name)
+        otel_k8s_container_ready == 0
+      for: 5m
       labels:
         severity: warning
       annotations:
         summary: >-
           Pod {{ $labels.k8s_namespace_name }}/{{ $labels.k8s_pod_name }} is restarting
         description: >-
-          Container {{ $labels.k8s_container_name }} restarted during the last 5 minutes
+          Container {{ $labels.k8s_container_name }} restarted at least 3 times in 10 minutes and
+          remained unready for 5 minutes
 
     - alert: PodNotReady
       expr: |
