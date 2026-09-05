@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 import click
 
@@ -10,6 +11,14 @@ from hops._click import HelpfulGroup
 from hops.core.format import human_bytes, kv, section, table
 from hops.core.nodes import get_all, resolve_ip
 from hops.core.runner import kubectl_json, run, run_json, run_jsonl
+
+_ISSUE_TERMS = (
+    "error",
+    "fail",
+    "not ready",
+    "runtime is down",
+    "waiting for service",
+)
 
 
 @click.group(cls=HelpfulGroup)
@@ -172,6 +181,77 @@ def etcd(node: str) -> None:
         click.echo("(none)")
     if failed:
         raise SystemExit(1)
+
+
+def _issue_lines(output: str, limit: int = 8) -> list[str]:
+    lines = []
+    seen = set()
+    for line in reversed(output.splitlines()):
+        normalized = re.sub(r'"ts":\d+(?:\.\d+)?', '"ts":?', line)
+        normalized = re.sub(r"\d+m\d+(?:\.\d+)?s", "?", normalized)
+        normalized = re.sub(r"[0-9a-f]{32,}", "<id>", normalized)
+        normalized = re.sub(r"[0-9a-f]{8}-[0-9a-f-]{27,}", "<id>", normalized)
+        if not any(term in normalized.lower() for term in _ISSUE_TERMS):
+            continue
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        lines.append(line)
+        if len(lines) == limit:
+            break
+    return list(reversed(lines))
+
+
+@cli.command()
+@click.argument("node")
+def diagnose(node: str) -> None:
+    """Correlate Kubernetes state, Talos services, and recent runtime errors."""
+    ip = resolve_ip(node)
+    data = run_json(["kubectl", "get", "node", node, "-o", "json"], timeout=15)
+    conditions = data.get("status", {}).get("conditions", [])
+
+    section("KUBERNETES CONDITIONS")
+    rows = []
+    for condition in conditions:
+        rows.append(
+            [
+                condition.get("type", "?"),
+                condition.get("status", "?"),
+                condition.get("reason", "?"),
+                condition.get("message", "?"),
+            ]
+        )
+    table(["CONDITION", "STATUS", "REASON", "MESSAGE"], rows)
+
+    services = run(["talosctl", "services", "-n", ip], timeout=15)
+    section("TALOS SERVICES")
+    if services.returncode != 0:
+        message = (services.stderr or services.stdout or "talosctl failed").strip()
+        click.echo(f"error: {message.splitlines()[0]}", err=True)
+        raise SystemExit(1)
+    click.echo(services.stdout.strip())
+
+    failed_services = []
+    for line in services.stdout.splitlines()[1:]:
+        fields = line.split()
+        if len(fields) >= 4 and (fields[2] != "Running" or fields[3] == "Fail"):
+            failed_services.append(fields[1])
+
+    log_services = list(dict.fromkeys([*failed_services, "kubelet"]))
+    issues = []
+    for service in log_services:
+        result = run(
+            ["talosctl", "logs", service, "-n", ip, "--tail", "150"],
+            timeout=20,
+        )
+        if result.returncode != 0:
+            message = (result.stderr or result.stdout).strip().splitlines()[0]
+            issues.append(f"{service}: {message}")
+            continue
+        issues.extend(_issue_lines(result.stdout))
+
+    section("RECENT RUNTIME ISSUES")
+    click.echo("\n".join(issues[-12:]) if issues else "(none)")
 
 
 @cli.command()
