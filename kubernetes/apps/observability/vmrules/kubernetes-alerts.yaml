@@ -65,6 +65,28 @@ spec:
           has unavailable replicas
         description: Desired and available replica counts have differed for 15 minutes
 
+  - name: kubernetes-security
+    interval: 30s
+    rules:
+    - alert: PodSecurityAdmissionDenied
+      expr: |
+        sum(
+          increase(
+            pod_security_evaluations_total{
+              decision="deny",
+              mode="enforce",
+              resource="pod"
+            }[5m]
+          )
+        ) > 0
+      labels:
+        severity: warning
+      annotations:
+        summary: Pod Security Admission rejected a pod
+        description: >-
+          Pod Security Admission rejected {{ printf "%.0f" $value }} pod requests in the last
+          five minutes. Inspect Warning events to identify the affected workloads.
+
   - name: kubernetes-resources
     interval: 30s
     rules:

@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: system-upgrade
 components:
 - ../../components/common
+- ../../components/pod-security-privileged
 - ../../components/drift-detection
 resources:
 - ./etcd-defrag/ks.yaml

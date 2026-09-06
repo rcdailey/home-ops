@@ -1,0 +1,13 @@
+---
+# yaml-language-server: $schema=https://www.schemastore.org/kustomization.json
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+# Only enforcement is relaxed; warnings and audits retain the cluster defaults.
+patches:
+- target:
+    kind: Namespace
+  patch: |-
+    - op: add
+      path: /metadata/labels
+      value:
+        pod-security.kubernetes.io/enforce: privileged

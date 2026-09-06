@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: rook-ceph
 components:
 - ../../components/common
+- ../../components/pod-security-privileged
 resources:
 - ./operator/ks.yaml
 - ./ceph-csi-drivers/ks.yaml
