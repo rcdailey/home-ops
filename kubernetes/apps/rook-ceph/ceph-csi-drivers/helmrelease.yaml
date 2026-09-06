@@ -21,6 +21,11 @@ spec:
   # Driver names must match the existing Driver CRs created by Rook.
   # See rook/rook#17644 for context on missing SA issue during upgrade.
   values:
+    operatorConfig:
+      driverSpecDefaults:
+        imageSet:
+          name: rook-csi-operator-image-set-configmap
+
     drivers:
       rbd:
         name: rook-ceph.rbd.csi.ceph.com
