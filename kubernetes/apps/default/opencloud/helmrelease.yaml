@@ -57,7 +57,7 @@ spec:
               OC_INSECURE: true
               OC_URL: https://cloud.${SECRET_DOMAIN}
               PROXY_TLS: false
-              OC_LOG_LEVEL: debug
+              OC_LOG_LEVEL: info
               OTEL_TRACES_EXPORTER: otlp
               OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-gateway-collector.observability:4317
               OTEL_RESOURCE_ATTRIBUTES: service.namespace=default
