@@ -1,0 +1,35 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/admissionregistration.k8s.io/validatingadmissionpolicy_v1.json
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: torrent-vpn-runtime
+  annotations:
+    kubernetes.io/description: >-
+      Restricts the Pod Security-exempt runtime to the torrent VPN workload in media.
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: [v1]
+      operations: [CREATE, UPDATE]
+      resources: [pods]
+  matchConditions:
+  - name: uses-torrent-vpn-runtime
+    expression: object.spec.?runtimeClassName.orValue("") == "torrent-vpn"
+  validations:
+  # This label identifies the workload independently of its torrent client implementation.
+  - expression: >-
+      object.metadata.namespace == "media" &&
+      object.metadata.?labels["home-ops.io/workload"].orValue("") == "torrent-vpn"
+    message: The torrent-vpn RuntimeClass is reserved for the media torrent VPN workload
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/admissionregistration.k8s.io/validatingadmissionpolicybinding_v1.json
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: torrent-vpn-runtime
+spec:
+  policyName: torrent-vpn-runtime
+  validationActions: [Deny]

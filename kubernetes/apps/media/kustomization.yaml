@@ -6,7 +6,6 @@ namespace: media
 components:
 - ../../components/common
 - ../../components/drift-detection
-- ../../components/pod-security-privileged
 resources:
 - ./bazarr/ks.yaml
 - ./imagemaid/ks.yaml

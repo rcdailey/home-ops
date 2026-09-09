@@ -20,6 +20,9 @@ spec:
           reloader.stakater.com/auto: "true"
 
         pod:
+          labels:
+            home-ops.io/workload: torrent-vpn
+          runtimeClassName: torrent-vpn
           securityContext:
             fsGroup: 1000
             fsGroupChangePolicy: "OnRootMismatch"
@@ -73,10 +76,12 @@ spec:
                   command: ["/bin/sh", "-c", "(ip rule del table 51820; ip -6 rule del table 51820) || true"]
             restartPolicy: Always
             securityContext:
-              privileged: true
+              allowPrivilegeEscalation: false
               capabilities:
                 add:
                 - NET_ADMIN
+                drop:
+                - ALL
 
         containers:
           app:
@@ -173,6 +178,7 @@ spec:
       tun:
         type: hostPath
         hostPath: /dev/net/tun
+        hostPathType: CharDevice
         advancedMounts:
           qbittorrent:
             gluetun:
