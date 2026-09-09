@@ -79,6 +79,7 @@ spec:
               allowPrivilegeEscalation: false
               capabilities:
                 add:
+                - CHOWN
                 - NET_ADMIN
                 drop:
                 - ALL
