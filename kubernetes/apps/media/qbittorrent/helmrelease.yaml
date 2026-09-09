@@ -80,6 +80,7 @@ spec:
               capabilities:
                 add:
                 - CHOWN
+                - DAC_OVERRIDE
                 - NET_ADMIN
                 drop:
                 - ALL
