@@ -149,6 +149,8 @@ spec:
           qbittorrent:
             app:
             - path: /tmp
+            gluetun:
+            - path: /tmp/gluetun
 
       logs:
         type: emptyDir
