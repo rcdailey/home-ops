@@ -1,7 +1,7 @@
 # Media Flex Mini uplink port flapping
 
 - **Date:** 2026-04-18
-- **Status:** MONITORING (media-cabinet keystone replaced 2026-08-30)
+- **Status:** MONITORING (four-day telemetry stable through 2026-09-09)
 
 ## Summary
 
@@ -171,6 +171,26 @@ media cabinet and restored the original in-wall path. The link returned at 1 Gbp
 zero MAC errors. The new monitoring baseline is `link_down_count=834`; the count increased during
 the disconnect and reconnection. If link flapping returns, the in-wall cable itself is the leading
 remaining cause.
+
+### Follow-up after keystone replacement
+
+On 2026-09-05, `link_down_count` had reached 922, an increase of 88 from the replacement baseline.
+The controller does not retain historical values for this counter, so the timing of those link-down
+events could not be determined. The following 24-hour telemetry window stayed at 1 Gbps with no
+speed changes or MAC errors.
+
+A four-day follow-up covering 2026-09-05 through 2026-09-09 also showed a stable 1 Gbps link. The
+diagnostic counted one speed transition during a window that included a full Switch Pro 48 restart;
+no isolated port transition was found. Port 6 transmitted 30,256,704 packets and discarded 352
+before transmission (0.0012%). The Media Flex received no dropped packets and neither end recorded a
+MAC error. Two Plex client timeout windows occurred during this period, on September 6 at 23:37 and
+September 7 from 20:43 through 21:02. Both windows had zero uplink drops, MAC errors, or speed
+changes, so neither timeout correlated with the physical link issue.
+
+The Switch Pro 48 restarted on 2026-09-09 and reset its port counters. After the restart, port 6 was
+up at 1 Gbps full duplex with `link_down_count=0`, zero MAC errors, and 34 transmit discards. The
+restart prevents further comparison with the 922-count pre-restart baseline, so monitoring remains
+open despite the clean packet and link telemetry.
 
 ### Original diagnostic plan
 
