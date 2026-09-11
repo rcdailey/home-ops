@@ -11,6 +11,7 @@ from hops._click import HelpfulGroup
 from hops.core.format import human_bytes, kv, section, table
 from hops.core.nodes import get_all, resolve_ip
 from hops.core.runner import kubectl_json, run, run_json, run_jsonl
+from hops.node_upgrades import show_upgrades
 
 _ISSUE_TERMS = (
     "error",
@@ -70,6 +71,12 @@ def list_nodes():
             for node in nodes
         ],
     )
+
+
+@cli.command()
+def upgrades() -> None:
+    """Correlate Tuppr upgrade state, node versions, and the active Job."""
+    show_upgrades()
 
 
 @cli.command()
