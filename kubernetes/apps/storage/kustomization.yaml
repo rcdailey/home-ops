@@ -7,6 +7,7 @@ components:
 - ../../components/common
 resources:
 - ./garage/ks.yaml
+- ./garage-ui/ks.yaml
 - ./garage-operator/ks.yaml
 - ./garage-instance/ks.yaml
 - ./kopia/ks.yaml

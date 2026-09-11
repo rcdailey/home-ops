@@ -1,0 +1,27 @@
+---
+server:
+  root_url: https://garage.${SECRET_DOMAIN}
+
+garage:
+  endpoint: http://garage.storage:3900
+  region: garage
+  use_ssl: false
+  force_path_style: true
+  admin_endpoint: http://garage.storage:3903
+
+auth:
+  admin:
+    enabled: false
+  oidc:
+    enabled: true
+    provider_name: Pocket ID
+    client_id: garage-ui
+    scopes: [openid, profile, email, groups]
+    issuer_url: https://auth.${SECRET_DOMAIN}
+    role_attribute_path: groups
+    admin_roles: [admins]
+    cookie_secure: true
+    cookie_http_only: true
+    cookie_same_site: lax
+  token:
+    enabled: false

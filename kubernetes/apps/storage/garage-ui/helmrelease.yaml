@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: garage-ui
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+
+    controllers:
+      garage-ui:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: noooste/garage-ui
+              tag: v0.12.1@sha256:0b68a9237da67a705f9bdb9127c8d56f38df7810f844bd6c25c3cd0d19d89795
+            env:
+              GARAGE_UI_GARAGE_ADMIN_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: garage-secret
+                    key: GARAGE_ADMIN_TOKEN
+              GARAGE_UI_AUTH_OIDC_CLIENT_SECRET:
+                valueFrom:
+                  secretKeyRef:
+                    name: garage-ui-oidc-credentials
+                    key: client-secret
+            securityContext:
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: [ALL]
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 8080
+
+    service:
+      garage-ui:
+        controller: garage-ui
+        ports:
+          http:
+            port: *port
+
+    route:
+      garage-ui:
+        hostnames:
+        - garage.${SECRET_DOMAIN}
+        parentRefs:
+        - name: internal
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: garage-ui
+            port: *port
+
+    persistence:
+      config:
+        type: configMap
+        name: garage-ui-config
+        advancedMounts:
+          garage-ui:
+            app:
+            - path: /app/config.yaml
+              subPath: config.yaml
+              readOnly: true
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          garage-ui:
+            app:
+            - path: /tmp

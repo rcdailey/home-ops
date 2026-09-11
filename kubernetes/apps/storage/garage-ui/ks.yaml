@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: garage-ui
+spec:
+  targetNamespace: storage
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: garage-ui
+  path: ./kubernetes/apps/storage/garage-ui
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  interval: 30m
+  timeout: 5m
+  prune: true
+  wait: false
+  postBuild:
+    substituteFrom:
+    - kind: Secret
+      name: cluster-secrets
+  dependsOn:
+  - name: garage
+  - name: global-config
+    namespace: flux-system
+  - name: pocket-id-operator
+    namespace: default

@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aclerici38/pocket-id-operator/refs/heads/main/dist/schemas/pocketidoidcclient_v1alpha1.json
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: garage-ui
+spec:
+  name: Garage UI
+  clientID: garage-ui
+  skipConsent: true
+  launchUrl: https://garage.${SECRET_DOMAIN}
+  callbackUrls:
+  - https://garage.${SECRET_DOMAIN}/auth/oidc/callback
+  logoutCallbackUrls:
+  - https://garage.${SECRET_DOMAIN}
+  secret:
+    keys:
+      clientSecret: client-secret

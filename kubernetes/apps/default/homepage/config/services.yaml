@@ -130,6 +130,11 @@
       siteMonitor: http://code-server.home:8080
 
 - Infrastructure:
+  - Garage:
+      icon: garage
+      href: https://garage.${SECRET_DOMAIN}/
+      siteMonitor: http://garage-ui.storage:8080/health
+
   - Blocky:
       icon: blocky
       href: https://dns.${SECRET_DOMAIN}/
