@@ -5,6 +5,9 @@ TALOSCONFIG = "{{config_root}}/talos/talosconfig"
 DIFFTOOL = "delta"
 FLATE_PATH = "{{config_root}}/kubernetes/flux/cluster"
 
+[plugins]
+krew = "https://github.com/soupglasses/mise-krew"
+
 [tools]
 crane = "latest"
 delta = "latest"
@@ -20,6 +23,7 @@ jq = "latest"
 just = "latest"
 k9s = "latest"
 kubectl = "1.37.0"
+"krew:cnpg" = "latest"
 "npm:@doist/outline-cli" = "latest"
 kustomize = "latest"
 markdownlint-cli2 = "latest"
