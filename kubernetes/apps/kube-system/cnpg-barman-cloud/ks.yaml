@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cnpg-barman-cloud
+spec:
+  targetNamespace: kube-system
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: cnpg-barman-cloud
+  dependsOn:
+  - name: cloudnative-pg
+    namespace: kube-system
+  - name: cert-manager
+    namespace: cert-manager
+  interval: 10m
+  path: ./kubernetes/apps/kube-system/cnpg-barman-cloud
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  timeout: 5m
+  wait: true

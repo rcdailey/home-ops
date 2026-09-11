@@ -4,6 +4,8 @@ apiVersion: garage-s3-operator.abucquet.com/v1
 kind: GarageS3AccessKey
 metadata:
   name: ${APP}-s3
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
 spec:
   instanceRef:
     name: garage
@@ -15,6 +17,8 @@ apiVersion: garage-s3-operator.abucquet.com/v1
 kind: GarageS3Bucket
 metadata:
   name: ${APP}-postgres-backups
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
 spec:
   instanceRef:
     name: garage

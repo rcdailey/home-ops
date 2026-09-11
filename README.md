@@ -11,7 +11,7 @@ Personal Kubernetes homelab managed with Talos Linux and Flux GitOps.
 - **Networking**: Cilium, Envoy Gateway
 - **Observability**: OpenTelemetry, VictoriaMetrics, VictoriaLogs, VictoriaTraces, Grafana
 - **Databases**: CloudNativePG
-- **Backups**: Volsync, Kopia
+- **Backups**: VolSync, Kopia, and Barman Cloud for DB
 
 ## Repository Structure
 
@@ -80,3 +80,10 @@ Bootstrap a new cluster from scratch:
    ```bash
    just bootstrap apps
    ```
+
+Bootstrap restores the cluster's declared state, but it does not restore application volumes or
+PostgreSQL contents. See the [backup architecture][backup-architecture] and [CNPG recovery
+runbook][cnpg-recovery] before recovering data.
+
+[backup-architecture]: docs/architecture/backup-strategy.md
+[cnpg-recovery]: docs/runbooks/cnpg-recovery.md

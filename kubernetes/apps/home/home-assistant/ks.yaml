@@ -11,6 +11,8 @@ spec:
   dependsOn:
   - name: cloudnative-pg
     namespace: kube-system
+  - name: cnpg-barman-cloud
+    namespace: kube-system
   - name: garage-instance
     namespace: storage
   - name: multus

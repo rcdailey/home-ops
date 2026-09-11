@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/barmancloud.cnpg.io/objectstore_v1.json
+---
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: ${APP}-postgres-backups
+spec:
+  retentionPolicy: 30d
+  configuration:
+    destinationPath: s3://${APP}-postgres-backups
+    endpointURL: http://garage.storage:3900
+    s3Credentials:
+      accessKeyId:
+        name: ${APP}-s3-gs3ak
+        key: AWS_ACCESS_KEY
+      secretAccessKey:
+        name: ${APP}-s3-gs3ak
+        key: AWS_SECRET_KEY
+      region:
+        name: garage-s3-region
+        key: AWS_REGION
+    wal:
+      compression: gzip
+      maxParallel: 1
+    data:
+      compression: gzip

@@ -12,6 +12,7 @@ architecture, implementation details, and critical learnings from deployment.
 - [Storage Backend (NFS)](#storage-backend-nfs)
 - [Shared Repository Pattern](#shared-repository-pattern)
 - [Configuration](#configuration)
+- [CloudNativePG backups](#cloudnativepg-backups)
 - [Critical Learnings](#critical-learnings)
 - [Troubleshooting](#troubleshooting)
 
@@ -32,6 +33,11 @@ architecture, implementation details, and critical learnings from deployment.
    - Server: `192.168.1.58` (Nezuko server)
    - Path: `/mnt/user/volsync`
    - Mount Point: `/repository` (auto-injected by MutatingAdmissionPolicy)
+
+4. **Barman Cloud Plugin** - PostgreSQL physical backups and continuous WAL archiving
+   - Backend: Garage S3
+   - Provisioning: Garage S3 operator
+   - Recovery: Full cluster restore or point-in-time recovery
 
 ### Data Flow
 
@@ -229,7 +235,7 @@ metadata:
 spec:
   sourcePVC: prowlarr
   trigger:
-    schedule: "0 * * * *"  # Hourly
+    schedule: 0 */8 * * *
   kopia:
     repository: prowlarr-volsync-secret  # References secret above
     compression: zstd-fastest
@@ -242,13 +248,13 @@ spec:
 
 ## Configuration
 
-### Backup Schedule
+### Backup schedule
 
-- **Frequency**: Hourly (`0 * * * *`)
+- **Frequency**: Every 8 hours (`0 */8 * * *`)
 - **Method**: Snapshot-based (using VolumeSnapshot)
 - **Compression**: zstd-fastest
 
-### Retention Policy
+### Retention policy
 
 ```yaml
 retain:
@@ -256,28 +262,31 @@ retain:
   daily: 7     # Keep 7 daily backups
 ```
 
-### Apps Using VolSync
+Backup coverage is derived from applications that include the VolSync component. Use
+`./scripts/hops.sh backup list` for the current backup inventory instead of maintaining a duplicate
+list here.
 
-**Media namespace:**
+## CloudNativePG backups
 
-- seerr
-- prowlarr
-- qbittorrent
-- radarr
-- radarr-4k
-- radarr-anime
-- recyclarr
-- sabnzbd
-- tautulli
+PostgreSQL databases use the Barman Cloud plugin rather than Kopia volume snapshots. The plugin
+takes database-consistent physical base backups and continuously archives PostgreSQL write-ahead
+logs (WAL), which supports point-in-time recovery.
 
-**Default namespace:**
+Applications opt in through the `cnpg-backup` Kustomize component. For each application, the
+component declares:
 
-- outline
+1. A Garage access-key request. The Garage S3 operator creates its Kubernetes credential Secret.
+2. A Garage bucket named `${APP}-postgres-backups`.
+3. A Barman `ObjectStore`, which configures access to that bucket and a 30-day recovery window.
+4. A daily `ScheduledBackup` at 02:00 and a WAL archiver on `${APP}-postgres`.
 
-**Home namespace:**
+The bucket is the storage location. The ObjectStore is the connection and policy resource used by
+Barman; it does not create another storage copy. See the [component contract][cnpg-component] and
+[recovery runbook][cnpg-recovery].
 
-- esphome
-- home-assistant
+Database backup coverage is derived from applications that include the `cnpg-backup` component. Use
+`./scripts/hops.sh backup status` for the current inventory. Garage object data and the Kopia
+repository reside on the same NAS, so neither mechanism supplies an offsite copy.
 
 ## Critical Learnings
 
@@ -347,14 +356,9 @@ herd problems when multiple backup jobs trigger simultaneously.
 ### Check Backup Status
 
 ```bash
-# List all ReplicationSources
-kubectl get replicationsource -A
-
-# Check specific app status
-kubectl describe replicationsource prowlarr -n media
-
-# View recent backup logs
-kubectl logs -n media job/volsync-src-prowlarr
+./scripts/hops.sh backup status
+./scripts/hops.sh backup list
+./scripts/hops.sh app diagnose prowlarr -n media
 ```
 
 ### Common Issues
@@ -383,16 +387,6 @@ KOPIA_PASSWORD: volsync-shared-kopia-password
 2. Ensure S3 bucket exists
 3. Check S3 credentials are correct
 
-#### No backup pod starts
-
-**Cause**: Stuck job from previous run
-
-**Fix**: Delete stale job
-
-```bash
-kubectl delete job -n media volsync-src-<app>
-```
-
 #### Backup pod fails immediately
 
 **Cause**: Usually NFS mount or repository connection issues
@@ -400,15 +394,8 @@ kubectl delete job -n media volsync-src-<app>
 **Debug**:
 
 ```bash
-# Check pod logs
-kubectl logs -n media -l volsync.backube/cleanup=volsync-<app>-src
-
-# Verify secret contents
-kubectl get secret <app>-volsync-secret -n media -o yaml
-
-# Check NFS mount in pod
-kubectl exec -n media <volsync-pod> -- df -h /repository
-kubectl exec -n media <volsync-pod> -- ls -la /repository
+./scripts/hops.sh app diagnose <app> -n media
+./scripts/hops.sh backup inspect <app> -n media
 ```
 
 ### Verify Repository Contents
@@ -431,16 +418,6 @@ ls -la /mnt/user/volsync/
 
 Access the web UI at `kopia.${SECRET_DOMAIN}` to browse snapshots and verify backup integrity.
 
-### Clean Up Failed Pods
-
-```bash
-# Delete failed/completed volsync pods
-kubectl get pods -n media --no-headers | \
-  rg --no-line-number "volsync.*(Error|Completed)" | \
-  awk '{print $1}' | \
-  xargs -r kubectl delete pod -n media
-```
-
 ## References
 
 ### Documentation
@@ -455,6 +432,8 @@ kubectl get pods -n media --no-headers | \
 [kopia-repo]: https://kopia.io/docs/repositories/
 [volsync-fork]: https://github.com/perfectra1n/volsync
 [volsync-pr]: https://github.com/backube/volsync/pull/1723
+[cnpg-component]: ../../kubernetes/components/cnpg-backup/README.md
+[cnpg-recovery]: ../runbooks/cnpg-recovery.md
 
 ### Related Files
 
@@ -489,6 +468,6 @@ The shared repository pattern requires all apps use the same storage backend. Fo
 ### Monitoring Recommendations
 
 1. **Alert on backup failures**: Monitor ReplicationSource status
-2. **Track backup size growth**: Watch S3 bucket usage
+2. **Track backup size growth**: Watch Kopia repository and Garage bucket usage
 3. **Verify retention**: Periodically check snapshot counts
 4. **Test restores**: Regular restore testing to validate backups
