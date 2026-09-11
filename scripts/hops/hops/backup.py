@@ -6,7 +6,7 @@ import click
 
 from hops._click import HelpfulGroup
 from hops.backup_inspect import inspect_backup, list_backups
-from hops.core.format import age_str, info, section, table
+from hops.core.format import age_str, info, section, table, truncate
 from hops.core.runner import kubectl_json, run
 
 
@@ -52,14 +52,17 @@ def status():
         cluster = item.get("spec", {}).get("cluster", {}).get("name", "")
         key = f"{ns}/{cluster}"
         st = item.get("status", {})
-        started = st.get("startedAt", "")
+        started = st.get("startedAt") or meta.get("creationTimestamp", "")
         if key not in latest or started > latest[key].get("started", ""):
             latest[key] = {
+                "error": st.get("error", ""),
+                "name": meta.get("name", ""),
                 "started": started,
                 "phase": st.get("phase", "unknown"),
             }
 
     cnpg_rows = []
+    failure_rows = []
     for item in sb_data.get("items", []):
         meta = item.get("metadata", {})
         ns = meta.get("namespace", "")
@@ -70,9 +73,16 @@ def status():
         phase = bk.get("phase", "none")
         bk_age = age_str(bk["started"]) + " ago" if bk.get("started") else "never"
         cnpg_rows.append([ns, cluster, schedule, phase, bk_age])
+        if phase == "failed":
+            failure_rows.append(
+                [ns, cluster, bk.get("name", "?"), truncate(bk.get("error", "unknown"))]
+            )
     cnpg_rows.sort(key=lambda r: (r[0], r[1]))
     section("CNPG Backups")
     table(["NAMESPACE", "CLUSTER", "SCHEDULE", "LAST STATUS", "LAST BACKUP"], cnpg_rows)
+    if failure_rows:
+        section("CNPG Backup Failures")
+        table(["NAMESPACE", "CLUSTER", "BACKUP", "ERROR"], failure_rows)
 
 
 @cli.command("list")
