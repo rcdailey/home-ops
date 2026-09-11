@@ -32,6 +32,7 @@ markdownlint-cli2 = "latest"
     ],
 }
 pre-commit = "latest"
+"pipx:ttok" = "0.3"
 python = "3.14"
 ripgrep = "latest"
 ruff = "latest"

@@ -26,13 +26,49 @@ def cli():
     """Cluster node information and diagnostics."""
 
 
+def _talos_versions(ips: list[str]) -> dict[str, str]:
+    result = run(
+        ["talosctl", "version", "--short", "-n", ",".join(ips)],
+        timeout=15,
+    )
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout or "talosctl failed").strip()
+        click.echo(f"error: {message.splitlines()[0]}", err=True)
+        raise SystemExit(1)
+
+    versions = {}
+    node = None
+    for line in result.stdout.splitlines():
+        key, separator, value = line.strip().partition(":")
+        if not separator:
+            continue
+        if key == "NODE":
+            node = value.strip()
+            continue
+        if key == "Tag" and node is not None:
+            versions[node] = value.strip()
+            node = None
+    return versions
+
+
 @cli.command("list")
 def list_nodes():
-    """Compact table of all cluster nodes."""
+    """Correlate Kubernetes node state with the running Talos version."""
     nodes = get_all()
+    talos_versions = _talos_versions([node.ip for node in nodes])
     table(
-        ["NODE", "IP", "ROLE", "STATUS", "KUBELET"],
-        [[n.name, n.ip, n.role, n.status, n.kubelet] for n in nodes],
+        ["NODE", "IP", "ROLE", "STATUS", "KUBELET", "TALOS"],
+        [
+            [
+                node.name,
+                node.ip,
+                node.role,
+                node.status,
+                node.kubelet,
+                talos_versions.get(node.ip, "?"),
+            ]
+            for node in nodes
+        ],
     )
 
 
