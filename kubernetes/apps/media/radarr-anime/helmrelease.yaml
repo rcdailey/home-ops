@@ -34,7 +34,7 @@ spec:
             nameOverride: radarr-anime
             image:
               repository: ghcr.io/home-operations/radarr
-              tag: 6.4.4.10684
+              tag: 6.4.4.10685
             env:
               UMASK: "022"
               RADARR__APP__INSTANCENAME: "Radarr Anime"
