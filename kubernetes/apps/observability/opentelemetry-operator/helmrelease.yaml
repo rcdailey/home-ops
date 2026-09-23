@@ -28,6 +28,9 @@ spec:
         tag: 0.161.0
       featureGatesMap:
         operand.networkpolicy: false
+        # Generated policy allows API server egress via node-IP ipBlocks, which Cilium's default
+        # policyCIDRMatchMode does not match, so the operator cannot reach the API server.
+        operator.networkpolicy: false
       resources:
         limits:
           memory: 256Mi
