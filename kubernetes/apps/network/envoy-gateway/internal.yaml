@@ -6,14 +6,12 @@ metadata:
   name: internal
   namespace: network
   annotations:
-    external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
     external-dns.kubernetes.io/target: internal.${SECRET_DOMAIN}
     lbipam.cilium.io/sharing-key: "internal-gateway"
 spec:
   gatewayClassName: envoy
   infrastructure:
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: "internal.${SECRET_DOMAIN}"
       external-dns.kubernetes.io/hostname: "internal.${SECRET_DOMAIN}"
       # Static IP assignment via Cilium IPAM
       lbipam.cilium.io/ips: 192.168.50.72
