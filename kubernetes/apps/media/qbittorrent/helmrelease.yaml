@@ -22,7 +22,7 @@ spec:
         pod:
           labels:
             home-ops.io/workload: torrent-vpn
-          runtimeClassName: torrent-vpn
+          runtimeClassName: psa-exempt
           securityContext:
             fsGroup: 1000
             fsGroupChangePolicy: "OnRootMismatch"

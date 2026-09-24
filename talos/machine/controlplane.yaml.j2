@@ -56,7 +56,8 @@ configuration:
     namespaces:
       - kube-system
     runtimeClasses:
-      - torrent-vpn
+      # Workload allowlist: kubernetes/apps/kube-system/pod-security
+      - psa-exempt
     usernames: []
 ---
 apiVersion: v1alpha1

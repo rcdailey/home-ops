@@ -3,10 +3,10 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
-  name: torrent-vpn-runtime
+  name: psa-exempt-runtime
   annotations:
     kubernetes.io/description: >-
-      Restricts the Pod Security-exempt runtime to the torrent VPN workload in media.
+      Restricts the Pod Security-exempt runtime to explicitly allowed workloads.
 spec:
   failurePolicy: Fail
   matchConstraints:
@@ -16,20 +16,23 @@ spec:
       operations: [CREATE, UPDATE]
       resources: [pods]
   matchConditions:
-  - name: uses-torrent-vpn-runtime
-    expression: object.spec.?runtimeClassName.orValue("") == "torrent-vpn"
+  - name: uses-psa-exempt-runtime
+    expression: object.spec.?runtimeClassName.orValue("") == "psa-exempt"
+  variables:
+  - name: workload
+    expression: object.metadata.?labels["home-ops.io/workload"].orValue("")
   validations:
-  # This label identifies the workload independently of its torrent client implementation.
+  # Add a workload by extending this allowlist; Talos does not need to change.
   - expression: >-
-      object.metadata.namespace == "media" &&
-      object.metadata.?labels["home-ops.io/workload"].orValue("") == "torrent-vpn"
-    message: The torrent-vpn RuntimeClass is reserved for the media torrent VPN workload
+      (object.metadata.namespace == "media" && variables.workload == "torrent-vpn") ||
+      (object.metadata.namespace == "observability" && variables.workload == "otel-node")
+    message: The psa-exempt RuntimeClass is reserved for allowlisted workloads
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/admissionregistration.k8s.io/validatingadmissionpolicybinding_v1.json
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding
 metadata:
-  name: torrent-vpn-runtime
+  name: psa-exempt-runtime
 spec:
-  policyName: torrent-vpn-runtime
+  policyName: psa-exempt-runtime
   validationActions: [Deny]

@@ -1,0 +1,36 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/admissionregistration.k8s.io/mutatingadmissionpolicy_v1.json
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: otel-node-runtime
+  annotations:
+    kubernetes.io/description: >-
+      Assigns the Pod Security-exempt runtime to node collector pods, because the
+      OpenTelemetryCollector API cannot set runtimeClassName.
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: [v1]
+      operations: [CREATE]
+      resources: [pods]
+  matchConditions:
+  - name: is-otel-node-workload
+    expression: >-
+      object.metadata.namespace == "observability" &&
+      object.metadata.?labels["home-ops.io/workload"].orValue("") == "otel-node"
+  mutations:
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: >-
+        Object{spec: Object.spec{runtimeClassName: "psa-exempt"}}
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/admissionregistration.k8s.io/mutatingadmissionpolicybinding_v1.json
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: otel-node-runtime
+spec:
+  policyName: otel-node-runtime

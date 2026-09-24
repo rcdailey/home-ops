@@ -5,5 +5,6 @@ kind: Kustomization
 components:
 - ../../../components/otel-collector-baseline
 resources:
+- ./mutatingadmissionpolicy.yaml
 - ./rbac.yaml
 - ./collector.yaml

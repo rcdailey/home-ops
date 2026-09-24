@@ -28,3 +28,5 @@ spec:
   dependsOn:
   - name: global-config
     namespace: flux-system
+  - name: pod-security
+    namespace: kube-system
