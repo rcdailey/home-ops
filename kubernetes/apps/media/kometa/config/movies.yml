@@ -14,8 +14,6 @@ templates:
       sort_by: user_rating.desc
       any:
         genre: <<genre>>
-  Studio:
-    trakt_list: https://trakt.tv/users/movistapp/lists/<<studio>>
 
 dynamic_collections:
   TMDb Collections:
@@ -60,13 +58,13 @@ dynamic_collections:
 
 collections:
   Marvel Universe:
-    trakt_list: https://trakt.tv/users/tetharion/lists/marvel-cinematic-universe
+    mdblist_list: https://mdblist.com/lists/k0meta/external/15110
     sort_title: +++_<<collection_name>>
     collection_order: release.desc
     url_poster: https://theposterdb.com/api/assets/5912
     sync_mode: sync
   DC Universe:
-    trakt_list: https://trakt.tv/users/asmobarki/lists/dc-universe
+    mdblist_list: https://mdblist.com/lists/fa11en82/dc-extended-universe
     sort_title: +++_<<collection_name>>
     collection_order: release.desc
     url_poster: https://theposterdb.com/api/assets/49347

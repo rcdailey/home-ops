@@ -16,13 +16,6 @@ mdblist:
   apikey: <<MDBLISTAPIKEY>>
   cache_expiration: 60
 
-trakt:
-  client_id: <<TRAKTCLIENTID>>
-  client_secret: <<TRAKTCLIENTSECRET>>
-  authorization:
-    access_token: <<TRAKTACCESSTOKEN>>
-    refresh_token: <<TRAKTREFRESHTOKEN>>
-
 libraries:
   Anime Series:
     metadata_files:
