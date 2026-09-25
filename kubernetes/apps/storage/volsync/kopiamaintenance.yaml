@@ -9,7 +9,7 @@ spec:
   # 6 hours - allows completion when repository is degraded with many index blobs
   activeDeadlineSeconds: 21600
   trigger:
-    schedule: "0 */8 * * *"
+    schedule: 0 10 * * *
   repository:
     repository: volsync-maintenance-secret
   # Match ReplicationSource moverSecurityContext to prevent UID mismatch on NFS

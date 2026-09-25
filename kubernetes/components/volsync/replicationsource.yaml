@@ -7,7 +7,7 @@ metadata:
 spec:
   sourcePVC: ${VOLSYNC_PVC:=${APP}}
   trigger:
-    schedule: 0 */8 * * *
+    schedule: 0 8 * * *
   kopia:
     accessModes:
     - ${VOLSYNC_SNAP_ACCESSMODES:=ReadWriteOnce}
@@ -24,8 +24,13 @@ spec:
       fsGroupChangePolicy: OnRootMismatch
     parallelism: 2
     repository: ${APP}-volsync-secret
+    # Set every field: omitted fields inherit the unmanaged Kopia global policy
     retain:
-      hourly: 24
+      latest: 1
+      hourly: 0
       daily: 7
+      weekly: 4
+      monthly: 3
+      yearly: 0
     storageClassName: ${VOLSYNC_STORAGECLASS:=ceph-block}
     volumeSnapshotClassName: ${VOLSYNC_SNAPSHOTCLASS:=csi-ceph-blockpool}

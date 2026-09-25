@@ -235,14 +235,18 @@ metadata:
 spec:
   sourcePVC: prowlarr
   trigger:
-    schedule: 0 */8 * * *
+    schedule: 0 8 * * *
   kopia:
     repository: prowlarr-volsync-secret  # References secret above
     compression: zstd-fastest
     copyMethod: Snapshot
     retain:
-      hourly: 24
+      latest: 1
+      hourly: 0
       daily: 7
+      weekly: 4
+      monthly: 3
+      yearly: 0
     # username/hostname auto-set from metadata (prowlarr@media)
 ```
 
@@ -250,7 +254,8 @@ spec:
 
 ### Backup schedule
 
-- **Frequency**: Every 8 hours (`0 */8 * * *`)
+- **Frequency**: Daily at 08:00 UTC (`0 8 * * *`)
+- **Maintenance**: Daily at 10:00 UTC, after backups
 - **Method**: Snapshot-based (using VolumeSnapshot)
 - **Compression**: zstd-fastest
 
@@ -258,9 +263,17 @@ spec:
 
 ```yaml
 retain:
-  hourly: 24   # Keep last 24 hourly backups
-  daily: 7     # Keep 7 daily backups
+  latest: 1
+  hourly: 0
+  daily: 7
+  weekly: 4
+  monthly: 3
+  yearly: 0
 ```
+
+The VolSync component sets all six fields for every app. VolSync applies only the fields present
+to each Kopia source policy, and omitted fields inherit the Kopia global policy, which Git does not
+manage. A value of `0` disables that bucket; it does not inherit.
 
 Backup coverage is derived from applications that include the VolSync component. Use
 `./scripts/hops.sh backup list` for the current backup inventory instead of maintaining a duplicate
