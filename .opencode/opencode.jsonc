@@ -23,7 +23,7 @@
     { "action": "read", "resource": "*.local.*", "effect": "deny" },
 
     { "action": "shell", "resource": "*git commit*", "effect": "ask" },
-    { "action": "shell", "resource": "*git push*", "effect": "ask" },
+    { "action": "shell", "resource": "*git push*", "effect": "allow" },
 
     { "action": "shell", "resource": "kubectl apply*", "effect": "deny" },
     { "action": "shell", "resource": "kubectl apply -f /tmp/*", "effect": "ask" },
