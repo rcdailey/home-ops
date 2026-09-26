@@ -21,7 +21,7 @@ spec:
 
     - alert: VolSyncBackupStale
       expr: |
-        time() - volsync_replicationsource_last_sync_time > 12 * 60 * 60
+        time() - volsync_replicationsource_last_sync_time > 36 * 60 * 60
           or volsync_replicationsource_generation
             unless on (obj_namespace, obj_name)
               volsync_replicationsource_last_sync_time
@@ -31,4 +31,4 @@ spec:
       annotations:
         summary: >-
           VolSync backup {{ $labels.obj_namespace }}/{{ $labels.obj_name }} is stale
-        description: The last successful sync was more than 12 hours ago or has never completed
+        description: The last successful sync was more than 36 hours ago or has never completed
