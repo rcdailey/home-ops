@@ -90,7 +90,7 @@ spec:
             nameOverride: qbittorrent
             image:
               repository: ghcr.io/home-operations/qbittorrent
-              tag: 5.2.3
+              tag: 5.2.4
             env:
               UMASK: "022"
               QBT_WEBUI_PORT: &port 8080
