@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: opentelemetry-operator
-      version: 0.123.1
+      version: 0.124.1
       sourceRef:
         kind: HelmRepository
         name: opentelemetry-operator
@@ -26,11 +26,6 @@ spec:
       collectorImage:
         repository: otel/opentelemetry-collector-k8s
         tag: 0.161.0
-      featureGatesMap:
-        operand.networkpolicy: false
-        # Generated policy allows API server egress via node-IP ipBlocks, which Cilium's default
-        # policyCIDRMatchMode does not match, so the operator cannot reach the API server.
-        operator.networkpolicy: false
       resources:
         limits:
           memory: 256Mi

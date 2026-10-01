@@ -10,10 +10,6 @@ patches:
     kind: OpenTelemetryCollector
   patch: |-
     - op: add
-      path: /spec/networkPolicy
-      value:
-        enabled: false
-    - op: add
       path: /spec/observability
       value:
         metrics:
