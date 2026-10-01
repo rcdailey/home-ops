@@ -40,7 +40,7 @@ spec:
           collector:
             image:
               repository: otel/opentelemetry-collector-k8s
-              tag: 0.161.0@sha256:2fed8ff024bdb42473890724fa0833bd31e16197aa4790d8e0be3829f87f0de1
+              tag: 0.162.0@sha256:ed6862e1506e11c08a0ec4cc7e1395eb5cf10e3acf2c2ba3846edc1b6b3916d6
             args: [--config=/etc/otelcol/config.yaml]
             env:
               K8S_NAMESPACE:
