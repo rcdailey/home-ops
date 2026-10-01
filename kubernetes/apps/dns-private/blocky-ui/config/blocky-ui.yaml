@@ -1,0 +1,11 @@
+---
+servers:
+  blocky:
+    name: Blocky
+    url: http://blocky.dns-private:4000
+    logs:
+      source: postgres
+logSources:
+  postgres:
+    type: postgresql
+    target: file:/secrets/postgres/uri
