@@ -34,6 +34,9 @@ spec:
     spegel:
       containerdSock: /run/containerd/containerd.sock
       containerdRegistryConfigPath: /etc/cri/conf.d/hosts
+      # Peers serve stale digests for mutable latest tags; pull those from the registry
+      registryFilters:
+      - .*:latest$
     service:
       registry:
         hostPort: 29999
