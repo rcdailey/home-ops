@@ -23,7 +23,7 @@ spec:
     - kind: Secret
       name: cluster-secrets
   dependsOn:
-  - name: garage
+  - name: garage-instance
   - name: global-config
     namespace: flux-system
   - name: pocket-id-operator

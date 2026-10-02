@@ -36,8 +36,8 @@ spec:
               GARAGE_UI_GARAGE_ADMIN_TOKEN:
                 valueFrom:
                   secretKeyRef:
-                    name: garage-secret
-                    key: GARAGE_ADMIN_TOKEN
+                    name: garage-operator-secret
+                    key: token
               GARAGE_UI_AUTH_OIDC_CLIENT_SECRET:
                 valueFrom:
                   secretKeyRef:

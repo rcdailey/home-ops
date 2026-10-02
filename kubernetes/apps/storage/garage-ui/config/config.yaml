@@ -3,11 +3,11 @@ server:
   root_url: https://garage.${SECRET_DOMAIN}
 
 garage:
-  endpoint: http://garage.storage:3900
+  endpoint: http://192.168.1.58:3900
   region: garage
   use_ssl: false
   force_path_style: true
-  admin_endpoint: http://garage.storage:3903
+  admin_endpoint: http://192.168.1.58:3903
 
 auth:
   admin:
