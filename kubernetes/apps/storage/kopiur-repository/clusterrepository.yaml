@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kopiur.home-operations.com/clusterrepository_v1alpha1.json
+---
+apiVersion: kopiur.home-operations.com/v1alpha1
+kind: ClusterRepository
+metadata:
+  name: nezuko
+spec:
+  allowedNamespaces:
+    all: true
+  backend:
+    s3:
+      auth:
+        secretRef:
+          name: kopiur-gs3ak
+          namespace: storage
+      bucket: kopiur
+      endpoint: 192.168.1.58:3900
+      region: garage
+      tls:
+        disableTls: true
+  credentialProjection:
+    allowed: true
+  encryption:
+    passwordSecretRef:
+      name: kopiur-repository-secret
+      namespace: storage
+      key: KOPIA_PASSWORD
+  maintenance:
+    schedule:
+      quick:
+        cron: 0 * * * *
+        jitter: 10m
+      full:
+        cron: 0 3 * * *
+        jitter: 1h
+  moverDefaults:
+    cache:
+      # Kopia's default 5000 MiB budgets exceed the 5Gi cache PVC, so the cache filled the volume
+      # under VolSync. The metadata budget also caps the index cache, so it counts twice.
+      capacity: 5Gi
+      contentCacheSizeMb: 512
+      metadataCacheSizeMb: 1024
+      mode: Persistent
+      storageClassName: ceph-block
+    podSecurityContext:
+      fsGroup: 1000
+      fsGroupChangePolicy: OnRootMismatch
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+  parameters:
+    epoch:
+      minDuration: 1h
+  scheduleDefaults:
+    timezone: America/Chicago
