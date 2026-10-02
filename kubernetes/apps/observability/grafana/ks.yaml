@@ -30,9 +30,3 @@ spec:
     namespace: flux-system
   - name: grafana-operator
     namespace: observability
-  - name: victoria-metrics-k8s-stack
-    namespace: observability
-  - name: victoria-logs-single
-    namespace: observability
-  - name: victoria-traces-single
-    namespace: observability

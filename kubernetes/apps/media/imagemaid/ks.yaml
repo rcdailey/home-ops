@@ -14,7 +14,5 @@ spec:
     name: flux-system
     namespace: flux-system
   path: ./kubernetes/apps/media/imagemaid
-  dependsOn:
-  - name: plex
   prune: true
   wait: false

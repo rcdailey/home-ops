@@ -21,5 +21,3 @@ spec:
   dependsOn:
   - name: opentelemetry-operator
     namespace: observability
-  - name: opentelemetry-gateway
-    namespace: observability

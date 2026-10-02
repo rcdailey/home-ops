@@ -9,7 +9,6 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-  - name: plex
   - name: global-config
     namespace: flux-system
   interval: 1h

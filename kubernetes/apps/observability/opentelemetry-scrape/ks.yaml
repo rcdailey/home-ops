@@ -19,5 +19,5 @@ spec:
     namespace: flux-system
   wait: false
   dependsOn:
-  - name: opentelemetry-gateway
+  - name: opentelemetry-operator
     namespace: observability

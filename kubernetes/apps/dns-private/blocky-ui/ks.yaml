@@ -24,7 +24,5 @@ spec:
     - kind: Secret
       name: cluster-secrets
   dependsOn:
-  - name: blocky
-    namespace: dns-private
   - name: global-config
     namespace: flux-system

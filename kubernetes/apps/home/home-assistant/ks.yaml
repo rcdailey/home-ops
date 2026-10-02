@@ -19,7 +19,6 @@ spec:
     namespace: kube-system
   - name: rook-ceph-cluster
     namespace: rook-ceph
-  - name: zwave-js-ui
   - name: global-config
     namespace: flux-system
   interval: 1h

@@ -45,6 +45,9 @@ Do not run this command unless the user explicitly requests it.
 - Depend on `rook-ceph-cluster` when using Ceph storage.
 - Depend on `garage-instance` in namespace `storage` when using CNPG S3 backups.
 - Set `postBuild.substitute.APP` when using the Kopiur component.
+- Add `dependsOn` only for what this Kustomization needs to apply or first start: an operator or
+  CRDs for its custom resources, a substitution Secret, a StorageClass, or a Secret it mounts. Do
+  not depend on an app whose API this app only calls at runtime; the workload retries instead.
 - Set `wait: true` only when another Kustomization depends on this one; otherwise `wait: false`.
   The Kopiur component's `Restore` stays unready while its PVC exists, so `wait: true` would hang.
 

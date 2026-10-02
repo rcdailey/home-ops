@@ -11,11 +11,6 @@ spec:
   dependsOn:
   - name: rook-ceph-cluster
     namespace: rook-ceph
-  - name: sonarr
-  - name: sonarr-anime
-  - name: radarr
-  - name: radarr-4k
-  - name: radarr-anime
   - name: global-config
     namespace: flux-system
   interval: 1h
