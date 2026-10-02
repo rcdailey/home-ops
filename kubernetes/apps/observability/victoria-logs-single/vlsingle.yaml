@@ -10,7 +10,7 @@ spec:
   useStrictSecurity: true
   image:
     repository: victoriametrics/victoria-logs
-    tag: v1.52.0
+    tag: v1.53.0
   retentionPeriod: 90d
   extraArgs:
     memory.allowedPercent: "40"
