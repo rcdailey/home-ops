@@ -5,7 +5,7 @@ kind: Kustomization
 components:
 - ../../../components/nfs-scaler
 - ../../../components/otel-collector-baseline
-- ../../../components/volsync
+- ../../../components/kopiur
 resources:
 - ./collector.yaml
 - ./helmrelease.yaml

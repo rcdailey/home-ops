@@ -44,12 +44,13 @@ Do not run this command unless the user explicitly requests it.
 - Depend on `global-config` when using cluster-secret substitution.
 - Depend on `rook-ceph-cluster` when using Ceph storage.
 - Depend on `garage-instance` in namespace `storage` when using CNPG S3 backups.
-- Set `postBuild.substitute.APP` when using the Volsync component.
+- Set `postBuild.substitute.APP` when using the Kopiur component.
 
 ## Kustomize
 
 - Do not set `namespace`; the parent supplies it.
-- List resources explicitly, including `pvc.yaml` only when it exists.
+- List resources explicitly, including `pvc.yaml` only when it has PVCs the Kopiur component does
+  not own.
 - Put generated configuration files under `config/`.
 - Use `disableNameSuffixHash: true` only for cross-resource names such as Helm `valuesFrom` or a
   persistence reference.
@@ -74,9 +75,12 @@ deploy the source it needs to build itself.
 - Jobs and CronJobs with an RWO PVC use an init container with `restartPolicy: Always` as the native
   sidecar.
 
-For Volsync, add the component and substitute `APP`. The defaults are `ceph-block` and
-`csi-ceph-blockpool`. For CephFS, set `VOLSYNC_STORAGECLASS: ceph-filesystem` and
-`VOLSYNC_SNAPSHOTCLASS: csi-ceph-filesystem`.
+For backups, add the `kopiur` component and substitute `APP`. The component creates the backed-up
+PVC (named `APP` unless `KOPIUR_PVC` is set); do not also declare it in `pvc.yaml`. Set
+`KOPIUR_CAPACITY` (default `5Gi`). The defaults are `ReadWriteOnce`, `ceph-block`, and
+`csi-ceph-blockpool`. For CephFS, set `KOPIUR_ACCESSMODES: ReadWriteMany`,
+`KOPIUR_STORAGECLASS: ceph-filesystem`, and `KOPIUR_SNAPSHOTCLASS: csi-ceph-filesystem`. Flux only
+creates this PVC; to resize it, patch the live PVC and then update `KOPIUR_CAPACITY`.
 
 ## Controllers and services
 

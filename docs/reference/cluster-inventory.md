@@ -7,7 +7,7 @@ before making a decision that depends on an address, device, or capacity.
 
 - Talos Linux and Kubernetes with Flux
 - SOPS with Age and External Secrets Operator with Infisical
-- Rook Ceph, NFS, Garage S3, and Volsync
+- Rook Ceph, NFS, Garage S3, and Kopiur
 - Just, mise, and talhelper
 
 VMAlertmanager sends alerts through Pushover. The Watchdog alert pings Healthchecks.io every five
@@ -40,7 +40,7 @@ volumes mapped by CSI, not physical disks.
 
 - NFS host Nezuko: `192.168.1.58`, 100Ti media and 10Ti photos storage
 - Garage S3: `192.168.1.58:3900`, region `garage`, with per-application buckets
-- Volsync: shared Kopia repository at `/mnt/user/volsync` with snapshot identity isolation
+- Kopiur: shared Kopia repository `ClusterRepository/nezuko` in the Garage `kopiur` bucket
 - CloudNativePG: Barman WAL archives in per-application Garage buckets
 
 See `docs/architecture/backup-strategy.md` for backup design and

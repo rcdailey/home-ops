@@ -5,7 +5,7 @@ kind: Kustomization
 components:
 - ../../../components/cnpg-backup
 - ../../../components/nfs-scaler
-- ../../../components/volsync
+- ../../../components/kopiur
 resources:
 - configmap.yaml
 - helmrelease.yaml

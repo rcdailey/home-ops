@@ -19,7 +19,7 @@ spec:
   postBuild:
     substitute:
       APP: sabnzbd
-      VOLSYNC_PVC: sabnzbd-config
+      KOPIUR_PVC: sabnzbd-config
     substituteFrom:
     - kind: Secret
       name: cluster-secrets

@@ -12,7 +12,7 @@ spec:
   # at CR creation time.
   version: "12.4.2"
   # Disable operator's default securityContext so our custom one (UID 1000) applies.
-  # Required for correct file ownership on operator-managed PVC.
+  # Required for correct file ownership on the grafana-pvc volume.
   disableDefaultSecurityContext: All
   config:
     analytics:
@@ -113,12 +113,5 @@ spec:
           volumes:
           - name: grafana-data
             persistentVolumeClaim:
+              # Created by the kopiur component so a recreated PVC restores from backup
               claimName: grafana-pvc
-  persistentVolumeClaim:
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      storageClassName: ceph-block
-      resources:
-        requests:
-          storage: 5Gi

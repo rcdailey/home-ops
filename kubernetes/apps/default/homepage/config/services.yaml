@@ -200,8 +200,3 @@
       icon: ceph
       href: https://ceph.${SECRET_DOMAIN}/
       siteMonitor: http://rook-ceph-mgr-dashboard.rook-ceph:7000
-
-  - Kopia:
-      icon: kopia
-      href: https://kopia.${SECRET_DOMAIN}/
-      siteMonitor: http://kopia.storage:80

@@ -14,7 +14,7 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      VOLSYNC_PVC: grafana-pvc
+      KOPIUR_PVC: grafana-pvc
     substituteFrom:
     - name: cluster-secrets
       kind: Secret

@@ -27,10 +27,10 @@ spec:
     - alert: PodNotReady
       expr: |
         max by (k8s_namespace_name, k8s_pod_name) (
-          otel_k8s_pod_phase{k8s_pod_name!~"volsync-src-.*"}
+          otel_k8s_pod_phase
         ) == 1
           or max by (k8s_namespace_name, k8s_pod_name) (
-            otel_k8s_pod_phase{k8s_pod_name!~"volsync-src-.*"}
+            otel_k8s_pod_phase
           ) >= 5
       for: 15m
       labels:

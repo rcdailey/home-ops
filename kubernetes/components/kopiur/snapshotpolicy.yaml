@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kopiur.home-operations.com/snapshotpolicy_v1alpha1.json
+---
+apiVersion: kopiur.home-operations.com/v1alpha1
+kind: SnapshotPolicy
+metadata:
+  name: ${APP}
+spec:
+  compression:
+    compressor: zstd-fastest
+  # Kopiur re-defaults an omitted copyMethod on CRD upgrades; pin it
+  copyMethod: Snapshot
+  credentialProjection:
+    enabled: true
+  repository:
+    kind: ClusterRepository
+    name: nezuko
+  retention:
+    keepLatest: 1
+    keepDaily: 7
+    keepWeekly: 4
+    keepMonthly: 3
+  sources:
+  - pvc:
+      name: ${KOPIUR_PVC:=${APP}}
+  volumeSnapshotClassName: ${KOPIUR_SNAPSHOTCLASS:=csi-ceph-blockpool}

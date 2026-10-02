@@ -30,3 +30,4 @@ spec:
       name: cluster-secrets
     substitute:
       APP: zwave-js-ui
+      KOPIUR_CAPACITY: 1Gi

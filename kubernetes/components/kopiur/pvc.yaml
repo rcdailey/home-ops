@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/v1/persistentvolumeclaim.json
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ${KOPIUR_PVC:=${APP}}
+  labels:
+    # A PVC spec cannot change after creation, so Flux only creates it. Resize by patching the
+    # live PVC, then update KOPIUR_CAPACITY so a recreated PVC gets the same size.
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+spec:
+  accessModes:
+  - ${KOPIUR_ACCESSMODES:=ReadWriteOnce}
+  dataSourceRef:
+    apiGroup: kopiur.home-operations.com
+    kind: Restore
+    name: ${APP}
+  resources:
+    requests:
+      storage: ${KOPIUR_CAPACITY:=5Gi}
+  storageClassName: ${KOPIUR_STORAGECLASS:=ceph-block}

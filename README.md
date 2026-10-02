@@ -11,7 +11,7 @@ Personal Kubernetes homelab managed with Talos Linux and Flux GitOps.
 - **Networking**: Cilium, Envoy Gateway
 - **Observability**: OpenTelemetry, VictoriaMetrics, VictoriaLogs, VictoriaTraces, Grafana
 - **Databases**: CloudNativePG
-- **Backups**: VolSync, Kopia, and Barman Cloud for DB
+- **Backups**: Kopiur (Kopia) and Barman Cloud for DB, both to Garage S3
 
 ## Repository Structure
 

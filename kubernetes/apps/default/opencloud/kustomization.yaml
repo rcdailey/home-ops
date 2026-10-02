@@ -4,12 +4,11 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 components:
 - ../../../components/nfs-scaler
-- ../../../components/volsync
+- ../../../components/kopiur
 resources:
 - helmrelease.yaml
 - externalsecret.yaml
 - oidcclient.yaml
-- pvc.yaml
 - servicemonitor.yaml
 configMapGenerator:
 - name: opencloud-config

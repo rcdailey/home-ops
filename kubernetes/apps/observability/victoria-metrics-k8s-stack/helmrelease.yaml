@@ -137,46 +137,6 @@ spec:
       prometheus:
         monitor:
           enabled: true
-      customResourceState:
-        enabled: true
-        config:
-          kind: CustomResourceStateMetrics
-          spec:
-            resources:
-            - groupVersionKind:
-                group: volsync.backube
-                version: v1alpha1
-                kind: ReplicationSource
-              metricNamePrefix: volsync
-              labelsFromPath:
-                obj_namespace: [metadata, namespace]
-                obj_name: [metadata, name]
-              metrics:
-              - name: replicationsource_generation
-                help: Current metadata generation of a VolSync ReplicationSource.
-                each:
-                  type: Gauge
-                  gauge:
-                    path: [metadata, generation]
-              - name: replicationsource_last_sync_time
-                help: Unix timestamp of the last completed VolSync synchronization.
-                each:
-                  type: Gauge
-                  gauge:
-                    path: [status, lastSyncTime]
-              - name: replicationsource_latest_mover_status
-                help: Result of the latest VolSync mover job.
-                each:
-                  type: StateSet
-                  stateSet:
-                    path: [status, latestMoverStatus, result]
-                    labelName: result
-                    list: [Successful, Failed]
-      rbac:
-        extraRules:
-        - apiGroups: [volsync.backube]
-          resources: [replicationsources]
-          verbs: [list, watch]
       resources:
         limits:
           memory: 128Mi

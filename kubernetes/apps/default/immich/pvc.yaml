@@ -16,19 +16,6 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: immich-profile
-spec:
-  accessModes:
-  - ReadWriteOnce
-  storageClassName: ceph-block
-  resources:
-    requests:
-      storage: 1Gi
----
-# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.30.3-standalone-strict/persistentvolumeclaim-v1.json
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
   name: immich-ml-cache
 spec:
   accessModes:

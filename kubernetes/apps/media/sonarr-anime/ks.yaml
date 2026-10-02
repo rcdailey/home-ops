@@ -30,4 +30,3 @@ spec:
       name: cluster-secrets
     substitute:
       APP: sonarr-anime
-      VOLSYNC_PVC: sonarr-anime

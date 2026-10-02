@@ -29,7 +29,7 @@ spec:
       name: cluster-secrets
     substitute:
       APP: plex
-      VOLSYNC_CACHE_CAPACITY: 10Gi
-      VOLSYNC_PVC: plex-config
+      KOPIUR_CAPACITY: 120Gi
+      KOPIUR_PVC: plex-config
   prune: true
   wait: true

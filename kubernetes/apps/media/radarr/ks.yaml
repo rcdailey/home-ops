@@ -30,4 +30,3 @@ spec:
       name: cluster-secrets
     substitute:
       APP: radarr
-      VOLSYNC_PVC: radarr

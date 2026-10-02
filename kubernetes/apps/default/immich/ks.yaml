@@ -30,7 +30,8 @@ spec:
   postBuild:
     substitute:
       APP: immich
-      VOLSYNC_PVC: immich-profile
+      KOPIUR_PVC: immich-profile
+      KOPIUR_CAPACITY: 1Gi
     substituteFrom:
     - kind: Secret
       name: cluster-secrets

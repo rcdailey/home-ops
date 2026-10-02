@@ -39,6 +39,8 @@ spec:
       name: cluster-secrets
     substitute:
       APP: home-assistant
-      VOLSYNC_PVC: home-assistant-rwx
-      VOLSYNC_STORAGECLASS: ceph-filesystem
-      VOLSYNC_SNAPSHOTCLASS: csi-ceph-filesystem
+      KOPIUR_PVC: home-assistant-rwx
+      KOPIUR_CAPACITY: 10Gi
+      KOPIUR_ACCESSMODES: ReadWriteMany
+      KOPIUR_STORAGECLASS: ceph-filesystem
+      KOPIUR_SNAPSHOTCLASS: csi-ceph-filesystem

@@ -30,4 +30,4 @@ spec:
       name: cluster-secrets
     substitute:
       APP: esphome
-      VOLSYNC_PVC: esphome
+      KOPIUR_CAPACITY: 2Gi

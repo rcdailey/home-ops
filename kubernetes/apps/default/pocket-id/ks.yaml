@@ -20,6 +20,7 @@ spec:
   postBuild:
     substitute:
       APP: pocket-id
+      KOPIUR_CAPACITY: 1Gi
     substituteFrom:
     - kind: Secret
       name: cluster-secrets

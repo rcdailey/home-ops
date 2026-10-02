@@ -11,9 +11,7 @@ spec:
     rules:
     - alert: PVCNearCapacity
       expr: |
-        100 * otel:pvc_usage:ratio{
-          k8s_persistentvolumeclaim_name!~"volsync-src-.*-cache"
-        } > 85
+        100 * otel:pvc_usage:ratio > 85
       for: 10m
       labels:
         severity: warning
@@ -25,9 +23,7 @@ spec:
 
     - alert: PVCCriticalCapacity
       expr: |
-        100 * otel:pvc_usage:ratio{
-          k8s_persistentvolumeclaim_name!~"volsync-src-.*-cache"
-        } > 95
+        100 * otel:pvc_usage:ratio > 95
       for: 5m
       labels:
         severity: critical

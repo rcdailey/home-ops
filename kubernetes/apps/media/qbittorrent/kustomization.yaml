@@ -4,10 +4,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 components:
 - ../../../components/nfs-scaler
-- ../../../components/volsync
+- ../../../components/kopiur
 resources:
 - ./helmrelease.yaml
-- ./pvc.yaml
 - ./externalsecret.yaml
 configMapGenerator:
 - name: qbittorrent-scripts

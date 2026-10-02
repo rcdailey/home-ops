@@ -9,7 +9,5 @@ resources:
 - ./garage-ui/ks.yaml
 - ./garage-operator/ks.yaml
 - ./garage-instance/ks.yaml
-- ./kopia/ks.yaml
 - ./kopiur/ks.yaml
 - ./kopiur-repository/ks.yaml
-- ./volsync/ks.yaml

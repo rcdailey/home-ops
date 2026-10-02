@@ -30,4 +30,3 @@ spec:
       name: cluster-secrets
     substitute:
       APP: radarr-anime
-      VOLSYNC_PVC: radarr-anime

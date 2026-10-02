@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization.json
-# NOTE: Volsync backup intentionally not configured for this app.
+# NOTE: Kopiur backup intentionally not configured for this app.
 # Reason: Configuration is managed via configMapGenerator (config.yml in Git).
 # PVC only contains regeneratable data: overlays (2.7GB generated images),
 # reports, and cache. All can be regenerated from Plex metadata.
