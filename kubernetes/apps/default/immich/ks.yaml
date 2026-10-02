@@ -15,7 +15,7 @@ spec:
     namespace: flux-system
   path: ./kubernetes/apps/default/immich
   prune: true
-  wait: true
+  wait: false
   dependsOn:
   - name: cloudnative-pg
     namespace: kube-system
