@@ -1,14 +1,10 @@
 # Ceph OSD Operations
 
-Manage Ceph OSDs in Rook-managed clusters. Use `hops` for read-only status checks and `kubectl exec`
-for mutations:
+Manage Ceph OSDs in Rook-managed clusters through the toolbox:
 
 ```bash
-# Read-only (use hops)
 ./scripts/hops.sh storage ceph status
-./scripts/hops.sh storage ceph osd
-
-# Mutations (kubectl exec directly)
+kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph osd df tree
 kubectl exec -n rook-ceph deploy/rook-ceph-tools -- ceph <command>
 ```
 

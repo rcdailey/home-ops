@@ -46,9 +46,8 @@ cluster.
 4. For a point-in-time test, verify records on both sides of the selected recovery time.
 5. Record whether the test covered a pre-migration archive, a plugin-created backup, and WAL replay.
 
-Use `./scripts/hops.sh db status` and `./scripts/hops.sh app events <namespace>` for cluster status
-and events. If `hops` lacks evidence required during recovery, follow its documented escape hatch
-instead of querying the cluster with raw tools.
+Use `./scripts/hops.sh db status` for cluster status and `kubectl events -n <namespace>` for events.
+Use read-only raw CLIs for other evidence that `hops` does not provide.
 
 ## Cleanup
 

@@ -30,7 +30,8 @@ matches Git.
 
 ### Troubleshooting Approach
 
-1. **Query**: Gather symptoms directly with `hops`; MUST NOT delegate cluster investigation
+1. **Query**: Gather symptoms directly with `hops` or raw CLIs; MUST NOT delegate cluster
+   investigation
 2. **History**: `git log -p --follow --invert-grep --author="renovate" -- path/to/file.yaml` for
    recent changes
 3. **Analyze**: Read manifests, check CRD specs, verify dependencies
@@ -40,20 +41,14 @@ matches Git.
 
 Recurring issues indicate incomplete root cause analysis.
 
-**All cluster queries MUST use `hops` commands** (`./scripts/hops.sh`). Direct use of kubectl,
-talosctl, helm, flux, and other cluster CLIs for queries is prohibited except when `hops` lacks the
-needed functionality (see escape hatch below). `hops` produces LLM-optimized, token-compact output
-by design; raw CLI output wastes context on noise the LLM has to parse and discard.
+**Cluster queries:** `hops` (`./scripts/hops.sh --help`) and read-only raw CLIs are peers. Use a
+`hops` command when one matches the investigation; otherwise compose kubectl, talosctl, flux, or
+`ceph` via `deploy/rook-ceph-tools`. A missing `hops` command MUST NOT block or pause work. Do not
+modify `hops` during unrelated work; report repeated multi-command sequences as candidates. MUST NOT
+print Secret data or container env values.
 
-**`hops` escape hatch:** `hops` is not feature-complete. When a command you need does not exist,
-produces too much or too little output, or has a bug: (1) load the `hops` skill, (2) update or add
-the command, (3) test the updated command, (4) use it to continue your original task. Do not work
-around gaps by falling back to raw CLIs; fix the tool instead. If the gap is too complex to fix
-inline, document it as a TODO in the relevant hops source file and fall back to the raw CLI for that
-specific operation only.
-
-The `hops` skill owns the bounded exceptions for developing commands, ephemeral debug pods, and Flux
-suspend/resume. Those exceptions do not permit unrelated direct cluster operations.
+The `hops` skill owns the bounded mutation exceptions for ephemeral debug pods and Flux
+suspend/resume. Those exceptions do not permit unrelated cluster mutations.
 
 ### Storage, Volumes, and Resource Patterns
 
@@ -162,8 +157,8 @@ identities.
 - Choose metric ingestion from documented workload support. Send native OTLP directly to the
   gateway; scrape Prometheus endpoints with ServiceMonitor or PodMonitor. Assign one owner per
   metric family; never ingest equivalent metrics through both paths.
-- OpenTelemetry environment variables configure existing instrumentation; they do not instrument
-  an application or require a Collector sidecar.
+- OpenTelemetry environment variables configure existing instrumentation; they do not instrument an
+  application or require a Collector sidecar.
 - Use auto-instrumentation for owned code with tests. Inject agents into third-party workloads only
   after app-specific runtime and startup validation; never enable agents cluster-wide.
 - Keep application-specific log parsing in app-owned OpenTelemetry Collector sidecars.

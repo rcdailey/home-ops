@@ -1,4 +1,4 @@
-"""Backup domain: Volsync + CNPG backup status, Kopia repository management."""
+"""Backup domain: Volsync + CNPG backup status and Kopia snapshot inspection."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ import click
 from hops._click import HelpfulGroup
 from hops.backup_inspect import inspect_backup, list_backups
 from hops.core.format import age_str, info, section, table, truncate
-from hops.core.runner import kubectl_json, run
+from hops.core.runner import kubectl_json
 
 
 @click.group(cls=HelpfulGroup)
 def cli():
-    """Backup operations: status overview, Kopia repository management."""
+    """Backup operations: status overview and Kopia snapshot inspection."""
 
 
 @cli.command()
@@ -122,29 +122,3 @@ def inspect_command(
 ):
     """Rank contents and mounts for an app's latest Kopia backup."""
     inspect_backup(app, namespace, path, limit, as_json)
-
-
-@cli.command()
-@click.argument("args", nargs=-1)
-def kopia(args: tuple[str, ...]):
-    """Run kopia commands via the kopia pod in storage namespace.
-
-    Pass any kopia subcommand and arguments after --.
-    Example: hops backup kopia snapshot list
-    """
-    cmd = [
-        "kubectl",
-        "exec",
-        "-n",
-        "storage",
-        "deploy/kopia",
-        "--",
-        "kopia",
-    ] + list(args)
-    result = run(cmd, timeout=60, check=False)
-    if result.stdout:
-        click.echo(result.stdout.rstrip())
-    if result.stderr:
-        click.echo(result.stderr.rstrip())
-    if result.returncode != 0:
-        raise SystemExit(result.returncode)

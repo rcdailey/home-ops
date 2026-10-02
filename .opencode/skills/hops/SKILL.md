@@ -6,8 +6,8 @@ description: >-
   output formatters; changing core helpers (`core/runner.py`, `core/format.py`, `core/nodes.py`,
   `core/workload.py`, `core/time.py`, `core/resolve.py`, `core/helm.py`); extending cluster
   introspection coverage (node, storage, app, flux, query, debug, dns, backup, validate). Triggers
-  on phrases like "add a hops command", "fix hops output", "new hops domain", "extend hops", the
-  `hops` escape hatch in AGENTS.md, or any edit to files under `scripts/hops/`. Do NOT use for
+  on phrases like "add a hops command", "fix hops output", "new hops domain", "extend hops", or any
+  edit to files under `scripts/hops/`. Do NOT use for
   simply running existing `hops` commands during diagnosis (no skill needed) or for
   non-cluster/app-specific scripts (e.g., `hass.sh`).
 ---
@@ -75,6 +75,7 @@ Design check when adding or editing a command: what sequence of kubectl/talosctl
 invocations would an investigator run to answer this question end-to-end? Fold that sequence into
 the single `hops` command, in the order the investigator needs it. If the answer is "one kubectl
 invocation," either the command adds no value or the workflow has not been fully identified yet.
+Delete existing commands that fail this test.
 
 Anti-patterns to reject in code review:
 
@@ -99,10 +100,6 @@ exist:
 - Flux suspend/resume (`hops flux suspend/resume`): reversible state toggle for maintenance (storage
   migrations, immutable field changes). Finds Kustomization + HelmRelease namespaces automatically
   and handles both in one call.
-
-While developing a command, direct read-only calls to its underlying cluster CLI are allowed only to
-establish expected behavior or compare output. Persistent and unrelated operations remain subject to
-the root `AGENTS.md` rules.
 
 ### Output Standards
 

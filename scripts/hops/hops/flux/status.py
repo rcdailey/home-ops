@@ -1,10 +1,10 @@
-"""Flux read-only status commands: status, hr, ks, values, defaults."""
+"""Flux read-only status commands: status, values, defaults."""
 
 from __future__ import annotations
 
 import click
 
-from hops.core.format import info, kv, table, truncate
+from hops.core.format import info, table, truncate
 from hops.core.helm import (
     helm_chart_args,
     print_search_results,
@@ -13,7 +13,6 @@ from hops.core.helm import (
 )
 from hops.core.runner import run, run_json
 from hops.flux import cli
-from hops.flux.release import chart_pairs
 
 
 @cli.command("status")
@@ -137,15 +136,6 @@ def _ready_status(item: dict) -> str:
     return "Unknown"
 
 
-def _fetch_all(kind: str) -> list[dict]:
-    """Fetch all items of a Flux resource kind across namespaces."""
-    data = run_json(
-        ["kubectl", "get", kind, "--all-namespaces", "-o", "json"],
-        timeout=15,
-    )
-    return data.get("items", [])
-
-
 def _find_items(items: list[dict], name: str | None) -> list[dict]:
     """Filter items: exact match first, then substring, then all."""
     if not name:
@@ -154,63 +144,6 @@ def _find_items(items: list[dict], name: str | None) -> list[dict]:
     if exact:
         return exact
     return [i for i in items if name in i["metadata"]["name"]]
-
-
-@cli.command("hr")
-@click.argument("name", required=False, default=None)
-@click.option(
-    "-n", "--namespace", default=None, help="Namespace (searches all if omitted)"
-)
-def helmrelease(name: str | None, namespace: str | None):
-    """HelmRelease status. Omit NAME to list all; partial names search."""
-    all_items = _fetch_all("helmreleases")
-    if namespace:
-        all_items = [i for i in all_items if i["metadata"]["namespace"] == namespace]
-
-    matches = _find_items(all_items, name)
-
-    if not matches:
-        info(f"error: HelmRelease {name!r} not found")
-        raise SystemExit(1)
-
-    # Multiple matches or no name: show compact listing
-    if len(matches) != 1 or name is None:
-        rows = []
-        for item in sorted(
-            matches, key=lambda i: (i["metadata"]["namespace"], i["metadata"]["name"])
-        ):
-            rows.append(
-                [
-                    item["metadata"]["namespace"],
-                    item["metadata"]["name"],
-                    _ready_status(item),
-                ]
-            )
-        table(["NAMESPACE", "NAME", "STATUS"], rows)
-        return
-
-    # Single exact/substring match: show detail
-    data = matches[0]
-    meta = data.get("metadata", {})
-    spec = data.get("spec", {})
-    status = data.get("status", {})
-
-    pairs = [
-        ("Name", meta.get("name", "")),
-        ("Namespace", meta.get("namespace", "")),
-    ]
-
-    pairs.extend(chart_pairs(spec, status))
-
-    # Conditions
-    conditions = status.get("conditions", [])
-    for cond in conditions:
-        ctype = cond.get("type", "")
-        cstatus = cond.get("status", "")
-        msg = cond.get("message", "")
-        pairs.append((ctype, f"{cstatus} - {msg}" if msg else cstatus))
-
-    kv(pairs)
 
 
 @cli.command("values")
@@ -287,69 +220,3 @@ def defaults(
         print_yaml_key(output, key)
     elif search_term:
         print_search_results(output, search_term)
-
-
-@cli.command("ks")
-@click.argument("name", required=False, default=None)
-@click.option(
-    "-n", "--namespace", default=None, help="Namespace (searches all if omitted)"
-)
-def kustomization(name: str | None, namespace: str | None):
-    """Kustomization status. Omit NAME to list all; partial names search."""
-    all_items = _fetch_all("kustomizations")
-    if namespace:
-        all_items = [i for i in all_items if i["metadata"]["namespace"] == namespace]
-
-    matches = _find_items(all_items, name)
-
-    if not matches:
-        info(f"error: Kustomization {name!r} not found")
-        raise SystemExit(1)
-
-    # Multiple matches or no name: show compact listing
-    if len(matches) != 1 or name is None:
-        rows = []
-        for item in sorted(
-            matches, key=lambda i: (i["metadata"]["namespace"], i["metadata"]["name"])
-        ):
-            rows.append(
-                [
-                    item["metadata"]["namespace"],
-                    item["metadata"]["name"],
-                    _ready_status(item),
-                ]
-            )
-        table(["NAMESPACE", "NAME", "STATUS"], rows)
-        return
-
-    # Single exact/substring match: show detail
-    data = matches[0]
-    meta = data.get("metadata", {})
-    spec = data.get("spec", {})
-    status = data.get("status", {})
-
-    pairs = [
-        ("Name", meta.get("name", "")),
-        ("Namespace", meta.get("namespace", "")),
-        ("Path", spec.get("path", "?")),
-        (
-            "SourceRef",
-            f"{spec.get('sourceRef', {}).get('kind', '?')}/{spec.get('sourceRef', {}).get('name', '?')}",
-        ),
-        ("Revision", status.get("lastAppliedRevision", "?")),
-    ]
-
-    # Target namespace
-    target_ns = spec.get("targetNamespace")
-    if target_ns:
-        pairs.append(("TargetNS", target_ns))
-
-    # Conditions
-    conditions = status.get("conditions", [])
-    for cond in conditions:
-        ctype = cond.get("type", "")
-        cstatus = cond.get("status", "")
-        msg = cond.get("message", "")
-        pairs.append((ctype, f"{cstatus} - {msg}" if msg else cstatus))
-
-    kv(pairs)

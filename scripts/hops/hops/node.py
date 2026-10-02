@@ -8,9 +8,9 @@ import re
 import click
 
 from hops._click import HelpfulGroup
-from hops.core.format import human_bytes, kv, section, table
+from hops.core.format import kv, section, table
 from hops.core.nodes import get_all, resolve_ip
-from hops.core.runner import kubectl_json, run, run_json, run_jsonl
+from hops.core.runner import kubectl_json, run, run_json
 from hops.node_upgrades import show_upgrades
 
 _ISSUE_TERMS = (
@@ -77,92 +77,6 @@ def list_nodes():
 def upgrades() -> None:
     """Correlate Tuppr upgrade state, node versions, and the active Job."""
     show_upgrades()
-
-
-@cli.command()
-@click.argument("node", required=False)
-def disks(node: str | None):
-    """Physical disk inventory from Talos. Omit NODE for all nodes.
-
-    Filters out loop devices and Ceph RBD virtual devices.
-    """
-    nodes = get_all()
-    targets = (
-        [(n.name, n.ip) for n in nodes] if node is None else [(node, resolve_ip(node))]
-    )
-    rows = []
-    for name, ip in targets:
-        items = run_jsonl(
-            ["talosctl", "get", "disks", "-o", "json", "-n", ip],
-            timeout=15,
-        )
-        for item in items:
-            spec = item.get("spec", {})
-            dev = spec.get("dev_path", item.get("metadata", {}).get("id", ""))
-            # Skip non-physical devices
-            if "/loop" in dev or "/rbd" in dev:
-                continue
-            size = spec.get("pretty_size", human_bytes(spec.get("size", 0)))
-            transport = spec.get("transport", "").upper()
-            model = spec.get("model", "")
-            # Role: sda is always Talos system, nvme0n1 is always Ceph OSD
-            role = ""
-            if "sda" in dev:
-                role = "system"
-            elif "nvme0n1" in dev:
-                role = "ceph-osd"
-            rows.append([name, dev, size, transport, model, role])
-    table(["NODE", "DEVICE", "SIZE", "TRANSPORT", "MODEL", "ROLE"], rows)
-
-
-@cli.command("audit-logs")
-@click.argument("node", required=False)
-def audit_logs(node: str | None) -> None:
-    """Audit-log ownership and permissions on control-plane nodes."""
-    nodes = get_all()
-    targets = (
-        [(item.name, item.ip) for item in nodes if item.role == "cp"]
-        if node is None
-        else [(node, resolve_ip(node))]
-    )
-    rows = []
-    for name, ip in targets:
-        result = run(
-            ["talosctl", "ls", "/var/log/audit/kube", "-l", "-n", ip],
-            timeout=15,
-        )
-        if result.returncode != 0:
-            message = (result.stderr or result.stdout).strip().splitlines()[0]
-            click.echo(f"error: talosctl failed for {name}: {message}", err=True)
-            raise SystemExit(1)
-        entries = [line.split() for line in result.stdout.splitlines()[1:]]
-        directory = next((entry for entry in entries if entry[-1] == "."), None)
-        active = next(
-            (entry for entry in entries if entry[-1] == "kube-apiserver.log"),
-            None,
-        )
-        if directory is None or active is None:
-            rows.append([name, "missing", "-", "-", "-", "no"])
-            continue
-        files = [entry for entry in entries if entry[-1] != "."]
-        total_size = sum(int(entry[4]) for entry in files)
-        group_zero = (
-            directory[3] == "0"
-            and directory[1][6] == "x"
-            and active[3] == "0"
-            and active[1][4] == "r"
-        )
-        rows.append(
-            [
-                name,
-                f"{directory[2]}:{directory[3]}",
-                directory[1],
-                active[1],
-                f"{len(files)} / {human_bytes(total_size)}",
-                "yes" if group_zero else "no",
-            ]
-        )
-    table(["NODE", "OWNER", "DIR", "FILE", "FILES/SIZE", "GROUP 0"], rows)
 
 
 @cli.command()
