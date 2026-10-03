@@ -8,7 +8,6 @@ spec:
   mode: statefulset
   replicas: 2
   serviceAccount: otel-scrape
-  upgradeStrategy: none
   targetAllocator:
     enabled: true
     replicas: 2

@@ -6,7 +6,6 @@ metadata:
   name: plex
 spec:
   mode: sidecar
-  upgradeStrategy: none
   livenessProbe: {}
   securityContext:
     runAsUser: 1000

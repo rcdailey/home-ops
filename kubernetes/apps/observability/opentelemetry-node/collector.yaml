@@ -10,7 +10,6 @@ metadata:
 spec:
   mode: daemonset
   serviceAccount: otel-node
-  upgradeStrategy: none
   env:
   - name: K8S_NODE_NAME
     valueFrom:

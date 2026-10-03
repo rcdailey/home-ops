@@ -7,7 +7,6 @@ metadata:
 spec:
   mode: statefulset
   replicas: 2
-  upgradeStrategy: none
   podSecurityContext:
     runAsUser: 1000
     runAsGroup: 1000

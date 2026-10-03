@@ -8,7 +8,6 @@ spec:
   mode: deployment
   replicas: 1
   serviceAccount: otel-cluster
-  upgradeStrategy: none
   deploymentUpdateStrategy:
     type: Recreate
   podSecurityContext:
