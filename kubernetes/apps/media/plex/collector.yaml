@@ -7,7 +7,6 @@ metadata:
 spec:
   mode: sidecar
   upgradeStrategy: none
-  command: [/otelcol-k8s, --feature-gates=filelog.mtimeSortType]
   livenessProbe: {}
   securityContext:
     runAsUser: 1000
@@ -32,19 +31,14 @@ spec:
   config:
     receivers:
       file_log/plex:
+        # Other Plex log files are XML reports or scanner noise; Scanner Analysis feeds
+        # PlexMediaAnalysisFailures.
         include:
-        - /config/Library/Application Support/Plex Media Server/Logs/*.log
+        - /config/Library/Application Support/Plex Media Server/Logs/Plex Media Server.log
+        - /config/Library/Application Support/Plex Media Server/Logs/Plex Media Scanner Analysis.log
         start_at: beginning
         include_file_name: false
         include_file_path: true
-        max_concurrent_files: 1
-        ordering_criteria:
-          regex: '.*'
-          # Plex retains fewer than 100 files; increase this if its rotation policy changes.
-          top_n: 100
-          sort_by:
-          - sort_type: mtime
-            ascending: true
         storage: file_storage/plex
         operators:
         - type: copy
