@@ -134,6 +134,17 @@ spec:
         existingClaim: plex-vector-data
         globalMounts: []
 
+      collector-trigger:
+        # Injected sidecars never update in place; this mount makes Reloader roll the pod
+        # when collector.yaml changes. See docs/architecture/observability.md.
+        type: configMap
+        name: plex-collector-trigger
+        advancedMounts:
+          plex:
+            app:
+            - path: /otel-collector-trigger
+              readOnly: true
+
     route:
       app:
         hostnames:

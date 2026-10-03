@@ -92,6 +92,31 @@ Private file formats remain application-owned. A sidecar Collector may parse tho
 normalized OTLP logs. The same stream must not also use node log collection because that would
 create duplicate records.
 
+#### Sidecar config rollout
+
+The Operator injects a sidecar Collector only when a pod is created. It renders the
+`OpenTelemetryCollector` config into the injected container's `OTEL_CONFIG` environment variable, so
+later changes to that resource never reach running pods. Upstream treats this as intended
+([opentelemetry-operator#2078][otel-operator-2078]); Flux still reports the resource as ready.
+
+Each sidecar consumer therefore generates a trigger ConfigMap from its Collector manifest and mounts
+it read-only into an application container defined in the workload template:
+
+```yaml
+# kustomization.yaml
+configMapGenerator:
+- name: <app>-collector-trigger
+  files:
+  - collector.yaml=./collector.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+```
+
+`reloader.stakater.com/auto` then rolls the workload whenever the Collector manifest changes. The
+mount is required: Reloader ignores ConfigMap volumes that no workload container mounts, and it
+cannot see the injected sidecar container. `kubernetes/apps/media/plex` is the reference
+implementation.
+
 ### Traces
 
 Applications with documented native OTel support send OTLP directly to the Gateway. They use
@@ -152,3 +177,4 @@ and the Target Allocator; trace investigation currently belongs in Grafana.
 | Alertmanager | `http://vmalertmanager-vm.observability:9093` |
 
 [adr]: ../adr/0001-standardize-observability-on-opentelemetry.md
+[otel-operator-2078]: https://github.com/open-telemetry/opentelemetry-operator/issues/2078

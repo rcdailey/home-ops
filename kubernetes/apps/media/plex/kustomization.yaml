@@ -13,3 +13,9 @@ resources:
 - ./pvc.yaml
 - ./resourceclaimtemplate.yaml
 - ./loadbalancer-service.yaml
+configMapGenerator:
+- name: plex-collector-trigger
+  files:
+  - collector.yaml=./collector.yaml
+generatorOptions:
+  disableNameSuffixHash: true

@@ -161,7 +161,9 @@ identities.
   application or require a Collector sidecar.
 - Use auto-instrumentation for owned code with tests. Inject agents into third-party workloads only
   after app-specific runtime and startup validation; never enable agents cluster-wide.
-- Keep application-specific log parsing in app-owned OpenTelemetry Collector sidecars.
+- Keep application-specific log parsing in app-owned OpenTelemetry Collector sidecars. Each
+  sidecar consumer MUST mount a Collector trigger ConfigMap per
+  `docs/architecture/observability.md`; injected sidecars never update in place.
 - Use `observability.home-ops/logs=true` for node collection. It includes every container; do not
   add container exclusions.
 
