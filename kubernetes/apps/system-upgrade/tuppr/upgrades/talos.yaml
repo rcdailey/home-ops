@@ -11,6 +11,13 @@ spec:
   policy:
     rebootMode: default
     waitForVolumeDetach: true
+  # After nightly backups (01:00) and housekeeping (02:00), before Renovate automerge (05:00), so
+  # node drains land when nobody streams and nothing else restarts.
+  maintenance:
+    windows:
+    - start: "0 3 * * *"
+      duration: 2h
+      timezone: America/Chicago
   # Each node is cordoned, drained and rebooted in turn, which reliably trips
   # node-, Ceph- and scrape-level alerts. Matchers within one silence are ANDed,
   # so each independent scope needs its own entry. Alertmanager anchors regex
