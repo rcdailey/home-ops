@@ -9,4 +9,4 @@ spec:
     name: ${APP}
   schedule:
     # H spreads apps across the hour so their snapshots and uploads do not start together
-    cron: H 3 * * *
+    cron: H 1 * * *

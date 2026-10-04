@@ -36,6 +36,12 @@ spec:
     monitoring:
       enabled: true
 
+    # ScheduledBackup has no timezone field and its cron parser ignores TZ= prefixes, so
+    # schedules follow the operator's local time.
+    additionalEnv:
+    - name: TZ
+      value: America/Chicago
+
     resources:
       requests:
         cpu: 100m

@@ -94,7 +94,7 @@ The repository also sets:
 Apps opt in with `kubernetes/components/kopiur`. For `APP: example`, it declares:
 
 1. `SnapshotPolicy/example`: backs up the PVC with a CSI snapshot and zstd-fastest compression.
-2. `SnapshotSchedule/example`: runs the policy daily during the 03:00 hour (America/Chicago); `H`
+2. `SnapshotSchedule/example`: runs the policy daily during the 01:00 hour (America/Chicago); `H`
    spreads apps across the hour.
 3. `Restore/example`: restores the latest snapshot, or provisions an empty volume when none exists.
 4. `PersistentVolumeClaim/example`: the backed-up PVC itself, with `Restore/example` as its
@@ -125,7 +125,8 @@ component declares:
 1. A Garage access-key request. The Garage S3 operator creates its Kubernetes credential Secret.
 2. A Garage bucket named `${APP}-postgres-backups`.
 3. A Barman `ObjectStore`, which configures access to that bucket and a 30-day recovery window.
-4. A daily `ScheduledBackup` at 02:00 and a WAL archiver on `${APP}-postgres`.
+4. A daily `ScheduledBackup` at 01:00 (America/Chicago, via the operator's `TZ`) and a WAL
+   archiver on `${APP}-postgres`.
 
 The bucket is the storage location. The ObjectStore is the connection and policy resource used by
 Barman; it does not create another storage copy. See the [component contract][cnpg-component] and

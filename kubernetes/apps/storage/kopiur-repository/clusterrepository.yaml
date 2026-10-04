@@ -30,9 +30,9 @@ spec:
       quick:
         cron: 0 * * * *
         jitter: 10m
-      # After the 03:00 backup window
+      # After the 01:00 backup window
       full:
-        cron: 0 5 * * *
+        cron: 0 2 * * *
         jitter: 1h
   moverDefaults:
     cache:
