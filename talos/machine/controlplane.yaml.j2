@@ -68,6 +68,14 @@ configuration:
   omitStages:
     - RequestReceived
   rules:
+    # Controllers create pods as service accounts; keep these so Pod Security denials name the pod.
+    - level: Metadata
+      verbs:
+        - create
+      resources:
+        - group: ""
+          resources:
+            - pods
     - level: None
       userGroups:
         - system:serviceaccounts

@@ -1,0 +1,31 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: kubernetes-audit-alerts
+  labels:
+    observability.home-ops/datasource: logs
+spec:
+  groups:
+  - name: kubernetes-security
+    type: vlogs
+    interval: 1m
+    rules:
+    - alert: PodSecurityAdmissionDenied
+      # The admission metric has no pod labels; the audit error message names the pod, including
+      # names generated from generateName. Requires the pod-create rule in the Talos audit policy.
+      expr: |-
+        _time:5m "log.type":="kubernetes-audit" objectRef.resource:=pods verb:=create
+          responseStatus.code:=403 responseStatus.message:"violates PodSecurity"
+          -requestURI:"dryRun="
+          | extract 'pods "<pod>" is forbidden' from responseStatus.message
+          | rename objectRef.namespace as namespace, user.username as requester
+          | stats by (namespace, pod, requester) count() as denials
+      annotations:
+        summary: Pod Security Admission rejected pod {{ $labels.namespace }}/{{ $labels.pod }}
+        description: >-
+          {{ $labels.requester }} had {{ $value }} pod create requests rejected by Pod Security
+          Admission in the last five minutes.
+      labels:
+        severity: warning
