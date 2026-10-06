@@ -15,7 +15,7 @@
     {
       description: "Python (mise) - Link to official changelog documentation",
       matchManagers: ["mise"],
-      matchPackageNames: ["python"],
+      matchDepNames: ["python"],
       changelogUrl: "https://docs.python.org/3/whatsnew/changelog.html"
     },
     {

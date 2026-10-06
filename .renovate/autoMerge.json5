@@ -19,10 +19,11 @@
     {
       // Generalized rule at the top so it can be overridden
       // kubectl excluded: it must group with kubelet (Kubernetes group) to prevent
-      // version drift that broke kube-scheduler when Talos 1.13.2 shipped 1.36 schema
+      // version drift that broke kube-scheduler when Talos 1.13.2 shipped 1.36 schema.
+      // Match depName: mise's kubectl packageName is kubernetes/kubernetes.
       description: "Auto-merge Mise Tools",
       matchManagers: ["mise"],
-      excludePackageNames: ["/kubectl/"],
+      matchDepNames: ["!kubectl"],
       automerge: true,
       automergeType: "pr",
       matchUpdateTypes: ["minor", "patch"],
@@ -34,7 +35,7 @@
       // breaking CLI tools. Only auto-merge patch versions (security fixes).
       description: "Disable auto-merge for Mise Python minor/major",
       matchManagers: ["mise"],
-      matchPackageNames: ["python"],
+      matchDepNames: ["python"],
       matchUpdateTypes: ["minor", "major"],
       automerge: false,
     },
@@ -43,13 +44,13 @@
       // latest patch at install time. Prevent Renovate from reintroducing patch versions.
       description: "Keep Python at major.minor only in mise",
       matchManagers: ["mise"],
-      matchPackageNames: ["python"],
+      matchDepNames: ["python"],
       allowedVersions: "/^\\d+\\.\\d+$/",
     },
     {
       description: "Auto-merge OCI charts and containers",
       matchDatasources: ["docker"],
-      excludePackageNames: ["/cilium/", "ghcr.io/rook/**"],
+      matchPackageNames: ["!/cilium/", "!ghcr.io/rook/**"],
       automerge: true,
       automergeType: "pr",
       matchUpdateTypes: ["patch", "digest"],
@@ -74,7 +75,7 @@
     },
     {
       description: "Disable auto-merge for all Talos-related packages",
-      matchPackageNames: ["/siderolabs/", "/talosctl/"],
+      matchPackageNames: ["/siderolabs/"],
       automerge: false,
     },
   ],

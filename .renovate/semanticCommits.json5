@@ -57,7 +57,13 @@
     },
     {
       description: "Label high-risk infrastructure upgrades",
-      matchPackageNames: ["/cilium/", "ghcr.io/rook/**", "/siderolabs/", "/talosctl/", "/kubelet/", "/kubectl/"],
+      matchPackageNames: ["/cilium/", "ghcr.io/rook/**", "/siderolabs/", "/kubelet/"],
+      addLabels: ["risk/high"],
+    },
+    {
+      // mise's kubectl packageName is kubernetes/kubernetes, so match its depName
+      description: "Label high-risk Kubernetes CLI upgrades",
+      matchDepNames: ["kubectl"],
       addLabels: ["risk/high"],
     }
   ]
