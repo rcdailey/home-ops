@@ -23,6 +23,11 @@ spec:
     monitoring:
       enabled: true
 
+    # Chart 1.21.0 reads this key but dropped its default, rendering
+    # ROOK_CREATE_CSI_OPERATOR_RESOURCES as null
+    csi:
+      createCsiOperatorResources: true
+
     resources:
       requests:
         cpu: 100m
