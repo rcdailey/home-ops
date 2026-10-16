@@ -21,7 +21,7 @@
     "github>rcdailey/home-ops//.renovate/customManagers.json5",
   ],
   // Runs after the 03:00-05:00 Talos upgrade window so automerged restarts never overlap drains
-  schedule: ["* 5 * * *"],
+  schedule: ["* 5-8 * * *"],
   dependencyDashboardTitle: "Renovate Dashboard 🤖",
   suppressNotifications: ["prEditedNotification", "prIgnoreNotification"],
   configMigration: true,
