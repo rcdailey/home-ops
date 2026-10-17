@@ -3,51 +3,26 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 
 bootstrap_dir := source_directory()
 kubernetes_dir := parent_directory(source_directory()) / "kubernetes"
-talos_dir := parent_directory(source_directory()) / "talos"
-nodes_file := talos_dir / "nodes.yaml"
+topf_file := parent_directory(source_directory()) / "talos" / "topf.yaml"
 
 [private]
 default:
     @just --list bootstrap
 
 [doc('Full Talos cluster bootstrap (fresh install)')]
-talos: talos-apply talos-bootstrap kubeconfig
+talos: talos-apply kubeconfig
     @just log info "Talos cluster bootstrap complete"
 
-[doc('Apply Talos config to all nodes')]
+[doc('Apply Talos config to all nodes and bootstrap etcd')]
 [private]
 talos-apply:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    for node in $(yq '.nodes | keys | .[]' "{{nodes_file}}"); do
-        ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
-        just log info "Applying config to $node ($ip)..."
-        if ! output=$(just talos render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin --insecure 2>&1); then
-            if [[ "$output" == *"certificate required"* ]]; then
-                just log info "Talos already configured, skipping" node="$node"
-                continue
-            fi
-            just log error "Failed to apply config" node="$node" output="$output"
-            exit 1
-        fi
-    done
-
-[doc('Bootstrap Kubernetes on first controller')]
-[private]
-talos-bootstrap:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    controller=$(yq '.nodes | to_entries | map(select(.value.controller == true)) | .[0].value.ip' "{{nodes_file}}")
-    until output=$(talosctl -n "$controller" bootstrap 2>&1 || true) && [[ "$output" == *"AlreadyExists"* ]]; do
-        just log info "Kubernetes bootstrap in progress, retrying in 5s..."
-        sleep 5
-    done
+    @just talos topf apply --auto-bootstrap
 
 [doc('Fetch kubeconfig from cluster')]
 kubeconfig:
     #!/usr/bin/env bash
     set -euo pipefail
-    controller=$(yq '.nodes | to_entries | map(select(.value.controller == true)) | .[0].value.ip' "{{nodes_file}}")
+    controller=$(yq '[.nodes[] | select(.role == "control-plane")][0].ip' "{{topf_file}}")
     talosctl kubeconfig -n "$controller" -f --force-context-name home-ops "{{parent_directory(source_directory())}}"
 
 [doc('Full apps bootstrap sequence')]

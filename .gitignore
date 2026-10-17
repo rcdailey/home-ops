@@ -5,6 +5,8 @@
 /github-push-token.txt
 kubeconfig
 talosconfig
+# `topf render` output contains cluster secrets
+/talos/output/
 /cluster.yaml
 /nodes.yaml
 *.local.toml

@@ -1,0 +1,42 @@
+---
+clusterName: home-ops
+clusterEndpoint: https://192.168.1.70:6443
+# renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
+kubernetesVersion: v1.37.1
+# renovate: datasource=docker depName=ghcr.io/siderolabs/talos
+talosVersion: v1.14.2
+schematicId: "@schematic.yaml"
+# Reads the Talos secrets bundle from the environment injected by `just talos topf`.
+secretsProvider: ./secrets-provider.sh
+
+nodes:
+  - host: marin
+    ip: 192.168.1.59
+    role: control-plane
+    data:
+      mac: "6c:1f:f7:28:66:bf"
+      diskModel: INTEL SSDSC2BA40
+  - host: sakura
+    ip: 192.168.1.62
+    role: control-plane
+    data:
+      mac: "6c:1f:f7:28:71:82"
+      diskModel: INTEL SSDSC2BA40
+  - host: hanekawa
+    ip: 192.168.1.63
+    role: control-plane
+    data:
+      mac: "6c:1f:f7:28:71:08"
+      diskModel: INTEL SSDSC2BA40
+  - host: lucy
+    ip: 192.168.1.54
+    role: worker
+    data:
+      mac: "6c:1f:f7:28:71:b4"
+      diskModel: MK0400GCTZA
+  - host: nami
+    ip: 192.168.1.50
+    role: worker
+    data:
+      mac: "6c:1f:f7:28:71:b8"
+      diskModel: MK0400GCTZA

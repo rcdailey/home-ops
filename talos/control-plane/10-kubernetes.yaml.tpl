@@ -1,15 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/main/pkg/machinery/config/schemas/config.schema.json
 ---
-machine:
-  type: controlplane
-  ca:
-    crt: {{ ENV.TALOS_MACHINE_CA_CRT }}
-    key: {{ ENV.TALOS_MACHINE_CA_KEY }}
 cluster:
   etcd:
-    ca:
-      crt: {{ ENV.TALOS_ETCD_CA_CRT }}
-      key: {{ ENV.TALOS_ETCD_CA_KEY }}
     extraArgs:
       listen-metrics-urls: http://0.0.0.0:2381
       auto-compaction-mode: periodic
@@ -22,22 +14,10 @@ kind: KubeNodeConfig
 labels:
   node-role.kubernetes.io/control-plane: ""
   node.kubernetes.io/exclude-from-external-load-balancers: ""
----
-apiVersion: v1alpha1
-kind: KubeAPIServerCAConfig
-issuingCA:
-  cert: |
-{{ ENV.TALOS_K8S_CA_PEM | indent(4, true) }}
-  key: |
-{{ ENV.TALOS_K8S_CA_KEY_PEM | indent(4, true) }}
----
-apiVersion: v1alpha1
-kind: KubeAggregatorCAConfig
-issuingCA:
-  cert: |
-{{ ENV.TALOS_K8S_AGGREGATOR_CA_PEM | indent(4, true) }}
-  key: |
-{{ ENV.TALOS_K8S_AGGREGATOR_CA_KEY_PEM | indent(4, true) }}
+# Control-plane nodes also run workloads.
+taints:
+  node-role.kubernetes.io/control-plane:
+    $patch: delete
 ---
 apiVersion: v1alpha1
 kind: KubeAdmissionControlConfig
@@ -52,9 +32,8 @@ configuration:
     enforce-version: latest
     warn: restricted
     warn-version: latest
+  # Lists append to the generated defaults, which already exempt the kube-system namespace.
   exemptions:
-    namespaces:
-      - kube-system
     runtimeClasses:
       # Workload allowlist: kubernetes/apps/kube-system/pod-security
       - psa-exempt
@@ -92,7 +71,7 @@ configuration:
     enabled: true
   jwt:
     - issuer:
-        url: https://auth.{{ ENV.SECRET_DOMAIN }}
+        url: https://auth.{{ env "SECRET_DOMAIN" }}
         audiences:
           - headlamp
       claimMappings:
@@ -117,28 +96,12 @@ name: rbac
 type: RBAC
 ---
 apiVersion: v1alpha1
-kind: KubeEtcdEncryptionConfig
-config:
-  resources:
-    - providers:
-        - secretbox:
-            keys:
-              - name: key2
-                secret: {{ ENV.TALOS_SECRETBOX_ENCRYPTION_SECRET }}
-        - identity: {}
-      resources:
-        - secrets
----
-apiVersion: v1alpha1
 kind: KubeServiceAccountConfig
 issuer:
-  privateKey: |
-{{ ENV.TALOS_K8S_SERVICEACCOUNT_KEY_PEM | indent(4, true) }}
   issuerURL: https://192.168.1.70:6443
 ---
 apiVersion: v1alpha1
 kind: KubeAPIServerConfig
-image: registry.k8s.io/kube-apiserver:{{ ENV.KUBERNETES_VERSION }}
 certExtraSANs:
   - 127.0.0.1
   - 192.168.1.70
@@ -149,7 +112,6 @@ extraArgs:
 ---
 apiVersion: v1alpha1
 kind: KubeControllerManagerConfig
-image: registry.k8s.io/kube-controller-manager:{{ ENV.KUBERNETES_VERSION }}
 extraArgs:
   bind-address: 0.0.0.0
   feature-gates: HPAScaleToZero=true
@@ -157,7 +119,6 @@ extraArgs:
 ---
 apiVersion: v1alpha1
 kind: KubeSchedulerConfig
-image: registry.k8s.io/kube-scheduler:{{ ENV.KUBERNETES_VERSION }}
 extraArgs:
   bind-address: 0.0.0.0
 config:
@@ -186,7 +147,6 @@ allowedKubernetesNamespaces:
 apiVersion: v1alpha1
 kind: KubeProxyConfig
 enabled: false
-image: registry.k8s.io/kube-proxy:{{ ENV.KUBERNETES_VERSION }}
 ---
 apiVersion: v1alpha1
 kind: KubeCoreDNSConfig

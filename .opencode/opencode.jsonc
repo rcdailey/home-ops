@@ -73,8 +73,26 @@
     { "action": "shell", "resource": "helm uninstall*", "effect": "deny" },
     { "action": "shell", "resource": "helm rollback*", "effect": "deny" },
 
+    // topf: node-mutating commands denied; dry-run is read-only. `secrets` can generate and
+    // store a new bundle.
+    { "action": "shell", "resource": "topf apply*", "effect": "deny" },
+    { "action": "shell", "resource": "topf apply*--dry-run*", "effect": "allow" },
+    { "action": "shell", "resource": "topf upgrade*", "effect": "deny" },
+    { "action": "shell", "resource": "topf upgrade*--dry-run*", "effect": "allow" },
+    { "action": "shell", "resource": "topf reset*", "effect": "deny" },
+    { "action": "shell", "resource": "topf secrets*", "effect": "deny" },
+
     // just commands: deny by default
     { "action": "shell", "resource": "just *", "effect": "deny" },
+    { "action": "shell", "resource": "just ensure-login", "effect": "allow" },
+    { "action": "shell", "resource": "just talos diff", "effect": "allow" },
+    { "action": "shell", "resource": "just talos nodes", "effect": "allow" },
+    { "action": "shell", "resource": "just talos etcd-status", "effect": "allow" },
+    { "action": "shell", "resource": "just talos topf render*", "effect": "allow" },
+    { "action": "shell", "resource": "just talos topf nodes*", "effect": "allow" },
+    { "action": "shell", "resource": "just talos topf schematic-ids", "effect": "allow" },
+    { "action": "shell", "resource": "just talos topf apply*--dry-run*", "effect": "allow" },
+    { "action": "shell", "resource": "just talos topf upgrade*--dry-run*", "effect": "allow" },
     {
       "action": "shell",
       "resource": "just infisical add-secret*",

@@ -1,6 +1,5 @@
-# Talos schematic for Talos Factory
-# Submit to: https://factory.talos.dev/schematics
-# Usage: just talos gen-schematic-id
+# Talos Image Factory schematic. topf derives the installer image ID from this file; after
+# editing it, run `just talos topf schematic-ids --submit-to-factory` once to register it.
 #
 # All nodes (controllers and workers) use identical schematic since they have
 # the same hardware (Intel NUCs with i915 GPU).

@@ -3,205 +3,87 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 
 talos_dir := source_directory()
 root_dir := parent_directory(talos_dir)
-nodes_file := talos_dir / "nodes.yaml"
-versions_file := talos_dir / "talenv.yaml"
+topf_file := talos_dir / "topf.yaml"
 
 [private]
 default:
     @just --list talos
 
-# Resolve node name (with fzf fallback), print "name ip is_controller"
+# Raw topf access with Infisical secrets, for targeting and debugging beyond the recipes below.
 [private]
-resolve-node node prompt:
+[positional-arguments]
+topf *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    node="{{node}}"
-    if [ -z "$node" ]; then
-        node=$(just talos select-node "{{prompt}}")
-    fi
-    ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
-    if [ -z "$ip" ] || [ "$ip" = "null" ]; then
-        echo "[error] Unknown node: $node" >&2
-        exit 1
-    fi
-    controller=$(yq ".nodes.$node.controller" "{{nodes_file}}")
-    echo "$node $ip $controller"
-
-# Interactive node selection helper
-[private]
-select-node prompt="Select node":
-    @yq '.nodes | keys | .[]' "{{nodes_file}}" | fzf --prompt="{{prompt}}: "
-
-# Return first control plane node IP
-[private]
-cp-ip:
-    @yq '.nodes | to_entries | map(select(.value.controller == true)) | .[0].value.ip' "{{nodes_file}}"
-
-# Prints "--insecure" to stdout if node is in maintenance mode, warns on stderr.
-# Uses "get machinestatus --insecure" as the probe because "version --insecure" is not
-# implemented in the maintenance service. If the probe fails (node running normally,
-# unreachable, or bad certs), outputs nothing and lets the actual command handle it.
-[private]
-detect-insecure node_ip:
-    #!/usr/bin/env bash
-    if timeout 3 talosctl get machinestatus --insecure -n "{{node_ip}}" &>/dev/null; then
-        echo -e "\033[33m[warn] Node is in maintenance mode, using insecure connection\033[0m" >&2
-        echo "--insecure"
-    fi
-
-# Fails if etcd cluster is not fully healthy (all CP members present and responding)
-[private]
-require-etcd-healthy:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cp_ip=$(just talos cp-ip)
-    expected=$(yq '[.nodes | to_entries[] | select(.value.controller == true)] | length' "{{nodes_file}}")
-    output=$(talosctl etcd members -n "$cp_ip" 2>&1)
-    actual=$(echo "$output" | tail -n +2 | grep -c '[^[:space:]]' || true)
-    if [[ "$actual" -ne "$expected" ]]; then
-        echo "$output" >&2
-        just log error "etcd has $actual members (expected $expected)"
-        exit 1
-    fi
-    if ! talosctl etcd status -n "$cp_ip" &>/dev/null; then
-        just log error "etcd status check failed"
-        exit 1
-    fi
-
-[doc('List available Talos nodes with IPs')]
-list-nodes:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    for node in $(yq '.nodes | keys | .[]' "{{nodes_file}}"); do
-        ip=$(yq ".nodes.$node.ip" "{{nodes_file}}")
-        controller=$(yq ".nodes.$node.controller" "{{nodes_file}}")
-        role=$([[ "$controller" == "true" ]] && echo "control-plane" || echo "worker")
-        just log info "$node ($ip) [$role]"
-    done
-
-[doc('Show disks on a node (auto-detects maintenance mode)')]
-get-disks node="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    read -r node ip _ <<< "$(just talos resolve-node "{{node}}" "Select node")"
-    flags=$(just talos detect-insecure "$ip")
-    talosctl get disks -n "$ip" $flags
-
-[doc('Initialize talosconfig from Infisical secrets')]
-init-config:
-    @just template "{{talos_dir}}/talosconfig.yaml.j2" "{{nodes_file}}" > "{{talos_dir}}/talosconfig"
-
-[doc('Render Talos config for a node')]
-render-config node:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    export TALOS_VERSION=$(yq '.talosVersion' "{{versions_file}}")
-    export KUBERNETES_VERSION=$(yq '.kubernetesVersion' "{{versions_file}}")
-    if [[ $(yq '.nodes.{{node}}.controller' "{{nodes_file}}") == "true" ]]; then
-        role=controlplane
-    else
-        role=worker
-    fi
     just ensure-login
-    infisical run --env=prod --path=/bootstrap -- bash -c '
-        set -euo pipefail
-        export TALOS_K8S_CA_PEM=$(printf "%s" "$TALOS_K8S_CA_CRT" | base64 --decode)
-        export TALOS_K8S_CA_KEY_PEM=$(printf "%s" "$TALOS_K8S_CA_KEY" | base64 --decode)
-        export TALOS_K8S_AGGREGATOR_CA_PEM=$(
-            printf "%s" "$TALOS_K8S_AGGREGATOR_CA_CRT" | base64 --decode
-        )
-        export TALOS_K8S_AGGREGATOR_CA_KEY_PEM=$(
-            printf "%s" "$TALOS_K8S_AGGREGATOR_CA_KEY" | base64 --decode
-        )
-        export TALOS_K8S_SERVICEACCOUNT_KEY_PEM=$(
-            printf "%s" "$TALOS_K8S_SERVICEACCOUNT_KEY" | base64 --decode
-        )
-        talosctl machineconfig patch \
-            <(minijinja-cli "$1") \
-            -p @<(minijinja-cli "$2") \
-            -p @<(minijinja-cli "$3" -D "node=$4" "$5")
-    ' _ \
-        "{{talos_dir}}/machine/cluster.yaml.j2" \
-        "{{talos_dir}}/machine/$role.yaml.j2" \
-        "{{talos_dir}}/machine/node.yaml.j2" \
-        "{{node}}" \
-        "{{nodes_file}}"
+    cd "{{talos_dir}}"
+    infisical run --silent --env=prod --path=/bootstrap -- topf "$@"
 
-[doc('Validate rendered Talos configs')]
-validate-config:
+[doc('Summarize changes on all nodes, confirm once, then apply one node at a time')]
+apply:
     #!/usr/bin/env bash
     set -euo pipefail
-    for node in $(yq '.nodes | keys | .[]' "{{nodes_file}}"); do
-        output=$(just talos render-config "$node" |
-            talosctl validate --config /dev/stdin --mode metal 2>&1) || {
-            printf '%s: %s\n' "$node" "$output" >&2
-            exit 1
-        }
-        if rg -q '^WARNING:' <<< "$output"; then
-            printf '%s: %s\n' "$node" "$output" >&2
-            exit 1
-        fi
-        just log info "$node config is valid"
-    done
+    just ensure-login
+    cd "{{talos_dir}}"
+    infisical run --silent --env=prod --path=/bootstrap -- ./apply.sh
 
-[doc('Diff rendered config against applied config on node')]
-diff-config node="":
+[doc('Apply config to one node')]
+apply-node node:
+    @just talos topf apply --nodes-filter '^{{node}}$'
+
+[doc('Preview config changes on all nodes (exits non-zero when changes exist)')]
+diff:
+    @just talos topf apply --dry-run
+
+[doc('Show stage, readiness, and Talos version of every node')]
+nodes:
+    @just talos topf nodes
+
+[confirm("Drain the node, remove it from etcd, wipe its system disk, and shut it down?")]
+[doc('Reset a node: drain, leave etcd, wipe the system disk, shut down')]
+reset-node node:
+    @just talos topf reset --shutdown --confirm=false --nodes-filter '^{{node}}$'
+
+[doc('Show disks on a node, including one booted from the installer (maintenance mode)')]
+get-disks node:
     #!/usr/bin/env bash
     set -euo pipefail
-    read -r node ip _ <<< "$(just talos resolve-node "{{node}}" "Select node to diff")"
-    just talos render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin --dry-run
+    ip=$(NODE="{{node}}" yq '.nodes[] | select(.host == strenv(NODE)) | .ip' "{{topf_file}}")
+    [[ -n "$ip" ]] || { echo "[error] Unknown node: {{node}}" >&2; exit 1; }
+    # The maintenance service has no client certs yet, so it only answers --insecure requests.
+    insecure=$(timeout 3 talosctl get machinestatus --insecure -n "$ip" &>/dev/null &&
+        echo --insecure || true)
+    talosctl get disks -n "$ip" $insecure
 
-[doc('Apply Talos config to a node (auto-detects maintenance mode)')]
-apply-node node="" *flags="":
+[doc('Generate talosconfig from the cluster secrets bundle')]
+init-config:
+    @just talos topf talosconfig > "{{talos_dir}}/talosconfig"
+
+[doc('Download the installer ISO for the Talos version and schematic in topf.yaml')]
+download-image:
     #!/usr/bin/env bash
     set -euo pipefail
-    read -r node ip _ <<< "$(just talos resolve-node "{{node}}" "Select node to apply config")"
-    insecure=$(just talos detect-insecure "$ip")
-    just log info "Applying config to $node ($ip)..."
-    just talos render-config "$node" | talosctl apply-config -n "$ip" -f /dev/stdin $insecure {{flags}}
-
-[doc('Generate schematic ID from Talos factory')]
-gen-schematic-id:
-    @just template "{{talos_dir}}/schematic.yaml.j2" | \
-        curl -sX POST --data-binary @- "https://factory.talos.dev/schematics" | jq -r '.id'
-
-[doc('Download Talos machine image')]
-download-image version schematic:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    schematic="{{schematic}}"
-    short_schematic="${schematic:0:8}"
-    output="{{talos_dir}}/talos-{{version}}-${short_schematic}.iso"
-    just log info "Downloading Talos {{version}}..." schematic="{{schematic}}"
-    curl -sfL --retry 5 --retry-delay 5 --retry-all-errors \
-        -o "$output" \
-        "https://factory.talos.dev/image/{{schematic}}/{{version}}/metal-amd64.iso"
+    version=$(yq '.talosVersion' "{{topf_file}}")
+    schematic=$(just talos topf schematic-ids)
+    output="{{talos_dir}}/talos-${version}-${schematic:0:8}.iso"
+    just log info "Downloading Talos $version..." schematic="$schematic"
+    curl -sfL --retry 5 --retry-delay 5 --retry-all-errors -o "$output" \
+        "https://factory.talos.dev/image/$schematic/$version/metal-amd64.iso"
     just log info "Downloaded" path="$output"
 
-[doc('Verify etcd cluster health')]
-check-etcd:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just talos require-etcd-healthy
-    just log info "etcd is healthy"
-
-[doc('Show etcd members and status')]
+[doc('Show etcd status from every control-plane node; fails if one does not respond')]
 etcd-status:
     #!/usr/bin/env bash
     set -euo pipefail
-    cp_ip=$(just talos cp-ip)
-    just log info "etcd members:"
-    talosctl etcd members -n "$cp_ip"
-    echo
-    just log info "etcd status:"
-    talosctl etcd status -n "$cp_ip"
+    nodes=$(yq '[.nodes[] | select(.role == "control-plane") | .ip] | join(",")' "{{topf_file}}")
+    talosctl etcd status -n "$nodes"
 
-[doc('Take an etcd snapshot (checks health first)')]
+[doc('Take an etcd snapshot once every control-plane etcd member responds')]
 etcd-snapshot:
     #!/usr/bin/env bash
     set -euo pipefail
-    just talos require-etcd-healthy
-    cp_ip=$(just talos cp-ip)
+    just talos etcd-status
+    cp_ip=$(yq '[.nodes[] | select(.role == "control-plane")][0].ip' "{{topf_file}}")
     timestamp=$(date +%Y%m%d-%H%M%S)
     output="{{root_dir}}/etcd-backup-${timestamp}.snapshot"
     checksum="${output}.sha256"
@@ -212,81 +94,3 @@ etcd-snapshot:
     chmod 600 "$checksum"
     sha256sum --check "$checksum"
     just log info "Snapshot and checksum saved" snapshot="$output" checksum="$checksum"
-
-[doc('Reboot a node')]
-reboot-node node="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    read -r node ip _ <<< "$(just talos resolve-node "{{node}}" "Select node to reboot")"
-    just log info "Rebooting $node ($ip)..."
-    talosctl -n "$ip" reboot
-
-[doc('Shutdown a node')]
-shutdown-node node="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    read -r node ip _ <<< "$(just talos resolve-node "{{node}}" "Select node to shutdown")"
-    just log info "Shutting down $node ($ip)..."
-    talosctl -n "$ip" shutdown --force
-
-[confirm("This will reset the node (cordon, drain, wipe disk, shutdown). Continue?")]
-[doc('Reset a single node (checks etcd health first for CP nodes)')]
-reset-node node="" *flags="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    read -r node ip is_cp <<< "$(just talos resolve-node "{{node}}" "Select node to reset")"
-    if [[ "$is_cp" == "true" ]]; then
-        just talos require-etcd-healthy
-    fi
-    just log info "Resetting $node ($ip)..."
-    talosctl reset -n "$ip" {{flags}}
-
-[doc('Remove a node from Kubernetes')]
-remove-node node="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    read -r node _ _ <<< "$(just talos resolve-node "{{node}}" "Select node to remove")"
-    just log info "Removing Kubernetes node $node..."
-    kubectl delete node "$node" --ignore-not-found
-
-[doc('Verify node health after maintenance (includes etcd for CP nodes)')]
-verify-node node="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    read -r node ip is_cp <<< "$(just talos resolve-node "{{node}}" "Select node to verify")"
-    just log info "Kubernetes node status:"
-    kubectl get node "$node"
-    echo
-    just log info "Talos version:"
-    talosctl version -n "$ip" --short
-    echo
-    just log info "Disks:"
-    talosctl get disks -n "$ip"
-    if [[ "$is_cp" == "true" ]]; then
-        echo
-        just log info "etcd members:"
-        talosctl etcd members -n "$ip"
-        echo
-        just log info "etcd status:"
-        talosctl etcd status -n "$ip"
-    fi
-
-[doc('Upgrade Talos on a node')]
-upgrade-node node="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    read -r node ip _ <<< "$(just talos resolve-node "{{node}}" "Select node to upgrade")"
-    image=$(
-        just talos render-config "$node" |
-            yq 'select(.kind == "UnattendedInstallConfig").installer.image'
-    )
-    just log info "Upgrading $node ($ip)..." image="$image"
-    talosctl upgrade -n "$ip" --image "$image" --timeout=10m
-
-[doc('Upgrade Kubernetes version')]
-upgrade-k8s version:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    controller=$(just talos cp-ip)
-    just log info "Upgrading Kubernetes to {{version}}..." controller="$controller"
-    talosctl -n "$controller" upgrade-k8s --to {{version}}

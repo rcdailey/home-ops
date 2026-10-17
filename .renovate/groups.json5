@@ -33,7 +33,7 @@
       minimumGroupSize: 2,
     },
     {
-      // Groups Kubernetes version upgrades across mise (kubectl), tuppr, and talenv (kubelet).
+      // Groups Kubernetes version upgrades across mise (kubectl), tuppr, and topf.yaml (kubelet).
       // Match depName: mise's kubectl packageName is kubernetes/kubernetes.
       description: "Kubernetes Group",
       groupName: "Kubernetes",

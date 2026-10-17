@@ -69,6 +69,12 @@ Prerequisites: [mise](https://mise.jdx.dev/installing-mise.html) installed.
 
 Bootstrap a new cluster from scratch:
 
+1. Download the installer ISO, then boot every node from it (maintenance mode):
+
+   ```bash
+   just talos download-image
+   ```
+
 1. Bootstrap Talos cluster:
 
    ```bash
@@ -82,8 +88,8 @@ Bootstrap a new cluster from scratch:
    ```
 
 Bootstrap restores the cluster's declared state, but it does not restore application volumes or
-PostgreSQL contents. See the [backup architecture][backup-architecture] and [CNPG recovery
-runbook][cnpg-recovery] before recovering data.
+PostgreSQL contents. See the [backup architecture][backup-architecture] and
+[CNPG recovery runbook][cnpg-recovery] before recovering data.
 
 [backup-architecture]: docs/architecture/backup-strategy.md
 [cnpg-recovery]: docs/runbooks/cnpg-recovery.md
