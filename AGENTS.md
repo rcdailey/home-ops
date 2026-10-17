@@ -161,9 +161,9 @@ identities.
   application or require a Collector sidecar.
 - Use auto-instrumentation for owned code with tests. Inject agents into third-party workloads only
   after app-specific runtime and startup validation; never enable agents cluster-wide.
-- Keep application-specific log parsing in app-owned OpenTelemetry Collector sidecars. Each
-  sidecar consumer MUST mount a Collector trigger ConfigMap per
-  `docs/architecture/observability.md`; injected sidecars never update in place.
+- Keep application-specific log parsing in app-owned OpenTelemetry Collector sidecars. Each sidecar
+  consumer MUST mount a Collector trigger ConfigMap per `docs/architecture/observability.md`;
+  injected sidecars never update in place.
 - Use `observability.home-ops/logs=true` for node collection. It includes every container; do not
   add container exclusions.
 
@@ -204,12 +204,17 @@ reference repositories before designing a new pattern:
 - dsluo/homelab
 - aclerici38/home-ops
 
-Agents MUST NOT run broad `just reconcile`, `helm template`, `just talos diff-config`, or `just
-talos apply-node` commands. Targeted `flux reconcile` is allowed for a bounded operational
-transition after its durable state is in Git. Use `hops flux values` and `hops flux defaults`
-instead of Helm values commands.
+Agents MUST NOT run broad `just reconcile`, `helm template`, or node-mutating `topf` commands
+(`apply` or `upgrade` without `--dry-run`, `reset`). Targeted `flux reconcile` is allowed for a
+bounded operational transition after its durable state is in Git. Use `hops flux values` and
+`hops flux defaults` instead of Helm values commands.
 
 Run standalone script help before use rather than relying on a command catalog in this file.
+
+### Dependency upgrades
+
+Upgrade PRs labeled `status/hold` MUST be skipped unconditionally: do not select, analyze, or merge
+them, even when named explicitly. List them as skipped with the reason `hold`.
 
 ### Conventional commits
 
