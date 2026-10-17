@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
 - ./helmrelease.yaml
 - ./oidcclient.yaml
+- ./pvc.yaml
 configMapGenerator:
 - name: garage-ui-config
   files:

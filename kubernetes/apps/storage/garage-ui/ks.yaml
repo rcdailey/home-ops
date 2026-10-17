@@ -28,3 +28,5 @@ spec:
     namespace: flux-system
   - name: pocket-id-operator
     namespace: default
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
