@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from fnmatch import fnmatchcase
+
 import click
 from homeassistant_api.errors import EndpointNotFoundError
 
@@ -14,9 +16,17 @@ from hass._errors import die
 @click.option("-n", "limit", type=int, help=f"Limit results (default: {DEFAULT_LIMIT})")
 @click.option("--all", "no_limit", is_flag=True, help="No limit")
 def cli(targets: tuple[str, ...], limit: int | None, no_limit: bool) -> None:
-    """List entities. No args: domain summary. One domain: list. Entity IDs: details."""
+    """List entities. No args: domain summary. One domain: list. Entity IDs: details.
+
+    A single glob pattern (e.g. 'sensor.*temp*') lists matching entities like a domain.
+    """
     with get_client() as client:
-        entity_targets = [t for t in targets if "." in t]
+        pattern = (
+            targets[0]
+            if len(targets) == 1 and any(c in targets[0] for c in "*?[")
+            else None
+        )
+        entity_targets = [] if pattern else [t for t in targets if "." in t]
         # All targets are entity_ids -> return per-entity details
         if entity_targets and len(entity_targets) == len(targets):
             results = []
@@ -34,7 +44,7 @@ def cli(targets: tuple[str, ...], limit: int | None, no_limit: bool) -> None:
 
         states = client.get_states()
         if targets:
-            domain = targets[0]
+            match = pattern or f"{targets[0]}.*"
             filtered = [
                 {
                     "entity_id": s.entity_id,
@@ -42,7 +52,7 @@ def cli(targets: tuple[str, ...], limit: int | None, no_limit: bool) -> None:
                     "name": s.attributes.get("friendly_name", ""),
                 }
                 for s in states
-                if s.entity_id.startswith(f"{domain}.")
+                if fnmatchcase(s.entity_id, match)
             ]
             cap = None if no_limit else (limit or DEFAULT_LIMIT)
             if cap:

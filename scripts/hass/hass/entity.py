@@ -10,7 +10,7 @@ from hass._errors import die
 
 @click.group()
 def cli() -> None:
-    """Enable, disable, or rename entities."""
+    """Enable, disable, rename, or remove entities."""
 
 
 def _set_disabled(entity_id: str, disabled_by: str | None) -> None:
@@ -73,5 +73,25 @@ def rename(entity_id: str, new_name: str | None) -> None:
         shown = entry.get("name") or entry.get("original_name") or "(none)"
         source = "override" if entry.get("name") else "inherited from device"
         click.echo(f"{entry['entity_id']}: {shown} ({source})")
+
+    run_ws(handler)
+
+
+@cli.command()
+@click.argument("entity_id")
+def remove(entity_id: str) -> None:
+    """Remove an entity from the entity registry.
+
+    Intended for orphans whose integration no longer provides them. An entity that its
+    integration still provides is re-registered on the next reload.
+    """
+
+    async def handler(send):
+        msg = await send(
+            {"type": "config/entity_registry/remove", "entity_id": entity_id}
+        )
+        if not msg.get("success"):
+            die(ws_error(msg))
+        click.echo(f"{entity_id}: removed")
 
     run_ws(handler)
