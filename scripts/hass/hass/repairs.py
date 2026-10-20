@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from hass._client import run_ws, ws_error
+from hass._client import print_json, run_ws, ws_error
 from hass._errors import die
 
 
@@ -36,7 +36,13 @@ def cli(ctx: click.Context) -> None:
 
 
 @cli.command("list")
-def list_cmd() -> None:
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    help="Full issue records, including translation placeholders with the specifics",
+)
+def list_cmd(as_json: bool = False) -> None:
     """List active (non-dismissed) repairs."""
 
     async def handler(send):
@@ -44,6 +50,9 @@ def list_cmd() -> None:
         issues = [
             i for i in msg.get("result", {}).get("issues", []) if not i.get("ignored")
         ]
+        if as_json:
+            print_json(issues)
+            return
         if not issues:
             click.echo("(no repairs)")
             return
