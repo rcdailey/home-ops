@@ -1,4 +1,5 @@
 *.key
+/age.txt
 *.pub
 *.decrypted~*.yaml
 /cloudflare-tunnel.json

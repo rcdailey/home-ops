@@ -99,8 +99,7 @@ creates this PVC; to resize it, patch the live PVC and then update `KOPIUR_CAPAC
 - Use `ExternalSecret` with `external-secrets.io/v1` and path `/namespace/app-name/secret-name`.
 - Prefer `envFrom`, then `env.valueFrom`, then HelmRelease `valuesFrom`.
 - Use `configMapGenerator`; do not create raw ConfigMap resources.
-- Use `postBuild.substituteFrom` only for the centrally managed `cluster-secrets` and
-  `email-secrets` objects.
+- Use `postBuild.substituteFrom` only for the centrally managed `cluster-secrets` object.
 
 ## Optional patterns
 

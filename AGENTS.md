@@ -69,17 +69,20 @@ suspend/resume. Those exceptions do not permit unrelated cluster mutations.
 
 ### Secrets and Configuration
 
-- **NEVER use secret.sops.yaml files** - Obsolete pattern replaced by ExternalSecret with Infisical
-  ClusterSecretStore
+- **App secrets MUST use ExternalSecret with the Infisical ClusterSecretStore**
 - **NEVER use postBuild.substituteFrom for app secrets** - Timing race condition with ExternalSecret
   creation causes failures
-- **ONLY use postBuild.substituteFrom for**: cluster-secrets, email-secrets (pre-existing SOPS
-  secrets managed centrally)
+- **ONLY use postBuild.substituteFrom for cluster-secrets** - Centrally managed by a
+  ClusterExternalSecret
 - **NEVER use raw ConfigMap resources** - ALWAYS use configMapGenerator in kustomization.yaml with
   files from config/ subdirectory
 - **NEVER read, reference, or document `.local` files** (e.g., `.mise.local.toml`, `.envrc.local`).
   These are unversioned and contain secrets/credentials that MUST NOT appear in agent output,
   commits, or documentation.
+- **Tooling secrets live age-encrypted in `.config/mise/conf.d/secrets.toml`** - mise decrypts them
+  into the environment with gitignored `age.txt`, which `scripts/age-key.sh` restores from rbw. Add
+  or update one only with `just secret add <KEY>`; never edit ciphertext by hand. MUST NOT print
+  decrypted values; check presence with `[[ -n ${KEY:-} ]]`.
 
 ### Scaling
 

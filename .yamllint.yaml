@@ -9,8 +9,6 @@ rules:
   line-length:
     max: 200
     level: warning
-    ignore: |
-      .*\.sops\.yaml$
 
   # Document start markers are optional in Kubernetes
   document-start: disable

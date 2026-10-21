@@ -36,7 +36,7 @@
     "git@example.com",
     "227055450+renohate[bot]@users.noreply.github.com",
   ],
-  ignorePaths: ["**/*.sops.*", "**/resources/**"],
+  ignorePaths: ["**/resources/**"],
   flux: {
     managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
   },

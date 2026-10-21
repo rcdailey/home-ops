@@ -7,6 +7,7 @@ mod talos "talos"
 # Single-file structure must be used when no other supporting files exist
 mod infisical ".justfiles/infisical.just"
 mod kubernetes ".justfiles/kubernetes.just"
+mod secret ".justfiles/secret.just"
 
 # Directory variables
 root_dir := justfile_directory()

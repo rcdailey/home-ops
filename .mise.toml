@@ -1,3 +1,8 @@
+[settings]
+# age-encrypted [env] values require experimental features
+experimental = true
+age.key_file = "age.txt"
+
 [env]
 KUBECONFIG = "{{config_root}}/kubeconfig"
 MINIJINJA_CONFIG_FILE = "{{config_root}}/.minijinja.toml"
@@ -43,7 +48,6 @@ ripgrep = "latest"
 ruff = "latest"
 shellcheck = "latest"
 shfmt = "latest"
-sops = "latest"
 talosctl = "1.14.4"
 "github:postfinance/topf" = "latest"
 "github:simulot/immich-go" = "latest"

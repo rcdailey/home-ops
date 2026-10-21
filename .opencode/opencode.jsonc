@@ -21,6 +21,28 @@
   "permissions": [
     { "action": "read", "resource": "*.local", "effect": "deny" },
     { "action": "read", "resource": "*.local.*", "effect": "deny" },
+    { "action": "read", "resource": "age.txt", "effect": "deny" },
+    { "action": "read", "resource": "*/age.txt", "effect": "deny" },
+
+    // mise decrypts age-encrypted env secrets; block commands that print them or write
+    // secrets outside `just secret`
+    { "action": "shell", "resource": "*mise env*", "effect": "deny" },
+    { "action": "shell", "resource": "*mise set*", "effect": "deny" },
+    { "action": "shell", "resource": "*mise e *", "effect": "deny" },
+    { "action": "shell", "resource": "*mise e", "effect": "deny" },
+    { "action": "shell", "resource": "*mise ev *", "effect": "deny" },
+    // Same subcommands after global flags, e.g. `mise -q env`
+    { "action": "shell", "resource": "*mise * env*", "effect": "deny" },
+    { "action": "shell", "resource": "*mise * e *", "effect": "deny" },
+    { "action": "shell", "resource": "*mise * e", "effect": "deny" },
+    { "action": "shell", "resource": "*mise * ev *", "effect": "deny" },
+    { "action": "shell", "resource": "*mise * set *", "effect": "deny" },
+    { "action": "shell", "resource": "*age.txt*", "effect": "deny" },
+    { "action": "shell", "resource": "*--no-redact*", "effect": "deny" },
+    { "action": "shell", "resource": "*--age-encrypt*", "effect": "deny" },
+    { "action": "shell", "resource": "env", "effect": "deny" },
+    { "action": "shell", "resource": "env |*", "effect": "deny" },
+    { "action": "shell", "resource": "*printenv*", "effect": "deny" },
 
     { "action": "shell", "resource": "*git commit*", "effect": "ask" },
     { "action": "shell", "resource": "*git push*", "effect": "allow" },
@@ -85,6 +107,7 @@
     // just commands: deny by default
     { "action": "shell", "resource": "just *", "effect": "deny" },
     { "action": "shell", "resource": "just ensure-login", "effect": "allow" },
+    { "action": "shell", "resource": "just secret *", "effect": "ask" },
     { "action": "shell", "resource": "just talos diff", "effect": "allow" },
     { "action": "shell", "resource": "just talos nodes", "effect": "allow" },
     { "action": "shell", "resource": "just talos etcd-status", "effect": "allow" },
