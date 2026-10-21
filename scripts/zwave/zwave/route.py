@@ -76,10 +76,17 @@ def clear(node_id: int) -> None:
         to_node = await session.send(
             "controller.remove_priority_route", destinationNodeId=node_id
         )
-        to_controller = await session.send(
+        # Deleting drops every return route, not just the forced one, so the
+        # node needs automatic ones reassigned to keep reporting reliably.
+        deleted = await session.send(
             "controller.delete_suc_return_routes", nodeId=node_id
         )
-        return to_node.get("success"), to_controller.get("success")
+        assigned = await session.send(
+            "controller.assign_suc_return_routes", nodeId=node_id
+        )
+        return to_node.get("success"), deleted.get("success") and assigned.get(
+            "success"
+        )
 
     to_node, to_controller = run(handler)
     click.echo(f"controller to node: {'cleared' if to_node else 'FAILED'}")
