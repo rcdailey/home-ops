@@ -3,6 +3,8 @@
 *.pub
 *.decrypted~*.yaml
 /cloudflare-tunnel.json
+# cf CLI local cache (account IDs)
+/.cloudflare/
 /github-push-token.txt
 kubeconfig
 talosconfig

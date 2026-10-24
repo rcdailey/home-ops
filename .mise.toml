@@ -30,6 +30,8 @@ kubectl = "1.37.1"
 "krew:cnpg" = "latest"
 # Not in the official krew index yet; kubectl discovers plugins by the kubectl-kopiur name
 "github:home-operations/kopiur" = { version = "latest", rename_exe = "kubectl-kopiur" }
+# mise "latest" skips prereleases and resolves to the obsolete 0.x line
+"npm:cf" = "1.0.0-beta.21"
 "npm:@doist/outline-cli" = { version = "latest", allow_low_downloads = true }
 kustomize = "latest"
 markdownlint-cli2 = "latest"
