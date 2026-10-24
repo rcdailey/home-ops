@@ -218,6 +218,8 @@ bounded operational transition after its durable state is in Git. Use `hops flux
 
 Run standalone script help before use rather than relying on a command catalog in this file.
 
+Use the `cf` CLI for Cloudflare work, not raw API requests; load the `cloudflare-cli` skill first.
+
 ### Dependency upgrades
 
 Upgrade PRs labeled `status/hold` MUST be skipped unconditionally: do not select, analyze, or merge
