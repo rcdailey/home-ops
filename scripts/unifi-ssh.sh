@@ -9,7 +9,8 @@
 #   -i           case-insensitive filter (applies to -f/-F)
 #   -n N         limit output to first N lines (remote head -n N)
 #
-# Set UNIFI_SSH_USER to override the controller's default device SSH user (admin).
+# The UniFi OS console (the UNIFI_URL host) only accepts root; adopted devices use the
+# controller's device SSH user (admin).
 #
 # Filters exist because ripgrep is not available on UniFi devices; this wrapper
 # lets the caller avoid typing 'grep' / 'head' in the local command string.
@@ -24,7 +25,6 @@ filter=""
 filter_v=""
 nocase=""
 head_n=""
-ssh_user="${UNIFI_SSH_USER:-admin}"
 
 while getopts "f:F:in:" opt; do
   case "$opt" in
@@ -39,6 +39,32 @@ shift $((OPTIND - 1))
 
 host="${1:?host required (ip or name)}"
 shift
+
+# Prints the IPv4 address of a name or literal, using the platform resolver (Linux or macOS).
+resolve_ipv4() {
+  if [[ "$1" =~ ^[0-9]+(\.[0-9]+){3}$ ]]; then
+    echo "$1"
+  elif command -v getent >/dev/null; then
+    getent ahostsv4 "$1" | awk 'NR == 1 { print $1 }'
+  else
+    dscacheutil -q host -a name "$1" | awk '/^ip_address:/ { print $2; exit }'
+  fi
+}
+
+console_host="${UNIFI_URL:?UNIFI_URL required}"
+console_host="${console_host#*://}"
+console_host="${console_host%%[:/]*}"
+console_ip="$(resolve_ipv4 "$console_host" || true)"
+host_ip="$(resolve_ipv4 "$host" || true)"
+if [[ -z "$console_ip" || -z "$host_ip" ]]; then
+  echo "cannot resolve ${host} or console ${console_host}" >&2
+  exit 2
+fi
+
+ssh_user="admin"
+if [[ "$host_ip" == "$console_ip" ]]; then
+  ssh_user="root"
+fi
 
 remote_cmd="$*"
 if [[ -n "$filter" ]]; then
