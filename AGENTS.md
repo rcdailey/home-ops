@@ -192,6 +192,10 @@ When documenting an investigation, read `docs/investigations/TEMPLATE.md`, creat
 move durable decisions into ADRs, and cross-reference them. Investigations are historical snapshots;
 do not update them when later decisions supersede their conclusions.
 
+Changes made outside GitOps to network infrastructure (UniFi console or settings, Cloudflare) MUST
+get a dated record in `docs/network/` stating the change, its reason, and how to verify or revert
+it.
+
 ## Reference and operations
 
 This repository is `rcdailey/home-ops`. Current cluster inventory is in
