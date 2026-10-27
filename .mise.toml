@@ -16,7 +16,7 @@ krew = "https://github.com/soupglasses/mise-krew"
 [tools]
 crane = "latest"
 delta = "latest"
-flux2 = "2.9.6"
+flux2 = "2.10.0"
 fzf = "latest"
 gh = "latest"
 gitleaks = "latest"
