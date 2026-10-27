@@ -25,7 +25,7 @@ spec:
     manager:
       collectorImage:
         repository: otel/opentelemetry-collector-k8s
-        tag: 0.163.1
+        tag: 0.164.0
       resources:
         limits:
           memory: 256Mi
