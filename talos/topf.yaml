@@ -4,7 +4,7 @@ clusterEndpoint: https://192.168.1.70:6443
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
 kubernetesVersion: v1.37.1
 # renovate: datasource=docker depName=ghcr.io/siderolabs/talos
-talosVersion: v1.14.4
+talosVersion: v1.14.5
 schematicId: "@schematic.yaml"
 # Reads the Talos secrets bundle from the environment injected by `just talos topf`.
 secretsProvider: ./secrets-provider.sh
