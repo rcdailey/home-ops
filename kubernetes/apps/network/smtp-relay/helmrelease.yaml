@@ -27,7 +27,7 @@ spec:
           app:
             image:
               repository: docker.io/boky/postfix
-              tag: v5.1.0
+              tag: 5.2.0
             env:
               TZ: America/Chicago
               ALLOWED_SENDER_DOMAINS: ${SECRET_DOMAIN}
