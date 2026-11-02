@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
 - ocirepository.yaml
 - helmrelease.yaml
+- storageclass-cephfs-snapshot.yaml
 - httproute.yaml
 - externalsecret.yaml
 - grafanadashboard.yaml
