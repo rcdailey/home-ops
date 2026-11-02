@@ -23,7 +23,6 @@
     { "action": "read", "resource": "*.local.*", "effect": "deny" },
     { "action": "read", "resource": "age.txt", "effect": "deny" },
     { "action": "read", "resource": "*/age.txt", "effect": "deny" },
-
     // mise decrypts age-encrypted env secrets; block commands that print them or write
     // secrets outside `just secret`
     { "action": "shell", "resource": "*mise env*", "effect": "deny" },
@@ -43,10 +42,7 @@
     { "action": "shell", "resource": "env", "effect": "deny" },
     { "action": "shell", "resource": "env |*", "effect": "deny" },
     { "action": "shell", "resource": "*printenv*", "effect": "deny" },
-
-    { "action": "shell", "resource": "*git commit*", "effect": "ask" },
     { "action": "shell", "resource": "*git push*", "effect": "allow" },
-
     { "action": "shell", "resource": "kubectl apply*", "effect": "deny" },
     { "action": "shell", "resource": "kubectl apply -f /tmp/*", "effect": "ask" },
     { "action": "shell", "resource": "kubectl create*", "effect": "deny" },
@@ -63,7 +59,6 @@
     { "action": "shell", "resource": "kubectl uncordon*", "effect": "deny" },
     { "action": "shell", "resource": "kubectl port-forward*", "effect": "deny" },
     { "action": "shell", "resource": "kubectl delete*", "effect": "ask" },
-
     { "action": "shell", "resource": "talosctl apply-config*", "effect": "deny" },
     { "action": "shell", "resource": "talosctl upgrade*", "effect": "deny" },
     { "action": "shell", "resource": "talosctl reset*", "effect": "deny" },
@@ -94,7 +89,6 @@
     { "action": "shell", "resource": "helm upgrade*", "effect": "deny" },
     { "action": "shell", "resource": "helm uninstall*", "effect": "deny" },
     { "action": "shell", "resource": "helm rollback*", "effect": "deny" },
-
     // topf: node-mutating commands denied; dry-run is read-only. `secrets` can generate and
     // store a new bundle.
     { "action": "shell", "resource": "topf apply*", "effect": "deny" },
@@ -103,7 +97,6 @@
     { "action": "shell", "resource": "topf upgrade*--dry-run*", "effect": "allow" },
     { "action": "shell", "resource": "topf reset*", "effect": "deny" },
     { "action": "shell", "resource": "topf secrets*", "effect": "deny" },
-
     // just commands: deny by default
     { "action": "shell", "resource": "just *", "effect": "deny" },
     { "action": "shell", "resource": "just ensure-login", "effect": "allow" },
