@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import sys
 from pathlib import Path
 
 import click
@@ -172,11 +173,7 @@ def create_cmd(kind: str, ref: str, src: str, dry_run: bool) -> None:
     """Create a new automation (REF = new UUID) or script (REF = slug) from a file."""
 
     def go() -> None:
-        text = (
-            click.get_text_stream("stdin").read()
-            if src == "-"
-            else Path(src).read_text()
-        )
+        text = sys.stdin.read() if src == "-" else Path(src).read_text()
         try:
             body = yaml.safe_load(text)
         except yaml.YAMLError as exc:

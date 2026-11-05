@@ -3,7 +3,7 @@ name = "hops"
 version = "0.1.0"
 description = "LLM-optimized cluster operations CLI"
 requires-python = ">=3.13"
-dependencies = ["click>=8.1"]
+dependencies = ["click>=8.5"]
 
 [build-system]
 requires = ["hatchling"]

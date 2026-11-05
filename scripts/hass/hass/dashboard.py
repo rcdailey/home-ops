@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import difflib
 import json
+import sys
 from pathlib import Path
 
 import click
@@ -180,7 +181,7 @@ def card_group() -> None:
 def _read_cards(src: str) -> list[dict]:
     """Read and parse a card payload from a file or stdin."""
     if src == "-":
-        text = click.get_text_stream("stdin").read()
+        text = sys.stdin.read()
     else:
         try:
             text = Path(src).read_text()

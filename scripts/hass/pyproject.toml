@@ -4,12 +4,12 @@ version = "0.1.0"
 description = "LLM-optimized Home Assistant API wrapper"
 requires-python = ">=3.13"
 dependencies = [
-    "click>=8.1",
-    "homeassistant-api>=4.0",
-    "aiohttp>=3.9",
-    "pyyaml>=6.0",
-    "python-slugify>=8.0",
-    "requests>=2.32",
+    "click>=8.5",
+    "homeassistant-api>=6.1",
+    "aiohttp>=3.14",
+    "pyyaml>=6.0.3",
+    "python-slugify>=9.1",
+    "requests>=2.34",
 ]
 
 [build-system]

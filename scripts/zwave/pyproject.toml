@@ -4,8 +4,8 @@ version = "0.1.0"
 description = "LLM-optimized Z-Wave JS server API wrapper"
 requires-python = ">=3.13"
 dependencies = [
-    "click>=8.1",
-    "websockets>=15.0",
+    "click>=8.5",
+    "websockets>=17.4",
 ]
 
 [build-system]

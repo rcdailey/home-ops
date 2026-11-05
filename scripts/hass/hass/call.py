@@ -7,6 +7,7 @@ trouble"), while the WebSocket result carries Home Assistant's own error.
 
 from __future__ import annotations
 
+import sys
 from typing import Any
 
 import click
@@ -45,7 +46,7 @@ def parse_data(raw: str | None) -> dict:
     """Parse service data given as YAML or JSON ('-' reads stdin)."""
     if not raw:
         return {}
-    text = click.get_text_stream("stdin").read() if raw == "-" else raw
+    text = sys.stdin.read() if raw == "-" else raw
     try:
         data = yaml.safe_load(text)
     except yaml.YAMLError as exc:
