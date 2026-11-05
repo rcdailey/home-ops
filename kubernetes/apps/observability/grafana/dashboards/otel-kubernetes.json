@@ -138,10 +138,10 @@
   "schemaVersion": 41,
   "tags": ["opentelemetry", "kubernetes"],
   "templating": {"list": [{
-    "current": {"text": "paperless-classifier", "value": "paperless-classifier"},
+    "current": {"text": "", "value": ""},
     "label": "Service",
     "name": "service",
-    "query": "paperless-classifier",
+    "query": "",
     "type": "textbox"
   }]},
   "time": {"from": "now-6h", "to": "now"},
