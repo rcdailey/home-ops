@@ -83,3 +83,30 @@ repos:
   - id: ruff-check
     args: [--fix]
   - id: ruff-format
+
+- repo: local
+  hooks:
+  - id: pyright
+    name: Pyright
+    entry: scripts/pre-commit/pyright.sh
+    language: python
+    # PyYAML serves files that run in this hook environment (reloader-validator.py)
+    additional_dependencies: [pyright==1.1.414, PyYAML==6.0.3]
+    types: [python]
+    require_serial: true
+
+- repo: https://github.com/astral-sh/uv-pre-commit
+  rev: 0.13.7
+  hooks:
+  - id: uv-lock
+    name: uv lock (hass)
+    args: [--check, --project, scripts/hass]
+    files: ^scripts/hass/(pyproject\.toml|uv\.lock)$
+  - id: uv-lock
+    name: uv lock (hops)
+    args: [--check, --project, scripts/hops]
+    files: ^scripts/hops/(pyproject\.toml|uv\.lock)$
+  - id: uv-lock
+    name: uv lock (zwave)
+    args: [--check, --project, scripts/zwave]
+    files: ^scripts/zwave/(pyproject\.toml|uv\.lock)$
