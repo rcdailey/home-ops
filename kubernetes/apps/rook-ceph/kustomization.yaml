@@ -10,3 +10,4 @@ resources:
 - ./operator/ks.yaml
 - ./ceph-csi-drivers/ks.yaml
 - ./cluster/ks.yaml
+- ./mgr-leak-capture/ks.yaml
