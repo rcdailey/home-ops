@@ -7,7 +7,7 @@ import json
 import os
 import re
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import click
@@ -111,7 +111,7 @@ def parse_time_arg(value: str, now: datetime) -> datetime:
         return now - timedelta(hours=hours)
     except ValueError:
         dt = datetime.fromisoformat(value)
-        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 Send = Callable[[dict], Awaitable[dict]]

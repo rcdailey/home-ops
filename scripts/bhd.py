@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import click
@@ -58,8 +58,8 @@ def _cache_put(key: str, data: dict):
 
 
 def _request(body: dict, use_cache: bool = False) -> dict:
-    if use_cache:
-        key = _cache_key(body)
+    key = _cache_key(body) if use_cache else None
+    if key:
         cached = _cache_get(key)
         if cached is not None:
             return cached
@@ -73,7 +73,7 @@ def _request(body: dict, use_cache: bool = False) -> dict:
     r.raise_for_status()
     result = r.json()
 
-    if use_cache and result.get("status_code") == 1:
+    if key and result.get("status_code") == 1:
         _cache_put(key, result)
 
     return result
@@ -134,10 +134,8 @@ def _completion_rate(t: dict) -> float:
     if not created:
         return float(completions)
     try:
-        created_dt = datetime.strptime(created, "%Y-%m-%d %H:%M:%S").replace(
-            tzinfo=timezone.utc
-        )
-        age_days = max((datetime.now(timezone.utc) - created_dt).days, 1)
+        created_dt = datetime.strptime(created, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
+        age_days = max((datetime.now(UTC) - created_dt).days, 1)
     except (ValueError, TypeError):
         return float(completions)
     return completions / age_days

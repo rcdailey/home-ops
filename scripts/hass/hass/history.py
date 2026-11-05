@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import quote
 
 import click
@@ -44,7 +44,7 @@ def cli(
     as_json: bool,
 ) -> None:
     """Fetch state history and summarize it."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     start_ts = parse_time_arg(start, now)
     end_ts = parse_time_arg(end, now) if end else now
 

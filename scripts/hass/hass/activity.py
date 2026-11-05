@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import click
 
@@ -14,7 +14,7 @@ from hass._client import get_client
 @click.option("--hours", type=float, default=1, help="Lookback hours (default: 1)")
 def cli(entities: tuple[str, ...], hours: float) -> None:
     """Show timestamped state changes from the HA logbook."""
-    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    since = datetime.now(UTC) - timedelta(hours=hours)
     with get_client() as client:
         entries = list(
             client.get_logbook_entries(

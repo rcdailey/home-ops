@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import click
 
@@ -81,7 +81,7 @@ def _print_matrix(results: list[dict]) -> None:
     time_headers: list[str] = []
     date_header = ""
     for ts in timestamps:
-        dt = datetime.fromtimestamp(ts, tz=timezone.utc).astimezone()
+        dt = datetime.fromtimestamp(ts, tz=UTC).astimezone()
         date_str = dt.strftime("%Y-%m-%d")
         time_str = dt.strftime("%H:%M:%S")
         if date_str != prev_date:

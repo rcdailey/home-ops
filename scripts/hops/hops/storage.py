@@ -269,7 +269,7 @@ def _avc_denials_since(output: str, since: str | None) -> list[str]:
     if not since:
         return [line for line in output.splitlines() if "avc:  denied" in line]
     try:
-        cutoff = datetime.fromisoformat(since.replace("Z", "+00:00"))
+        cutoff = datetime.fromisoformat(since)
     except ValueError:
         return [line for line in output.splitlines() if "avc:  denied" in line]
 
@@ -282,7 +282,7 @@ def _avc_denials_since(output: str, since: str | None) -> list[str]:
             denials.append(line)
             continue
         try:
-            timestamp = datetime.fromisoformat(match.group(1).replace("Z", "+00:00"))
+            timestamp = datetime.fromisoformat(match.group(1))
         except ValueError:
             denials.append(line)
             continue

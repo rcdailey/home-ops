@@ -21,7 +21,7 @@ def format_log_entry(log: dict, detail: bool = False, all_fields: bool = False) 
     formatted_time = ""
     if timestamp:
         try:
-            dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(timestamp)
             formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S")
         except (TypeError, ValueError):
             formatted_time = timestamp
@@ -75,7 +75,7 @@ def _format_ts(ts: str | float) -> str:
     """Format a timestamp (ISO string or epoch) to HH:MM."""
     if isinstance(ts, str):
         try:
-            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(ts)
             return dt.strftime("%H:%M")
         except (ValueError, TypeError):
             return str(ts)

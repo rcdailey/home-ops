@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import click
 
@@ -27,13 +27,13 @@ class TimeRange:
         if time_at:
             half_sec = cls._duration_to_seconds(window) // 2
             at_dt = (
-                datetime.now(tz=timezone.utc)
+                datetime.now(tz=UTC)
                 if time_at == "now"
                 else datetime.fromisoformat(time_at)
             )
             if at_dt.tzinfo is None:
                 at_dt = at_dt.astimezone()
-            at_utc = at_dt.astimezone(timezone.utc)
+            at_utc = at_dt.astimezone(UTC)
             start_dt = at_utc - timedelta(seconds=half_sec)
             end_dt = at_utc + timedelta(seconds=half_sec)
             fmt = "%Y-%m-%dT%H:%M:%S"
@@ -103,22 +103,20 @@ class TimeRange:
 
     def _parse_start_time(self) -> datetime:
         if self.start is None:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
         if self._is_duration(self.start):
             return self._parse_end_time() - timedelta(
                 seconds=self._duration_to_seconds(self.start)
             )
-        return datetime.fromisoformat(self.start.replace("Z", "+00:00"))
+        return datetime.fromisoformat(self.start)
 
     def _parse_end_time(self) -> datetime:
         if self.end is None:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
         if self._is_duration(self.end):
             seconds = self._duration_to_seconds(self.end)
-            return datetime.now(timezone.utc).replace(microsecond=0) - timedelta(
-                seconds=seconds
-            )
-        return datetime.fromisoformat(self.end.replace("Z", "+00:00"))
+            return datetime.now(UTC).replace(microsecond=0) - timedelta(seconds=seconds)
+        return datetime.fromisoformat(self.end)
 
     @staticmethod
     def _is_duration(value: str) -> bool:

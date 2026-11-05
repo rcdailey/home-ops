@@ -234,7 +234,7 @@ def indexer_list(instance, all_instances, type_filter):
     """List indexers with seed settings."""
     for inst in _targets(instance, all_instances, type_filter):
         _banner(inst)
-        for idx in _request(inst, "GET", "/api/v3/indexer"):
+        for idx in _request(inst, "GET", "/api/v3/indexer") or []:
             name = idx.get("name", "?")
             idx_id = idx.get("id", "?")
             fields = {f["name"]: f.get("value") for f in idx.get("fields", [])}
@@ -271,7 +271,7 @@ def indexer_fix_seeds(instance, all_instances, type_filter, dry_run):
 
     for inst in _targets(instance, all_instances, type_filter):
         _banner(inst)
-        for idx in _request(inst, "GET", "/api/v3/indexer"):
+        for idx in _request(inst, "GET", "/api/v3/indexer") or []:
             name = idx.get("name", "?")
             idx_id = idx.get("id", "?")
             changed = False

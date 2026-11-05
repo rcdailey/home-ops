@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlencode
 
@@ -36,7 +36,7 @@ def _service_names(result: dict[str, Any]) -> list[str]:
 def _format_start(value: str) -> str:
     try:
         timestamp = int(value) / 1_000_000_000
-        return datetime.fromtimestamp(timestamp, timezone.utc).strftime("%H:%M:%S")
+        return datetime.fromtimestamp(timestamp, UTC).strftime("%H:%M:%S")
     except (OSError, TypeError, ValueError):
         return "?"
 

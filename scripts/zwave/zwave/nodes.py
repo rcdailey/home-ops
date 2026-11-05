@@ -10,11 +10,14 @@ from zwave._client import NODE_STATUS, Session, print_json, run
 def summarize(node: dict) -> dict:
     stats = node.get("statistics") or {}
     lwr = stats.get("lwr") or {}
+    status = node.get("status")
     return {
         "id": node["nodeId"],
         "name": node.get("name"),
         "model": node.get("label"),
-        "status": NODE_STATUS.get(node.get("status"), node.get("status")),
+        "status": NODE_STATUS.get(status, status)
+        if isinstance(status, int)
+        else status,
         "firmware": node.get("firmwareVersion"),
         "rssi": stats.get("rssi"),
         "repeaters": lwr.get("repeaters"),

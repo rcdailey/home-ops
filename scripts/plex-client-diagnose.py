@@ -221,7 +221,7 @@ def parse_server_events(output: str) -> list[Event]:
             continue
         try:
             record = json.loads(line)
-            timestamp = datetime.fromisoformat(record["_time"].replace("Z", "+00:00"))
+            timestamp = datetime.fromisoformat(record["_time"])
         except (json.JSONDecodeError, KeyError, TypeError, ValueError):
             continue
         log_file = str(record.get("log_file", ""))
@@ -807,7 +807,7 @@ def parse_duration(value: str) -> timedelta:
 def parse_at(value: str) -> datetime:
     """Parse a local or explicitly zoned incident timestamp."""
     try:
-        timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        timestamp = datetime.fromisoformat(value)
     except ValueError as error:
         raise argparse.ArgumentTypeError(
             "use an ISO timestamp such as 2026-08-27 19:40"

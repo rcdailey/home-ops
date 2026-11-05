@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import click
 
@@ -109,15 +109,15 @@ def age_str(timestamp: str | None) -> str:
     if not timestamp:
         return "?"
     try:
-        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        return age((datetime.now(timezone.utc) - dt).total_seconds())
+        dt = datetime.fromisoformat(timestamp)
+        return age((datetime.now(UTC) - dt).total_seconds())
     except (ValueError, TypeError):
         return "?"
 
 
 def format_timestamp(ts: float, local: bool = False) -> str:
     """Format an epoch timestamp to an ISO or local time string."""
-    dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+    dt = datetime.fromtimestamp(ts, tz=UTC)
     if local:
         dt = dt.astimezone()
         return dt.strftime("%Y-%m-%d %H:%M:%S")
