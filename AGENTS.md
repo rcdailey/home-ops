@@ -91,6 +91,10 @@ using the external `probe_success` metric. The API server has `HPAScaleToZero` e
 
 ## Tier 2: Conventions
 
+### Worktrees and branches
+
+MUST NOT use worktrees. Work in the current checkout on `main` unless the user requests otherwise.
+
 ### Acceptance
 
 The primary validates changes directly with repository checks. Run an independent acceptance audit
