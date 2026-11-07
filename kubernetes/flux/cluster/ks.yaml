@@ -6,9 +6,11 @@ metadata:
   name: cluster-meta
   namespace: &namespace flux-system
 spec:
+  # Removal safety: deleting or pruning this Kustomization must never delete what it applied
+  deletionPolicy: Orphan
   interval: 1h
   path: ./kubernetes/flux/meta
-  prune: true
+  prune: false
   retryInterval: 2m
   sourceRef:
     kind: GitRepository
@@ -28,9 +30,11 @@ spec:
   dependsOn:
   - name: cluster-meta
     namespace: flux-system
+  # Removal safety: deleting or pruning this Kustomization must never delete what it applied
+  deletionPolicy: Orphan
   interval: 1h
   path: ./kubernetes/apps
-  prune: true
+  prune: false
   retryInterval: 2m
   sourceRef:
     kind: GitRepository
