@@ -1,9 +1,9 @@
 ---
 name: Claude scrub test
 on:
-  push:
+  pull_request:
     branches:
-    - test/claude-scrub
+    - main
 permissions: {}
 jobs:
   test:
