@@ -102,23 +102,12 @@ jobs:
           "verdict":{"enum":["safe","adopted","fixed","blocked"]},
           "confidence":{"enum":["high","medium","low"]},
           "reviewed_sha":{"type":"string"},"summary":{"type":"string"}}}'
-        # Read-only GitHub access except PR comments; no gh api, merge, review, or label commands
+        # All tools are allowed: a command list cannot stop prompt injection, since file reads and
+        # PR comments alone can leak tokens. The merge gate below is the safety boundary.
         settings: |
           {
             "permissions": {
-              "allow": [
-                "Read", "Glob", "Grep", "Edit", "Write", "WebFetch", "WebSearch",
-                "Bash(gh pr view:*)", "Bash(gh pr diff:*)", "Bash(gh pr checks:*)",
-                "Bash(gh pr comment:*)", "Bash(gh release view:*)", "Bash(gh release list:*)",
-                "Bash(gh run view:*)", "Bash(gh api --method GET:*)",
-                "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)", "Bash(git status:*)",
-                "Bash(git fetch:*)", "Bash(git add:*)", "Bash(git commit:*)", "Bash(git push:*)",
-                "Bash(helm show:*)", "Bash(helm template:*)", "Bash(helm pull:*)",
-                "Bash(crane config:*)", "Bash(crane manifest:*)", "Bash(crane ls:*)",
-                "Bash(crane digest:*)", "Bash(flate:*)", "Bash(pre-commit run:*)",
-                "Bash(jq:*)", "Bash(yq:*)", "Bash(diff:*)", "Bash(grep:*)", "Bash(ls:*)",
-                "Bash(head:*)", "Bash(tail:*)", "Bash(wc:*)", "Bash(sort:*)", "Bash(cut:*)"
-              ]
+              "allow": ["Bash", "Read", "Glob", "Grep", "Edit", "Write", "WebFetch", "WebSearch"]
             }
           }
 
