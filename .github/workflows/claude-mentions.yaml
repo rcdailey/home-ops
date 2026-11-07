@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Claude
+name: Claude Mentions
 
 # Answers @claude mentions in PR comments and reviews: questions, explanations, and follow-up
 # changes pushed to the PR branch. Only users with write access can trigger it. It never merges.
@@ -29,7 +29,7 @@ jobs:
         contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' &&
         contains(github.event.review.body, '@claude'))
-    name: Claude
+    name: Claude Mentions
     runs-on: ubuntu-latest
     permissions:
       actions: read
