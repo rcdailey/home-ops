@@ -45,7 +45,12 @@
     { "action": "shell", "resource": "*git push*", "effect": "allow" },
     { "action": "shell", "resource": "kubectl apply*", "effect": "deny" },
     { "action": "shell", "resource": "kubectl apply -f /tmp/*", "effect": "ask" },
+    // Dry runs never persist; `--dry-run=none` mutates, so only server and client match
+    { "action": "shell", "resource": "kubectl apply*--dry-run=server*", "effect": "allow" },
+    { "action": "shell", "resource": "kubectl apply*--dry-run=client*", "effect": "allow" },
     { "action": "shell", "resource": "kubectl create*", "effect": "deny" },
+    { "action": "shell", "resource": "kubectl create*--dry-run=server*", "effect": "allow" },
+    { "action": "shell", "resource": "kubectl create*--dry-run=client*", "effect": "allow" },
     {
       "action": "shell",
       "resource": "kubectl create job*--from=cronjob*",
