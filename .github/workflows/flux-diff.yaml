@@ -47,6 +47,44 @@ jobs:
     - name: Run flate test
       run: flate test all -p ./kubernetes/apps
 
+  deprecations:
+    if: ${{ needs.filter.outputs.changed-files != '[]' }}
+    needs: filter
+    name: Flux Diff - Deprecations
+    runs-on: ubuntu-latest
+    env:
+      # renovate: datasource=github-releases depName=FairwindsOps/pluto
+      PLUTO_VERSION: v5.24.5
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Setup flate
+      uses: home-operations/flate/action@631b76b69c4e58c6f4d1cb01e23616fa61aebafa # v0.6.5
+      with:
+        cache: true
+
+    - name: Install pluto
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |-
+        gh release download "$PLUTO_VERSION" --repo FairwindsOps/pluto \
+          --pattern "pluto_${PLUTO_VERSION#v}_linux_amd64.tar.gz" --pattern checksums.txt
+        sha256sum --check --ignore-missing checksums.txt
+        tar -xzf "pluto_${PLUTO_VERSION#v}_linux_amd64.tar.gz" pluto
+        sudo install pluto /usr/local/bin/pluto
+
+    - name: Detect deprecated APIs
+      run: |-
+        kube_version=$(grep -oP '^kubectl = "\K[^"]+' .mise.toml)
+        # Helm's offline capabilities omit aggregated APIs; without this, charts that probe for
+        # apiregistration.k8s.io/v1 fall back to the removed v1beta1 and fail the check
+        flate build all -p ./kubernetes/apps --no-progress --kube-version "$kube_version" \
+          --api-versions apiregistration.k8s.io/v1 > rendered.yaml
+        pluto detect rendered.yaml --target-versions "k8s=v${kube_version}" -o wide
+
   diff:
     if: ${{ needs.filter.outputs.changed-files != '[]' }}
     needs: filter
@@ -100,6 +138,7 @@ jobs:
     if: ${{ !cancelled() }}
     needs:
     - test
+    - deprecations
     - diff
     name: Flux Diff - Success
     runs-on: ubuntu-latest
