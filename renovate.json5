@@ -7,7 +7,6 @@
     "config:recommended",
     "docker:enableMajor",
     ":automergeBranch",
-    ":automergeDigest",
     ":dependencyDashboard",
     ":disableRateLimiting",
     ":semanticCommits",
@@ -29,6 +28,13 @@
   // ghcr.io doesn't provide release timestamps, so treat missing timestamps as stable
   // to prevent packages from being stuck in "pending status checks" forever
   minimumReleaseAgeBehaviour: "timestamp-optional",
+  // Open PRs only after the release age passes, so the Claude review workflow never spends
+  // subscription usage on releases that may still be pulled
+  minimumReleaseAge: "5 days",
+  prCreation: "not-pending",
+  internalChecksFilter: "strict",
+  // CI runs only on pull_request, so the release-age check must count as green to open the PR
+  internalChecksAsSuccess: true,
   // I frequently rewrite commits on main, and as a result, orphaned commits on main are treated as
   // custom commits on renovate branches. This ignored authors setting prevents Renovate from
   // thinking I've made intentional, custom modifications to branches it manages.

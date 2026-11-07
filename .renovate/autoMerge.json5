@@ -48,32 +48,6 @@
       allowedVersions: "/^\\d+\\.\\d+$/",
     },
     {
-      description: "Auto-merge OCI charts and containers",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["!/cilium/", "!ghcr.io/rook/**"],
-      automerge: true,
-      automergeType: "pr",
-      matchUpdateTypes: ["patch", "digest"],
-      minimumReleaseAge: "5 days",
-    },
-    {
-      // Per SemVer spec, 0.x versions may introduce breaking changes in any release.
-      // tuppr 0.0.55 broke the cluster by adding self-signed webhook certs without notice.
-      description: "Disable auto-merge for pre-1.0 packages",
-      matchDatasources: ["docker"],
-      matchCurrentVersion: "/^v?0/",
-      automerge: false,
-    },
-    {
-      description: "Auto-merge app-template chart updates",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["/app-template/"],
-      automerge: true,
-      automergeType: "pr",
-      matchUpdateTypes: ["patch"],
-      minimumReleaseAge: "5 days",
-    },
-    {
       description: "Disable auto-merge for all Talos-related packages",
       matchPackageNames: ["/siderolabs/"],
       automerge: false,
