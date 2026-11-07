@@ -26,6 +26,8 @@ jobs:
         CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: 1
       with:
         claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        # Skips the App token exchange, which rejects workflows not on main
+        github_token: ${{ github.token }}
         prompt: |
           Run each command below as its own Bash call, exactly as written. Do not retry, change,
           or explain them. After all of them, reply with only each command's exit code.
