@@ -237,5 +237,5 @@ uses `chore`; CI uses `ci`; Renovate configuration uses `build`; prose-only docu
 changes.
 
 Use the app name as scope for `kubernetes/**`, script name for `scripts/**`, component name for
-`.opencode/**`, and subsystem for `flux/**` or `talos/**`. Omit scope for repository-wide changes.
-For mixed paths, use the type and scope of the change that provides the behavior.
+`.opencode/**`, and subsystem for `talos/**`. Omit scope for repository-wide changes. For mixed
+paths, use the type and scope of the change that provides the behavior.

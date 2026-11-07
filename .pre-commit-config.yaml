@@ -59,7 +59,7 @@ repos:
   hooks:
   - id: flate-test
     name: Flux Manifest Validation
-    entry: env FLATE_BASE=HEAD flate test all -p ./kubernetes/flux/cluster
+    entry: env FLATE_BASE=HEAD flate test all -p ./kubernetes/apps
     language: system
     files: '^kubernetes/.*\.ya?ml$'
     pass_filenames: false

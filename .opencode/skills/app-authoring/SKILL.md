@@ -66,10 +66,12 @@ For app-template, use `chartRef` and set `chartRef.namespace: flux-system`. Do n
 `chart.spec.sourceRef`.
 
 For an external chart, use `chart.spec.sourceRef`. Keep a single-use HelmRepository beside the
-application; put a source shared by multiple apps in `flux/meta/repos` with namespace `flux-system`.
+application; put a source shared by multiple apps in `apps/flux-system/repos` with namespace
+`flux-system`.
 
-Put GitRepository sources for Flux Kustomizations in `flux/meta/repos`; an app Kustomization cannot
-deploy the source it needs to build itself.
+Put GitRepository sources for Flux Kustomizations in `apps/flux-system/repos`, which the root
+Kustomization applies directly; an app Kustomization cannot deploy the source it needs to build
+itself.
 
 ## Persistence
 

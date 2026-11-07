@@ -8,7 +8,7 @@ KUBECONFIG = "{{config_root}}/kubeconfig"
 MINIJINJA_CONFIG_FILE = "{{config_root}}/.minijinja.toml"
 TALOSCONFIG = "{{config_root}}/talos/talosconfig"
 DIFFTOOL = "delta"
-FLATE_PATH = "{{config_root}}/kubernetes/flux/cluster"
+FLATE_PATH = "{{config_root}}/kubernetes/apps"
 
 [plugins]
 krew = "https://github.com/soupglasses/mise-krew"

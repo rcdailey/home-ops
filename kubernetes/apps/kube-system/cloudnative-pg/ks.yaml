@@ -10,9 +10,6 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  dependsOn:
-  - name: cluster-meta
-    namespace: flux-system
   path: ./kubernetes/apps/kube-system/cloudnative-pg
   prune: true
   sourceRef:
