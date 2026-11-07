@@ -80,8 +80,8 @@ S3 operator creates the bucket and its access key; the repository password comes
 (`/storage/kopiur/repository-password`). Losing that password makes every snapshot unreadable, so
 keep a copy outside the cluster.
 
-Kopiur copies the repository Secrets into each app namespace when a mover Job runs there
-(credential projection), so apps need no backup Secrets of their own.
+Kopiur copies the repository Secrets into each app namespace when a mover Job runs there (credential
+projection), so apps need no backup Secrets of their own.
 
 The repository also sets:
 
@@ -108,8 +108,8 @@ Substitution variables set the PVC shape: `KOPIUR_PVC` (default `APP`), `KOPIUR_
 `KOPIUR_ACCESSMODES` (`ReadWriteOnce`), `KOPIUR_STORAGECLASS` (`ceph-block`), and
 `KOPIUR_SNAPSHOTCLASS` (`csi-ceph-blockpool`).
 
-Retention keeps the latest snapshot plus 7 daily, 4 weekly, and 3 monthly snapshots. Kopiur
-enforces it by pruning the `Snapshot` objects each policy produced.
+Retention keeps the latest snapshot plus 7 daily, 4 weekly, and 3 monthly snapshots. Kopiur enforces
+it by pruning the `Snapshot` objects each policy produced.
 
 Backup coverage is derived from applications that include the `kopiur` component.
 
@@ -125,8 +125,8 @@ component declares:
 1. A Garage access-key request. The Garage S3 operator creates its Kubernetes credential Secret.
 2. A Garage bucket named `${APP}-postgres-backups`.
 3. A Barman `ObjectStore`, which configures access to that bucket and a 30-day recovery window.
-4. A daily `ScheduledBackup` at 01:00 (America/Chicago, via the operator's `TZ`) and a WAL
-   archiver on `${APP}-postgres`.
+4. A daily `ScheduledBackup` at 03:00 (America/Chicago, via the operator's `TZ`) and a WAL archiver
+   on `${APP}-postgres`.
 
 The bucket is the storage location. The ObjectStore is the connection and policy resource used by
 Barman; it does not create another storage copy. See the [component contract][cnpg-component] and

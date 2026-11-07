@@ -26,10 +26,10 @@ For `APP: example`, the component declares:
 - `GarageS3AccessKey/example-s3`. The Garage S3 operator creates the `example-s3-gs3ak` Secret.
 - `GarageS3Bucket/example-postgres-backups`, backed by the Garage instance in `storage`.
 - `ObjectStore/example-postgres-backups`, which tells Barman how to connect to that bucket.
-- `ScheduledBackup/example-postgres-backup`, which runs daily at 01:00 America/Chicago.
+- `ScheduledBackup/example-postgres-backup`, which runs daily at 03:00 America/Chicago.
 
-The ObjectStore keeps a 30-day recovery window. The cluster continuously archives WAL and takes
-base backups from a standby when one is available.
+The ObjectStore keeps a 30-day recovery window. The cluster continuously archives WAL and takes base
+backups from a standby when one is available.
 
 The component reads the operator-managed `AWS_ACCESS_KEY` and `AWS_SECRET_KEY` fields directly. It
 does not create or copy S3 credentials.

@@ -5,7 +5,9 @@ kind: ScheduledBackup
 metadata:
   name: ${APP}-postgres-backup
 spec:
-  schedule: "0 0 1 * * *"
+  # 03:00 never repeats or is skipped by DST; a repeated hour reuses the backup name and
+  # leaves the schedule stuck retrying it
+  schedule: "0 0 3 * * *"
   backupOwnerReference: self
   cluster:
     name: ${APP}-postgres
