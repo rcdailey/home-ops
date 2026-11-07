@@ -61,6 +61,7 @@ jobs:
       run: pipx install pre-commit
 
     - name: Respond
+      id: claude
       uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1.0.269
       with:
         claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -75,12 +76,31 @@ jobs:
                 "Read", "Glob", "Grep", "Edit", "Write", "WebFetch", "WebSearch",
                 "Bash(gh pr view:*)", "Bash(gh pr diff:*)", "Bash(gh pr checks:*)",
                 "Bash(gh pr comment:*)", "Bash(gh release view:*)", "Bash(gh release list:*)",
-                "Bash(gh run view:*)",
+                "Bash(gh run view:*)", "Bash(gh api --method GET:*)",
                 "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)", "Bash(git status:*)",
-                "Bash(git add:*)", "Bash(git commit:*)", "Bash(git push:*)",
-                "Bash(helm show:*)", "Bash(crane config:*)", "Bash(crane manifest:*)",
-                "Bash(crane ls:*)", "Bash(flate:*)", "Bash(pre-commit run:*)",
-                "Bash(jq:*)"
+                "Bash(git fetch:*)", "Bash(git add:*)", "Bash(git commit:*)", "Bash(git push:*)",
+                "Bash(helm show:*)", "Bash(helm template:*)", "Bash(helm pull:*)",
+                "Bash(crane config:*)", "Bash(crane manifest:*)", "Bash(crane ls:*)",
+                "Bash(crane digest:*)", "Bash(flate:*)", "Bash(pre-commit run:*)",
+                "Bash(jq:*)", "Bash(yq:*)", "Bash(diff:*)", "Bash(grep:*)", "Bash(ls:*)",
+                "Bash(head:*)", "Bash(tail:*)", "Bash(wc:*)", "Bash(sort:*)", "Bash(cut:*)"
               ]
             }
           }
+
+    # Keep in sync with claude-review.yaml
+    - name: Report tool use
+      if: ${{ !cancelled() && steps.claude.outputs.execution_file }}
+      env:
+        EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+      run: |-
+        echo "::group::Tool calls"
+        jq -r '.[] | select(.type == "assistant") | .message.content[]?
+          | select(.type == "tool_use")
+          | "\(.name): \(.input.command // .input.url // .input.file_path // .input.pattern // "")"
+          | .[:200]' "$EXECUTION_FILE"
+        echo "::endgroup::"
+        echo "Permission denials:"
+        jq -r '.[] | select(.type == "result") | .permission_denials[]?
+          | "\(.tool_name): \(.tool_input.command // .tool_input.url // .tool_input)"
+          | .[:300]' "$EXECUTION_FILE"
