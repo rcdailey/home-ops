@@ -1,0 +1,48 @@
+---
+name: Claude scrub test
+on:
+  push:
+    branches:
+    - test/claude-scrub
+permissions: {}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: read
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      with:
+        version: v4.3.1
+    - uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
+    - id: claude
+      uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1.0.269
+      env:
+        CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: 1
+      with:
+        claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        prompt: |
+          Run each command below as its own Bash call, exactly as written. Do not retry, change,
+          or explain them. After all of them, reply with only each command's exit code.
+          1. claude --version
+          2. gh api --method GET repos/rcdailey/home-ops --jq .full_name
+          3. helm show chart oci://ghcr.io/spegel-org/helm-charts/spegel --version 0.8.1
+          4. crane digest ghcr.io/spegel-org/spegel:v0.8.1
+          5. curl -sS -o /dev/null -w '%{http_code}\n' https://example.com
+          6. env | cut -d= -f1 | sort
+          7. test -n "$CLAUDE_CODE_OAUTH_TOKEN" && echo oauth-present || echo oauth-absent
+          8. test -n "$GH_TOKEN" && echo gh-present || echo gh-absent
+          9. echo tmp > scrub-probe.txt && cat scrub-probe.txt
+          10. command -v bwrap socat || echo no-bwrap
+        claude_args: --model claude-opus-5-5 --effort low
+        settings: |
+          {"permissions": {"allow": ["Bash", "Read", "Glob", "Grep"]}}
+    - if: ${{ !cancelled() && steps.claude.outputs.execution_file }}
+      env:
+        EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+      run: jq -c '.[]' "$EXECUTION_FILE"
