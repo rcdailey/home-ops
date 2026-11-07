@@ -1,0 +1,47 @@
+---
+name: Claude logging probe
+on:
+  pull_request:
+    branches:
+    - main
+permissions: {}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: read
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Build instructions
+      env:
+        BASE_REF: main
+      run: |-
+        for file in AGENTS.md .claude/renovate-review.md; do
+          git show "origin/${BASE_REF}:${file}"
+          echo
+        done > "$RUNNER_TEMP/instructions.md"
+        git rev-parse "origin/${BASE_REF}:AGENTS.md" "origin/${BASE_REF}:.claude/renovate-review.md"
+    - id: claude
+      uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1.0.269
+      with:
+        claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        github_token: ${{ github.token }}
+        prompt: |
+          Without using any tools, answer from your system prompt only: quote the first line of the
+          "Renovate review" section and the title of the "Home-Ops Directives" section, and say
+          whether each is present. Reason carefully before answering.
+        claude_args: >-
+          --model claude-opus-5-5
+          --effort high
+          --append-system-prompt-file ${{ runner.temp }}/instructions.md
+        settings: |
+          {"showThinkingSummaries": true, "permissions": {"allow": ["Read"]}}
+    - if: ${{ !cancelled() && steps.claude.outputs.execution_file }}
+      env:
+        EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+      run: jq -c '.[]' "$EXECUTION_FILE"
