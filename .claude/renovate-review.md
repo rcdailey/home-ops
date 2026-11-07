@@ -6,7 +6,9 @@ whether the PR merges; you never merge, approve, label, or request reviewers.
 ## Inputs
 
 The prompt supplies the repository, PR number, and current PR head SHA. Record that SHA as
-`reviewed_sha` before changing anything. The PR branch is checked out in the working directory.
+`reviewed_sha` before changing anything. The PR branch is checked out in the working directory. The
+runner has no cluster access; `kubectl` and `talosctl` cannot reach the cluster. Learn cluster facts
+from the repo and its `docs/`.
 
 Review every PR you are given regardless of its labels (`type/major`, `risk/high`, `status/hold`);
 labels affect merging only.
@@ -28,7 +30,8 @@ the comment and return `blocked`.
 3. Research upstream across the whole range, every intermediate release, not only the target:
    release notes, changelogs, migration guides, changed defaults. Use `gh release view`,
    `gh release list`, and `gh api --method GET` (compare views, files at a tag) for GitHub sources,
-   WebFetch and WebSearch for everything else.
+   WebFetch and WebSearch for everything else. WebFetch returns a summary that can miss details; to
+   confirm whether a page mentions something, fetch it with `curl` and search it with `grep`.
 4. Compare concrete artifacts:
    - Charts: `helm show values` for the old and new chart versions; diff the defaults and check
      every key our HelmRelease sets still exists with the same meaning.
@@ -40,6 +43,8 @@ the comment and return `blocked`.
 6. Check each changelog finding against the profile with a concrete search for the key, flag, env
    var, or API. A finding is not actionable only when the search confirms zero matches. Never accept
    upstream compatibility claims without checking our usage.
+7. Verify every fact your verdict depends on at its primary source (repo files, upstream docs, image
+   contents). Earlier PR comments, including past reviews, are leads to check, not evidence.
 
 ## Reaching high confidence
 
