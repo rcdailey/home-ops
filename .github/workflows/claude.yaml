@@ -89,18 +89,8 @@ jobs:
           }
 
     # Keep in sync with claude-review.yaml
-    - name: Report tool use
+    - name: Print transcript
       if: ${{ !cancelled() && steps.claude.outputs.execution_file }}
       env:
         EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
-      run: |-
-        echo "::group::Tool calls"
-        jq -r '.[] | select(.type == "assistant") | .message.content[]?
-          | select(.type == "tool_use")
-          | "\(.name): \(.input.command // .input.url // .input.file_path // .input.pattern // "")"
-          | .[:200]' "$EXECUTION_FILE"
-        echo "::endgroup::"
-        echo "Permission denials:"
-        jq -r '.[] | select(.type == "result") | .permission_denials[]?
-          | "\(.tool_name): \(.tool_input.command // .tool_input.url // .tool_input)"
-          | .[:300]' "$EXECUTION_FILE"
+      run: jq -c '.[]' "$EXECUTION_FILE"

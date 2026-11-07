@@ -122,23 +122,13 @@ jobs:
             }
           }
 
-    # Prints tool calls and permission denials without tool results, which show_full_output
-    # would publish in this public repo's logs
-    - name: Report tool use
+    # Full transcript for retrospectives, one JSON message per line. Logs, unlike artifacts, get
+    # GitHub's secret masking.
+    - name: Print transcript
       if: ${{ !cancelled() && steps.claude.outputs.execution_file }}
       env:
         EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
-      run: |-
-        echo "::group::Tool calls"
-        jq -r '.[] | select(.type == "assistant") | .message.content[]?
-          | select(.type == "tool_use")
-          | "\(.name): \(.input.command // .input.url // .input.file_path // .input.pattern // "")"
-          | .[:200]' "$EXECUTION_FILE"
-        echo "::endgroup::"
-        echo "Permission denials:"
-        jq -r '.[] | select(.type == "result") | .permission_denials[]?
-          | "\(.tool_name): \(.tool_input.command // .tool_input.url // .tool_input)"
-          | .[:300]' "$EXECUTION_FILE"
+      run: jq -c '.[]' "$EXECUTION_FILE"
 
     # Merge gate: auto-merge only a high-confidence safe verdict on the exact reviewed commit, and
     # never majors, high-risk, or held PRs. Everything else goes to the maintainer.
