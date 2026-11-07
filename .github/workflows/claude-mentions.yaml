@@ -71,6 +71,7 @@ jobs:
         # Keep in sync with claude-review.yaml
         settings: |
           {
+            "showThinkingSummaries": true,
             "permissions": {
               "allow": ["Bash", "Read", "Glob", "Grep", "Edit", "Write", "WebFetch", "WebSearch"]
             }

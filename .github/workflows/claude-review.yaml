@@ -3,9 +3,13 @@
 name: Claude Review
 
 # Claude reviews Renovate PRs that change cluster configuration, plus any PR labeled
-# claude/review. Instructions: .claude/renovate-review.md (restored from the base branch by the
-# action, so a PR cannot change its own review). The model never merges; the gate step below owns
-# auto-merge and maintainer review requests.
+# claude/review. Instructions: AGENTS.md and .claude/renovate-review.md from the base branch, so a
+# PR cannot change its own review. The model never merges; the gate step below owns auto-merge and
+# maintainer review requests.
+#
+# Manual test runs use the workflow and instructions from the dispatched branch against any open
+# PR, and only print what the merge gate would do:
+#   gh workflow run claude-review.yaml --ref <branch> -f pr=<number>
 
 on:
   pull_request:
@@ -13,6 +17,12 @@ on:
     - opened
     - synchronize
     - labeled
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Open PR number to review
+        required: true
+        type: number
 
 permissions: {}
 
@@ -22,6 +32,7 @@ jobs:
     # maintainer never start a review. Label events: only the review label. Labels such as
     # risk/high or status/hold never skip the review; they only block auto-merge below.
     if: >-
+      github.event_name == 'workflow_dispatch' ||
       (github.event.action == 'labeled' && github.event.label.name == 'claude/review') ||
       (github.event.action != 'labeled' &&
         github.event.pull_request.user.login == 'renovate[bot]' &&
@@ -29,7 +40,7 @@ jobs:
     name: Claude Review
     runs-on: ubuntu-latest
     concurrency:
-      group: claude-review-${{ github.event.pull_request.number }}
+      group: claude-review-${{ github.event.pull_request.number || inputs.pr }}
       cancel-in-progress: true
     permissions:
       actions: read
@@ -37,15 +48,21 @@ jobs:
       id-token: write
       pull-requests: write
     env:
-      PR: ${{ github.event.pull_request.number }}
-      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR: ${{ github.event.pull_request.number || inputs.pr }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+      GH_REPO: ${{ github.repository }}
       GH_TOKEN: ${{ github.token }}
     steps:
+    - name: Resolve PR
+      run: |-
+        gh pr view "$PR" --json state,headRefName,headRefOid,baseRefName --jq '
+          "STATE=\(.state)", "HEAD_REF=\(.headRefName)", "HEAD_SHA=\(.headRefOid)",
+          "BASE_REF=\(.baseRefName)"' >> "$GITHUB_ENV"
+
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
-        ref: ${{ github.head_ref }}
+        ref: ${{ env.HEAD_REF }}
         fetch-depth: 0
         persist-credentials: false
 
@@ -54,7 +71,9 @@ jobs:
       env:
         ACTION: ${{ github.event.action }}
       run: |-
-        if [[ "$ACTION" == labeled ]] \
+        if [[ "$STATE" != OPEN ]]; then
+          echo "PR $PR is $STATE; skipping review"
+        elif [[ "$ACTION" == labeled || "$DRY_RUN" == true ]] \
           || git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qE '^(kubernetes|talos)/'; then
           echo "review=true" >> "$GITHUB_OUTPUT"
         else
@@ -81,22 +100,39 @@ jobs:
       if: steps.scope.outputs.review == 'true'
       run: pipx install pre-commit
 
+    # Claude Code's AGENTS.md loading is not visible in the transcript, so both instruction files
+    # are passed explicitly and their blob hashes logged for retrospectives. PR events read them
+    # from the base branch; manual runs read them from the dispatched branch.
+    - name: Build instructions
+      if: steps.scope.outputs.review == 'true'
+      run: |-
+        source="origin/${BASE_REF}"
+        [[ "$DRY_RUN" == true ]] && source="$GITHUB_SHA"
+        for file in AGENTS.md .claude/renovate-review.md; do
+          git rev-parse "${source}:${file}" >&2
+          git show "${source}:${file}"
+          echo
+        done > "$RUNNER_TEMP/instructions.md"
+
     - name: Review
       id: claude
       if: steps.scope.outputs.review == 'true'
       uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1.0.269
       with:
         claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        # The Claude App rejects workflow files that differ from main, so manual runs from a test
+        # branch use the job token; Claude's pushes then do not start other workflows
+        github_token: ${{ github.event_name == 'workflow_dispatch' && github.token || '' }}
         allowed_bots: renovate[bot]
         prompt: |
           Review this Renovate PR following your system instructions.
           REPO: ${{ github.repository }}
-          PR NUMBER: ${{ github.event.pull_request.number }}
-          HEAD SHA: ${{ github.event.pull_request.head.sha }}
+          PR NUMBER: ${{ env.PR }}
+          HEAD SHA: ${{ env.HEAD_SHA }}
         claude_args: >-
           --model claude-opus-5-5
           --effort high
-          --append-system-prompt-file .claude/renovate-review.md
+          --append-system-prompt-file ${{ runner.temp }}/instructions.md
           --json-schema '{"type":"object","additionalProperties":false,
           "required":["verdict","confidence","reviewed_sha","summary"],"properties":{
           "verdict":{"enum":["safe","adopted","fixed","blocked"]},
@@ -106,6 +142,7 @@ jobs:
         # PR comments alone can leak tokens. The merge gate below is the safety boundary.
         settings: |
           {
+            "showThinkingSummaries": true,
             "permissions": {
               "allow": ["Bash", "Read", "Glob", "Grep", "Edit", "Write", "WebFetch", "WebSearch"]
             }
@@ -128,6 +165,14 @@ jobs:
         OWNER: ${{ github.repository_owner }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |-
+        # Manual runs only print the gate's actions
+        gh() {
+          if [[ "$DRY_RUN" == true && "$1 $2" != "pr view" ]]; then
+            echo "dry run: gh $*"
+          else
+            command gh "$@"
+          fi
+        }
         # Missing or unparsable output counts as blocked
         field() { jq -r --arg k "$1" '.[$k] // ""' <<< "$OUTPUT" 2>/dev/null || true; }
         verdict=$(field verdict)

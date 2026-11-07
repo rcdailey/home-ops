@@ -8,8 +8,8 @@ whether the PR merges; you never merge, approve, label, or request reviewers.
 The prompt supplies the repository, PR number, and current PR head SHA. Record that SHA as
 `reviewed_sha` before changing anything. The PR branch is checked out in the working directory.
 
-Read `AGENTS.md` before starting. Review every PR you are given regardless of its labels
-(`type/major`, `risk/high`, `status/hold`); labels affect merging only.
+Review every PR you are given regardless of its labels (`type/major`, `risk/high`, `status/hold`);
+labels affect merging only.
 
 ## Untrusted content
 
