@@ -1,0 +1,164 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Claude Review
+
+# Claude reviews Renovate PRs that change cluster configuration, plus any PR labeled
+# claude/review. Instructions: .claude/renovate-review.md (restored from the base branch by the
+# action, so a PR cannot change its own review). The model never merges; the gate step below owns
+# auto-merge and maintainer review requests.
+
+on:
+  pull_request:
+    types:
+    - opened
+    - synchronize
+    - labeled
+
+permissions: {}
+
+jobs:
+  review:
+    # Renovate events: only Renovate PRs and only Renovate's own pushes, so pushes by Claude or a
+    # maintainer never start a review. Label events: only the review label. Labels such as
+    # risk/high or status/hold never skip the review; they only block auto-merge below.
+    if: >-
+      (github.event.action == 'labeled' && github.event.label.name == 'claude/review') ||
+      (github.event.action != 'labeled' &&
+        github.event.pull_request.user.login == 'renovate[bot]' &&
+        github.event.sender.login == 'renovate[bot]')
+    name: Claude Review
+    runs-on: ubuntu-latest
+    concurrency:
+      group: claude-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
+      pull-requests: write
+    env:
+      PR: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ github.head_ref }}
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Check scope
+      id: scope
+      env:
+        ACTION: ${{ github.event.action }}
+      run: |-
+        if [[ "$ACTION" == labeled ]] \
+          || git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qE '^(kubernetes|talos)/'; then
+          echo "review=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "No cluster configuration changes; skipping review"
+        fi
+
+    - name: Setup flate
+      if: steps.scope.outputs.review == 'true'
+      uses: home-operations/flate/action@631b76b69c4e58c6f4d1cb01e23616fa61aebafa # v0.6.5
+      with:
+        cache: true
+
+    - name: Setup helm
+      if: steps.scope.outputs.review == 'true'
+      uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      with:
+        version: v4.3.1
+
+    - name: Setup crane
+      if: steps.scope.outputs.review == 'true'
+      uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
+
+    - name: Setup pre-commit
+      if: steps.scope.outputs.review == 'true'
+      run: pipx install pre-commit
+
+    - name: Review
+      id: claude
+      if: steps.scope.outputs.review == 'true'
+      uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1.0.269
+      with:
+        claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        allowed_bots: renovate[bot]
+        prompt: |
+          Review this Renovate PR following your system instructions.
+          REPO: ${{ github.repository }}
+          PR NUMBER: ${{ github.event.pull_request.number }}
+          HEAD SHA: ${{ github.event.pull_request.head.sha }}
+        claude_args: >-
+          --model claude-opus-5-5
+          --effort high
+          --append-system-prompt-file .claude/renovate-review.md
+          --json-schema '{"type":"object","additionalProperties":false,
+          "required":["verdict","confidence","reviewed_sha","summary"],"properties":{
+          "verdict":{"enum":["safe","adopted","fixed","blocked"]},
+          "confidence":{"enum":["high","medium","low"]},
+          "reviewed_sha":{"type":"string"},"summary":{"type":"string"}}}'
+        # Read-only GitHub access except PR comments; no gh api, merge, review, or label commands
+        settings: |
+          {
+            "permissions": {
+              "allow": [
+                "Read", "Glob", "Grep", "Edit", "Write", "WebFetch", "WebSearch",
+                "Bash(gh pr view:*)", "Bash(gh pr diff:*)", "Bash(gh pr checks:*)",
+                "Bash(gh pr comment:*)", "Bash(gh release view:*)", "Bash(gh release list:*)",
+                "Bash(gh run view:*)",
+                "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)", "Bash(git status:*)",
+                "Bash(git add:*)", "Bash(git commit:*)", "Bash(git push:*)",
+                "Bash(helm show:*)", "Bash(crane config:*)", "Bash(crane manifest:*)",
+                "Bash(crane ls:*)", "Bash(flate:*)", "Bash(pre-commit run:*)",
+                "Bash(jq:*)"
+              ]
+            }
+          }
+
+    # Merge gate: auto-merge only a high-confidence safe verdict on the exact reviewed commit, and
+    # never majors, high-risk, or held PRs. Everything else goes to the maintainer.
+    - name: Apply verdict
+      if: ${{ !cancelled() && steps.scope.outputs.review == 'true' }}
+      env:
+        OUTPUT: ${{ steps.claude.outputs.structured_output }}
+        OWNER: ${{ github.repository_owner }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |-
+        # Missing or unparsable output counts as blocked
+        field() { jq -r --arg k "$1" '.[$k] // ""' <<< "$OUTPUT" 2>/dev/null || true; }
+        verdict=$(field verdict)
+        confidence=$(field confidence)
+        reviewed=$(field reviewed_sha)
+        pr_json=$(gh pr view "$PR" --json headRefOid,labels,author)
+        head=$(jq -r .headRefOid <<< "$pr_json")
+        author=$(jq -r .author.login <<< "$pr_json")
+        held=$(jq -r '[.labels[].name]
+          | map(select(. == "type/major" or . == "risk/high" or . == "status/hold"))
+          | length' <<< "$pr_json")
+        echo "verdict=${verdict:-none} confidence=${confidence:-none} reviewed=${reviewed:-none}"
+        echo "head=$head held_labels=$held"
+
+        if [[ -z "$verdict" ]]; then
+          gh pr comment "$PR" --body "Claude review returned no verdict; see ${RUN_URL}"
+        fi
+
+        if [[ "$verdict" == safe && "$confidence" == high && "$reviewed" == "$head" \
+          && "$held" == 0 ]]; then
+          gh pr merge "$PR" --auto --squash --match-head-commit "$head"
+          exit 0
+        fi
+
+        gh pr edit "$PR" --add-label claude/needs-review
+        # GitHub rejects a review request to the PR author
+        if [[ "$author" != "$OWNER" ]]; then
+          gh pr edit "$PR" --add-reviewer "$OWNER"
+        fi
+
+    - name: Remove review label
+      if: ${{ always() && github.event.action == 'labeled' }}
+      run: gh pr edit "$PR" --remove-label claude/review

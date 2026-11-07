@@ -12,9 +12,6 @@ and bounded operational transitions that declarative controllers cannot safely e
 commit-and-revert pairs solely to toggle temporary operational state. Verify the durable result
 matches Git.
 
-- **NEVER run git commit/push without explicit user request** - GitOps requires user commits for
-  accountability. This includes using the commit subagent. Always wait for explicit "commit"
-  request.
 - **NEVER delete resources as a symptom fix** - Deleting jobs, pods, or PVCs treats symptoms, not
   causes. Find the manifest issue and fix it.
 - **Immutable controller migrations MAY use orphan replacement** - Put the replacement state in Git,
@@ -226,8 +223,9 @@ Use the `cf` CLI for Cloudflare work, not raw API requests; load the `cloudflare
 
 ### Dependency upgrades
 
-Upgrade PRs labeled `status/hold` MUST be skipped unconditionally: do not select, analyze, or merge
-them, even when named explicitly. List them as skipped with the reason `hold`.
+Upgrade PRs labeled `status/hold` MUST NOT be merged or approved, even when named explicitly.
+Reviewing, analyzing, and pushing fixes to them is allowed. List them as not merged with the reason
+`hold`.
 
 ### Conventional commits
 
