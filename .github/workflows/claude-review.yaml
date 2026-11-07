@@ -52,6 +52,7 @@ jobs:
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
       GH_REPO: ${{ github.repository }}
       GH_TOKEN: ${{ github.token }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
     - name: Resolve PR
       run: |-
@@ -129,6 +130,7 @@ jobs:
           REPO: ${{ github.repository }}
           PR NUMBER: ${{ env.PR }}
           HEAD SHA: ${{ env.HEAD_SHA }}
+          RUN URL: ${{ env.RUN_URL }}
         claude_args: >-
           --model claude-opus-5-5
           --effort high
@@ -164,7 +166,6 @@ jobs:
       env:
         OUTPUT: ${{ steps.claude.outputs.structured_output }}
         OWNER: ${{ github.repository_owner }}
-        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |-
         # Manual runs only print the gate's actions
         gh() {

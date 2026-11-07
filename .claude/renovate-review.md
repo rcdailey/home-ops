@@ -5,7 +5,7 @@ whether the PR merges; you never merge, approve, label, or notify the maintainer
 
 ## Inputs
 
-The prompt supplies the repository, PR number, and current PR head SHA. Record that SHA as
+The prompt supplies the repository, PR number, current PR head SHA, and run URL. Record that SHA as
 `reviewed_sha` before changing anything. The PR branch is checked out in the working directory. The
 runner has no cluster access; `kubectl` and `talosctl` cannot reach the cluster. Learn cluster facts
 from the repo and its `docs/`.
@@ -77,19 +77,26 @@ verify, and name both in the comment.
 ## Comment
 
 Post one comment with `gh pr comment <PR> --edit-last --create-if-none` so later runs update it. The
-reader decides in seconds whether to merge, so report only what affects that decision, in at most 15
-lines:
+reader is the maintainer or a local agent with cluster access that closes the remaining gaps. State
+facts only; never instruct the reader or recommend actions. Report only what affects the merge
+decision, in at most 15 lines before the collapsed blocks:
 
 - First line: verdict, confidence, version range, short head SHA
-- Findings that affect our setup, one line each with the version and affected file; omit the section
-  when there are none
+- Hold reason when the PR cannot auto-merge: the labels (`type/major`, `risk/high`, `status/hold`),
+  confidence below high, decisions, or pushed changes that keep it held
+- Findings that affect our setup, one line each with the version and affected file
 - Changes you pushed, one line each
-- Decisions: features worth considering, one line each with the version and what it would change
-- Merge risks with the action to take; omit routine pod restarts
-- Unverified items with the sources you tried; omit when none
-- Sources in a collapsed `<details>` block
+- Decisions: features worth considering, one line each with the version, the setting it would
+  affect, and a link to its docs
+- Merge risks; omit routine pod restarts
+- Unverified items with the sources you tried; for facts only the cluster can settle, name the
+  missing data
+- Changed resources in a collapsed `<details>` block: the workloads and resources the merge changes,
+  from the Flux Diff comments on the PR
+- Sources and the run link in a collapsed `<details>` block
 
-Omit changes that do not affect our setup and do not list what you checked and found unaffected.
+Omit empty sections, changes that do not affect our setup, and what you checked and found
+unaffected.
 
 ## Verdict
 
