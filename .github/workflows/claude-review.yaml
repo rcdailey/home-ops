@@ -5,7 +5,7 @@ name: Claude Review
 # Claude reviews Renovate PRs that change cluster configuration, plus any PR labeled
 # claude/review. Instructions: AGENTS.md and .claude/renovate-review.md from the base branch, so a
 # PR cannot change its own review. The model never merges; the gate step below owns auto-merge and
-# maintainer review requests.
+# maintainer notification.
 #
 # Manual test runs use the workflow and instructions from the dispatched branch against any open
 # PR, and only print what the merge gate would do:
@@ -135,7 +135,7 @@ jobs:
           --append-system-prompt-file ${{ runner.temp }}/instructions.md
           --json-schema '{"type":"object","additionalProperties":false,
           "required":["verdict","confidence","reviewed_sha","summary"],"properties":{
-          "verdict":{"enum":["safe","adopted","fixed","blocked"]},
+          "verdict":{"enum":["safe","decide","adopted","fixed","blocked"]},
           "confidence":{"enum":["high","medium","low"]},
           "reviewed_sha":{"type":"string"},"summary":{"type":"string"}}}'
         # All tools are allowed: a command list cannot stop prompt injection, since file reads and
@@ -149,7 +149,8 @@ jobs:
           }
 
     # Full transcript for retrospectives, one JSON message per line. Logs, unlike artifacts, get
-    # GitHub's secret masking.
+    # GitHub's secret masking. Read it with the job logs API; `gh run view --log` drops lines:
+    #   gh api --method GET --allow-escape-sequences repos/{owner}/{repo}/actions/jobs/<id>/logs
     - name: Print transcript
       if: ${{ !cancelled() && steps.claude.outputs.execution_file }}
       env:
@@ -178,18 +179,13 @@ jobs:
         verdict=$(field verdict)
         confidence=$(field confidence)
         reviewed=$(field reviewed_sha)
-        pr_json=$(gh pr view "$PR" --json headRefOid,labels,author)
+        pr_json=$(gh pr view "$PR" --json headRefOid,labels)
         head=$(jq -r .headRefOid <<< "$pr_json")
-        author=$(jq -r .author.login <<< "$pr_json")
         held=$(jq -r '[.labels[].name]
           | map(select(. == "type/major" or . == "risk/high" or . == "status/hold"))
           | length' <<< "$pr_json")
         echo "verdict=${verdict:-none} confidence=${confidence:-none} reviewed=${reviewed:-none}"
         echo "head=$head held_labels=$held"
-
-        if [[ -z "$verdict" ]]; then
-          gh pr comment "$PR" --body "Claude review returned no verdict; see ${RUN_URL}"
-        fi
 
         if [[ "$verdict" == safe && "$confidence" == high && "$reviewed" == "$head" \
           && "$held" == 0 ]]; then
@@ -198,10 +194,10 @@ jobs:
         fi
 
         gh pr edit "$PR" --add-label claude/needs-review
-        # GitHub rejects a review request to the PR author
-        if [[ "$author" != "$OWNER" ]]; then
-          gh pr edit "$PR" --add-reviewer "$OWNER"
-        fi
+        # A mention, unlike a review request, cannot be triggered by team or CODEOWNERS rules, so
+        # notification filters can trust it
+        result="verdict ${verdict:-none}, confidence ${confidence:-none}"
+        gh pr comment "$PR" --body "@${OWNER} needs review: ${result}; run ${RUN_URL}"
 
     - name: Remove review label
       if: ${{ always() && github.event.action == 'labeled' }}
