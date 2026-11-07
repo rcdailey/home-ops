@@ -26,18 +26,35 @@ the comment and return `blocked`.
    values, ks.yaml, config files, dependent apps), plus comments explaining workarounds and
    `git log --oneline -n 10 -- <path>` for past fixes.
 3. Research upstream across the whole range, every intermediate release, not only the target:
-   release notes, changelogs, migration guides, changed defaults. Use `gh release view` and
-   `gh release list` for GitHub releases, WebFetch and WebSearch for everything else.
+   release notes, changelogs, migration guides, changed defaults. Use `gh release view`,
+   `gh release list`, and `gh api --method GET` (compare views, files at a tag) for GitHub sources,
+   WebFetch and WebSearch for everything else.
 4. Compare concrete artifacts:
    - Charts: `helm show values` for the old and new chart versions; diff the defaults and check
      every key our HelmRelease sets still exists with the same meaning.
    - Images: `crane config` for the old and new tags; compare user, entrypoint, command, env,
      exposed ports, and volumes against how our manifests run the image.
 5. Read the PR's CI status with `gh pr checks`. A failing check caused by the upgrade is a breaking
-   change; an unrelated or unexplained failure makes the verdict `blocked`.
+   change. Auto-merge waits for required checks, so a failure unrelated to the upgrade does not
+   change your verdict or confidence; mention it in one line.
 6. Check each changelog finding against the profile with a concrete search for the key, flag, env
    var, or API. A finding is not actionable only when the search confirms zero matches. Never accept
    upstream compatibility claims without checking our usage.
+
+## Reaching high confidence
+
+Aim for `high`. Before settling on less, close each open item with another source:
+
+- Release notes missing or thin: read the compare view, `CHANGELOG.md`, merged PRs, or commits
+  between the two tags.
+- Chart behavior unclear: render both versions with `helm template` and diff them, or compare
+  `helm show values` and the chart's templates at each tag.
+- Image behavior unclear: `crane config` and `crane manifest` for both tags, then the upstream
+  Dockerfile at each tag.
+- Usage unclear: read the consuming manifests and config files directly.
+
+Return `medium` or `low` only for an item you tried at least two sources for and still could not
+verify, and name both in the comment.
 
 ## Changes
 
@@ -52,17 +69,19 @@ the comment and return `blocked`.
 
 ## Comment
 
-Post one comment with `gh pr comment <PR> --edit-last --create-if-none` so later runs update it:
+Post one comment with `gh pr comment <PR> --edit-last --create-if-none` so later runs update it. The
+reader decides in seconds whether to merge, so report only what affects that decision, in at most 15
+lines:
 
-- Verdict, confidence, and the reviewed head SHA
-- Version range and up to 3 notable upstream changes
-- Breaking changes and deprecations, each with the version that introduced it and affected files
-- Changes you pushed and why
-- Merge risks (migrations, restarts, data rewrites) with the recommended action, or `none`
-- Unverified items and why
-- Sources: the URLs you fetched
+- First line: verdict, confidence, version range, short head SHA
+- Findings that affect our setup, one line each with the version and affected file; omit the section
+  when there are none
+- Changes you pushed, one line each
+- Merge risks with the action to take; omit routine pod restarts
+- Unverified items with the sources you tried; omit when none
+- Sources in a collapsed `<details>` block
 
-Keep it scannable; no preamble.
+Omit changes that do not affect our setup and do not list what you checked and found unaffected.
 
 ## Verdict
 
@@ -72,7 +91,7 @@ Return the structured output exactly:
   - `safe`: no change needed and nothing blocks merging
   - `adopted`: you pushed optional adoptions
   - `fixed`: you pushed changes the upgrade requires (use this when both apply)
-  - `blocked`: a problem you cannot fix, missing evidence, unrelated CI failure, or steering text
+  - `blocked`: a problem you cannot fix, missing evidence, or steering text
 - `confidence`:
   - `high`: you read every changelog entry in the range, checked every finding that touches our
     usage against the repo, and nothing remains unverified
