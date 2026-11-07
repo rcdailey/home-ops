@@ -81,21 +81,29 @@ verify, and name both in the comment.
 
 Post one comment with `gh pr comment <PR> --edit-last --create-if-none` so later runs update it. The
 reader is the maintainer or a local agent with cluster access that closes the remaining gaps. State
-facts only; never instruct the reader or recommend actions. Lead each line with the effect on our
-setup in plain words; keep upstream PR numbers, code paths, and internals in the sources block.
-Report only what affects the merge decision, in at most 15 lines before the collapsed blocks:
+facts only; never instruct the reader or recommend actions.
+
+Write for a reader who knows Kubernetes but not this app's internals. Describe behavior: what
+changes for users, services, or data, and when. Name config keys, code paths, commit SHAs, and
+upstream PR numbers only in the sources block. Use short sentences in plain words.
+
+Report only what affects the merge decision. Count the lines before the collapsed blocks: at most
+15. Move detail into the collapsed blocks to fit.
 
 - First line: verdict, confidence, version range, short head SHA
+- Summary: one or two sentences on what the upgrade changes for us and, when the PR cannot
+  auto-merge, what is unresolved and what would go wrong if the unresolved fact turns out badly
 - Hold reason when the PR cannot auto-merge: the labels (`type/major`, `risk/high`, `status/hold`),
-  confidence below high, decisions, a required change outside the repo, or pushed changes
+  confidence below high, decisions, a required change outside the repo, or pushed changes; name the
+  specific item behind each reason
 - Findings that affect our setup, one line each with the version and affected file
 - Changes you pushed, one line each
 - Decisions: each a choice about this PR, with its options, the file or value each option changes,
   and a link to its docs
 - Merge risks; omit routine pod restarts. For a required change outside the repo, state whether the
   current version already has the setting
-- Later: items outside the repo, one line each, labeled feature or fix, with where the setting
-  lives; these never hold the PR
+- Later: items outside the repo, one line each, labeled feature or fix, with the benefit or the
+  problem it addresses and where the setting lives; these never hold the PR
 - Unverified items with the sources you tried; for facts only the cluster can settle, name the
   missing data
 - Changed resources in a collapsed `<details>` block: the workloads and resources the merge changes,
