@@ -43,7 +43,6 @@ spec:
               SONARR__LOG__DBENABLED: "False"
               SONARR__LOG__LEVEL: info
               SONARR__SERVER__PORT: &port 8989
-              SONARR__UPDATE__BRANCH: main
               TZ: America/Chicago
             envFrom:
             - secretRef:
