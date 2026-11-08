@@ -188,16 +188,26 @@ jobs:
         echo "verdict=${verdict:-none} confidence=${confidence:-none} reviewed=${reviewed:-none}"
         echo "head=$head held_labels=$held"
 
+        result="verdict ${verdict:-none}, confidence ${confidence:-none}"
         if [[ "$verdict" == safe && "$confidence" == high && "$reviewed" == "$head" \
           && "$held" == 0 ]]; then
-          gh pr merge "$PR" --auto --squash --match-head-commit "$head"
-          exit 0
+          # gh merges directly only for a known mergeable state; while GitHub still reports
+          # UNKNOWN, it requests auto-merge, which GitHub rejects for an already-mergeable PR
+          for _ in {1..12}; do
+            state=$(gh pr view "$PR" --json mergeStateStatus --jq .mergeStateStatus)
+            [[ "$state" != UNKNOWN ]] && break
+            sleep 5
+          done
+          echo "merge_state=$state"
+          if gh pr merge "$PR" --auto --squash --match-head-commit "$head"; then
+            exit 0
+          fi
+          result="$result, merge failed"
         fi
 
         gh pr edit "$PR" --add-label claude/needs-review
         # A mention, unlike a review request, cannot be triggered by team or CODEOWNERS rules, so
         # notification filters can trust it
-        result="verdict ${verdict:-none}, confidence ${confidence:-none}"
         gh pr comment "$PR" --body "@${OWNER} needs review: ${result}; run ${RUN_URL}"
 
     - name: Remove review label
