@@ -40,8 +40,9 @@ spec:
               tag: v20.2.5
             command: [/bin/bash, /scripts/capture.sh]
             env:
-              MODE: manual
-              TRIGGER_AT: "07:25"
+              MODE: csi
+              # Before the ~07:25 UTC Kopiur backup, so the new ceph-csi clone is detected
+              TRIGGER_AT: "07:10"
               MGR_ID: a
               FS: ceph-filesystem
               SOURCE_GROUP: csi
