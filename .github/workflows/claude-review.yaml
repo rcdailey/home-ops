@@ -228,18 +228,32 @@ jobs:
         result="verdict ${verdict:-none}, confidence ${confidence:-none}"
         if [[ "$verdict" == safe && "$confidence" == high && "$reviewed" == "$head" \
           && "$held" == 0 ]]; then
-          # gh merges directly only for a known mergeable state; while GitHub still reports
-          # UNKNOWN, it requests auto-merge, which GitHub rejects for an already-mergeable PR
-          for _ in {1..12}; do
-            state=$(gh pr view "$PR" --json mergeStateStatus --jq .mergeStateStatus)
-            [[ "$state" != UNKNOWN ]] && break
-            sleep 5
+          # Concurrent merges into the base branch reset every open PR's merge state to UNKNOWN
+          # and fail in-flight merges, so the gate retries. It picks direct merge or auto-merge
+          # from the state it read: GitHub rejects auto-merge for an already-mergeable PR, and
+          # gh makes the same choice from its own, possibly UNKNOWN, read.
+          for attempt in {1..5}; do
+            for _ in {1..12}; do
+              state=$(gh pr view "$PR" --json mergeStateStatus --jq .mergeStateStatus)
+              [[ "$state" != UNKNOWN ]] && break
+              sleep 5
+            done
+            echo "attempt=$attempt merge_state=$state"
+            case "$state" in
+              CLEAN | HAS_HOOKS | UNSTABLE) mode=() ;;
+              DIRTY) result="$result, merge conflict" && break ;;
+              *) mode=(--auto) ;;
+            esac
+            if gh pr merge "$PR" "${mode[@]}" --squash --match-head-commit "$head"; then
+              if jq -e '[.labels[].name] | index("claude/needs-review")' <<< "$pr_json" \
+                >/dev/null; then
+                gh pr edit "$PR" --remove-label claude/needs-review
+              fi
+              exit 0
+            fi
+            sleep 10
           done
-          echo "merge_state=$state"
-          if gh pr merge "$PR" --auto --squash --match-head-commit "$head"; then
-            exit 0
-          fi
-          result="$result, merge failed"
+          [[ "$state" == DIRTY ]] || result="$result, merge failed"
         fi
 
         gh pr edit "$PR" --add-label claude/needs-review
