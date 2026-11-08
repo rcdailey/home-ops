@@ -36,11 +36,11 @@ hours. Their cache claims used `volsync-src-<application>-cache`. Pod phase seri
 without `k8s.node.name` while Pending and later with the node after scheduling. The changing label
 set created two alert identities for one pod; it was not a second pod or collector.
 
-The trace search returned nine rootless traces among 100 representative traces from a fixed
-24-hour window. All rootless examples contained OpenCloud `gateway` or `storage-system` spans.
-Three old trace IDs were fetched after ingestion had completed. Each still contained 33 spans, no
-root span, and one absent parent at the `storage-system` `appctx` span. This rules out ingestion
-delay and places the broken boundary before `storage-system` creates `appctx`.
+The trace search returned nine rootless traces among 100 representative traces from a fixed 24-hour
+window. All rootless examples contained OpenCloud `gateway` or `storage-system` spans. Three old
+trace IDs were fetched after ingestion had completed. Each still contained 33 spans, no root span,
+and one absent parent at the `storage-system` `appctx` span. This rules out ingestion delay and
+places the broken boundary before `storage-system` creates `appctx`.
 
 OpenCloud 7.4.0 source accounts for this boundary. Its Reva HTTP handler extracts an incoming W3C
 `traceparent` before starting the `rhttp` `appctx` span. OpenTelemetry represents that upstream
@@ -97,6 +97,6 @@ root, or if an expected local upstream service fails to export the parent.
 - [OpenTelemetry trace API][otel-trace-api]
 
 [observability]: ../architecture/observability.md
-[otel-decision]: ../adr/0001-standardize-observability-on-opentelemetry.md
+[otel-decision]: ../decisions/015-standardize-observability-on-opentelemetry.md
 [opencloud-release]: https://github.com/opencloud-eu/opencloud/releases/tag/v7.4.0
 [otel-trace-api]: https://opentelemetry.io/docs/specs/otel/trace/api/

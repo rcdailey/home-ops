@@ -152,11 +152,11 @@ queue.
 
 Backend ownership is fixed:
 
-| Signal | Backend | Retention |
-| --- | --- | --- |
-| Metrics | VictoriaMetrics | 14 days |
-| Logs | VictoriaLogs | Backend policy |
-| Traces | VictoriaTraces | 7 days |
+| Signal  | Backend         | Retention      |
+| ------- | --------------- | -------------- |
+| Metrics | VictoriaMetrics | 14 days        |
+| Logs    | VictoriaLogs    | Backend policy |
+| Traces  | VictoriaTraces  | 7 days         |
 
 Metrics and logs have separate VMAlert instances. Both notify the shared Alertmanager. Grafana
 queries all three backends and Alertmanager. Hops queries VictoriaMetrics, VictoriaLogs, VMAlert,
@@ -164,17 +164,17 @@ and the Target Allocator; trace investigation currently belongs in Grafana.
 
 ## Internal endpoints
 
-| Purpose | Endpoint |
-| --- | --- |
-| OTLP/gRPC ingestion | `otel-gateway-collector.observability:4317` |
-| OTLP/HTTP ingestion | `http://otel-gateway-collector.observability:4318` |
-| Target Allocator API | `http://otel-scrape-targetallocator.observability` |
-| VictoriaMetrics | `http://vmsingle-vm.observability:8428` |
-| VictoriaLogs | `http://vl.observability:9428` |
-| VictoriaTraces Tempo API | `http://vt.observability:10428/select/tempo` |
-| Metrics VMAlert | `http://vmalert-vm.observability:8080` |
-| Logs VMAlert | `http://vmalert-vl.observability:8080` |
-| Alertmanager | `http://vmalertmanager-vm.observability:9093` |
+| Purpose                  | Endpoint                                           |
+| ------------------------ | -------------------------------------------------- |
+| OTLP/gRPC ingestion      | `otel-gateway-collector.observability:4317`        |
+| OTLP/HTTP ingestion      | `http://otel-gateway-collector.observability:4318` |
+| Target Allocator API     | `http://otel-scrape-targetallocator.observability` |
+| VictoriaMetrics          | `http://vmsingle-vm.observability:8428`            |
+| VictoriaLogs             | `http://vl.observability:9428`                     |
+| VictoriaTraces Tempo API | `http://vt.observability:10428/select/tempo`       |
+| Metrics VMAlert          | `http://vmalert-vm.observability:8080`             |
+| Logs VMAlert             | `http://vmalert-vl.observability:8080`             |
+| Alertmanager             | `http://vmalertmanager-vm.observability:9093`      |
 
-[adr]: ../adr/0001-standardize-observability-on-opentelemetry.md
+[adr]: ../decisions/015-standardize-observability-on-opentelemetry.md
 [otel-operator-2078]: https://github.com/open-telemetry/opentelemetry-operator/issues/2078

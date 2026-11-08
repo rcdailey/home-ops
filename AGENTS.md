@@ -193,6 +193,9 @@ When documenting an investigation, read `docs/investigations/TEMPLATE.md`, creat
 move durable decisions into ADRs, and cross-reference them. Investigations are historical snapshots;
 do not update them when later decisions supersede their conclusions.
 
+ADRs live in `docs/decisions/` as `NNN-slug.md` with the next free number, following
+`docs/decisions/TEMPLATE.md`. This overrides skill defaults such as `docs/adr/`.
+
 Changes made outside GitOps to network infrastructure (UniFi console or settings, Cloudflare) MUST
 get a dated record in `docs/network/` stating the change, its reason, and how to verify or revert
 it.
