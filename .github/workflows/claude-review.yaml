@@ -67,6 +67,9 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
 
+    # A Renovate rebase that leaves the PR's own patch unchanged reuses a prior safe, high-confidence
+    # verdict instead of a new review; the merge gate still runs against the new head. The Record
+    # review step stores each verdict with the patch it reviewed.
     - name: Check scope
       id: scope
       env:
@@ -74,11 +77,33 @@ jobs:
       run: |-
         if [[ "$STATE" != OPEN ]]; then
           echo "PR $PR is $STATE; skipping review"
-        elif [[ "$ACTION" == labeled || "$DRY_RUN" == true ]] \
-          || git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qE '^(kubernetes|talos)/'; then
-          echo "review=true" >> "$GITHUB_OUTPUT"
-        else
+          exit 0
+        fi
+        if [[ "$ACTION" != labeled && "$DRY_RUN" != true ]] \
+          && ! git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qE '^(kubernetes|talos)/'; then
           echo "No cluster configuration changes; skipping review"
+          exit 0
+        fi
+
+        patch_id=$(git diff "origin/${BASE_REF}...HEAD" | git patch-id --stable | cut -d' ' -f1)
+        echo "patch_id=$patch_id"
+        { echo "gate=true"; echo "patch_id=$patch_id"; } >> "$GITHUB_OUTPUT"
+
+        prior=""
+        if [[ "$ACTION" == synchronize ]]; then
+          prior=$(gh api --method GET --paginate "repos/{owner}/{repo}/issues/$PR/comments" --jq '
+            .[] | select(.user.login == "github-actions[bot]") | .body
+            | capture("<!-- claude-review (?<s>\\{[^}]*\\}) -->").s' | tail -n 1)
+        fi
+        echo "prior=${prior:-none}"
+        if [[ -n "$prior" ]] && jq -e --arg p "$patch_id" \
+          '.patch_id == $p and .verdict == "safe" and .confidence == "high"' <<< "$prior" >/dev/null
+        then
+          echo "Patch unchanged since a safe, high-confidence review; reusing the verdict"
+          jq -c --arg sha "$HEAD_SHA" '{verdict, confidence, reviewed_sha: $sha}' <<< "$prior" \
+            | sed 's/^/reused=/' >> "$GITHUB_OUTPUT"
+        else
+          echo "review=true" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Setup flate
@@ -162,9 +187,11 @@ jobs:
     # Merge gate: auto-merge only a high-confidence safe verdict on the exact reviewed commit, and
     # never majors, high-risk, or held PRs. Everything else goes to the maintainer.
     - name: Apply verdict
-      if: ${{ !cancelled() && steps.scope.outputs.review == 'true' }}
+      id: verdict
+      if: ${{ !cancelled() && steps.scope.outputs.gate == 'true' }}
       env:
-        OUTPUT: ${{ steps.claude.outputs.structured_output }}
+        OUTPUT: ${{ steps.claude.outputs.structured_output || steps.scope.outputs.reused }}
+        PATCH_ID: ${{ steps.scope.outputs.patch_id }}
         OWNER: ${{ github.repository_owner }}
       run: |-
         # Manual runs only print the gate's actions
@@ -187,6 +214,16 @@ jobs:
           | length' <<< "$pr_json")
         echo "verdict=${verdict:-none} confidence=${confidence:-none} reviewed=${reviewed:-none}"
         echo "head=$head held_labels=$held"
+        marker=$(jq -nc --arg p "$PATCH_ID" --arg v "${verdict:-none}" \
+          --arg c "${confidence:-none}" '{patch_id: $p, verdict: $v, confidence: $c}')
+        {
+          echo "record<<EOF_RECORD"
+          echo "<!-- claude-review $marker -->"
+          echo "Claude review of patch \`$PATCH_ID\`: verdict ${verdict:-none}," \
+            "confidence ${confidence:-none}. Rebases that keep this patch reuse a safe," \
+            "high-confidence verdict."
+          echo "EOF_RECORD"
+        } >> "$GITHUB_OUTPUT"
 
         result="verdict ${verdict:-none}, confidence ${confidence:-none}"
         if [[ "$verdict" == safe && "$confidence" == high && "$reviewed" == "$head" \
@@ -209,6 +246,15 @@ jobs:
         # A mention, unlike a review request, cannot be triggered by team or CODEOWNERS rules, so
         # notification filters can trust it
         gh pr comment "$PR" --body "@${OWNER} needs review: ${result}; run ${RUN_URL}"
+
+    # Check scope reads the JSON marker to decide whether a rebase can reuse this verdict
+    - name: Record review
+      if: ${{ !cancelled() && steps.scope.outputs.review == 'true' && env.DRY_RUN != 'true' }}
+      uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+      with:
+        header: claude-review
+        number: ${{ env.PR }}
+        message: ${{ steps.verdict.outputs.record }}
 
     - name: Remove review label
       if: ${{ always() && github.event.action == 'labeled' }}
