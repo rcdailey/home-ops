@@ -59,7 +59,9 @@ repos:
   hooks:
   - id: flate-test
     name: Flux Manifest Validation
-    entry: env FLATE_BASE=HEAD flate test all -p ./kubernetes/apps
+    entry: >-
+      env FLATE_BASE=HEAD FLATE_SUPPLY=.flate/cluster-secrets.yaml
+      flate test all -p ./kubernetes/apps
     language: system
     files: '^kubernetes/.*\.ya?ml$'
     pass_filenames: false

@@ -14,6 +14,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  FLATE_SUPPLY: .flate/cluster-secrets.yaml
+
 jobs:
   filter:
     name: Flux Diff - Filter
@@ -40,7 +43,7 @@ jobs:
         persist-credentials: false
 
     - name: Setup flate
-      uses: home-operations/flate/action@631b76b69c4e58c6f4d1cb01e23616fa61aebafa # v0.6.5
+      uses: home-operations/flate/action@f7e0888c400e73901f64e1f8ae05b0def363f697 # v0.7.0
       with:
         cache: true
 
@@ -64,7 +67,7 @@ jobs:
         persist-credentials: false
 
     - name: Setup flate
-      uses: home-operations/flate/action@631b76b69c4e58c6f4d1cb01e23616fa61aebafa # v0.6.5
+      uses: home-operations/flate/action@f7e0888c400e73901f64e1f8ae05b0def363f697 # v0.7.0
       with:
         cache: true
 
@@ -109,7 +112,7 @@ jobs:
         persist-credentials: false
 
     - name: Setup flate
-      uses: home-operations/flate/action@631b76b69c4e58c6f4d1cb01e23616fa61aebafa # v0.6.5
+      uses: home-operations/flate/action@f7e0888c400e73901f64e1f8ae05b0def363f697 # v0.7.0
       with:
         cache: true
 
