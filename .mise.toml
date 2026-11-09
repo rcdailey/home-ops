@@ -26,7 +26,7 @@ helmfile = "latest"
 infisical = "latest"
 jq = "latest"
 just = "latest"
-kubectl = "1.37.1"
+kubectl = "1.37.2"
 "krew:cnpg" = "latest"
 # Not in the official krew index yet; kubectl discovers plugins by the kubectl-kopiur name
 "github:home-operations/kopiur" = { version = "latest", rename_exe = "kubectl-kopiur" }
