@@ -29,14 +29,17 @@ permissions: {}
 jobs:
   review:
     # Renovate events: only Renovate PRs and only Renovate's own pushes, so pushes by Claude or a
-    # maintainer never start a review. Label events: only the review label. Labels such as
-    # risk/high or status/hold never skip the review; they only block auto-merge below.
+    # maintainer never start a review. The self-hosted bot (renova-chan) also adopted PRs that the
+    # Mend app (renovate[bot]) opened, so either may be the PR author. Label events: only the
+    # review label. Labels such as risk/high or status/hold never skip the review; they only block
+    # auto-merge below.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.action == 'labeled' && github.event.label.name == 'claude/review') ||
       (github.event.action != 'labeled' &&
-        github.event.pull_request.user.login == 'renovate[bot]' &&
-        github.event.sender.login == 'renovate[bot]')
+        contains(fromJSON('["renovate[bot]","renova-chan[bot]"]'),
+          github.event.pull_request.user.login) &&
+        github.event.sender.login == 'renova-chan[bot]')
     name: Claude Review
     runs-on: ubuntu-latest
     concurrency:
@@ -149,7 +152,7 @@ jobs:
         # The Claude App rejects workflow files that differ from main, so manual runs from a test
         # branch use the job token; Claude's pushes then do not start other workflows
         github_token: ${{ github.event_name == 'workflow_dispatch' && github.token || '' }}
-        allowed_bots: renovate[bot]
+        allowed_bots: renova-chan[bot],renovate[bot]
         prompt: |
           Review this Renovate PR following your system instructions.
           REPO: ${{ github.repository }}

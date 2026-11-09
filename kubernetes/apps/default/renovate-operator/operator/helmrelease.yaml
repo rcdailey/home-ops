@@ -1,0 +1,72 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: renovate-operator
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: renovate-operator
+      version: 6.8.0
+      sourceRef:
+        kind: HelmRepository
+        name: renovate-operator
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    deployment:
+      annotations:
+        reloader.stakater.com/auto: "true"
+    config:
+      logStorage:
+        mode: memory
+    rbac:
+      ownNamespaceOnly: true
+    route:
+      enabled: true
+      hostnames:
+      - renovate.${SECRET_DOMAIN}
+      parentRefs:
+      - name: internal
+        namespace: network
+        sectionName: https
+    webhook:
+      enabled: true
+      route:
+        enabled: true
+        hostnames:
+        - renovate-webhook.${SECRET_DOMAIN}
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+    auth:
+      # The default cookie store exceeds browser cookie limits with OIDC; sessions end on restart
+      sessionStore: memory
+      oidc:
+        enabled: true
+        issuerUrl: https://auth.${SECRET_DOMAIN}
+        clientId: renovate-operator
+        existingSecret: renovate-operator-oidc-credentials
+        secretKey: client-secret
+        # TLS terminates at the Gateway, which the chart cannot detect
+        redirectScheme: https
+    # The Pocket ID client admits only the admins group, so every session gets full access
+    authorization:
+      enabled: false
+    policy:
+      enabled: true
+      allowedImages:
+      - ghcr.io/renovatebot/renovate
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true

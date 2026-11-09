@@ -41,6 +41,8 @@
   gitIgnoredAuthors: [
     "git@example.com",
     "227055450+renohate[bot]@users.noreply.github.com",
+    // The Mend-hosted app, whose PRs the self-hosted bot adopted
+    "29139614+renovate[bot]@users.noreply.github.com",
   ],
   ignorePaths: ["**/resources/**"],
   flux: {

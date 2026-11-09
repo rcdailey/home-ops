@@ -15,3 +15,5 @@ resources:
 - ./headlamp/ks.yaml
 - ./pocket-id/ks.yaml
 - ./pocket-id/operator/ks.yaml
+- ./renovate-operator/ks.yaml
+- ./renovate-operator/operator/ks.yaml

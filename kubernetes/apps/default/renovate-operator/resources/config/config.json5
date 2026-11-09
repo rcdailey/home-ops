@@ -1,0 +1,9 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  onboarding: false,
+  requireConfig: "required",
+  // Lets this bot adopt the PRs and dashboard issue that the Mend-hosted app opened
+  ignorePrAuthor: true,
+  // GitHub signs API-created commits and sets the App as their author
+  platformCommit: "enabled",
+}

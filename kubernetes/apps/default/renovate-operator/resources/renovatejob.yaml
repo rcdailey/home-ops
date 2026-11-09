@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/renovate-operator.mogenius.com/renovatejob_v1alpha1.json
+apiVersion: renovate-operator.mogenius.com/v1alpha1
+kind: RenovateJob
+metadata:
+  name: home-ops
+spec:
+  provider:
+    name: github
+  discoveryFilters:
+  - rcdailey/home-ops
+  schedule: 0 * * * *
+  image: ghcr.io/renovatebot/renovate:44.222.5
+  parallelism: 1
+  githubAppReference:
+    secretName: renovate-github-app
+    appIdSecretKey: CLIENT_ID
+    installationIdSecretKey: INSTALL_ID
+    pemSecretKey: PEM
+  renovateConfig:
+    configMapRef:
+      name: renovate-global-config
+      key: config.json5
+  webhook:
+    enabled: true
+    authentication:
+      enabled: true
+      secretRef:
+        name: renovate-webhook-token
+        key: token
+    sync:
+      enabled: true
