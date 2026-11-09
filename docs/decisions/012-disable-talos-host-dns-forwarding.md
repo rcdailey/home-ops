@@ -7,12 +7,13 @@
 
 ## Context and Problem Statement
 
-Three interlocked settings existed as workarounds for a Talos/Cilium incompatibility ([Talos issue
-10002][talos-10002], [Cilium issue 36737][cilium-36737]). Talos's `forwardKubeDNSToHost` intercepts
-pod DNS queries via a host-level proxy attached to loopback. Cilium's BPF routing bypasses loopback,
-breaking that interception. The workaround was `hostLegacyRouting: true` (forcing packets through
-the kernel stack so Talos could see them), which in turn required `socketLB.hostNamespaceOnly: true`
-for compatibility. All three settings deviated from their respective defaults.
+Three interlocked settings existed as workarounds for a Talos/Cilium incompatibility
+([Talos issue 10002][talos-10002], [Cilium issue 36737][cilium-36737]). Talos's
+`forwardKubeDNSToHost` intercepts pod DNS queries via a host-level proxy attached to loopback.
+Cilium's BPF routing bypasses loopback, breaking that interception. The workaround was
+`hostLegacyRouting: true` (forcing packets through the kernel stack so Talos could see them), which
+in turn required `socketLB.hostNamespaceOnly: true` for compatibility. All three settings deviated
+from their respective defaults.
 
 ## Considered Options
 
@@ -24,10 +25,10 @@ for compatibility. All three settings deviated from their respective defaults.
 ## Decision Outcome
 
 Chosen option: **disable host DNS forwarding**, because it removes the root cause rather than
-working around it. Both upstream issue threads ([Talos issue 10002][talos-10002], [Cilium issue
-36737][cilium-36737]) confirm this as the accepted solution. The host proxy is a convenience for
-edge cases during node bootstrap; once the cluster is running, CoreDNS handles all pod DNS
-regardless of this setting.
+working around it. Both upstream issue threads ([Talos issue 10002][talos-10002],
+[Cilium issue 36737][cilium-36737]) confirm this as the accepted solution. The host proxy is a
+convenience for edge cases during node bootstrap; once the cluster is running, CoreDNS handles all
+pod DNS regardless of this setting.
 
 ## Consequences
 
@@ -50,7 +51,7 @@ regardless of this setting.
 [talos-10002]: https://github.com/siderolabs/talos/issues/10002
 [cilium-36737]: https://github.com/cilium/cilium/issues/36737
 [adr-008]: /docs/decisions/008-cilium-host-legacy-routing.md
-[investigation]: /docs/investigations/cilium-bbr-timeout-investigation-2025-11-14.md
+[investigation]: /docs/investigations/2025-11-14-cilium-bbr-timeout-investigation.md
 
 ## Historical Context
 

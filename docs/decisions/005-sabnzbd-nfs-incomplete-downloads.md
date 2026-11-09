@@ -41,4 +41,4 @@ usenet downloads that are not latency-sensitive.
 - [SABnzbd crash loop investigation][investigation]
 - Commits: `880c37d` (NFS migration), `0da99ae` (re-enable liveness probe)
 
-[investigation]: /docs/investigations/sabnzbd-crash-loop-oom-postproc-2026-01-18.md
+[investigation]: /docs/investigations/2026-01-18-sabnzbd-crash-loop-oom-postproc.md

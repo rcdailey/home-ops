@@ -39,8 +39,8 @@ visibility so future incident windows can be analyzed with better data.
   - Several at 3-5 (mariadb-operator, envoy-gateway, pocket-id-operator, VM operator,
     kube-controller-manager-hanekawa, kube-scheduler-hanekawa, etc.)
 
-- **Kubernetes API server write latency spikes.** p99 latency on PUT/PATCH verbs reaches 5-7
-  seconds during incident windows (normal: 40-900ms).
+- **Kubernetes API server write latency spikes.** p99 latency on PUT/PATCH verbs reaches 5-7 seconds
+  during incident windows (normal: 40-900ms).
 
 - **etcd GET/LIST latency spikes.** From `etcd_request_duration_seconds_bucket` (the apiserver's
   view of etcd), p99 spikes to 21-25 seconds during the worst incidents, affecting unrelated
@@ -52,8 +52,8 @@ visibility so future incident windows can be analyzed with better data.
 ### Evidence sources
 
 - `./scripts/query-vm.py query 'histogram_quantile(...)'` for apiserver and etcd latency histograms
-- `talosctl dmesg` on control plane nodes for `[talos] service[etcd] Health check failed` events
-  and `libceph: ... socket closed/error` events
+- `talosctl dmesg` on control plane nodes for `[talos] service[etcd] Health check failed` events and
+  `libceph: ... socket closed/error` events
 - `kubectl -n rook-ceph logs rook-ceph-operator-...` for `mon "X" out of quorum` messages
 - `kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph tell mon.j mon_status` and `perf dump`
 
@@ -63,8 +63,8 @@ visibility so future incident windows can be analyzed with better data.
 
 - **Not silence-operator-specific.** silence-operator uses 17 MiB memory and 2-3 millicores CPU. It
   is not resource-starved. Controller-runtime's leader election has a hardcoded 5-second timeout on
-  each lease renewal PATCH; any leader-elected pod in the cluster is vulnerable to the same
-  failure mode when the API server is slow.
+  each lease renewal PATCH; any leader-elected pod in the cluster is vulnerable to the same failure
+  mode when the API server is slow.
 
 - **Not resource saturation on any node.** During the worst etcd spike (03:10 UTC on 2026-04-08),
   control plane node disk utilization was 2-5%, CPU was 20-35%, no memory pressure, no OOM events,
@@ -77,24 +77,24 @@ visibility so future incident windows can be analyzed with better data.
 
 - **Not Ceph OSD saturation.** OSD-5 on hanekawa shows `ceph osd perf` commit latency of 9ms,
   RocksDB stall count of 0, no slow ops reported. PostgreSQL workloads (immich-postgres,
-  seerr-postgres) on hanekawa do write to Ceph but are not the primary heavy writers. User
-  confirmed that Sabnzbd and qBittorrent intermediate I/O (par2 repair, extraction) is redirected
-  to NFS on Nezuko, not Ceph, specifically because earlier incidents with ceph-filesystem caused
-  service hangs during heavy I/O.
+  seerr-postgres) on hanekawa do write to Ceph but are not the primary heavy writers. User confirmed
+  that Sabnzbd and qBittorrent intermediate I/O (par2 repair, extraction) is redirected to NFS on
+  Nezuko, not Ceph, specifically because earlier incidents with ceph-filesystem caused service hangs
+  during heavy I/O.
 
 - **Not network interface errors.** `node_network_receive_errs_total` and
   `node_network_transmit_errs_total` show zero errors on all control plane nodes. No NIC resets,
   driver errors, or packet drops in dmesg. Cilium health status is OK on all nodes.
 
-- **Not a mon container crash.** The mon-j pod has 7 restarts, but all terminations are Exit Code
-  0 / Reason: Completed (clean shutdowns). The mon container has no livenessProbe, readinessProbe,
-  or startupProbe configured. Restarts are driven by Rook operator's "mon out of quorum timeout"
-  logic, which recreates the mon pod when quorum isn't restored within the timeout. This is
-  reactive remediation by Rook, not a sign that the mon process is intrinsically unstable.
+- **Not a mon container crash.** The mon-j pod has 7 restarts, but all terminations are Exit Code 0
+  / Reason: Completed (clean shutdowns). The mon container has no livenessProbe, readinessProbe, or
+  startupProbe configured. Restarts are driven by Rook operator's "mon out of quorum timeout" logic,
+  which recreates the mon pod when quorum isn't restored within the timeout. This is reactive
+  remediation by Rook, not a sign that the mon process is intrinsically unstable.
 
 - **Not an etcd data problem.** etcd database sizes are healthy (132/170/178 MB across the 3 CP
-  nodes), defrag runs nightly at 02:00 UTC and completes in ~1 minute, Raft index matches across
-  all members, no alarms.
+  nodes), defrag runs nightly at 02:00 UTC and completes in ~1 minute, Raft index matches across all
+  members, no alarms.
 
 ### What was observed
 
@@ -128,8 +128,8 @@ Additional etcd-only incidents (etcd slow but no mon quorum loss recorded) occur
 **Temporal ordering:** etcd slowness shows up FIRST, THEN Rook detects mon-j out of quorum, THEN
 libceph kernel errors appear as RBD clients retry against the failing mon. This suggests the
 direction of causation may be "host disturbance affects etcd first, then affects Ceph mon seconds
-later" rather than "Ceph mon problems cause etcd slowness." However, Rook's quorum loss detection
-is poll-based and lags the actual loss by seconds, so this ordering is not definitive.
+later" rather than "Ceph mon problems cause etcd slowness." However, Rook's quorum loss detection is
+poll-based and lags the actual loss by seconds, so this ordering is not definitive.
 
 **Asymmetry across control plane nodes:**
 
@@ -143,8 +143,8 @@ sakura is immune so far. Hardware is identical across all three (8 cores, 64Gi R
 **hanekawa vs sakura workload differences:**
 
 - hanekawa runs 46 pods including immich + immich-postgres, seerr-postgres, 3 radarr instances, 2
-  sonarr instances, qbittorrent, kopia, donetick, 2 envoy gateway pods. Has 16 RBD devices
-  attached via krbd.
+  sonarr instances, qbittorrent, kopia, donetick, 2 envoy gateway pods. Has 16 RBD devices attached
+  via krbd.
 - sakura runs 25 pods and has 2 RBD devices attached.
 
 Workload difference exists but there is no direct causal link yet to explain why it would manifest
@@ -158,8 +158,8 @@ Two subagent investigations produced partially hallucinated findings that wasted
    architecture of this cluster.
 
 2. Second subagent claimed mon-j logs contained "slow ops" and "slow election of 12.8387 seconds"
-   messages that do not exist in the actual mon-j logs. Spot-checking the mon-j logs directly
-   showed only routine RocksDB compaction activity with zero stalls. The specific log lines were
+   messages that do not exist in the actual mon-j logs. Spot-checking the mon-j logs directly showed
+   only routine RocksDB compaction activity with zero stalls. The specific log lines were
    fabricated.
 
 Lesson: subagent findings with specific log quotes or numeric values must be spot-checked against
@@ -177,8 +177,7 @@ visible via `ceph tell mon.j mon_status` (sync_provider field). No immediate act
 **Unknown.** The practical observation is:
 
 1. The Kubernetes API server occasionally becomes slow on writes for 15-120 seconds at a time
-2. This is because etcd on the current Raft leader (currently hanekawa) is slow during these
-   windows
+2. This is because etcd on the current Raft leader (currently hanekawa) is slow during these windows
 3. These windows coincide with Ceph mon quorum loss events
 4. Leader-elected controllers across the cluster lose their leases during these windows and restart
 5. The underlying host-level or network-level disturbance that affects both etcd and ceph-mon
@@ -188,8 +187,8 @@ Candidate hypotheses not yet tested:
 
 - Network micro-partitions on the control plane subnet affecting etcd peer traffic and Ceph mon
   Paxos heartbeats simultaneously
-- Kernel-level pauses (memory reclaim, softirq storms, IRQ blocking) that stall both etcd fsync
-  and ceph-mon processes at once
+- Kernel-level pauses (memory reclaim, softirq storms, IRQ blocking) that stall both etcd fsync and
+  ceph-mon processes at once
 - Ceph mon Paxos timeouts being too aggressive for this environment (defaults: mon_lease 5s,
   mon_election_timeout 5s, mon_lease_renew_interval_factor 0.6)
 - Converged-deployment-specific kernel resource contention that isn't visible in top-level metrics
@@ -215,32 +214,32 @@ evidence to determine whether this is a network, kernel, or Ceph tuning issue.
 
 - **Leader-elected controllers are a cluster-wide health signal.** When many unrelated controllers
   show matching restart counts, look for API server slowness, not per-app bugs.
-- **Controller-runtime's 5-second lease timeout is hardcoded.** Any controller using default
-  leader election settings will fail under API latency spikes. Some operators expose tuning knobs;
-  most do not.
-- **Spot-check subagent findings that include specific log quotes or numbers.** Subagent reports
-  are faster than manual exploration but susceptible to hallucination. The correct workflow is:
-  delegate broad investigation, return with hypotheses and evidence, then verify specific claims
-  against primary sources before acting.
+- **Controller-runtime's 5-second lease timeout is hardcoded.** Any controller using default leader
+  election settings will fail under API latency spikes. Some operators expose tuning knobs; most do
+  not.
+- **Spot-check subagent findings that include specific log quotes or numbers.** Subagent reports are
+  faster than manual exploration but susceptible to hallucination. The correct workflow is: delegate
+  broad investigation, return with hypotheses and evidence, then verify specific claims against
+  primary sources before acting.
 - **The absence of log collection is a real limit on investigation.** This cluster intentionally
   disabled centralized log collection (Vector DaemonSet) in November 2025 to reduce Ceph write
-  amplification. That decision made sense at the time but leaves gaps for infrastructure
-  debugging. Reintroducing targeted log shipping for critical infrastructure components (etcd,
-  ceph-mon, kube-controller-manager) may be worth the cost.
+  amplification. That decision made sense at the time but leaves gaps for infrastructure debugging.
+  Reintroducing targeted log shipping for critical infrastructure components (etcd, ceph-mon,
+  kube-controller-manager) may be worth the cost.
 
 ## References
 
-- [rook-ceph-volumeattachment-rbac-stuck-2025-10-31.md][rook-rbac]: earlier Rook Ceph issue,
+- [2025-10-31-rook-ceph-volumeattachment-rbac-stuck.md][rook-rbac]: earlier Rook Ceph issue,
   different failure mode (kubelet volume manager corruption)
-- [cilium-bbr-timeout-investigation-2025-11-14.md][cilium-bbr]: earlier 120s timeout pattern on
+- [2025-11-14-cilium-bbr-timeout-investigation.md][cilium-bbr]: earlier 120s timeout pattern on
   pod-to-pod traffic, resolved by disabling BBR; may have left residual tuning worth checking
 - [ADR-007: CUBIC over BBR congestion control][adr-007]
 - [Kubernetes leader election leases][k8s-leases]
 - [controller-runtime leader election options][ctrl-runtime-le]
 - [Ceph mon Paxos configuration reference][ceph-mon-config]
 
-[rook-rbac]: /docs/investigations/rook-ceph-volumeattachment-rbac-stuck-2025-10-31.md
-[cilium-bbr]: /docs/investigations/cilium-bbr-timeout-investigation-2025-11-14.md
+[rook-rbac]: /docs/investigations/2025-10-31-rook-ceph-volumeattachment-rbac-stuck.md
+[cilium-bbr]: /docs/investigations/2025-11-14-cilium-bbr-timeout-investigation.md
 [adr-007]: /docs/decisions/007-cubic-over-bbr-congestion-control.md
 [k8s-leases]: https://kubernetes.io/docs/concepts/architecture/leases/
 [ctrl-runtime-le]: https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/manager#Options

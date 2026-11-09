@@ -40,6 +40,6 @@ Talos configuration. Cilium Bandwidth Manager remains enabled with EDT schedulin
 - [Google BBR stuck-state discussion][bbr-stuck-state]
 - [Cilium Bandwidth Manager documentation][cilium-bwm]
 
-[investigation]: /docs/investigations/cilium-bbr-timeout-investigation-2025-11-14.md
+[investigation]: /docs/investigations/2025-11-14-cilium-bbr-timeout-investigation.md
 [bbr-stuck-state]: https://groups.google.com/g/bbr-dev/c/XUOKHJiAW80
 [cilium-bwm]: https://docs.cilium.io/en/stable/network/kubernetes/bandwidth-manager

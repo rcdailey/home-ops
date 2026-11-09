@@ -44,4 +44,4 @@ can be validated with the current r8152 NIC drivers.
 - Commit `691bf49`: BGP migration that set hostLegacyRouting: true
 - Commit `08065c6`: NIC replacement removing e1000e GSO/GRO constraint
 
-[investigation]: /docs/investigations/cilium-bbr-timeout-investigation-2025-11-14.md
+[investigation]: /docs/investigations/2025-11-14-cilium-bbr-timeout-investigation.md

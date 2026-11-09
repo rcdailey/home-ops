@@ -5,32 +5,31 @@
 
 ## Summary
 
-The node logging pipeline retains Ceph and Talos diagnostics created for an April 2026 incident
-that was later attributed to the nodes' former system drives. Those sources now account for most
-of the stored logs without a current dashboard, alert, or other repository consumer. Kubernetes
-API audit logs remain useful for tracing client certificate alerts, but the broad audit policy can
-exclude service accounts without losing certificate-authenticated clients.
+The node logging pipeline retains Ceph and Talos diagnostics created for an April 2026 incident that
+was later attributed to the nodes' former system drives. Those sources now account for most of the
+stored logs without a current dashboard, alert, or other repository consumer. Kubernetes API audit
+logs remain useful for tracing client certificate alerts, but the broad audit policy can exclude
+service accounts without losing certificate-authenticated clients.
 
-This plan removes stale sources and processing before choosing whether to replace the bundled
-Vector DaemonSet with VictoriaLogs Collector (`vlagent`). The collector decision is intentionally
-deferred until the reduced workload is measured.
+This plan removes stale sources and processing before choosing whether to replace the bundled Vector
+DaemonSet with VictoriaLogs Collector (`vlagent`). The collector decision is intentionally deferred
+until the reduced workload is measured.
 
 ## Symptoms
 
 The current Vector DaemonSet stores about 60.5 million events per day:
 
-| Source | Events per day | Share |
-| --- | ---: | ---: |
-| Talos services and kernel | 53.45 million | 88.4% |
-| Kubernetes API audit | 4.41 million | 7.3% |
-| Selected pod logs | 2.63 million | 4.3% |
-| Ceph mons, included above | 142 thousand | 0.2% |
+| Source                    | Events per day | Share |
+| ------------------------- | -------------: | ----: |
+| Talos services and kernel |  53.45 million | 88.4% |
+| Kubernetes API audit      |   4.41 million |  7.3% |
+| Selected pod logs         |   2.63 million |  4.3% |
+| Ceph mons, included above |   142 thousand |  0.2% |
 
 Talos `auditd` produces 49.66 million events per day. Samples are repeated SELinux AVC and syscall
 records, including denied writes from `victoria-metrics-prod` to an RBD directory labeled
 `unlabeled_t`. Nami produces 34.68 million of these records. SELinux is permissive, but the event
-rate indicates a source problem that should be corrected rather than hidden with a collector
-filter.
+rate indicates a source problem that should be corrected rather than hidden with a collector filter.
 
 The API audit policy records `Metadata` for every request. About 3.21 million of 4.41 million daily
 events, or 73%, authenticate as `system:serviceaccount:*`. Service accounts use bearer tokens, not
@@ -47,8 +46,8 @@ The bundled Vector DaemonSet has four responsibilities:
 3. Receive Talos service and kernel JSON Lines on each node over TCP port 6170.
 4. Tail and parse the kube-apiserver audit file on control-plane nodes.
 
-The Ceph and Talos pipelines were added while investigating coincident Ceph mon quorum loss and
-etcd latency. The incident dashboard removed its log panels on 2026-04-13. Later dashboard commits
+The Ceph and Talos pipelines were added while investigating coincident Ceph mon quorum loss and etcd
+latency. The incident dashboard removed its log panels on 2026-04-13. Later dashboard commits
 recorded the former consumer SATA system drives as the cause and repurposed the dashboard after the
 drives were replaced. No current dashboard or alert consumes the specialized Ceph or Talos fields.
 
@@ -63,9 +62,9 @@ The current settings are already conservative:
 - `mon_cluster_log_to_stderr: false` prevents duplicate cluster-channel forwarding.
 
 Disabling every Ceph logging destination would reduce some daemon CPU, container-runtime writes,
-collector work, and VictoriaLogs storage. The expected daemon benefit is small at the observed
-142 thousand records per day, and complete disablement would remove local evidence needed for a
-future monitor, Paxos, RocksDB, or messenger failure.
+collector work, and VictoriaLogs storage. The expected daemon benefit is small at the observed 142
+thousand records per day, and complete disablement would remove local evidence needed for a future
+monitor, Paxos, RocksDB, or messenger failure.
 
 The appropriate boundary is to stop central collection while retaining conservative local Ceph
 logging. Removing the mon opt-in label eliminates Vector and VictoriaLogs work, but it does not
@@ -84,14 +83,14 @@ networking, a parser, and content filters on every node. Removing the Talos logg
 The SELinux audit flood must be investigated before remote forwarding is removed. Otherwise the
 cluster would stop exposing the flood centrally while the source continued generating it.
 
-The 2026-08-25 implementation gate found two active source defects. A 24-hour query returned
-5.10 million AVC records across all five nodes. The highest-volume patterns in a one-hour sample
-were VLSingle writing to RBD (`118,337`), Cilium writing `/run/cilium/state` (`71,131`), and
-VMSingle writing to RBD (`14,994`). Lower-volume RBD denials also affected Sonarr and PostgreSQL.
+The 2026-08-25 implementation gate found two active source defects. A 24-hour query returned 5.10
+million AVC records across all five nodes. The highest-volume patterns in a one-hour sample were
+VLSingle writing to RBD (`118,337`), Cilium writing `/run/cilium/state` (`71,131`), and VMSingle
+writing to RBD (`14,994`). Lower-volume RBD denials also affected Sonarr and PostgreSQL.
 
-Every sampled RBD denial had the same boundary: a process running as `pod_t:s0` wrote to an ext4
-RBD filesystem labeled `unlabeled_t`. The RBD `CSIDriver` advertises `seLinuxMount: true`, but its
-node plugin does not mount the host `/etc/selinux`, and the Pods have no explicit SELinux options.
+Every sampled RBD denial had the same boundary: a process running as `pod_t:s0` wrote to an ext4 RBD
+filesystem labeled `unlabeled_t`. The RBD `CSIDriver` advertises `seLinuxMount: true`, but its node
+plugin does not mount the host `/etc/selinux`, and the Pods have no explicit SELinux options.
 Enabling the ceph-csi host SELinux mount is a supported prerequisite, but it cannot create a mount
 label when Kubernetes receives no Pod SELinux options. Kubernetes 1.36 also leaves `SELinuxMount`
 disabled by default for ordinary `ReadWriteOnce` claims.[^rbd-selinux]
@@ -104,21 +103,21 @@ valid RBD label.[^talos-selinux-issue] The source therefore cannot yet be correc
 repository. Collector removal is blocked until Talos supplies a supported CSI volume-labeling
 boundary or upstream confirms a policy-compatible label.
 
-Cilium is a separate host-path policy defect. Talos intends `/run/cilium` to transition from
-`run_t` to `pod_containerd_run_t`, while the live directory remains `run_t`. This must be resolved
-at the Cilium host-path or Talos policy boundary, not by changing RBD or filtering audit records.
+Cilium is a separate host-path policy defect. Talos intends `/run/cilium` to transition from `run_t`
+to `pod_containerd_run_t`, while the live directory remains `run_t`. This must be resolved at the
+Cilium host-path or Talos policy boundary, not by changing RBD or filtering audit records.
 
 ### Kubernetes API audit policy
 
 `Metadata` audit events contain the username, groups, source IPs, user agent, verb, resource,
-request URI, timestamps, and response status needed to trace a certificate alert. The policy
-cannot match certificate identity or expiration, source IP, user agent, or response status. It can
-match users, groups, verbs, resources, namespaces, and non-resource URLs.
+request URI, timestamps, and response status needed to trace a certificate alert. The policy cannot
+match certificate identity or expiration, source IP, user agent, or response status. It can match
+users, groups, verbs, resources, namespaces, and non-resource URLs.
 
 A broad catch-all remains necessary while the certificate-authenticated client is unknown. A
 first-match `None` rule for the `system:serviceaccounts` group can remove about 73% of current
-events without excluding client-certificate authentication. The remaining records include the
-API server, controller manager, scheduler, nodes, Talos administrators, and other certificate or
+events without excluding client-certificate authentication. The remaining records include the API
+server, controller manager, scheduler, nodes, Talos administrators, and other certificate or
 interactive clients.
 
 The policy should retain `omitStages: [RequestReceived]` so each completed request is not
@@ -131,17 +130,17 @@ The default Vector parser currently sets `level=info` whenever an event does not
 structured level. This makes plain-text debug and warning records look informational. A 24-hour
 sample found:
 
-| Application | Format | Embedded severity | Observed records |
-| --- | --- | --- | ---: |
-| External DNS | logfmt | `level=info` | 1,428 info |
-| Recyclarr | `[DBG]`, `[INF]`, and related tokens | 789 debug, 33 info, 3 unmatched | 825 |
-| SABnzbd | `::LEVEL::` | 368,898 debug; 981,336 info; 316 warning | 1,353,212 |
-| qBittorrent | `(I)`, `(N)`, `(W)`, `(C)` tokens | 11,822 `(I)`, 60 `(N)` | 11,882 |
-| Paperless Classifier | Python text | No severity in samples | 28 in seven days |
+| Application          | Format                               | Embedded severity                        | Observed records |
+| -------------------- | ------------------------------------ | ---------------------------------------- | ---------------: |
+| External DNS         | logfmt                               | `level=info`                             |       1,428 info |
+| Recyclarr            | `[DBG]`, `[INF]`, and related tokens | 789 debug, 33 info, 3 unmatched          |              825 |
+| SABnzbd              | `::LEVEL::`                          | 368,898 debug; 981,336 info; 316 warning |        1,353,212 |
+| qBittorrent          | `(I)`, `(N)`, `(W)`, `(C)` tokens    | 11,822 `(I)`, 60 `(N)`                   |           11,882 |
+| Paperless Classifier | Python text                          | No severity in samples                   | 28 in seven days |
 
 External DNS supports `--log-format=json` and should emit structured records at the source.
-Paperless Classifier is maintained in this repository and can also emit JSON directly. Recyclarr
-and SABnzbd have stable text formats but no supported JSON console mode. qBittorrent exposes a
+Paperless Classifier is maintained in this repository and can also emit JSON directly. Recyclarr and
+SABnzbd have stable text formats but no supported JSON console mode. qBittorrent exposes a
 structured WebUI log API, but its container console format has no documented JSON option.
 
 `vlagent` cannot materialize severity from these text formats. For the current LLM diagnostic use
@@ -174,10 +173,10 @@ and above both for throughput. It is vendor-produced evidence and should not sub
 measurement on this cluster. Community reports also show that each collector has rotation,
 buffering, retry, or overload edge cases.
 
-After this cleanup, the required node pipeline is limited to selected Kubernetes container logs
-and JSON Lines audit files. It does not require VRL, arbitrary regex parsing, multiline assembly,
-raw TCP, or content routing. That workload fits `vlagent`, but keeping the bundled Vector chart is
-also reasonable if a second Helm release and migration provide no measured benefit.
+After this cleanup, the required node pipeline is limited to selected Kubernetes container logs and
+JSON Lines audit files. It does not require VRL, arbitrary regex parsing, multiline assembly, raw
+TCP, or content routing. That workload fits `vlagent`, but keeping the bundled Vector chart is also
+reasonable if a second Helm release and migration provide no measured benefit.
 
 ## Root Cause
 
@@ -191,8 +190,8 @@ The current volume is dominated by two separate source problems:
 2. The kube-apiserver audit policy records every service-account request even though the immediate
    requirement is attribution of client-certificate alerts.
 
-Changing collectors before removing those sources would preserve the unnecessary volume and make
-the migration harder to evaluate.
+Changing collectors before removing those sources would preserve the unnecessary volume and make the
+migration harder to evaluate.
 
 ## Resolution
 
@@ -294,8 +293,8 @@ Choose between these outcomes after the reduced baseline is available:
 1. Keep bundled Vector if its measured cost is small and one Helm release is operationally simpler.
 2. Move to VictoriaLogs Collector if native ingestion, disk buffering, and lower measured overhead
    justify a separate release and checkpoint migration.
-3. Use Fluent Bit only if testing exposes a required parser or compatibility feature that
-   `vlagent` lacks. It otherwise adds configuration without a VictoriaLogs-specific advantage.
+3. Use Fluent Bit only if testing exposes a required parser or compatibility feature that `vlagent`
+   lacks. It otherwise adds configuration without a VictoriaLogs-specific advantage.
 
 If `vlagent` is selected, verify these boundaries before removing Vector:
 
@@ -310,8 +309,8 @@ If `vlagent` is selected, verify these boundaries before removing Vector:
 An isolated v1.52.0 file-tail check established the checkpoint boundary. With no checkpoint,
 `vlagent` reads a pre-existing matched file from byte zero. It stores path, inode, fingerprint, and
 offset in `vlagent-file-checkpoints.json`, resumes without duplicates after restart, and follows the
-create-and-rename rotation strategy through both the old inode and the replacement file. It does
-not support `copytruncate`.[^vlagent-tail]
+create-and-rename rotation strategy through both the old inode and the replacement file. It does not
+support `copytruncate`.[^vlagent-tail]
 
 The audit cutover must therefore avoid matching the existing `kube-apiserver.log`, which would
 backfill its contents. The no-loss and no-backfill procedure is to deploy `vlagent` first against a
@@ -383,4 +382,4 @@ container-runtime writes, or an SELinux audit storm.
 [kubernetes-selinux]: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 [talos-selinux-issue]: https://github.com/siderolabs/talos/issues/13938
 [vlagent-tailer]: https://github.com/VictoriaMetrics/VictoriaLogs/blob/master/app/vlagent/tail/tailer.go
-[ceph-etcd-investigation]: ceph-mon-quorum-loss-etcd-slowness-2026-04-08.md
+[ceph-etcd-investigation]: 2026-04-08-ceph-mon-quorum-loss-etcd-slowness.md

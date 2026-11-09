@@ -5,10 +5,10 @@
 
 ## Summary
 
-The pool camera had intermittent connectivity to the UNVR before going offline. Switch counters
-show severe frame corruption on traffic received from the camera. Moving the connection to another
-switch port and a different set of switch-side patch cables did not fix the problem, narrowing the
-fault to the long cable path or the camera.
+The pool camera had intermittent connectivity to the UNVR before going offline. Switch counters show
+severe frame corruption on traffic received from the camera. Moving the connection to another switch
+port and a different set of switch-side patch cables did not fix the problem, narrowing the fault to
+the long cable path or the camera.
 
 ## Symptoms
 
@@ -22,13 +22,13 @@ fault to the long cable path or the camera.
 
 `unifly` identified the affected devices and their physical connections:
 
-| Device | Network | Switch port |
-| --- | --- | --- |
-| Pool camera | Cameras VLAN | 19, then 21 |
-| UNVR camera interface | Cameras VLAN | 52 |
+| Device                | Network      | Switch port |
+| --------------------- | ------------ | ----------- |
+| Pool camera           | Cameras VLAN | 19, then 21 |
+| UNVR camera interface | Cameras VLAN | 52          |
 
-Ports 19 and 52 were access ports on the Cameras network, VLAN 5. The UNVR port was forwarding at
-10 Gbps with no FCS errors, which eliminated the UNVR link as the source of corruption. Other camera
+Ports 19 and 52 were access ports on the Cameras network, VLAN 5. The UNVR port was forwarding at 10
+Gbps with no FCS errors, which eliminated the UNVR link as the source of corruption. Other camera
 ports on the same switch also had zero or negligible errors.
 
 Direct switch counters on port 19 showed 46,784,146 RX FCS errors. A 10-second sample recorded 452
@@ -52,13 +52,13 @@ Port 21 linked at 100 Mbps full duplex and supplied healthy PoE at 52.50 V and 4
 received traffic from the camera, but none of it passed frame validation. During a 10-second sample,
 the counters changed as follows:
 
-| Counter | Increase |
-| --- | ---: |
-| Successful RX frames | 0 |
-| Total RX errors | 1,295 |
-| RX FCS errors | 753 |
-| RX alignment errors | 372 |
-| RX fragments | 164 |
+| Counter              | Increase |
+| -------------------- | -------: |
+| Successful RX frames |        0 |
+| Total RX errors      |    1,295 |
+| RX FCS errors        |      753 |
+| RX alignment errors  |      372 |
+| RX fragments         |      164 |
 
 Because the switch could not decode a valid frame on port 21, UniFi continued to show the camera's
 last valid association on port 19. That stale association did not indicate that the camera was still
@@ -103,4 +103,4 @@ under Ethernet signaling is a useful alternative if neither substitution test is
 
 - [Media Flex Mini uplink port flapping investigation][media-flex-investigation]
 
-[media-flex-investigation]: media-flex-port-flapping-2026-04-18.md
+[media-flex-investigation]: 2026-04-18-media-flex-port-flapping.md

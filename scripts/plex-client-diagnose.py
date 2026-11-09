@@ -1036,7 +1036,7 @@ def report(arguments: argparse.Namespace) -> int:
             f"Other Switch Pro 48 ports: {network.other_switch_drops:g} drops. "
             f"Speed changes: {network.speed_changes:g}. Peak traffic: {peak_mbps:.0f} Mbps."
         )
-        print("History: docs/investigations/media-flex-port-flapping-2026-04-18.md")
+        print("History: docs/investigations/2026-04-18-media-flex-port-flapping.md")
 
     print("\nIncidents")
     if incidents:

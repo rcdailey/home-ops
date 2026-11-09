@@ -311,7 +311,7 @@ Extensive web search confirmed this is a widespread Unraid issue:
 - [Plex Timeout Investigation][plex-investigation]: Previous NFS issues related to Unraid SHFS/array
   filesystem
 
-[plex-investigation]: ./plex-timeout-investigation.md
+[plex-investigation]: ./2025-10-20-plex-timeout-investigation.md
 
 ## Essential Commands
 

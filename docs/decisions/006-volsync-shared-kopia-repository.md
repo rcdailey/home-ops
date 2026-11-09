@@ -45,6 +45,6 @@ repository pattern remains unchanged.
 - [Backup strategy architecture][backup-strategy]
 - [VolSync Kopia PR #1723][volsync-pr]
 
-[investigation]: /docs/investigations/volsync-kopia-shared-repository.md
+[investigation]: /docs/investigations/2025-10-04-volsync-kopia-shared-repository.md
 [backup-strategy]: /docs/architecture/backup-strategy.md
 [volsync-pr]: https://github.com/backube/volsync/pull/1723

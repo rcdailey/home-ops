@@ -189,9 +189,10 @@ Outline is for household and homelab knowledge that changes independently of cod
 non-technical readers. Repository `docs/` is for ADRs, investigations, runbooks, and reference
 material that evolves with code. Load `outline-cli` for Outline operations.
 
-When documenting an investigation, read `docs/investigations/TEMPLATE.md`, create a dated document,
-move durable decisions into ADRs, and cross-reference them. Investigations are historical snapshots;
-do not update them when later decisions supersede their conclusions.
+When documenting an investigation, read `docs/investigations/TEMPLATE.md`, create
+`docs/investigations/YYYY-MM-DD-slug.md` (the date it started, so names sort chronologically), move
+durable decisions into ADRs, and cross-reference them. Investigations are historical snapshots; do
+not update them when later decisions supersede their conclusions.
 
 ADRs live in `docs/decisions/` as `NNN-slug.md` with the next free number, following
 `docs/decisions/TEMPLATE.md`. This overrides skill defaults such as `docs/adr/`.

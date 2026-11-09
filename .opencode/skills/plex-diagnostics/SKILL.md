@@ -20,7 +20,7 @@ Correlate the Shield's rolling Plex logs with server logs, cluster metrics, and 
    supports it. Distinguish an immediate failure from an unconfirmed physical component.
 4. Treat collection notes as limitations. Never silently infer from an unavailable source.
 5. Load `unifi-operations` only when the report requires manual network follow-up. Use the known
-   Media Flex history at `docs/investigations/media-flex-port-flapping-2026-04-18.md` without
+   Media Flex history at `docs/investigations/2026-04-18-media-flex-port-flapping.md` without
    restating it here.
 
 ## Failure behavior

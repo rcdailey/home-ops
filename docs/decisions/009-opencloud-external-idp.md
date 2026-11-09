@@ -39,5 +39,5 @@ group custom claims feature.
 - [OpenCloud built-in IdP investigation][investigation]
 - [OpenCloud Authelia groups claim investigation][groups-investigation]
 
-[investigation]: /docs/investigations/opencloud-oidc-configuration-failure-2025-11-01.md
-[groups-investigation]: /docs/investigations/opencloud-authelia-groups-claim-2025-11-16.md
+[investigation]: /docs/investigations/2025-11-01-opencloud-oidc-configuration-failure.md
+[groups-investigation]: /docs/investigations/2025-11-16-opencloud-authelia-groups-claim.md

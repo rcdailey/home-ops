@@ -274,5 +274,5 @@ datacenter values (5s/9s/3s).
 [cilium-27800]: https://github.com/cilium/cilium/issues/27800
 [unifi-bgp]: https://help.ui.com/hc/en-us/articles/16271338193559
 [onedr0p-bgp]:
-    https://github.com/onedr0p/home-ops/blob/main/kubernetes/apps/kube-system/cilium/app/networking.yaml
-[plex-investigation]: /docs/investigations/plex-shield-buffering-lan-classification-2026-05-12.md
+    <https://github.com/onedr0p/home-ops/blob/main/kubernetes/apps/kube-system/cilium/app/networking.yaml>
+[plex-investigation]: /docs/investigations/2026-05-12-plex-shield-buffering-lan-classification.md

@@ -481,7 +481,7 @@ GPU workloads.
 - [Isovalent BBR blog][isovalent-bbr]
 - [Red Hat KB 6998955: NFS nconnect performance][redhat-nconnect] (subscription required)
 
-[plex-investigation]: /docs/investigations/plex-timeout-investigation.md
+[plex-investigation]: /docs/investigations/2025-10-20-plex-timeout-investigation.md
 [bbr-stuck-state]: https://groups.google.com/g/bbr-dev/c/XUOKHJiAW80
 [cilium-bwm]: https://docs.cilium.io/en/stable/network/kubernetes/bandwidth-manager
 [isovalent-bbr]: https://isovalent.com/blog/post/accelerate-network-performance-with-cilium-bbr
