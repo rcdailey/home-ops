@@ -140,6 +140,11 @@
       href: https://cluster.${SECRET_DOMAIN}/
       siteMonitor: http://headlamp.default:80
 
+  - Renovate:
+      icon: renovate
+      href: https://renovate.${SECRET_DOMAIN}/
+      siteMonitor: http://renovate-operator.default:8081
+
   - Pocket-ID:
       icon: pocket-id
       href: https://auth.${SECRET_DOMAIN}/
