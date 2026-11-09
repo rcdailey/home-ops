@@ -22,6 +22,8 @@ spec:
       strategy: rollback
       retries: 3
   values:
+    # The chart always joins release and chart names, doubling "renovate-operator"
+    fullnameOverride: renovate-operator
     deployment:
       annotations:
         reloader.stakater.com/auto: "true"
