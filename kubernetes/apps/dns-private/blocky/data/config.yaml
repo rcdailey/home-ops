@@ -147,6 +147,10 @@ caching:
 prometheus:
   enable: true
 
+# Port 4000 is reachable cluster-wide; don't expose heap/CPU profiles under /debug
+pprof:
+  enable: false
+
 statistics:
   enable: true
 
