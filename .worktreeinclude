@@ -1,0 +1,3 @@
+# Gitignored files copied into new worktrees and acceptance sandboxes
+# mise decrypts tooling secrets (including SECRET_DOMAIN for flate and pre-commit) with this key
+age.txt
