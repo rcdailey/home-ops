@@ -217,10 +217,9 @@ reference repositories before designing a new pattern:
 - dsluo/homelab
 - aclerici38/home-ops
 
-Agents MUST NOT run broad `just reconcile`, `helm template`, or node-mutating `topf` commands
-(`apply` or `upgrade` without `--dry-run`, `reset`). Targeted `flux reconcile` is allowed for a
-bounded operational transition after its durable state is in Git. Use `hops flux values` and
-`hops flux defaults` instead of Helm values commands.
+Agents MUST NOT run `just reconcile`, `flux reconcile`, `helm template`, or node-mutating `topf`
+commands (`apply` or `upgrade` without `--dry-run`, `reset`). A push to `main` is the deployment;
+Flux applies it. Use `hops flux values` and `hops flux defaults` instead of Helm values commands.
 
 Run standalone script help before use rather than relying on a command catalog in this file.
 

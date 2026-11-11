@@ -88,6 +88,7 @@
     { "action": "shell", "resource": "flux uninstall*", "effect": "deny" },
     { "action": "shell", "resource": "flux bootstrap*", "effect": "deny" },
     { "action": "shell", "resource": "flux delete*", "effect": "deny" },
+    { "action": "shell", "resource": "flux reconcile*", "effect": "ask" },
 
     { "action": "shell", "resource": "helm install*", "effect": "deny" },
     { "action": "shell", "resource": "helm template*", "effect": "deny" },
