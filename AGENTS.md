@@ -53,8 +53,9 @@ suspend/resume. Those exceptions do not permit unrelated cluster mutations.
   transitions (ceph-block is RWO)
 - **RWO volumes REQUIRE advancedMounts** - Single-pod exclusive access requires explicit
   controller/container specification
-- **Jobs/CronJobs with RWO PVCs MUST use native sidecar pattern** - initContainers with
-  restartPolicy: Always prevents Multi-Attach errors on subsequent runs
+- **Sidecars in Jobs/CronJobs with RWO PVCs MUST be native sidecars** (initContainers with
+  restartPolicy: Always) - a regular sidecar outlives the main container, keeps the pod running, and
+  holds the volume, so the next run hits Multi-Attach errors
 - **NEVER specify metadata.namespace in app resources** - Breaks namespace inheritance from parent
   kustomization.yaml
 - **App ks.yaml (Flux Kustomization) uses spec.targetNamespace** - Exception to inheritance rule,
