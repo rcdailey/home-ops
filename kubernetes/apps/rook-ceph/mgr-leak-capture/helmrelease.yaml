@@ -24,10 +24,17 @@ spec:
         pod:
           automountServiceAccountToken: false
           # Reading another process's /proc/<pid>/smaps needs the host PID namespace, root and
-          # CAP_SYS_PTRACE. Pinned to the node running the active mgr (mgr.a).
+          # CAP_SYS_PTRACE, so the pod must share a node with mgr.a. Affinity is checked only at
+          # scheduling; if mgr.a moves, restart this pod.
           hostPID: true
-          nodeSelector:
-            kubernetes.io/hostname: hanekawa
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    app: rook-ceph-mgr
+                    mgr: a
+                topologyKey: kubernetes.io/hostname
           securityContext:
             runAsUser: 0
             runAsGroup: 0
