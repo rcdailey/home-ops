@@ -16,6 +16,8 @@ spec:
     labels:
       observability.home-ops/logs: "true"
   extraEnv:
+  - name: LOG_LEVEL
+    value: debug
   # Anonymous ghcr.io lookups of large tag lists (immich) fail, and ghcr.io rejects the App token,
   # so lookups log in with a classic read:packages PAT (ghcr.io accepts no fine-grained tokens)
   - name: RENOVATE_DETECT_HOST_RULES_FROM_ENV
