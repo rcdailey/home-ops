@@ -16,10 +16,17 @@ spec:
     labels:
       observability.home-ops/logs: "true"
   extraEnv:
-  # Logs in to ghcr.io with the App token; anonymous lookups of large tag lists (immich) hit 429.
-  # Upstream marks this experimental for App tokens; if ghcr.io rejects it, use a read:packages PAT.
-  - name: RENOVATE_X_GITHUB_HOST_RULES
+  # Anonymous ghcr.io lookups of large tag lists (immich) fail, and ghcr.io rejects the App token,
+  # so lookups log in with a classic read:packages PAT (ghcr.io accepts no fine-grained tokens)
+  - name: RENOVATE_DETECT_HOST_RULES_FROM_ENV
     value: "true"
+  - name: RENOVATE_DOCKER_GHCR_IO_USERNAME
+    value: rcdailey
+  - name: RENOVATE_DOCKER_GHCR_IO_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: renovate-ghcr-token
+        key: token
   extraVolumes:
   - name: cache
     persistentVolumeClaim:
