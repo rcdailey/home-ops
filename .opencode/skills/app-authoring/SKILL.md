@@ -79,8 +79,6 @@ itself.
 - `ceph-block` is RWO and requires `Recreate` plus `advancedMounts`.
 - `ceph-filesystem` and NFS are RWX and use `RollingUpdate`.
 - Use NFS for media and other large shared files.
-- Jobs and CronJobs with an RWO PVC use an init container with `restartPolicy: Always` as the native
-  sidecar.
 
 For backups, add the `kopiur` component and substitute `APP`. The component creates the backed-up
 PVC (named `APP` unless `KOPIUR_PVC` is set); do not also declare it in `pvc.yaml`. Set
