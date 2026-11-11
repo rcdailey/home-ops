@@ -25,7 +25,7 @@
   - Outline:
       icon: outline
       href: https://wiki.${SECRET_DOMAIN}/
-      siteMonitor: http://outline-app.default:8080/_health
+      siteMonitor: http://outline.default:8080/_health
 
   - OpenCloud:
       icon: mdi-cloud

@@ -131,7 +131,7 @@ spec:
           sectionName: https
         rules:
         - backendRefs:
-          - name: outline-app
+          - name: outline
             port: 8080
 
     persistence:
