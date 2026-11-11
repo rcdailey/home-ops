@@ -5,6 +5,7 @@ kind: Kustomization
 components:
 - ../../../components/cnpg-backup
 - ../../../components/kopiur
+- ../../../components/valkey
 resources:
 - helmrelease.yaml
 - oidcclient.yaml

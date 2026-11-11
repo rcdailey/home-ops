@@ -1,0 +1,71 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ${APP}-valkey
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    defaultPodOptions:
+      labels:
+        observability.home-ops/logs: "true"
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      valkey:
+        forceRename: ${APP}-valkey
+        strategy: Recreate
+        containers:
+          valkey:
+            image:
+              repository: docker.io/valkey/valkey
+              tag: 9.1.3-alpine@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+            # Queues (Immich's BullMQ) lose jobs when keys are evicted, so a full instance rejects
+            # writes instead; snapshots keep queued jobs across restarts.
+            args: ["--dir", "/data", "--save", "60 1", "--appendonly", "no", "--maxmemory", "384mb", "--maxmemory-policy", "noeviction"]
+            probes:
+              liveness:
+                enabled: true
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 512Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+    service:
+      valkey:
+        forceRename: ${APP}-valkey
+        controller: valkey
+        ports:
+          redis:
+            port: 6379
+    persistence:
+      data:
+        existingClaim: ${APP}-valkey
+        advancedMounts:
+          valkey:
+            valkey:
+            - path: /data

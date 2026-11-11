@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+---
+# A standalone Valkey per app, named ${APP}-valkey on port 6379. The including Flux
+# Kustomization must substitute APP and depend on rook-ceph-cluster.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+- ./helmrelease.yaml
+- ./pvc.yaml

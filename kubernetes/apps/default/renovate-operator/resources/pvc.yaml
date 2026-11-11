@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/v1/persistentvolumeclaim.json
+---
+# Renovate's repository cache. ReadWriteMany so overlapping runs can both mount it; the contents
+# are disposable and rebuilt by the next run, so it has no backup.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: renovate-cache
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: ceph-filesystem
+  resources:
+    requests:
+      storage: 2Gi

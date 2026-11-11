@@ -20,6 +20,13 @@ spec:
   # Upstream marks this experimental for App tokens; if ghcr.io rejects it, use a read:packages PAT.
   - name: RENOVATE_X_GITHUB_HOST_RULES
     value: "true"
+  extraVolumes:
+  - name: cache
+    persistentVolumeClaim:
+      claimName: renovate-cache
+  extraVolumeMounts:
+  - name: cache
+    mountPath: /cache
   githubAppReference:
     secretName: renovate-github-app
     appIdSecretKey: CLIENT_ID

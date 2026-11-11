@@ -6,6 +6,7 @@ components:
 - ../../../components/cnpg-backup
 - ../../../components/nfs-scaler
 - ../../../components/kopiur
+- ../../../components/valkey
 resources:
 - configmap.yaml
 - helmrelease.yaml

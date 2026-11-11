@@ -6,4 +6,8 @@
   ignorePrAuthor: true,
   // GitHub signs API-created commits and sets the App as their author
   platformCommit: "enabled",
+  // Package lookups go to Valkey; the repository cache lives on the renovate-cache volume
+  redisUrl: "redis://renovate-valkey.default:6379",
+  cacheDir: "/cache",
+  repositoryCache: "enabled",
 }

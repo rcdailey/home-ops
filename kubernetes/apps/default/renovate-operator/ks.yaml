@@ -12,6 +12,8 @@ spec:
   interval: 1h
   path: ./kubernetes/apps/default/renovate-operator/resources
   postBuild:
+    substitute:
+      APP: renovate
     substituteFrom:
     - name: cluster-secrets
       kind: Secret
@@ -27,3 +29,5 @@ spec:
   - name: global-config
     namespace: flux-system
   - name: renovate-operator
+  - name: rook-ceph-cluster
+    namespace: rook-ceph

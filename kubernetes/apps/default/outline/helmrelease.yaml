@@ -47,8 +47,8 @@ spec:
                   secretKeyRef:
                     name: outline-postgres-app
                     key: uri
-              REDIS_URL: redis://outline-redis:6379
-              REDIS_COLLABORATION_URL: redis://outline-redis:6379
+              REDIS_URL: redis://outline-valkey.default:6379
+              REDIS_COLLABORATION_URL: redis://outline-valkey.default:6379
 
               # OIDC authentication via Pocket ID
               OIDC_CLIENT_ID: outline
@@ -104,20 +104,6 @@ spec:
                 drop:
                 - ALL
 
-      redis:
-        containers:
-          main:
-            image:
-              repository: public.ecr.aws/docker/library/redis
-              tag: 8.10.3
-            command: ["redis-server", "--save", "", "--appendonly", "no"]
-            resources:
-              requests:
-                cpu: 10m
-                memory: 32Mi
-              limits:
-                memory: 128Mi
-
     defaultPodOptions:
       labels:
         observability.home-ops/logs: "true"
@@ -134,11 +120,6 @@ spec:
         ports:
           http:
             port: 8080
-      redis:
-        controller: redis
-        ports:
-          http:
-            port: 6379
 
     route:
       app:

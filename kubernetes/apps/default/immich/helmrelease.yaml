@@ -131,20 +131,6 @@ spec:
                   failureThreshold: 30
                   periodSeconds: 10
 
-      redis:
-        containers:
-          main:
-            image:
-              repository: public.ecr.aws/docker/library/redis
-              tag: 8.10.3
-            command: ["redis-server"]
-            resources:
-              requests:
-                cpu: 50m
-                memory: 64Mi
-              limits:
-                memory: 128Mi
-
     service:
       immich:
         controller: immich
@@ -162,11 +148,6 @@ spec:
         ports:
           http:
             port: 3003
-      redis:
-        controller: redis
-        ports:
-          http:
-            port: 6379
 
     route:
       immich:

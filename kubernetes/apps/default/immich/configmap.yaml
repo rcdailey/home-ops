@@ -11,7 +11,7 @@ data:
   PUBLIC_IMMICH_SERVER_URL: https://photos-test.${SECRET_DOMAIN}
 
   # Redis Configuration
-  REDIS_HOSTNAME: immich-redis.default
+  REDIS_HOSTNAME: immich-valkey.default
   REDIS_PORT: "6379"
 
   # Security

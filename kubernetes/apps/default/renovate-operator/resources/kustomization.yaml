@@ -2,8 +2,11 @@
 # yaml-language-server: $schema=https://www.schemastore.org/kustomization.json
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+components:
+- ../../../../components/valkey
 resources:
 - ./externalsecret.yaml
+- ./pvc.yaml
 - ./renovatejob.yaml
 configMapGenerator:
 - name: renovate-global-config
