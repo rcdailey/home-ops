@@ -12,6 +12,14 @@ spec:
   schedule: 0 * * * *
   image: ghcr.io/renovatebot/renovate:44.222.5
   parallelism: 1
+  metadata:
+    labels:
+      observability.home-ops/logs: "true"
+  extraEnv:
+  # Logs in to ghcr.io with the App token; anonymous lookups of large tag lists (immich) hit 429.
+  # Upstream marks this experimental for App tokens; if ghcr.io rejects it, use a read:packages PAT.
+  - name: RENOVATE_X_GITHUB_HOST_RULES
+    value: "true"
   githubAppReference:
     secretName: renovate-github-app
     appIdSecretKey: CLIENT_ID
