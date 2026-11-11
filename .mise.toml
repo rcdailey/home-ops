@@ -32,7 +32,7 @@ kubectl = "1.37.1"
 "github:home-operations/kopiur" = { version = "latest", rename_exe = "kubectl-kopiur" }
 # mise "latest" skips prereleases and resolves to the obsolete 0.x line
 "npm:cf" = "1.0.0-beta.28"
-"npm:@doist/outline-cli" = { version = "latest", allow_low_downloads = true }
+"npm:@todoist/outline-cli" = { version = "latest", allow_low_downloads = true }
 kustomize = "latest"
 markdownlint-cli2 = "latest"
 "github:mitsuhiko/minijinja" = "latest"
