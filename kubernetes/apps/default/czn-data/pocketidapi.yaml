@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aclerici38/pocket-id-operator/refs/heads/main/dist/schemas/pocketidapi_v1alpha1.json
+---
+# MCP clients request tokens with the MCP endpoint as the RFC 8707 resource; this API makes Pocket
+# ID put that URL in the token audience, which the server verifies.
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDAPI
+metadata:
+  name: czn-data
+spec:
+  name: CZN Data
+  resource: https://czn.${SECRET_DOMAIN}/mcp

@@ -1,0 +1,82 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
+# Copied from rcdailey/chaos-zero-nightmare projects/czn-data/deploy/alerts.yaml; keep in sync.
+# Each scrape run writes new series, so the run-state rules read only the newest run's series;
+# that lets an alert resolve after the next good run. The 26h windows assume the daily CronJob.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: czn-data
+  labels:
+    observability.home-ops/datasource: metrics
+spec:
+  groups:
+  - name: czn-data
+    rules:
+    - alert: CznScrapeStale
+      expr: >-
+        time() - max(last_over_time(czn_scrape_last_success_timestamp_seconds[7d])) > 36 * 3600
+        or absent_over_time(czn_scrape_last_success_timestamp_seconds[7d])
+      labels:
+        severity: warning
+      annotations:
+        summary: No fully successful czn-data scrape in 36 hours
+        description: Check the CronJob and the other czn-data alerts for the cause.
+
+    - alert: CznScrapeBlocked
+      expr: >-
+        max(
+          last_over_time(czn_scrape_blocked[26h])
+          and tlast_over_time(czn_scrape_blocked[26h])
+            == scalar(max(tlast_over_time(czn_scrape_blocked[26h])))
+        ) == 1
+      labels:
+        severity: warning
+      annotations:
+        summary: Cloudflare blocked the czn-data scraper
+        description: >-
+          Cloudflare now challenges the scraper's Chrome impersonation. Update curl_cffi or its
+          impersonation target. The database keeps the previous data.
+
+    - alert: CznScrapeDiscoveryFailed
+      expr: >-
+        max(
+          last_over_time(czn_scrape_discovery_failed[26h])
+          and tlast_over_time(czn_scrape_discovery_failed[26h])
+            == scalar(max(tlast_over_time(czn_scrape_discovery_failed[26h])))
+        ) == 1
+      labels:
+        severity: warning
+      annotations:
+        summary: czn-data could not list Prydwen pages from robots.txt and the sitemaps
+
+    - alert: CznScrapeLayoutChanged
+      expr: >-
+        max(
+          last_over_time(czn_scrape_pages{result="parse_error"}[26h])
+          and tlast_over_time(czn_scrape_pages{result="parse_error"}[26h])
+            == scalar(max(tlast_over_time(czn_scrape_pages{result="parse_error"}[26h])))
+        ) > 0
+      labels:
+        severity: warning
+      annotations:
+        summary: "Prydwen layout changed: {{ $value }} pages no longer parse"
+        description: >-
+          The previous data is still served. Failed fields are in the
+          czn_scrape_validation_failures series (labels kind, field), in VictoriaLogs
+          (`"parse failed"`), and in the MCP data_status tool. Fix the parser, then run
+          `czn-data reparse`. A `.count` field means a page lost many rows; if Prydwen really
+          removed them, run `czn-data reparse --allow-shrink`.
+
+    - alert: CznScrapeFetchErrors
+      expr: >-
+        max(
+          last_over_time(czn_scrape_pages{result="fetch_error"}[26h])
+          and tlast_over_time(czn_scrape_pages{result="fetch_error"}[26h])
+            == scalar(max(tlast_over_time(czn_scrape_pages{result="fetch_error"}[26h])))
+        ) > 0
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $value }} Prydwen pages failed to download in the last czn-data run"
+        description: Page URLs and errors are in VictoriaLogs (`"fetch failed"`).

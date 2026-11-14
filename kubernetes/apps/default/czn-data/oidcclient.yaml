@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aclerici38/pocket-id-operator/refs/heads/main/dist/schemas/pocketidoidcclient_v1alpha1.json
+---
+# Public client shared by the MCP harnesses that use czn-data (claude.ai connector, OpenCode).
+# Each one logs in with client ID czn-mcp, no secret, and PKCE.
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: czn-mcp
+spec:
+  name: CZN MCP
+  clientID: czn-mcp
+  isPublic: true
+  skipConsent: true
+  pkceEnabled: true
+  callbackUrls:
+  - https://claude.ai/api/mcp/auth_callback
+  # OpenCode's default local OAuth callback.
+  - http://127.0.0.1:19876/callback
+  allowedUserGroups:
+  - name: admins
+  apiAccess:
+  - apiRef:
+      name: czn-data
+    delegatedAccess: true
