@@ -27,11 +27,16 @@ spec:
       czn-data:
         annotations:
           reloader.stakater.com/auto: "true"
+          # Keel restarts the server when the latest tag points to a new digest.
+          keel.sh/policy: force
+          keel.sh/matchTag: "true"
+          keel.sh/trigger: poll
         containers:
           app:
             image: &image
               repository: ghcr.io/rcdailey/czn-data
-              tag: latest@sha256:c2bc6d7f254f07541df4a218698f7093730060469c91cb2bf839fa63a4cf2375
+              tag: latest
+              pullPolicy: Always
             args: ["serve"]
             env:
               DATABASE_URL: &databaseUrl
