@@ -1,0 +1,42 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+# Restarts workloads that opt in with keel.sh/* annotations when their mutable image tag points
+# to a new digest. Only the Kubernetes provider is used; Flux owns Helm releases.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keel
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: keel
+      version: v1.2.3
+      sourceRef:
+        kind: HelmRepository
+        name: keel
+        namespace: kube-system
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    helmProvider:
+      enabled: false
+    # Keel keeps its state database in /data.
+    extraVolumes:
+    - name: data
+      emptyDir: {}
+    extraVolumeMounts:
+    - name: data
+      mountPath: /data
+    podSecurityContext:
+      runAsNonRoot: true
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: ["ALL"]
