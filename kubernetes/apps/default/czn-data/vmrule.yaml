@@ -1,8 +1,8 @@
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
 # Copied from rcdailey/chaos-zero-nightmare projects/czn-data/deploy/alerts.yaml; keep in sync.
-# Each scrape run writes new series, so the run-state rules read only the newest run's series;
-# that lets an alert resolve after the next good run. The 26h windows assume the daily CronJob.
+# Each job run writes new series, so the run-state rules read only the newest run's series;
+# that lets an alert resolve after the next good run. The 26h windows assume the daily CronJobs.
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMRule
 metadata:
@@ -16,7 +16,10 @@ spec:
     - alert: CznScrapeStale
       expr: >-
         time() - max(last_over_time(czn_scrape_last_success_timestamp_seconds[7d])) > 36 * 3600
-        or absent_over_time(czn_scrape_last_success_timestamp_seconds[7d])
+        or (
+          absent_over_time(czn_scrape_last_success_timestamp_seconds[7d])
+          and on () count(last_over_time(czn_scrape_last_run_timestamp_seconds[7d]))
+        )
       labels:
         severity: warning
       annotations:
@@ -78,5 +81,35 @@ spec:
       labels:
         severity: warning
       annotations:
-        summary: "{{ $value }} Prydwen pages failed to download in the last czn-data run"
-        description: Page URLs and errors are in VictoriaLogs (`"fetch failed"`).
+        summary: >-
+          {{ $value }} Prydwen pages or card images failed to download in the last czn-data
+          run
+        description: URLs and errors are in VictoriaLogs (`"fetch failed"`).
+
+    - alert: CznEnrichStale
+      expr: >-
+        time() - max(last_over_time(czn_enrich_last_success_timestamp_seconds[7d])) > 36 * 3600
+        or (
+          absent_over_time(czn_enrich_last_success_timestamp_seconds[7d])
+          and on () count(last_over_time(czn_enrich_last_run_timestamp_seconds[7d]))
+        )
+      labels:
+        severity: warning
+      annotations:
+        summary: No fully successful czn-data enrich run in 36 hours
+        description: Check the enrich CronJob and CznEnrichFailed for the cause.
+
+    - alert: CznEnrichFailed
+      expr: >-
+        max by (step) (
+          last_over_time(czn_enrich_failures[26h])
+          and tlast_over_time(czn_enrich_failures[26h])
+            == scalar(max(tlast_over_time(czn_enrich_failures[26h])))
+        ) > 0
+      labels:
+        severity: warning
+      annotations:
+        summary: "czn-data enrich: {{ $value }} rows failed in step {{ $labels.step }}"
+        description: >-
+          Errors are in VictoriaLogs (`"portrait tagger unavailable"`, `"portrait tagging
+          failed"`). Failed rows are tried again on the next run.

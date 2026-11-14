@@ -83,7 +83,7 @@ spec:
 
       scrape:
         type: cronjob
-        cronjob:
+        cronjob: &cronjob
           schedule: "0 4 * * *"
           timeZone: America/Chicago
           backoffLimit: 0
@@ -91,17 +91,40 @@ spec:
           successfulJobsHistory: 1
           failedJobsHistory: 1
           ttlSecondsAfterFinished: 86400
-        pod:
+        pod: &jobPod
           restartPolicy: Never
         containers:
           app:
             image: *image
             args: ["scrape"]
-            env:
+            env: &jobEnv
               DATABASE_URL: *databaseUrl
               OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-gateway-collector.observability:4318
               OTEL_SERVICE_NAME: czn-data
             resources: *jobResources
+            securityContext: *securityContext
+
+      # Tags character portraits from the scrape's stored card art; runs an hour after it.
+      enrich:
+        type: cronjob
+        cronjob:
+          !!merge <<: *cronjob
+          schedule: "0 5 * * *"
+        pod: *jobPod
+        containers:
+          app:
+            image: *image
+            args: ["enrich"]
+            env:
+              !!merge <<: *jobEnv
+              CZN_TAGGER_DIR: /models
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                # Loading the tagger model takes about 1 GB.
+                memory: 2Gi
             securityContext: *securityContext
 
     service:
@@ -125,6 +148,12 @@ spec:
             port: *port
 
     persistence:
+      tagger:
+        existingClaim: czn-data-tagger
+        advancedMounts:
+          enrich:
+            app:
+            - path: /models
       tmp:
         type: emptyDir
         globalMounts:

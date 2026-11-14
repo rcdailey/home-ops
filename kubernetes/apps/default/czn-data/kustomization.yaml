@@ -7,4 +7,5 @@ resources:
 - oidcclient.yaml
 - pocketidapi.yaml
 - postgres-cluster.yaml
+- pvc.yaml
 - vmrule.yaml
