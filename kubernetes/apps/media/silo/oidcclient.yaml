@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aclerici38/pocket-id-operator/refs/heads/main/dist/schemas/pocketidoidcclient_v1alpha1.json
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: silo
+spec:
+  name: Silo
+  clientID: silo
+  skipConsent: true
+  launchUrl: https://silo.${SECRET_DOMAIN}
+  callbackUrls:
+  # The path carries the plugin installation ID, which Silo assigns at install time.
+  - https://silo.${SECRET_DOMAIN}/api/v2/auth/oauth/*/callback
+  # Silo creates an account for anyone Pocket ID lets through, so access is limited here.
+  allowedUserGroups:
+  - admins
+  - users
+  secret:
+    keys:
+      clientSecret: client-secret

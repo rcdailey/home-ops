@@ -18,6 +18,7 @@
     "github>rcdailey/home-ops//.renovate/groups.json5",
     "github>rcdailey/home-ops//.renovate/semanticCommits.json5",
     "github>rcdailey/home-ops//.renovate/customManagers.json5",
+    "github>rcdailey/home-ops//.renovate/versioning.json5",
   ],
   // Runs after the 03:00-05:00 Talos upgrade window so automerged restarts never overlap drains
   schedule: ["* 5-8 * * *"],

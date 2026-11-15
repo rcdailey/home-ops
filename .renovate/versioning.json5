@@ -1,0 +1,11 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      // Silo has no releases yet; build-N is an ordered build number, not a version.
+      description: "Silo build numbers",
+      matchPackageNames: ["ghcr.io/silo-server/silo-server"],
+      versioning: "regex:^build-(?<major>\\d+)$",
+    },
+  ],
+}

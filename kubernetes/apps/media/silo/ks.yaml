@@ -1,0 +1,41 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/kustomization-kustomize-v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: silo
+spec:
+  targetNamespace: media
+  dependsOn:
+  - name: cloudnative-pg
+    namespace: kube-system
+  - name: cnpg-barman-cloud
+    namespace: kube-system
+  - name: intel-gpu-resource-driver
+    namespace: kube-system
+  - name: garage-instance
+    namespace: storage
+  - name: global-config
+    namespace: flux-system
+  - name: pocket-id-operator
+    namespace: default
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  path: ./kubernetes/apps/media/silo
+  postBuild:
+    substitute:
+      APP: silo
+      KOPIUR_PVC: silo-config
+      KOPIUR_CAPACITY: 30Gi
+    substituteFrom:
+    - kind: Secret
+      name: cluster-secrets
+  prune: true
+  wait: false

@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: silo-postgres
+spec:
+  instances: 2
+  # Standard images include pgvector, which Silo requires; Silo ships against PostgreSQL 18.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-standard-trixie
+  postgresql:
+    shared_preload_libraries:
+    - pg_stat_statements
+  bootstrap:
+    initdb:
+      database: silo
+      owner: silo
+      # Silo's migrations create these, but the app owner is not a superuser.
+      postInitApplicationSQL:
+      - CREATE EXTENSION IF NOT EXISTS citext;
+      - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+      - CREATE EXTENSION IF NOT EXISTS pg_trgm;
+      - CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+  storage:
+    size: 10Gi
+    storageClass: ceph-block
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 2Gi

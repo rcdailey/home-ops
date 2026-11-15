@@ -1,0 +1,195 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: silo
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      silo:
+        strategy: Recreate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        pod:
+          nodeSelector:
+            feature.node.kubernetes.io/custom-intel-gpu: "true"
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+          resourceClaims:
+          - name: gpu
+            resourceClaimTemplateName: silo
+        containers:
+          app:
+            image: &image
+              repository: ghcr.io/silo-server/silo-server
+              tag: build-2450@sha256:02e755b4c7b98c20f2aa494e6c9cd9e73a2c8544a3f9d5a78dbe9a5cad2e3677
+            # The image's s6 init requires root; running the binary directly skips it and the
+            # bundled PostgreSQL and Redis, which DATABASE_URL and REDIS_URL replace.
+            command: ["silo"]
+            env:
+              TZ: America/Chicago
+              MODE: integrated
+              DATABASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: silo-postgres-app
+                    key: uri
+              REDIS_URL: redis://silo-valkey.media:6379
+              # A single server has no other replica to take requests while it drains.
+              SILO_SHUTDOWN_DELAY: "0"
+            envFrom:
+            - secretRef:
+                name: silo-secret
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/v1/health
+                    port: 8080
+              # Database migrations run before the listener opens and can take up to 20 minutes
+              # on upgrades (SILO_MIGRATE_TIMEOUT).
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/v1/health
+                    port: 8080
+                  periodSeconds: 10
+                  failureThreshold: 120
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1Gi
+              limits:
+                memory: 8Gi
+              claims:
+              - name: gpu
+            securityContext: &securityContext
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: ["ALL"]
+
+      # Silo stores plugins and sign-in settings in its database and exposes no config file, so
+      # this job applies them through the admin API. It fails until the admin API key exists.
+      sign-in:
+        type: cronjob
+        cronjob:
+          schedule: "0 * * * *"
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+          ttlSecondsAfterFinished: 86400
+        pod:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+        containers:
+          app:
+            # The Silo image ships Node.js, so the job needs no separate image.
+            image: *image
+            command: ["node", "/scripts/reconcile-sign-in.mjs"]
+            env:
+              SILO_URL: http://silo.media:8080
+              SILO_PUBLIC_URL: https://silo.${SECRET_DOMAIN}
+              OIDC_BUTTON_LABEL: Pocket ID
+              OIDC_ISSUER_URL: https://auth.${SECRET_DOMAIN}
+              OIDC_CLIENT_ID: silo
+              OIDC_CLIENT_SECRET:
+                valueFrom:
+                  secretKeyRef:
+                    name: silo-oidc-credentials
+                    key: client-secret
+            envFrom:
+            - secretRef:
+                name: silo-admin-api
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext: *securityContext
+
+    service:
+      app:
+        controller: silo
+        ports:
+          http:
+            port: 8080
+          jellyfin:
+            port: 8096
+
+    route:
+      app:
+        hostnames:
+        - silo.${SECRET_DOMAIN}
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: silo
+            port: 8080
+      # Jellyfin-compatible API for third-party Jellyfin clients (smart TVs, Infuse)
+      jellyfin:
+        hostnames:
+        - silo-jf.${SECRET_DOMAIN}
+        parentRefs:
+        - name: external
+          namespace: network
+          sectionName: https
+        rules:
+        - backendRefs:
+          - name: silo
+            port: 8096
+
+    persistence:
+      # Plugins, local artwork, uploads, subtitles, and Jellyfin web assets
+      config:
+        existingClaim: silo-config
+        advancedMounts:
+          silo:
+            app:
+            - path: /config/silo
+      media:
+        type: nfs
+        server: 192.168.1.58
+        path: /mnt/user/media
+        advancedMounts:
+          silo:
+            app:
+            - path: /media
+              readOnly: true
+      scripts:
+        type: configMap
+        name: silo-scripts
+        advancedMounts:
+          sign-in:
+            app:
+            - path: /scripts
+              readOnly: true
+      # Transcode output and prepared downloads
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          silo:
+            app:
+            - path: /tmp

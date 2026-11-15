@@ -1,0 +1,24 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization.json
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+components:
+- ../../../components/cnpg-backup
+- ../../../components/kopiur
+- ../../../components/nfs-scaler
+- ../../../components/valkey
+resources:
+- ./externalsecret.yaml
+- ./helmrelease.yaml
+- ./oidcclient.yaml
+- ./postgres-cluster.yaml
+- ./resourceclaimtemplate.yaml
+configMapGenerator:
+- name: silo-scripts
+  files:
+  - reconcile-sign-in.mjs=./config/reconcile-sign-in.mjs
+generatorOptions:
+  disableNameSuffixHash: true
+  # JavaScript template literals use the ${...} syntax that Flux would substitute.
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
