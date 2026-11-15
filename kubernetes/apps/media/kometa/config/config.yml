@@ -23,8 +23,8 @@ libraries:
     collection_files:
     - file: config/metadata/kids-anime.yml
 
-  # Listed so playlists can include its movies
-  Anime Movies:
+  # Listed so playlists can include its movies. Kometa 2.5.4 crashes on a null library value.
+  Anime Movies: {}
 
   Movies:
     operations:
