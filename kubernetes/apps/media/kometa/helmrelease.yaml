@@ -99,6 +99,10 @@ spec:
             - |
               python3 kometa.py --run --read-only-config >> /config/logs/console.log 2>&1;
               status=$?;
+              # Kometa logs fatal errors as CRITICAL but still exits 0.
+              case "$(cat /config/logs/meta.log)" in
+                *"[CRITICAL]"*) [ "$status" -eq 0 ] && status=1 ;;
+              esac;
               # Allow the file tailer to ingest final records before Kubernetes stops it.
               sleep 2;
               exit "$status";
