@@ -97,12 +97,7 @@ spec:
             - -c
             args:
             - |
-              python3 kometa.py --run --read-only-config --run-libraries "Anime Series" \
-                >> /config/logs/console.log 2>&1;
-              python3 kometa.py --run --read-only-config --run-libraries "Movies" \
-                >> /config/logs/console.log 2>&1;
-              python3 kometa.py --run --read-only-config --run-libraries "TV Shows" \
-                >> /config/logs/console.log 2>&1;
+              python3 kometa.py --run --read-only-config >> /config/logs/console.log 2>&1;
               status=$?;
               # Allow the file tailer to ingest final records before Kubernetes stops it.
               sleep 2;

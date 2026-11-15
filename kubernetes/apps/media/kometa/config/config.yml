@@ -23,6 +23,9 @@ libraries:
     collection_files:
     - file: config/metadata/kids-anime.yml
 
+  # Listed so playlists can include its movies
+  Anime Movies:
+
   Movies:
     operations:
       delete_unmanaged_collections: true
@@ -91,6 +94,9 @@ libraries:
         overlay_level: episode
         use_opus: false
         use_mp3: false
+
+playlist_files:
+- file: config/metadata/toaru.yml
 
 settings: # Can be individually specified per library as well
   cache: true

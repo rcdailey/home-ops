@@ -1,0 +1,16 @@
+---
+playlists:
+  A Certain Magical Index Watch Order:
+    summary: Toaru franchise in release order, with A Certain Dark Item last.
+    libraries: Anime Series, Anime Movies
+    sync_mode: sync
+    text:
+    - tvdb_season:83322_1 # A Certain Magical Index
+    - tvdb_season:114921_1 # A Certain Scientific Railgun
+    - tvdb_season:83322_2 # A Certain Magical Index II
+    - tmdb:219250 # A Certain Magical Index: The Miracle of Endymion
+    - tvdb_season:114921_2 # A Certain Scientific Railgun S
+    - tvdb_season:83322_3 # A Certain Magical Index III
+    - tvdb_season:360438_1 # A Certain Scientific Accelerator
+    - tvdb_season:114921_3 # A Certain Scientific Railgun T
+    - tvdb_season:460309_1 # A Certain Dark Item
