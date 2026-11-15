@@ -14,8 +14,10 @@ spec:
   - https://silo.${SECRET_DOMAIN}/api/v2/auth/oauth/*/callback
   # Silo creates an account for anyone Pocket ID lets through, so access is limited here.
   allowedUserGroups:
-  - admins
-  - users
+  - name: admins
+    namespace: default
+  - name: users
+    namespace: default
   secret:
     keys:
       clientSecret: client-secret
