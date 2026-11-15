@@ -8,6 +8,7 @@ components:
 - ../../components/drift-detection
 resources:
 - ./bazarr/ks.yaml
+- ./crosswatch/ks.yaml
 - ./imagemaid/ks.yaml
 - ./seerr/ks.yaml
 - ./kometa/ks.yaml
