@@ -4,6 +4,8 @@ playlists:
     summary: Toaru franchise in release order, with A Certain Dark Item last.
     libraries: Anime Series, Anime Movies
     sync_mode: sync
+    # Blank keeps it on the server owner only, overriding the global playlist_sync_to_users: all
+    sync_to_users:
     text:
     - tvdb_season:83322_1 # A Certain Magical Index
     - tvdb_season:114921_1 # A Certain Scientific Railgun
