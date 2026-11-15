@@ -93,6 +93,11 @@
       href: https://plex.${SECRET_DOMAIN}/
       siteMonitor: http://plex.media:32400
 
+  - Silo:
+      icon: silo-server-light
+      href: https://silo.${SECRET_DOMAIN}/
+      siteMonitor: http://silo.media:8080/api/v1/health
+
   - qBittorrent:
       icon: qbittorrent
       href: https://torrent.${SECRET_DOMAIN}/
