@@ -93,6 +93,25 @@ spec:
               - __meta_kubernetes_service_name
               - __meta_kubernetes_endpoint_port_name
               regex: kubernetes;https
+            # Latency and size histograms make up most of each scrape (about 120k points per API
+            # server), which exceeded the gateway's 4 MiB message limit. Nothing alerts on them.
+            # Their _sum and _count series remain for averages.
+            metric_relabel_configs:
+            - action: drop
+              source_labels: [__name__]
+              regex: etcd_request_duration_seconds_bucket
+            - action: drop
+              source_labels: [__name__]
+              regex: apiserver_(request|request_sli|storage_list)_duration_seconds_bucket
+            - action: drop
+              source_labels: [__name__]
+              regex: apiserver_watch_(events_dispatch|list)_duration_seconds_bucket
+            - action: drop
+              source_labels: [__name__]
+              regex: apiserver_watch_cache_(read_wait|initialization_duration)_seconds_bucket
+            - action: drop
+              source_labels: [__name__]
+              regex: apiserver_(request_body_size_bytes|watch_events_sizes)_bucket
           - job_name: kubelet
             scheme: https
             authorization:
