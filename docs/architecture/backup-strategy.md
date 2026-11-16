@@ -10,6 +10,7 @@ architecture, implementation details, and critical learnings from deployment.
 - [Architecture Overview](#architecture-overview)
 - [Kopiur volume backups](#kopiur-volume-backups)
 - [CloudNativePG backups](#cloudnativepg-backups)
+- [Offsite copies](#offsite-copies)
 - [Critical Learnings](#critical-learnings)
 - [Troubleshooting](#troubleshooting)
 
@@ -133,8 +134,25 @@ Barman; it does not create another storage copy. See the [component contract][cn
 [recovery runbook][cnpg-recovery].
 
 Database backup coverage is derived from applications that include the `cnpg-backup` component. Use
-`./scripts/hops.sh backup status` for the current inventory. Garage object data and the Kopia
-repository reside on the same NAS, so neither mechanism supplies an offsite copy.
+`./scripts/hops.sh backup status` for the current inventory.
+
+## Offsite copies
+
+Garage object data and the Kopia repository reside on the same NAS, so both are copied daily to
+Backblaze B2 (`s3.us-east-005.backblazeb2.com`):
+
+| Source           | Copier                                      | B2 bucket                       | Infisical key                |
+| ---------------- | ------------------------------------------- | ------------------------------- | ---------------------------- |
+| Kopia repository | `RepositoryReplication/nezuko-b2`, 04:00    | `rcdailey-homeops-kopia`        | `/storage/kopiur/b2-*`       |
+| CNPG buckets     | `cnpg-backup` rclone CronJob per app, 04:00 | `rcdailey-homeops-cnpg/${APP}/` | `/storage/cnpg-offsite/b2-*` |
+
+Both copies mirror deletions. In B2 a deletion only hides a file; each bucket has Object Lock with a
+14-day compliance-mode default retention and a lifecycle rule that removes hidden files 14 days
+after hiding. A wiped or corrupted source therefore cannot erase the offsite copy for 14 days. Both
+bucket settings live in the Backblaze console, outside Git.
+
+The Kopia mirror uses the same repository password as the primary. Keep a copy of
+`/storage/kopiur/repository-password` outside Infisical; without it both copies are unreadable.
 
 ## Critical Learnings
 

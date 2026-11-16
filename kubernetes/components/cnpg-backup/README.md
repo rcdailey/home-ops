@@ -27,6 +27,9 @@ For `APP: example`, the component declares:
 - `GarageS3Bucket/example-postgres-backups`, backed by the Garage instance in `storage`.
 - `ObjectStore/example-postgres-backups`, which tells Barman how to connect to that bucket.
 - `ScheduledBackup/example-postgres-backup`, which runs daily at 03:00 America/Chicago.
+- `HelmRelease/example-postgres-offsite`, a daily 04:00 rclone CronJob that syncs the Garage bucket
+  to `example/` in the `rcdailey-homeops-cnpg` Backblaze B2 bucket, plus
+  `ExternalSecret/example-postgres-offsite` for its B2 key (`/storage/cnpg-offsite/*` in Infisical).
 
 The ObjectStore keeps a 30-day recovery window. The cluster continuously archives WAL and takes base
 backups from a standby when one is available.
@@ -44,5 +47,6 @@ Provisioning is asynchronous. The Garage operator must create the bucket, Secret
 before Barman can archive WAL or complete a base backup. Resource creation alone does not prove that
 the backup is usable.
 
-Garage data and the Kopia repository share the NAS failure boundary. This component does not create
-an offsite copy.
+Garage data and the Kopia repository share the NAS failure boundary; the B2 sync is the offsite
+copy. Files the sync deletes stay restorable as hidden versions for 14 days, enforced by the B2
+bucket's Object Lock default retention and lifecycle rule (both set in the Backblaze console).

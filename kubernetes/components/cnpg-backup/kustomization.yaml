@@ -6,6 +6,7 @@ resources:
 - ./s3.yaml
 - ./objectstore.yaml
 - ./postgres-scheduled-backup.yaml
+- ./offsite.yaml
 generatorOptions:
   disableNameSuffixHash: true
 secretGenerator:

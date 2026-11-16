@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/external-secrets.io/externalsecret_v1.json
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: ${APP}-postgres-offsite
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: infisical
+  target:
+    name: ${APP}-postgres-offsite
+    creationPolicy: Owner
+  data:
+  - secretKey: RCLONE_CONFIG_B2_ACCESS_KEY_ID
+    remoteRef:
+      key: /storage/cnpg-offsite/b2-access-key-id
+  - secretKey: RCLONE_CONFIG_B2_SECRET_ACCESS_KEY
+    remoteRef:
+      key: /storage/cnpg-offsite/b2-secret-access-key
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ${APP}-postgres-offsite
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      postgres-offsite:
+        type: cronjob
+        cronjob:
+          # After the 03:00 base backup
+          schedule: "0 4 * * *"
+          timeZone: America/Chicago
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+          ttlSecondsAfterFinished: 86400
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          labels:
+            observability.home-ops/logs: "true"
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+            runAsNonRoot: true
+
+        containers:
+          app:
+            image:
+              repository: docker.io/rclone/rclone
+              tag: 1.76.0
+            # Deletions on B2 only hide files; Object Lock and the bucket lifecycle rule keep them
+            # restorable for 14 days.
+            args:
+            - sync
+            - garage:${APP}-postgres-backups
+            - b2:rcdailey-homeops-cnpg/${APP}
+            - --stats-one-line
+            - --stats=1m
+            - -v
+            env:
+              RCLONE_CONFIG_GARAGE_TYPE: s3
+              RCLONE_CONFIG_GARAGE_PROVIDER: Other
+              RCLONE_CONFIG_GARAGE_ENDPOINT: http://192.168.1.58:3900
+              RCLONE_CONFIG_GARAGE_REGION: garage
+              RCLONE_CONFIG_GARAGE_ACCESS_KEY_ID:
+                valueFrom:
+                  secretKeyRef:
+                    name: ${APP}-s3-gs3ak
+                    key: AWS_ACCESS_KEY_ID
+              RCLONE_CONFIG_GARAGE_SECRET_ACCESS_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: ${APP}-s3-gs3ak
+                    key: AWS_SECRET_ACCESS_KEY
+              RCLONE_CONFIG_B2_TYPE: s3
+              RCLONE_CONFIG_B2_PROVIDER: Other
+              RCLONE_CONFIG_B2_ENDPOINT: https://s3.us-east-005.backblazeb2.com
+              RCLONE_CONFIG_B2_REGION: us-east-005
+              # The bucket-scoped key cannot list or create buckets
+              RCLONE_CONFIG_B2_NO_CHECK_BUCKET: "true"
+            envFrom:
+            - secretRef:
+                name: ${APP}-postgres-offsite
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+
+    persistence:
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          postgres-offsite:
+            app:
+            - path: /tmp
