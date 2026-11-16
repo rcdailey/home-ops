@@ -13,6 +13,17 @@ resources:
 - ./oidcclient.yaml
 - ./postgres-cluster.yaml
 - ./resourceclaimtemplate.yaml
+# Provider artwork is a re-downloadable cache (~13 GiB); Silo's own nightly backup omits it too
+patches:
+- target:
+    kind: SnapshotPolicy
+  patch: |-
+    - op: add
+      path: /spec/files
+      value:
+        ignoreRules:
+        - /artwork/tmdb/
+        - /artwork/tvdb/
 configMapGenerator:
 - name: silo-scripts
   files:
