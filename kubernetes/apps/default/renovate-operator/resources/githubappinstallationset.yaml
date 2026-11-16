@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/renovate-operator.mogenius.com/githubappinstallationset_v1alpha1.json
+apiVersion: renovate-operator.mogenius.com/v1alpha1
+kind: GitHubAppInstallationSet
+metadata:
+  name: renovate
+spec:
+  app:
+    secretName: renovate-github-app
+    appIdSecretKey: CLIENT_ID
+    pemSecretKey: PEM
+  templateRef:
+    name: renovate
+  # The App is public so organizations can install it; only these accounts get a RenovateJob
+  installations:
+    include:
+    - rcdailey
+    - recyclarr
+  webhook:
+    enabled: true
+    secretRef:
+      name: renovate-webhook-token
+      key: token

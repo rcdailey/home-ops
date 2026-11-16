@@ -6,8 +6,9 @@ components:
 - ../../../../components/valkey
 resources:
 - ./externalsecret.yaml
+- ./githubappinstallationset.yaml
 - ./pvc.yaml
-- ./renovatejob.yaml
+- ./renovatejobtemplate.yaml
 configMapGenerator:
 - name: renovate-global-config
   files:
