@@ -51,6 +51,7 @@ spec:
               REDIS_URL: redis://silo-valkey.media:6379
               # A single server has no other replica to take requests while it drains.
               SILO_SHUTDOWN_DELAY: "0"
+              SILO_METRICS_LISTEN: 0.0.0.0:9091
             envFrom:
             - secretRef:
                 name: silo-secret
@@ -139,6 +140,16 @@ spec:
             port: 8080
           jellyfin:
             port: 8096
+          # Unauthenticated; no route may expose it
+          metrics:
+            port: 9091
+
+    serviceMonitor:
+      app:
+        serviceName: silo
+        endpoints:
+        - port: metrics
+          path: /metrics
 
     route:
       app:
