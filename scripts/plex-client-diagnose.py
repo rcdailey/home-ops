@@ -741,7 +741,7 @@ def summarize_resources(output: str) -> str | None:
         fields = line.split()
         if len(fields) != 8 or fields[1] != "app":
             continue
-        if not fields[0].startswith("plex-") or fields[0].startswith("plexanisync-"):
+        if not fields[0].startswith("plex-"):
             continue
         cpu_limit = "no CPU limit" if fields[4] == "-" else f"CPU limit {fields[4]}"
         return f"Server limits: {cpu_limit}; memory limit {fields[7]}."

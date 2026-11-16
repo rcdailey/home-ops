@@ -13,7 +13,6 @@ resources:
 - ./seerr/ks.yaml
 - ./kometa/ks.yaml
 - ./plex/ks.yaml
-- ./plexanisync/ks.yaml
 - ./prowlarr/ks.yaml
 - ./qbittorrent/ks.yaml
 - ./qui/ks.yaml
