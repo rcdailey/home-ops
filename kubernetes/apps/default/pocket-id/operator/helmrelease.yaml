@@ -84,9 +84,6 @@ spec:
               memory: 64Mi
             limits:
               memory: 256Mi
-          livenessProbe:
-            exec:
-              command: [/app/pocket-id, healthcheck]
           podSecurityContext:
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
