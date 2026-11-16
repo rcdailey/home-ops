@@ -7,32 +7,68 @@ from datetime import UTC, datetime
 
 import click
 
-# Labels that are always noise in investigation output
+# Collector and SDK identity labels that never distinguish workloads
 _NOISE_LABELS = frozenset(
     {
         "__name__",
-        "container",
-        "endpoint",
-        "job",
-        "namespace",
-        "pod",
+        "k8s_cluster_name",
+        "otel_scope_name",
+        "otel_scope_version",
         "prometheus",
-        "service",
+        "scope_name",
+        "scope_version",
+        "service_instance_id",
+        "telemetry_sdk_language",
+        "telemetry_sdk_name",
+        "telemetry_sdk_version",
     }
 )
-_REDUNDANT_LABEL_PAIRS = {"instance": "nodename"}
+# Drop the first label when the second carries the same identity
+_REDUNDANT_LABEL_PAIRS = {"instance": "nodename", "host_name": "k8s_node_name"}
 
 
-def compact_labels(metric: dict[str, str]) -> str:
-    interesting = {k: v for k, v in metric.items() if k not in _NOISE_LABELS}
+def _interesting(metric: dict[str, str]) -> dict[str, str]:
+    kept = {k: v for k, v in metric.items() if k not in _NOISE_LABELS}
     for drop_key, keep_key in _REDUNDANT_LABEL_PAIRS.items():
-        if drop_key in interesting and keep_key in interesting:
-            del interesting[drop_key]
-    if not interesting:
-        interesting = {k: v for k, v in metric.items() if k != "__name__"}
-    if len(interesting) == 1:
-        return next(iter(interesting.values()))
-    return ", ".join(f"{k}={v}" for k, v in interesting.items())
+        if drop_key in kept and keep_key in kept:
+            del kept[drop_key]
+    return kept
+
+
+def _join(labels: dict[str, str]) -> str:
+    return ", ".join(f"{k}={v}" for k, v in sorted(labels.items()))
+
+
+def split_labels(results: list[dict]) -> tuple[dict[str, str], list[str]]:
+    """Separate labels shared by every series from those that tell series apart.
+
+    Printing the shared labels once keeps OTel resource labels from repeating
+    on every row while still showing which pod, node, or service a value
+    belongs to.
+    """
+    metrics = [_interesting(r.get("metric", {})) for r in results]
+    if not metrics:
+        return {}, []
+    common = {
+        k: v for k, v in metrics[0].items() if all(m.get(k) == v for m in metrics[1:])
+    }
+    if len(metrics) == 1:
+        return common, [""]
+    varying = [{k: v for k, v in m.items() if k not in common} for m in metrics]
+    return common, [_join(labels) for labels in varying]
+
+
+def print_series(results: list[dict], result_type: str) -> None:
+    common, labels = split_labels(results)
+    if common:
+        click.echo(f"common: {_join(common)}")
+    click.echo()
+    if result_type == "matrix":
+        _print_matrix(results, labels)
+        return
+    for r, label in zip(results, labels, strict=True):
+        value = r.get("value", [None, "N/A"])
+        click.echo(f"{{{label}}} => {format_value(value[1])}")
 
 
 def format_value(val: str) -> str:
@@ -64,32 +100,26 @@ def format_cpu(value: float) -> str:
     return f"{value:.2f}"
 
 
-def _print_matrix(results: list[dict]) -> None:
+def _print_matrix(results: list[dict], series_labels: list[str]) -> None:
     if not results:
         return
 
     max_points = 50
-    all_values = results[0].get("values", [])
-    if not all_values:
+    # Series start and stop independently (restarts, new pods), so the columns
+    # are the union of every series' timestamps, not the first series' points.
+    all_timestamps = sorted(
+        {float(ts) for r in results for ts, _ in r.get("values", [])}
+    )
+    if not all_timestamps:
         return
+    timestamps = all_timestamps[:max_points]
 
-    timestamps = [float(ts) for ts, _ in all_values[:max_points]]
-    if not timestamps:
-        return
+    moments = [datetime.fromtimestamp(ts, tz=UTC).astimezone() for ts in timestamps]
+    dates = sorted({m.strftime("%Y-%m-%d") for m in moments})
+    time_fmt = "%m-%d %H:%M" if len(dates) > 1 else "%H:%M:%S"
+    time_headers = [m.strftime(time_fmt) for m in moments]
+    date_header = dates[0] if len(dates) == 1 else f"{dates[0]} to {dates[-1]}"
 
-    prev_date = ""
-    time_headers: list[str] = []
-    date_header = ""
-    for ts in timestamps:
-        dt = datetime.fromtimestamp(ts, tz=UTC).astimezone()
-        date_str = dt.strftime("%Y-%m-%d")
-        time_str = dt.strftime("%H:%M:%S")
-        if date_str != prev_date:
-            date_header = date_str
-            prev_date = date_str
-        time_headers.append(time_str)
-
-    series_labels = [compact_labels(r.get("metric", {})) for r in results]
     col_width = 8
     for r in results:
         for _, val in r.get("values", [])[:max_points]:
@@ -99,7 +129,7 @@ def _print_matrix(results: list[dict]) -> None:
     label_width = max((len(lb) for lb in series_labels), default=5)
     label_width = max(label_width, 5)
 
-    click.echo(f"Date: {date_header}")
+    click.echo(f"Date: {date_header} ({moments[0].strftime('%Z')})")
     header = " " * label_width + " | "
     header += " ".join(h.rjust(col_width) for h in time_headers)
     click.echo(header)
@@ -114,6 +144,6 @@ def _print_matrix(results: list[dict]) -> None:
         )
         click.echo(row)
 
-    total_points = len(results[0].get("values", []))
+    total_points = len(all_timestamps)
     if total_points > max_points:
         click.echo(f"... ({total_points} total points, showing first {max_points})")

@@ -3,63 +3,27 @@
 from __future__ import annotations
 
 import json
-import re
+from collections.abc import Callable
 
 import click
 
 from hops._click import HelpfulGroup
-from hops.core.format import human_bytes, info, kv
+from hops.core.format import format_timestamp, human_bytes, info, kv, table
 from hops.core.runner import run
 from hops.core.time import TimeRange, time_options
 from hops.core.workload import resolve_pods, select_pods_for_logs, suggest_near_matches
+from hops.query import container_usage as cu
 from hops.query._vm import query_vm
-from hops.query.metrics_render import (
-    _print_matrix,
-    compact_labels,
-    format_cpu,
-    format_value,
-)
+from hops.query.metrics_diagnose import diagnose_empty
+from hops.query.metrics_render import format_cpu, print_series
 
-# --- Container stats helper ---
-
-
-def container_stats(
-    namespace: str,
-    pod: str,
-    container: str,
-    time_range: TimeRange,
-    metric: str,
-    rate: str | None = None,
-) -> dict[str, float | None]:
-    duration = time_range.to_duration()
-    selector = f'namespace="{namespace}",pod=~"{pod}",container="{container}"'
-    base = f"{metric}{{{selector}}}"
-    expr = f"rate({base}[{rate}])" if rate else base
-
-    stats: dict[str, float | None] = {"current": None, "max": None, "avg": None}
-
-    data = query_vm("/api/v1/query", {"query": expr})
-    results = data.get("data", {}).get("result", [])
-    if results:
-        stats["current"] = max(float(result["value"][1]) for result in results)
-
-    data = query_vm("/api/v1/query", {"query": f"max_over_time({expr}[{duration}:])"})
-    results = data.get("data", {}).get("result", [])
-    if results:
-        stats["max"] = max(float(r["value"][1]) for r in results)
-
-    data = query_vm("/api/v1/query", {"query": f"avg_over_time({expr}[{duration}:])"})
-    results = data.get("data", {}).get("result", [])
-    if results:
-        stats["avg"] = sum(float(r["value"][1]) for r in results) / len(results)
-
-    return stats
+# --- Container resolution ---
 
 
 def _resolve_container(
     app: str, namespace: str | None, container: str | None
 ) -> tuple[str, str, str, list[str]]:
-    """Resolve an app to its running pod regex and one container."""
+    """Resolve an app to a pod regex covering its history and one container."""
     resolved = resolve_pods(app, namespace)
     if not resolved:
         hints = suggest_near_matches(app, namespace)
@@ -92,11 +56,7 @@ def _resolve_container(
         raise SystemExit(1)
 
     assert container is not None
-    escaped_names = [
-        re.escape(name).replace(r"\-", "-").replace("\\", "\\\\") for name in pod_names
-    ]
-    pod_regex = "(?:" + "|".join(escaped_names) + ")"
-    return ns, pod_regex, container, pod_names
+    return ns, cu.workload_pod_regex(pods), container, pod_names
 
 
 def _metrics_server_current(
@@ -175,46 +135,15 @@ def cpu(
     time_to: str | None,
     **_,
 ):
-    """CPU usage and throttling for a container."""
-    namespace, pod, container, pod_names = _resolve_container(app, namespace, container)
-    time_range = TimeRange.from_options(time_from, time_to)
-    duration = time_range.to_duration()
-
-    stats = container_stats(
+    """CPU usage over time for a container: current, peak, average, hourly-style buckets."""
+    _report_usage(
+        app,
         namespace,
-        pod,
         container,
-        time_range,
-        "container_cpu_usage_seconds_total",
-        rate="5m",
+        TimeRange.from_options(time_from, time_to),
+        "cpu",
+        lambda value: f"{format_cpu(value)} cores",
     )
-    if stats["current"] is None:
-        stats["current"] = _metrics_server_current(
-            namespace, pod_names, container, "cpu"
-        )
-
-    selector = f'namespace="{namespace}",pod=~"{pod}",container="{container}"'
-    throttle_query = (
-        f"(sum(increase(container_cpu_cfs_throttled_periods_total{{{selector}}}[{duration}]))"
-        f" / sum(increase(container_cpu_cfs_periods_total{{{selector}}}[{duration}]))) * 100"
-    )
-    throttle_data = query_vm("/api/v1/query", {"query": throttle_query})
-    throttle_results = throttle_data.get("data", {}).get("result", [])
-    throttle_pct = float(throttle_results[0]["value"][1]) if throttle_results else None
-
-    pairs = []
-    if stats["current"] is not None:
-        pairs.append(("Current (5m rate)", f"{format_cpu(stats['current'])} cores"))
-    else:
-        pairs.append(("Current", "No data"))
-    if stats["max"] is not None:
-        pairs.append((f"Max ({duration})", f"{format_cpu(stats['max'])} cores"))
-    if stats["avg"] is not None:
-        pairs.append((f"Avg ({duration})", f"{format_cpu(stats['avg'])} cores"))
-    if throttle_pct is not None:
-        flag = " (!)" if throttle_pct > 25 else ""
-        pairs.append((f"Throttled ({duration})", f"{throttle_pct:.2f}%{flag}"))
-    kv(pairs)
 
 
 @cli.command()
@@ -230,29 +159,77 @@ def memory(
     time_to: str | None,
     **_,
 ):
-    """Memory usage for a container."""
-    namespace, pod, container, pod_names = _resolve_container(app, namespace, container)
-    time_range = TimeRange.from_options(time_from, time_to)
-    duration = time_range.to_duration()
-
-    stats = container_stats(
-        namespace, pod, container, time_range, "container_memory_working_set_bytes"
+    """Memory working set over time for a container: current, peak, average, buckets."""
+    _report_usage(
+        app,
+        namespace,
+        container,
+        TimeRange.from_options(time_from, time_to),
+        "memory",
+        human_bytes,
     )
-    if stats["current"] is None:
-        stats["current"] = _metrics_server_current(
-            namespace, pod_names, container, "memory"
-        )
 
-    pairs = []
-    if stats["current"] is not None:
-        pairs.append(("Current", human_bytes(stats["current"])))
-    else:
-        pairs.append(("Current", "No data"))
-    if stats["max"] is not None:
-        pairs.append((f"Max ({duration})", human_bytes(stats["max"])))
-    if stats["avg"] is not None:
-        pairs.append((f"Avg ({duration})", human_bytes(stats["avg"])))
+
+_USAGE_METRICS = {
+    "cpu": (cu.CPU_USAGE, cu.CPU_REQUEST, cu.CPU_LIMIT),
+    "memory": (cu.MEMORY_WORKING_SET, cu.MEMORY_REQUEST, cu.MEMORY_LIMIT),
+}
+
+
+def _report_usage(
+    app: str,
+    namespace: str | None,
+    container: str | None,
+    time_range: TimeRange,
+    resource: str,
+    fmt: Callable[[float], str],
+) -> None:
+    ns, pod_regex, container, pod_names = _resolve_container(app, namespace, container)
+    metric, request_metric, limit_metric = _USAGE_METRICS[resource]
+    result = cu.usage(
+        metric,
+        request_metric,
+        limit_metric,
+        cu.selector(ns, pod_regex, container),
+        time_range,
+    )
+    current = result.current
+    if current is None:
+        current = _metrics_server_current(ns, pod_names, container, resource)
+
+    window = time_range.describe()
+    pairs = [("Target", f"{ns}/{container} in pods matching {pod_regex}")]
+    if result.buckets:
+        window_start = float(time_range.to_epoch_range_params()["start"])
+        first = result.buckets[0].start
+        if first - window_start > 3600:
+            since = format_timestamp(first, local=True)
+            pairs.append(("Data since", f"{since} (no samples earlier in window)"))
+    pairs.append(("Current", fmt(current) if current is not None else "No data"))
+    if result.peak is not None and result.peak_at is not None:
+        at = format_timestamp(result.peak_at, local=True)
+        pairs.append((f"Peak ({window})", f"{fmt(result.peak)} at {at}"))
+    if result.avg is not None:
+        pairs.append((f"Avg ({window})", fmt(result.avg)))
+    pairs.append(("Request", fmt(result.request) if result.request else "none"))
+    limit = fmt(result.limit) if result.limit else "none"
+    if result.limit and result.peak is not None:
+        limit += f" (peak is {result.peak / result.limit:.0%} of limit)"
+    pairs.append(("Limit", limit))
     kv(pairs)
+
+    if not result.buckets:
+        info(f"\nNo {metric} samples in {window}")
+        return
+    click.echo()
+    labels = cu.bucket_labels(result.buckets)
+    table(
+        ["FROM", "PEAK", "AVG"],
+        [
+            [label, fmt(b.peak), fmt(b.avg)]
+            for label, b in zip(labels, result.buckets, strict=True)
+        ],
+    )
 
 
 @cli.command("query")
@@ -291,6 +268,7 @@ def raw_query(
 
     if not results:
         info("No results")
+        diagnose_empty(promql)
         return
 
     suffix = ""
@@ -306,18 +284,8 @@ def raw_query(
             return
 
     info(f"{result_type}, {len(results)} series{suffix}")
-    click.echo()
-
     max_series = 20
-    if result_type == "matrix":
-        _print_matrix(results[:max_series])
-    else:
-        for r in results[:max_series]:
-            metric = r.get("metric", {})
-            labels = compact_labels(metric)
-            value = r.get("value", [None, "N/A"])
-            click.echo(f"{{{labels}}} => {format_value(value[1])}")
-
+    print_series(results[:max_series], result_type)
     if len(results) > max_series:
         info(f"... {len(results) - max_series} more series")
 
@@ -349,12 +317,12 @@ def labels(name: str | None, json_mode: bool):
 @click.argument("pattern", required=False)
 @click.option("--json", "json_mode", is_flag=True, help="Output raw JSON")
 def list_metrics(pattern: str | None, json_mode: bool):
-    """List metric names with optional filter."""
+    """List metric names containing every space-separated PATTERN term."""
     data = query_vm("/api/v1/label/__name__/values")
     values = data.get("data", [])
     if pattern:
-        p = pattern.lower()
-        values = [v for v in values if p in v.lower()]
+        terms = pattern.lower().split()
+        values = [v for v in values if all(term in v.lower() for term in terms)]
 
     if json_mode:
         click.echo(json.dumps(values, indent=2))
