@@ -6,3 +6,4 @@ resources:
 - ./s3.yaml
 - ./externalsecret.yaml
 - ./clusterrepository.yaml
+- ./repositoryreplication.yaml

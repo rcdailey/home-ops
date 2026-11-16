@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kopiur.home-operations.com/repositoryreplication_v1alpha1.json
+---
+apiVersion: kopiur.home-operations.com/v1alpha1
+kind: RepositoryReplication
+metadata:
+  name: nezuko-b2
+spec:
+  sourceRef:
+    kind: ClusterRepository
+    name: nezuko
+  destination:
+    s3:
+      auth:
+        secretRef:
+          name: kopiur-b2
+      bucket: rcdailey-homeops-kopia
+      endpoint: s3.us-east-005.backblazeb2.com
+      region: us-east-005
+  # After full maintenance (02:00 plus up to 1h jitter)
+  schedule:
+    cron: 0 4 * * *
+  # Deletes on B2 only hide blobs. The bucket's 14-day Object Lock and its lifecycle rule keep
+  # hidden blobs restorable until both expire, so an emptied source cannot erase the mirror.
+  sync:
+    deleteExtra: true
+    parallel: 8
