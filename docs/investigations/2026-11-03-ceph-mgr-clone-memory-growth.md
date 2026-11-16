@@ -8,8 +8,8 @@
 The active ceph-mgr grows its resident memory with each CephFS subvolume clone and never releases
 it. On this cluster the only daily clone is the Kopiur backup of `home-assistant-rwx`. A workaround
 stages that backup from a read-only snapshot, so no clone runs in the mgr. The problem is reported
-upstream as [Ceph tracker #82544][tracker], and data collection for the maintainer is in progress.
-The workaround is reverted for that data collection; see [Current state](#current-state).
+upstream as [Ceph tracker #82544][tracker]. The requested data is posted and the workaround is back
+on; see [Current state](#current-state).
 
 ## Symptoms
 
@@ -99,50 +99,61 @@ data and the capture files (`phase1.tar.gz`) are tracker note #383873.
 Commit `5deb9b5e` removes the SnapshotPolicy staging patch and sets `MODE: csi`,
 `TRIGGER_AT: "07:10"`. The StorageClass from `2697f379` stays.
 
-| Date  | Clone  | Time (UTC)           | RssAnon before | RssAnon after | Change  |
-| ----- | ------ | -------------------- | -------------- | ------------- | ------- |
-| Nov 9 | csi    | 07:25:50 to 07:30:42 | 945 MiB        | 1018 MiB      | +73 MiB |
-| Nov 9 | manual | 07:32:45 to 07:36:57 | 1018 MiB       | 1030 MiB      | +11 MiB |
+| Date   | Clone  | Time (UTC)           | RssAnon before | RssAnon after | Change  |
+| ------ | ------ | -------------------- | -------------- | ------------- | ------- |
+| Nov 9  | csi    | 07:25:50 to 07:30:42 | 945 MiB        | 1018 MiB      | +73 MiB |
+| Nov 9  | manual | 07:32:45 to 07:36:57 | 1018 MiB       | 1030 MiB      | +11 MiB |
+| Nov 12 | csi    | 07:25:39 to 07:28:51 | 619 MiB        | 715 MiB       | +96 MiB |
+| Nov 12 | manual | 07:30:54 to 07:34:28 | 715 MiB        | 725 MiB       | +10 MiB |
+| Nov 13 | csi    | 07:26:05 to 07:29:17 | 719 MiB        | 806 MiB       | +87 MiB |
+| Nov 13 | manual | 07:31:20 to 07:34:54 | 806 MiB        | 817 MiB       | +11 MiB |
+| Nov 14 | csi    | 07:25:55 to 07:29:07 | 814 MiB        | 894 MiB       | +81 MiB |
+| Nov 14 | manual | 07:31:10 to 07:34:44 | 894 MiB        | 906 MiB       | +12 MiB |
+| Nov 15 | csi    | 07:25:50 to 07:29:12 | 903 MiB        | 984 MiB       | +81 MiB |
+| Nov 15 | manual | 07:31:16 to 07:34:50 | 984 MiB        | 989 MiB       | +5 MiB  |
+| Nov 16 | csi    | 07:25:37 to 07:28:48 | 986 MiB        | 1074 MiB      | +88 MiB |
+| Nov 16 | manual | 07:30:52 to 07:35:29 | 1074 MiB       | 1090 MiB      | +15 MiB |
 
 The csi "before" capture is at 07:10, about 15 minutes before the clone. `ceph fs clone status` no
 longer reports a source after the clone completes, so the script logged `source=null` and recorded
 no rbytes or rentries for the csi snapshot.
 
 At 13:23 UTC on Nov 9, the Rook upgrade to v1.21.2 recreated both mgr pods. mgr-a stayed active with
-a new PID (3783381) and about 170 MiB RssAnon. Continuity with the earlier samples ended there. To
-prevent more restarts, the Talos upgrade is suspended with the annotation
-`tuppr.home-operations.com/suspend=true` on TalosUpgrade `talos`.
+a new PID (3783381) and about 170 MiB RssAnon. Continuity with the earlier samples ended there.
+
+The Talos upgrade was then suspended with the annotation `tuppr.home-operations.com/suspend=true`,
+but on Nov 10 it ran anyway and rebooted every node between 09:05 and 09:25 UTC. The annotation was
+gone afterwards; why is unknown. mgr-a came back on `nami` while the capture pod stayed pinned to
+`hanekawa`, so Nov 10 and 11 recorded no memory data. Commit `f92bf5a2` replaced the pin with pod
+affinity to mgr-a. Nov 12 to 16 come from one process (PID 6122), which had already run one csi and
+one manual clone on Nov 11.
+
+The first clone of each day adds 73 to 96 MiB; a manual clone right after adds 5 to 15 MiB. In step
+1, daily manual clones without a csi clone before them added 71 to 171 MiB, so the growth may depend
+on the first clone after an idle period rather than on who issues it. RssAnon stays flat between
+runs. This data and `phase2.tar.gz` are tracker note #385816.
 
 ## Current state
 
-- Step 2 continues on the new mgr process for Nov 10 to 12. Nov 10 is the first clone on that
-  process and may include a large one-time jump; Nov 11 and 12 are the comparable samples.
-- The workaround is off: one ceph-csi clone and one manual clone run each day.
-- The Talos upgrade is suspended outside Git.
+- Step 2 is complete and posted. Commit `7c8de5ef` restored the workaround, so no clones run.
+- The capture app still samples mgr memory every minute; it runs no clones without a csi clone.
+- mgr-a keeps its grown memory (1,088 MiB on Nov 16) until it restarts or `ceph mgr fail` runs.
 
 ## Resume
 
-1. After about 07:40 UTC each day, check `/data/events.log`, `/data/captures/` and the tail of
-   `/data/rss.csv` in `deploy/mgr-leak-capture` (namespace `rook-ceph`). Confirm one PID in the
-   samples since the last check and that `ceph mgr stat` still shows mgr-a active.
-2. After the Nov 12 run, copy `/data` out, summarize step 2 and post it to the tracker with the
-   files attached.
-3. Restore the workaround: revert `5deb9b5e`'s SnapshotPolicy change (re-add the staging patch in
-   `kubernetes/apps/home/home-assistant/kustomization.yaml`).
-4. Resume the Talos upgrade:
-   `kubectl annotate talosupgrade talos tuppr.home-operations.com/suspend-`.
-5. Remove `kubernetes/apps/rook-ceph/mgr-leak-capture/` and its entry in
+1. Watch tracker #82544 for the maintainer's reply.
+2. Remove `kubernetes/apps/rook-ceph/mgr-leak-capture/` and its entry in
    `kubernetes/apps/rook-ceph/kustomization.yaml` when the tracker needs no more data.
 
 ## Root Cause
 
 Unconfirmed. Each subvolume clone executed by the mgr `volumes` module leaves memory in the mgr's
-`[heap]`. The size per clone varies (+11 to +171 MiB) and is not explained yet.
+`[heap]`. The size per clone varies (+5 to +171 MiB) and is not explained yet.
 
 ## Resolution
 
 Workaround only, in `2697f379`: stage the home-assistant backup from a read-only snapshot so no
-clone runs. Temporarily reverted for data collection in `5deb9b5e`.
+clone runs. Reverted for data collection in `5deb9b5e` and restored in `7c8de5ef`.
 
 ## References
 
