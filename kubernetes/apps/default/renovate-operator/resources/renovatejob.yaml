@@ -7,8 +7,6 @@ metadata:
 spec:
   provider:
     name: github
-  discoveryFilters:
-  - rcdailey/home-ops
   # ghcr.io throttles heavily in the first minutes of each hour
   schedule: 17 * * * *
   image: ghcr.io/renovatebot/renovate:44.222.5
