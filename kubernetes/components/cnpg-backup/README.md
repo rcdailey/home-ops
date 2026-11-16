@@ -29,7 +29,8 @@ For `APP: example`, the component declares:
 - `ScheduledBackup/example-postgres-backup`, which runs daily at 03:00 America/Chicago.
 - `HelmRelease/example-postgres-offsite`, a daily 04:00 rclone CronJob that syncs the Garage bucket
   to `example/` in the `rcdailey-homeops-cnpg` Backblaze B2 bucket, plus
-  `ExternalSecret/example-postgres-offsite` for its B2 key (`/storage/cnpg-offsite/*` in Infisical).
+  `ExternalSecret/example-postgres-offsite` for its B2 secret key
+  (`/storage/cnpg-offsite/b2-secret-access-key` in Infisical).
 
 The ObjectStore keeps a 30-day recovery window. The cluster continuously archives WAL and takes base
 backups from a standby when one is available.

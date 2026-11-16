@@ -141,10 +141,12 @@ Database backup coverage is derived from applications that include the `cnpg-bac
 Garage object data and the Kopia repository reside on the same NAS, so both are copied daily to
 Backblaze B2 (`s3.us-east-005.backblazeb2.com`):
 
-| Source           | Copier                                      | B2 bucket                       | Infisical key                |
-| ---------------- | ------------------------------------------- | ------------------------------- | ---------------------------- |
-| Kopia repository | `RepositoryReplication/nezuko-b2`, 04:00    | `rcdailey-homeops-kopia`        | `/storage/kopiur/b2-*`       |
-| CNPG buckets     | `cnpg-backup` rclone CronJob per app, 04:00 | `rcdailey-homeops-cnpg/${APP}/` | `/storage/cnpg-offsite/b2-*` |
+| Source           | Copier                                      | B2 bucket                       | Infisical key                                    |
+| ---------------- | ------------------------------------------- | ------------------------------- | ------------------------------------------------ |
+| Kopia repository | `RepositoryReplication/nezuko-b2`, 04:00    | `rcdailey-homeops-kopia`        | `/storage/kopiur/b2-secret-access-key`           |
+| CNPG buckets     | `cnpg-backup` rclone CronJob per app, 04:00 | `rcdailey-homeops-cnpg/${APP}/` | `/storage/cnpg-offsite/b2-secret-access-key`     |
+
+Each B2 key ID is not secret and lives in the manifest next to the bucket name.
 
 Both copies mirror deletions. In B2 a deletion only hides a file; each bucket has Object Lock with a
 14-day compliance-mode default retention and a lifecycle rule that removes hidden files 14 days
