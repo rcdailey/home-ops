@@ -91,6 +91,10 @@ spec:
               RCLONE_CONFIG_B2_ACCESS_KEY_ID: 0052911d2e5508e0000000002
               # The bucket-scoped key cannot list or create buckets
               RCLONE_CONFIG_B2_NO_CHECK_BUCKET: "true"
+              # Object Lock buckets reject PutObject without Content-MD5; rclone sends it only when
+              # it applies a lock itself. Matches the bucket's 14-day default retention.
+              RCLONE_CONFIG_B2_OBJECT_LOCK_MODE: COMPLIANCE
+              RCLONE_CONFIG_B2_OBJECT_LOCK_RETAIN_UNTIL_DATE: 14d
             envFrom:
             - secretRef:
                 name: ${APP}-postgres-offsite
