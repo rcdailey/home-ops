@@ -8,6 +8,16 @@ components:
 resources:
 - ./helmrelease.yaml
 - ./postgres-cluster.yaml
+patches:
+# Back up from a read-only snapshot mount; a full CephFS clone grows ceph-mgr memory
+- target:
+    kind: SnapshotPolicy
+  patch: |-
+    - op: add
+      path: /spec/staging
+      value:
+        storageClassName: ceph-filesystem-snapshot
+        accessModes: [ReadOnlyMany]
 configMapGenerator:
 - name: home-assistant-config
   files:
