@@ -62,7 +62,8 @@ time:
 # Two-tier filter strategy (per upstream recommendation):
 #   Raw power sensors are internal with only *pos -- no smoothing -- so
 #   total_daily_energy integrates against accurate readings.
-#   Copy sensors apply *throttle_avg for smoothed display in HA.
+#   Copy sensors apply *throttle_avg for smoothed display in HA; 30s keeps recorder WAL and
+#   backup volume down (5s produced ~17k rows per sensor per day).
 #   Daily energy sensors apply *throttle_time to reduce DB writes.
 .filters:
 - &moving_avg
@@ -72,7 +73,7 @@ time:
 - &pos
   lambda: 'return max(x, 0.0f);'
 - &throttle_avg
-  throttle_average: 5s
+  throttle_average: 30s
 - &throttle_time
   throttle: 60s
 .daily_energy: &daily_energy
