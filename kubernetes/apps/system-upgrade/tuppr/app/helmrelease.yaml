@@ -21,6 +21,15 @@ spec:
     deploymentAnnotations:
       reloader.stakater.com/auto: "true"
     replicaCount: 2
+    # Limit health check reads to the kinds used in upgrades/*.yaml; add any new kind here.
+    rbac:
+      healthCheckRules:
+      - apiGroups: [ceph.rook.io]
+        resources: [cephclusters]
+        verbs: [get, list, watch]
+      - apiGroups: [kopiur.home-operations.com]
+        resources: [snapshots]
+        verbs: [get, list, watch]
     # Connection only; which alerts get silenced is authored per-run on
     # TalosUpgrade.spec.silences. VMAlertmanager speaks the v2 silences API and
     # requires no auth in-cluster, so no header secret is needed.
