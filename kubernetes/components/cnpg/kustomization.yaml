@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization.json
+---
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+patches:
+- target:
+    group: postgresql.cnpg.io
+    version: v1
+    kind: Cluster
+  patch: |-
+    apiVersion: postgresql.cnpg.io/v1
+    kind: Cluster
+    metadata:
+      name: any
+    spec:
+      postgresql:
+        parameters:
+          # CNPG defaults to logical; no cluster uses logical replication
+          wal_level: replica
+          wal_compression: lz4

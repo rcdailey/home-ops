@@ -18,6 +18,7 @@ spec:
       effective_cache_size: "1GB"
       maintenance_work_mem: "64MB"
       checkpoint_completion_target: "0.9"
+      checkpoint_timeout: 15min
       wal_buffers: "16MB"
       default_statistics_target: "100"
       random_page_cost: "1.1"

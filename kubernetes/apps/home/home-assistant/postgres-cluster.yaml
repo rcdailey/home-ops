@@ -9,6 +9,11 @@ spec:
 
   imageName: ghcr.io/cloudnative-pg/postgresql:17
 
+  postgresql:
+    parameters:
+      # The recorder writes constantly; fewer checkpoints mean fewer full-page images in WAL
+      checkpoint_timeout: 15min
+
   bootstrap:
     initdb:
       database: home-assistant
