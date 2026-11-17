@@ -33,6 +33,14 @@
       minimumGroupSize: 2,
     },
     {
+      // Keeps the local CLI (mise) and CI (five flate/action references across the Flux Diff and
+      // Claude workflows) on one version, so pre-commit and CI render manifests identically.
+      description: "flate Group",
+      groupName: "flate",
+      matchPackageNames: ["/home-operations\\/flate/"],
+      minimumGroupSize: 6,
+    },
+    {
       // Groups Kubernetes version upgrades across mise (kubectl), tuppr, and topf.yaml (kubelet).
       // Match depName: mise's kubectl packageName is kubernetes/kubernetes.
       description: "Kubernetes Group",
