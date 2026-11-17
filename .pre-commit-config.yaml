@@ -49,6 +49,8 @@ repos:
   hooks:
   - id: markdownlint-cli2
     args: [--fix]
+    # Use mise's Node; nodeenv crashes parsing prerelease versions in the Node index
+    language_version: system
 
 - repo: https://github.com/zizmorcore/zizmor-pre-commit
   rev: v1.32.0

@@ -35,6 +35,7 @@ kubectl = "1.37.2"
 "npm:@todoist/outline-cli" = { version = "latest", allow_low_downloads = true }
 kustomize = "latest"
 markdownlint-cli2 = "latest"
+node = "26"
 "github:mitsuhiko/minijinja" = "latest"
 "npm:renovate" = {
     version = "latest",
