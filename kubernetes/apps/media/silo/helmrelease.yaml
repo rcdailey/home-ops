@@ -36,7 +36,7 @@ spec:
           app:
             image: &image
               repository: ghcr.io/silo-server/silo-server
-              tag: build-2450@sha256:02e755b4c7b98c20f2aa494e6c9cd9e73a2c8544a3f9d5a78dbe9a5cad2e3677
+              tag: build-2509@sha256:48b85e1980ce2355bfab23acdd6c6553a79bfe455dc375c5942c15c008ddf5cf
             # The image's s6 init requires root; running the binary directly skips it and the
             # bundled PostgreSQL and Redis, which DATABASE_URL and REDIS_URL replace.
             command: ["silo"]
