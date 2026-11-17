@@ -6,6 +6,8 @@
       description: "Silo build numbers",
       matchPackageNames: ["ghcr.io/silo-server/silo-server"],
       versioning: "regex:^build-(?<major>\\d+)$",
+      // Every build is a major; omit the default newMajor suffix so one PR tracks the newest.
+      branchTopic: "{{{depNameSanitized}}}",
     },
   ],
 }
