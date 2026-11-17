@@ -52,7 +52,7 @@ jobs:
     - name: Setup helm
       uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
       with:
-        version: v4.3.1
+        version: v4.3.2
 
     - name: Setup crane
       uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
