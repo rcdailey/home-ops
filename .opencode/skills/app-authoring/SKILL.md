@@ -44,7 +44,7 @@ Do not run this command unless the user explicitly requests it.
 - Depend on `global-config` when using cluster-secret substitution.
 - Depend on `rook-ceph-cluster` when using Ceph storage.
 - Depend on `garage-instance` in namespace `storage` when using CNPG S3 backups.
-- Set `postBuild.substitute.APP` when using the Kopiur component.
+- Set `postBuild.substitute.APP` when using the Kopiur or `nfs-scaler` component.
 - Add `dependsOn` only for what this Kustomization needs to apply or first start: an operator or
   CRDs for its custom resources, a substitution Secret, a StorageClass, or a Secret it mounts. Do
   not depend on an app whose API this app only calls at runtime; the workload retries instead.
@@ -79,6 +79,9 @@ itself.
 - `ceph-block` is RWO and requires `Recreate` plus `advancedMounts`.
 - `ceph-filesystem` and NFS are RWX and use `RollingUpdate`.
 - Use NFS for media and other large shared files.
+- When a workload mounts NFS, add the `nfs-scaler` component so it scales to zero while NFS is
+  down. It targets the Deployment named `APP`; omit that controller's `replicas`, which every Helm
+  upgrade would reapply over the autoscaler.
 
 For backups, add the `kopiur` component and substitute `APP`. The component creates the backed-up
 PVC (named `APP` unless `KOPIUR_PVC` is set); do not also declare it in `pvc.yaml`. Set
