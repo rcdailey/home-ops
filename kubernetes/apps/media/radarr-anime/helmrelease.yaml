@@ -20,7 +20,6 @@ spec:
         # CRITICAL: Recreate strategy required for RWO volumes (ceph-block storage)
         # RollingUpdate would cause Multi-Attach errors as new pod starts before old pod terminates
         strategy: Recreate
-        replicas: 1
         annotations:
           reloader.stakater.com/auto: "true"
 
