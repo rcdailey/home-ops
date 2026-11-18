@@ -73,6 +73,10 @@ spec:
     toolbox:
       enabled: true
 
+    cephImage:
+      repository: quay.io/ceph/ceph
+      tag: v20.2.5
+
     cephClusterSpec:
       # AES256K client keys require Linux 7.0; keep these warnings muted until Talos provides it.
       healthCheck:
