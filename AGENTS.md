@@ -228,8 +228,11 @@ Use the `cf` CLI for Cloudflare work, not raw API requests; load the `cloudflare
 ### Dependency upgrades
 
 Upgrade PRs labeled `status/hold` MUST NOT be merged or approved, even when named explicitly.
-Reviewing, analyzing, and pushing fixes to them is allowed. List them as not merged with the reason
-`hold`.
+Reviewing and analyzing them is allowed. List them as not merged with the reason `hold`.
+
+When an upgrade needs repository changes beyond the bot's diff, MUST NOT check out the bot's PR
+branch or push commits to it. Commit the version bump and the required changes directly to `main`,
+and leave the PR open; the bot closes it after detecting the upgrade on `main`.
 
 ### Conventional commits
 
