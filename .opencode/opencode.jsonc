@@ -42,7 +42,6 @@
     { "action": "shell", "resource": "env", "effect": "deny" },
     { "action": "shell", "resource": "env |*", "effect": "deny" },
     { "action": "shell", "resource": "*printenv*", "effect": "deny" },
-    { "action": "shell", "resource": "*git push*", "effect": "allow" },
     { "action": "shell", "resource": "kubectl apply*", "effect": "deny" },
     { "action": "shell", "resource": "kubectl apply -f /tmp/*", "effect": "ask" },
     // Dry runs never persist; `--dry-run=none` mutates, so only server and client match
