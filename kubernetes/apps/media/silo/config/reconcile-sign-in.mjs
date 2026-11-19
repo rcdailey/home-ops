@@ -1,6 +1,6 @@
-// Converges Silo's single sign-on on Pocket ID through Silo's admin API: the public URL, the
-// OpenID Connect plugin, its settings, and the sign-in binding. Each step writes only when the
-// stored value differs, so scheduled runs also undo changes made in the web app.
+// Converges Silo's single sign-on on Pocket ID through Silo's admin API: the OpenID Connect plugin,
+// its settings, and the sign-in binding. Each step writes only when the stored value differs, so
+// scheduled runs also undo changes made in the web app.
 //
 // Limits: the admin API never returns stored secrets, so a rotated client secret is applied only
 // after the plugin's stored secret is cleared or the plugin is reinstalled.
@@ -16,7 +16,6 @@ const required = (name) => {
 
 const baseUrl = required("SILO_URL");
 const apiKey = required("SILO_API_KEY");
-const publicUrl = required("SILO_PUBLIC_URL");
 const connection = {
   issuer_url: required("OIDC_ISSUER_URL"),
   client_id: required("OIDC_CLIENT_ID"),
@@ -32,13 +31,12 @@ const binding = {
   auto_provision: true,
 };
 
-async function request(method, path, body, headers = {}) {
+async function request(method, path, body) {
   const response = await fetch(new URL(path, baseUrl), {
     method,
     headers: {
       Authorization: `Bearer ${apiKey}`,
       ...(body && { "Content-Type": "application/json" }),
-      ...headers,
     },
     body: body && JSON.stringify(body),
   });
@@ -71,14 +69,6 @@ const compareVersions = (a, b) => {
 
 const matches = (stored, desired) =>
   Object.entries(desired).every(([key, value]) => stored?.[key] === value);
-
-async function reconcilePublicUrl() {
-  const key = "server.public_url";
-  const { value } = await request("GET", `/api/v2/admin/settings/${key}`);
-  if (value === publicUrl) return;
-  await request("PUT", `/api/v2/admin/settings/${key}`, { value: publicUrl }, { "If-Match": "*" });
-  console.log(`set ${key}`);
-}
 
 async function ensureInstalled() {
   const installations = await listAll("/api/v2/admin/plugins/installations");
@@ -129,6 +119,5 @@ async function reconcilePlugin(installation) {
   }
 }
 
-await reconcilePublicUrl();
 await reconcilePlugin(await ensureInstalled());
 console.log("sign-in configuration converged");
