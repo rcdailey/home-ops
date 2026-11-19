@@ -49,6 +49,7 @@ spec:
                     name: silo-postgres-app
                     key: uri
               REDIS_URL: redis://silo-valkey.media:6379
+              SILO_PUBLIC_URL: https://silo.${SECRET_DOMAIN}
               # A single server has no other replica to take requests while it drains.
               SILO_SHUTDOWN_DELAY: "0"
               SILO_METRICS_LISTEN: 0.0.0.0:9091
@@ -112,7 +113,6 @@ spec:
             command: ["node", "/scripts/reconcile-sign-in.mjs"]
             env:
               SILO_URL: http://silo.media:8080
-              SILO_PUBLIC_URL: https://silo.${SECRET_DOMAIN}
               OIDC_BUTTON_LABEL: Pocket ID
               OIDC_ISSUER_URL: https://auth.${SECRET_DOMAIN}
               OIDC_CLIENT_ID: silo
