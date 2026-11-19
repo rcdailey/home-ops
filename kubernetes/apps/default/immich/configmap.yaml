@@ -9,6 +9,10 @@ data:
   IMMICH_SERVER_URL: http://immich.default:2283
   IMMICH_MACHINE_LEARNING_URL: http://immich-machine-learning.default:3003
   PUBLIC_IMMICH_SERVER_URL: https://photos-test.${SECRET_DOMAIN}
+  # v3.4.2 defaults the metrics listener host to "::", which the Prometheus exporter turns into an
+  # invalid base URL and answers every scrape with 400 (immich-app/immich#33466). The cluster is
+  # IPv4-only. Remove once a release includes immich-app/immich#33480.
+  IMMICH_HOST: 0.0.0.0
 
   # Redis Configuration
   REDIS_HOSTNAME: immich-valkey.default
