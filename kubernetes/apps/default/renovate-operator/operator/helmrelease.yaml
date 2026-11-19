@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: renovate-operator
-      version: 6.9.0
+      version: 6.10.0
       sourceRef:
         kind: HelmRepository
         name: renovate-operator
