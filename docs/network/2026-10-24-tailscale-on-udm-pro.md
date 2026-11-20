@@ -53,7 +53,8 @@ After each firmware update, confirm Tailscale runs and serves both routes:
 ./scripts/unifi-ssh.sh 192.168.1.1 tailscale status --json | jq -c '.Self.PrimaryRoutes'
 ```
 
-Expected: `["192.168.1.0/24","192.168.50.0/24"]`.
+Expected: `["192.168.1.0/24","192.168.2.0/24","192.168.50.0/24"]`. The IoT route was added later;
+see [Advertise the IoT network][iot-route].
 
 Revert:
 
@@ -69,6 +70,7 @@ Then remove `udm-pro` from the Tailscale admin console.
 - [Tailscale subnet routers][ts-subnets]
 - [Tailscale exit nodes][ts-exit-nodes]
 
+[iot-route]: 2026-11-20-tailscale-advertise-iot.md
 [tailscale-unifi]: https://github.com/SierraSoftworks/tailscale-unifi
 [ts-subnets]: https://tailscale.com/kb/1019/subnets
 [ts-exit-nodes]: https://tailscale.com/kb/1103/exit-nodes
