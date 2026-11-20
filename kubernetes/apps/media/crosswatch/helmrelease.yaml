@@ -35,7 +35,7 @@ spec:
           app:
             image:
               repository: ghcr.io/cenodude/crosswatch
-              tag: 0.14.6
+              tag: 0.14.7
             env:
               TZ: America/Chicago
             securityContext:
