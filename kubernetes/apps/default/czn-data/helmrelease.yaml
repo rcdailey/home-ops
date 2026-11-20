@@ -104,6 +104,21 @@ spec:
             resources: *jobResources
             securityContext: *securityContext
 
+      # Game data from wiki.e7bot.top (seconds to minutes); rebuilds the merged tables at once.
+      scrape-e7bot:
+        type: cronjob
+        cronjob:
+          !!merge <<: *cronjob
+          schedule: "0 3 * * *"
+        pod: *jobPod
+        containers:
+          app:
+            image: *image
+            args: ["scrape-e7bot"]
+            env: *jobEnv
+            resources: *jobResources
+            securityContext: *securityContext
+
       # Tags character portraits from the scrape's stored card art; runs an hour after it.
       enrich:
         type: cronjob
