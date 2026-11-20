@@ -9,11 +9,11 @@ Run these checks immediately on command invocation. Stop and report a failed pre
 
 ### Required tools
 
-| Tool | Binary | Purpose |
-| --- | --- | --- |
-| smartctl | `smartctl` | SMART health data |
-| fio | `fio` | Performance benchmarks |
-| badblocks | `badblocks` | Surface scan |
+| Tool      | Binary      | Purpose                |
+| --------- | ----------- | ---------------------- |
+| smartctl  | `smartctl`  | SMART health data      |
+| fio       | `fio`       | Performance benchmarks |
+| badblocks | `badblocks` | Surface scan           |
 
 Resolve each binary with `command -v`. The Homebrew packages are `smartmontools`, `fio`, and
 `e2fsprogs`. Report a missing tool instead of installing it without an explicit request.
@@ -29,7 +29,8 @@ Run `getcap` against the paths returned by `command -v smartctl fio`. Both must 
 `cap_sys_rawio=ep`.
 
 A systemd path unit (`disk-diag-caps.path`) watches these binaries and re-applies capabilities after
-package upgrades. If capabilities are missing, report that `disk-diag-caps.service` needs to run.
+package upgrades, but it can miss an upgrade. If capabilities are missing, run
+`pkexec systemctl start disk-diag-caps.service` (polkit prompts the user), then re-run `getcap`.
 
 ### USB dock driver mode
 
@@ -56,8 +57,9 @@ Drive test session ready
 Awaiting instructions.
 ```
 
-If no USB drive is connected, omit the usb dock line. All preflight checks should pass without
-privilege escalation. If any check fails, report clearly and stop.
+If no USB drive is connected, omit the usb dock line. Apart from the capability repair above, all
+preflight checks should pass without privilege escalation. If any other check fails, report clearly
+and stop.
 
 ## Environment
 
@@ -176,7 +178,7 @@ smartctl -a /dev/sdX
 
 **Universal (SSD and HDD):**
 
-- `5` Reallocated_Sector_Ct: must be 0; any nonzero is a red flag
+- `5` Reallocated_Sector_Ct: should be 0; see Verdict rules for nonzero counts
 - `187` Reported_Uncorrect: must be 0
 - `197` Current_Pending_Sector: must be 0; sectors awaiting reallocation
 - `199` CRC_Error_Count: must be 0; indicates cable/interface errors
@@ -202,7 +204,10 @@ more reliable than raw attribute values. Key concerns:
 - `198` Offline_Uncorrectable: bad sectors found during offline scan
 - `240` Head_Flying_Hours: operational time context (some drives use this instead of `9`)
 - `194` Temperature_Celsius: HDDs are more temperature-sensitive than SSDs; sustained >45C
-  accelerates wear
+  accelerates wear. Closed external enclosures under hours of continuous IO can approach 60C.
+  Read per-minute history with `smartctl -l scttemphist -d sat /dev/sdX`; when the trend stays
+  above 50C, ask the user to add airflow. Judge the trend, not one sample: isolated one-minute
+  jumps have appeared in the sample taken while smartctl was querying.
 
 ### Performance Tests (fio)
 
@@ -263,6 +268,26 @@ badblocks -wsv -b 4096 /dev/sdX
 `badblocks` is slow on large drives (hours). For SSDs, SMART self-tests are generally sufficient;
 use badblocks only if SMART attributes are suspicious.
 
+### Long read scan (USB HDD)
+
+Extended self-tests over USB enclosures end as `Aborted by host` when the enclosure resets or
+sleeps the drive. A host-driven read keeps the drive busy and survives the agent session as a
+transient user service:
+
+```bash
+systemd-run --user --unit=badblocks-sdX --collect sh -c \
+  'badblocks -sv -b 4096 -o /tmp/opencode/badblocks-sdX.bad /dev/sdX \
+   > /tmp/opencode/badblocks-sdX.log 2>&1'
+
+# Progress (the log uses carriage returns and backspaces)
+systemctl --user is-active badblocks-sdX
+tr '\r\b' '\n\n' < /tmp/opencode/badblocks-sdX.log | rg -v '^\s*$' | tail -1
+```
+
+A drive disconnect appears as a burst of read errors plus `dmesg` reset messages; distinguish it
+from media errors before judging the drive. HDD throughput falls toward the inner tracks, so a
+linear projection from early progress underestimates the finish time.
+
 ## Assessment Framework
 
 When reporting results, evaluate:
@@ -273,3 +298,16 @@ When reporting results, evaluate:
 4. **Consistency**: latency percentiles (p99, p99.9); spikes indicate degradation (dying NAND cells
    for SSDs, mechanical issues for HDDs) or firmware bugs
 5. **Verdict**: keep, return, or test further (with reasoning)
+
+### Verdict rules
+
+- **Return or replace**: a failed self-test, any bad block from a full-surface scan, nonzero
+  `197` or `198`, or a reallocated count that grows between readings.
+- **Keep and monitor**: a small nonzero `5` that stays stable, with zero `197` and `198` and a clean
+  full-surface scan. Recheck SMART after the next heavy workload, such as a RAID rebuild.
+- **History**: report power-on hours and earlier self-test entries; entries logged before the
+  user's ownership reveal prior use and testing.
+- **Recourse**: for a drive that fails or is newly bought, report the serial and remaining return or
+  warranty path. OEM, white-label, and drives removed from external enclosures may lack direct
+  manufacturer warranty; say so. Run the full-surface scan on used drives before the seller's
+  return window closes.
