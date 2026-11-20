@@ -9,7 +9,33 @@ from urllib.parse import quote
 import click
 
 from hass._client import get_client, parse_time_arg
+from hass._errors import die
 from hass._format import is_numeric, print_history_entry
+
+
+def _timestamp(entry: dict) -> datetime:
+    return datetime.fromisoformat(entry["last_changed"])
+
+
+def _attribute_series(series: list[dict], attribute: str) -> list[dict]:
+    """Project full history entries onto one attribute, dropping unchanged repeats.
+
+    Attribute-only changes move ``last_updated`` but not ``last_changed``, so the
+    projected entry carries ``last_updated`` as its change time.
+    """
+    entity_id = series[0].get("entity_id", "unknown")
+    if not any(attribute in entry.get("attributes", {}) for entry in series):
+        die(f"{entity_id} has no attribute {attribute!r} in this range")
+    projected: list[dict] = []
+    for entry in series:
+        value = str(entry.get("attributes", {}).get(attribute))
+        if projected and projected[-1]["state"] == value:
+            continue
+        changed = entry.get("last_updated") or entry["last_changed"]
+        projected.append(
+            {"entity_id": entity_id, "state": value, "last_changed": changed}
+        )
+    return projected
 
 
 @click.command()
@@ -34,6 +60,10 @@ from hass._format import is_numeric, print_history_entry
     is_flag=True,
     help="Summarize: numeric -> min/max/first/last/resets; categorical -> counts + transitions",
 )
+@click.option(
+    "--attribute",
+    help="Track this attribute instead of the state (e.g. hvac_action, fan_mode)",
+)
 @click.option("--json", "as_json", is_flag=True, help="Raw JSON output")
 def cli(
     entities: tuple[str, ...],
@@ -41,9 +71,14 @@ def cli(
     end: str | None,
     limit: int | None,
     summary: bool,
+    attribute: str | None,
     as_json: bool,
 ) -> None:
-    """Fetch state history and summarize it."""
+    """Fetch state history and summarize it.
+
+    Categorical summaries report how long each value was held, so `--summary
+    --attribute hvac_action` on a climate entity gives heating, cooling, and fan runtime.
+    """
     now = datetime.now(UTC)
     start_ts = parse_time_arg(start, now)
     end_ts = parse_time_arg(end, now) if end else now
@@ -53,8 +88,9 @@ def cli(
         f"history/period/{quote(start_ts.isoformat())}"
         f"?filter_entity_id={quote(entity_filter)}"
         f"&end_time={quote(end_ts.isoformat())}"
-        f"&minimal_response&no_attributes"
     )
+    if not attribute:
+        path += "&minimal_response&no_attributes"
 
     with get_client() as client:
         data = client.request(path)
@@ -66,6 +102,8 @@ def cli(
     for series in data:
         if not series:
             continue
+        if attribute:
+            series = _attribute_series(series, attribute)
 
         entity_id = series[0].get("entity_id", "unknown")
         numeric = all(
@@ -103,11 +141,15 @@ def cli(
 
         if summary:
             counts: dict[str, int] = {}
+            held: dict[str, float] = {}
             transitions: list[tuple[str, str]] = []
             prev_state: str | None = None
-            for entry in series:
+            for i, entry in enumerate(series):
                 s = entry.get("state", "")
                 counts[s] = counts.get(s, 0) + 1
+                begin = max(_timestamp(entry), start_ts)
+                finish = _timestamp(series[i + 1]) if i + 1 < len(series) else end_ts
+                held[s] = held.get(s, 0.0) + max((finish - begin).total_seconds(), 0.0)
                 if s != prev_state:
                     transitions.append((entry.get("last_changed", ""), s))
                     prev_state = s
@@ -119,9 +161,13 @@ def cli(
                 f"  points: {len(series)}  unique: {len(counts)}  "
                 f"transitions: {len(transitions)}"
             )
-            click.echo("  counts:")
-            for value, count in sorted(counts.items(), key=lambda x: -x[1]):
-                click.echo(f"    {value}: {count}")
+            window = (end_ts - start_ts).total_seconds()
+            click.echo("  time held (points):")
+            for value, seconds in sorted(held.items(), key=lambda x: -x[1]):
+                click.echo(
+                    f"    {value}: {seconds / 3600:.1f}h "
+                    f"({seconds / window:.0%})  ({counts[value]})"
+                )
             tlimit = limit or 10
             thead = transitions[:tlimit]
             ttail = transitions[-tlimit:] if len(transitions) > tlimit * 2 else []
