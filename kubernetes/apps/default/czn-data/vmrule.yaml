@@ -119,6 +119,38 @@ spec:
           e7bot changed its key (see the site's JavaScript); a `.count` field means a list lost
           many items, which `czn-data scrape-e7bot --allow-shrink` accepts.
 
+    - alert: CznStoveStale
+      expr: >-
+        time() - max(last_over_time(czn_stove_last_success_timestamp_seconds[7d])) > 36 * 3600
+        or (
+          absent_over_time(czn_stove_last_success_timestamp_seconds[7d])
+          and on () count(last_over_time(czn_stove_last_run_timestamp_seconds[7d]))
+        )
+      labels:
+        severity: warning
+      annotations:
+        summary: No fully successful czn-data Stove scrape in 36 hours
+        description: >-
+          The MCP keeps serving the stored Stove posts. Check the scrape-stove CronJob and
+          CznStoveFailed for the cause.
+
+    - alert: CznStoveFailed
+      expr: >-
+        max(
+          last_over_time(czn_stove_success[26h])
+          and tlast_over_time(czn_stove_success[26h])
+            == scalar(max(tlast_over_time(czn_stove_success[26h])))
+        ) == 0
+      labels:
+        severity: warning
+      annotations:
+        summary: The last czn-data Stove scrape failed
+        description: >-
+          Stored posts are kept. Failed fields are in the czn_stove_validation_failures series
+          (label field), in VictoriaLogs (`"board failed"`, `"post fetch failed"`,
+          `"post invalid"`), and in the MCP data_status tool. A `list.count` field means a
+          board lost many posts, which `czn-data scrape-stove --allow-shrink` accepts.
+
     - alert: CznBuildFailed
       expr: >-
         max(

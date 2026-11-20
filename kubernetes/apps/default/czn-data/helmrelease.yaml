@@ -59,7 +59,8 @@ spec:
                 cpu: 10m
                 memory: 128Mi
               limits:
-                memory: 512Mi
+                # The search embedding model brings one process to about 340 MB.
+                memory: 768Mi
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
@@ -115,6 +116,22 @@ spec:
           app:
             image: *image
             args: ["scrape-e7bot"]
+            env: *jobEnv
+            resources: *jobResources
+            securityContext: *securityContext
+
+      # Official Stove posts (about 2 minutes on an empty database, seconds after); its own
+      # job so a Stove failure never fails the other scrapes.
+      scrape-stove:
+        type: cronjob
+        cronjob:
+          !!merge <<: *cronjob
+          schedule: "30 3 * * *"
+        pod: *jobPod
+        containers:
+          app:
+            image: *image
+            args: ["scrape-stove"]
             env: *jobEnv
             resources: *jobResources
             securityContext: *securityContext
