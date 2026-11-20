@@ -2,7 +2,7 @@
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/operator.victoriametrics.com/vmrule_v1beta1.json
 # Copied from rcdailey/chaos-zero-nightmare projects/czn-data/deploy/alerts.yaml; keep in sync.
 # Each job run writes new series, so the run-state rules read only the newest run's series;
-# that lets an alert resolve after the next good run. The 26h windows assume the daily CronJobs.
+# that lets an alert resolve after the next good run. The 26h windows assume the daily CronJob.
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMRule
 metadata:
@@ -24,7 +24,7 @@ spec:
         severity: warning
       annotations:
         summary: No fully successful czn-data scrape in 36 hours
-        description: Check the CronJob and the other czn-data alerts for the cause.
+        description: Check the daily CronJob and the other czn-data alerts for the cause.
 
     - alert: CznScrapeBlocked
       expr: >-
@@ -98,7 +98,7 @@ spec:
       annotations:
         summary: No fully successful czn-data e7bot scrape in 36 hours
         description: >-
-          The MCP keeps serving the last good e7bot data. Check the scrape-e7bot CronJob and
+          The MCP keeps serving the last good e7bot data. Check the daily CronJob and
           CznE7botFailed for the cause.
 
     - alert: CznE7botFailed
@@ -131,7 +131,7 @@ spec:
       annotations:
         summary: No fully successful czn-data Stove scrape in 36 hours
         description: >-
-          The MCP keeps serving the stored Stove posts. Check the scrape-stove CronJob and
+          The MCP keeps serving the stored Stove posts. Check the daily CronJob and
           CznStoveFailed for the cause.
 
     - alert: CznStoveFailed
@@ -191,7 +191,7 @@ spec:
         severity: warning
       annotations:
         summary: No fully successful czn-data enrich run in 36 hours
-        description: Check the enrich CronJob and CznEnrichFailed for the cause.
+        description: Check the daily CronJob and CznEnrichFailed for the cause.
 
     - alert: CznEnrichFailed
       expr: >-

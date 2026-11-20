@@ -82,9 +82,11 @@ spec:
                 memory: 1Gi
             securityContext: *securityContext
 
-      scrape:
+      # Scrapes Prydwen, e7bot, and Stove at once (about 20 minutes, Prydwen's pace), then tags
+      # portraits, then builds the merged tables once.
+      daily:
         type: cronjob
-        cronjob: &cronjob
+        cronjob:
           schedule: "0 4 * * *"
           timeZone: America/Chicago
           backoffLimit: 0
@@ -92,63 +94,16 @@ spec:
           successfulJobsHistory: 1
           failedJobsHistory: 1
           ttlSecondsAfterFinished: 86400
-        pod: &jobPod
+        pod:
           restartPolicy: Never
         containers:
           app:
             image: *image
-            args: ["scrape"]
-            env: &jobEnv
+            args: ["daily"]
+            env:
               DATABASE_URL: *databaseUrl
               OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-gateway-collector.observability:4318
               OTEL_SERVICE_NAME: czn-data
-            resources: *jobResources
-            securityContext: *securityContext
-
-      # Game data from wiki.e7bot.top (seconds to minutes); rebuilds the merged tables at once.
-      scrape-e7bot:
-        type: cronjob
-        cronjob:
-          !!merge <<: *cronjob
-          schedule: "0 3 * * *"
-        pod: *jobPod
-        containers:
-          app:
-            image: *image
-            args: ["scrape-e7bot"]
-            env: *jobEnv
-            resources: *jobResources
-            securityContext: *securityContext
-
-      # Official Stove posts (about 2 minutes on an empty database, seconds after); its own
-      # job so a Stove failure never fails the other scrapes.
-      scrape-stove:
-        type: cronjob
-        cronjob:
-          !!merge <<: *cronjob
-          schedule: "30 3 * * *"
-        pod: *jobPod
-        containers:
-          app:
-            image: *image
-            args: ["scrape-stove"]
-            env: *jobEnv
-            resources: *jobResources
-            securityContext: *securityContext
-
-      # Tags character portraits from the scrape's stored card art; runs an hour after it.
-      enrich:
-        type: cronjob
-        cronjob:
-          !!merge <<: *cronjob
-          schedule: "0 5 * * *"
-        pod: *jobPod
-        containers:
-          app:
-            image: *image
-            args: ["enrich"]
-            env:
-              !!merge <<: *jobEnv
               CZN_TAGGER_DIR: /models
             resources:
               requests:
@@ -183,7 +138,7 @@ spec:
       tagger:
         existingClaim: czn-data-tagger
         advancedMounts:
-          enrich:
+          daily:
             app:
             - path: /models
       tmp:
