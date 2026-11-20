@@ -8,8 +8,8 @@ from collections import Counter, defaultdict
 
 import click
 
-from hass._client import run_ws, ws_error
-from hass._errors import die
+from hass._client import rest_call, run_ws, ws_error
+from hass._errors import HassError, die
 
 _BAD_STATES = ("setup_error", "setup_retry", "migration_error", "failed_unload")
 
@@ -59,7 +59,7 @@ def _entry_line(entry: dict, devs: int, ents: int) -> str:
 @click.group(invoke_without_command=True)
 @click.pass_context
 def cli(ctx: click.Context) -> None:
-    """Inspect integrations, config entries, and discovery flows."""
+    """Inspect and reload integrations, config entries, and discovery flows."""
     if ctx.invoked_subcommand is None:
         ctx.invoke(list_cmd)
 
@@ -123,6 +123,48 @@ def list_cmd(
             click.echo("nothing to report")
         elif not (show_all or domain):
             click.echo("(use --all for loaded entries, --ignored for ignored ones)")
+
+    run_ws(handler)
+
+
+@cli.command("reload")
+@click.argument("target")
+def reload_cmd(target: str) -> None:
+    """Reload one config entry by entry_id or exact domain.
+
+    Reloading re-reads the device or service, so new objects (for example a
+    program added on a controller) get entities. A domain must have exactly one
+    entry; otherwise pass the entry_id from `integration list DOMAIN --json`.
+    """
+
+    async def handler(send):
+        entries = await _entries(send)
+        matches = [
+            e
+            for e in entries
+            if target in (e["entry_id"], e["domain"]) and e.get("source") != "ignore"
+        ]
+        if not matches:
+            die(f"no config entry with entry_id or domain '{target}'")
+        if len(matches) > 1:
+            ids = ", ".join(f"{e['entry_id']} ({e.get('title')})" for e in matches)
+            die(f"'{target}' matches several entries: {ids}")
+        entry = matches[0]
+        try:
+            result = rest_call(
+                "POST", f"/api/config/config_entries/entry/{entry['entry_id']}/reload"
+            )
+        except HassError as exc:
+            die(str(exc))
+        if isinstance(result, dict) and result.get("require_restart"):
+            die(f"{entry['domain']}: reload needs a Home Assistant restart")
+        refreshed = await _entries(send)
+        state = next(
+            e.get("state") for e in refreshed if e["entry_id"] == entry["entry_id"]
+        )
+        click.echo(f"reloaded {entry['domain']} '{entry.get('title')}': {state}")
+        if state != "loaded":
+            raise SystemExit(1)
 
     run_ws(handler)
 
