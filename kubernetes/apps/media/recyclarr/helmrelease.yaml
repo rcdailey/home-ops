@@ -8,103 +8,40 @@ spec:
   interval: 1h
   chartRef:
     kind: OCIRepository
-    name: app-template
-    namespace: flux-system
+    name: recyclarr
   values:
-    controllers:
-      recyclarr:
-        type: cronjob
-        cronjob:
-          schedule: "0 2 * * *"
-          timeZone: America/Chicago
-          backoffLimit: 0
-          concurrencyPolicy: Forbid
-          successfulJobsHistory: 1
-          failedJobsHistory: 1
-          ttlSecondsAfterFinished: 86400
-
-        annotations:
-          reloader.stakater.com/auto: "true"
-
-        pod:
-          labels:
-            observability.home-ops/logs: "true"
-          restartPolicy: Never
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            fsGroup: 1000
-            fsGroupChangePolicy: OnRootMismatch
-            runAsNonRoot: true
-
-        containers:
-          app:
-            image:
-              repository: ghcr.io/recyclarr/recyclarr
-              tag: 8.8.1@sha256:3e9c41b9ec29bbf65fe846864058730d321a21f7695d8c0d9437b73e34d50ad9
-            args: ["sync", "--log", "debug"]
-            env:
-              TZ: America/Chicago
-              UMASK: "022"
-              RECYCLARR_DATA_DIR: /data
-            envFrom:
-            - secretRef:
-                name: recyclarr-secret
-            resources:
-              requests:
-                cpu: 10m
-                memory: 64Mi
-              limits:
-                memory: 128Mi
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities:
-                drop:
-                - ALL
-
+    image:
+      tag: master@sha256:60a22248d21fa99acb2e7e5e8f75f55fa326f26f1f7dd294e8eb41abe1edaffb
+    deploymentAnnotations:
+      reloader.stakater.com/auto: "true"
+    apiKey:
+      existingSecret: recyclarr-secret
+      existingSecretKey: RECYCLARR_API_KEY
+    configs:
+      existingConfigMap: recyclarr-configmap
+    settings:
+      existingConfigMap: recyclarr-settings
+    env:
+    - name: TZ
+      value: America/Chicago
+    envFrom:
+    - secretRef:
+        name: recyclarr-secret
     persistence:
-      config:
-        type: persistentVolumeClaim
+      # Kopiur-backed volume from v8; the server moves its nested state/ folder to the root on
+      # first start and leaves the other v8 files in place.
+      state:
         existingClaim: recyclarr
-        advancedMounts:
-          recyclarr:
-            app:
-            - path: /config
-
-      configs:
-        type: configMap
-        name: recyclarr-configmap
-        advancedMounts:
-          recyclarr:
-            app:
-            - path: /config/configs/sonarr-series.yaml
-              subPath: sonarr-series.yaml
-              readOnly: true
-            - path: /config/configs/sonarr-anime.yaml
-              subPath: sonarr-anime.yaml
-              readOnly: true
-            - path: /config/configs/radarr-1080p.yaml
-              subPath: radarr-1080p.yaml
-              readOnly: true
-            - path: /config/configs/radarr-4k.yaml
-              subPath: radarr-4k.yaml
-              readOnly: true
-            - path: /config/configs/radarr-anime.yaml
-              subPath: radarr-anime.yaml
-              readOnly: true
-
       data:
-        type: persistentVolumeClaim
+        enabled: true
         existingClaim: recyclarr-data
-        advancedMounts:
-          recyclarr:
-            app:
-            - path: /data
-
-      tmp:
-        type: emptyDir
-        advancedMounts:
-          recyclarr:
-            app:
-            - path: /tmp
+    serviceMonitor:
+      enabled: true
+    podLabels:
+      observability.home-ops/logs: "true"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 256Mi
+      limits:
+        memory: 512Mi

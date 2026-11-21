@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/ocirepository-source-v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: recyclarr
+spec:
+  interval: 15m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  # Dev chart rebuilt on every Recyclarr master push under this reused tag; its appVersion selects
+  # ghcr.io/recyclarr/recyclarr-dev:master. Switch to the released chart once v9 ships.
+  ref:
+    tag: 0.0.0-master
+  url: oci://ghcr.io/recyclarr/charts-dev/recyclarr

@@ -7,6 +7,7 @@ components:
 resources:
 - ./externalsecret.yaml
 - ./helmrelease.yaml
+- ./ocirepository.yaml
 - ./pvc.yaml
 configMapGenerator:
 - name: recyclarr-configmap
@@ -16,5 +17,8 @@ configMapGenerator:
   - radarr-1080p.yaml=./configs/radarr-1080p.yaml
   - radarr-4k.yaml=./configs/radarr-4k.yaml
   - radarr-anime.yaml=./configs/radarr-anime.yaml
+- name: recyclarr-settings
+  files:
+  - settings.yml=./config/settings.yml
 generatorOptions:
   disableNameSuffixHash: true
