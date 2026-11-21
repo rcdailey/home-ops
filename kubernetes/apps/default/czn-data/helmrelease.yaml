@@ -59,8 +59,9 @@ spec:
                 cpu: 10m
                 memory: 128Mi
               limits:
-                # The search embedding model brings one process to about 340 MB.
-                memory: 768Mi
+                # The search embedding model brings one process to about 340 MB; the screenshot
+                # identity models (POST /identify) add about 650 MB once loaded.
+                memory: 1536Mi
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
