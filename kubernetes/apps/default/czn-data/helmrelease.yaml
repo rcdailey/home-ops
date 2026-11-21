@@ -81,6 +81,50 @@ spec:
               limits:
                 memory: 1Gi
             securityContext: *securityContext
+          # Starts a scrape the first time a new image runs, so its parsers rebuild the data;
+          # restarts on the same image skip. A running scrape is cancelled first because
+          # czn-data skips a run that starts while another holds its lock. Failures only log,
+          # so the server still starts and the daily CronJob still runs.
+          trigger-scrape:
+            dependsOn: migrate
+            image:
+              repository: docker.io/alpine/k8s
+              tag: 1.37.2
+            command: ["sh", "-c"]
+            args:
+            - |
+              fail() { echo "scrape trigger failed: $1"; exit 0; }
+              key=czn-data.home-ops/scraped-image
+              image=$(kubectl get pod "$POD_NAME" -o jsonpath='{.status.initContainerStatuses[?(@.name=="migrate")].imageID}') \
+                || fail "read pod image"
+              [ -n "$image" ] || fail "pod image is empty"
+              scraped=$(kubectl get cronjob czn-data-daily \
+                -o jsonpath='{.metadata.annotations.czn-data\.home-ops/scraped-image}') \
+                || fail "read CronJob"
+              if [ "$image" = "$scraped" ]; then echo "already scraped $image"; exit 0; fi
+              running=$(kubectl get jobs -l app.kubernetes.io/instance=czn-data,app.kubernetes.io/controller=daily \
+                -o jsonpath='{range .items[?(@.status.active)]}{.metadata.name}{" "}{end}') \
+                || fail "list jobs"
+              if [ -n "$running" ]; then
+                # Foreground deletion returns once the pods are gone and their lock is released.
+                kubectl delete job $running --cascade=foreground --timeout=2m || fail "cancel $running"
+              fi
+              kubectl create job --from=cronjob/czn-data-daily "czn-data-daily-image-$(date +%s)" \
+                || fail "create job"
+              kubectl annotate cronjob czn-data-daily --overwrite "$key=$image" || fail "record image"
+            env:
+              HOME: /tmp
+              POD_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext: *securityContext
 
       # Scrapes Prydwen, e7bot, and Stove at once (about 20 minutes, Prydwen's pace), then tags
       # portraits, then builds the merged tables once.
@@ -114,6 +158,33 @@ spec:
                 memory: 2Gi
             securityContext: *securityContext
 
+    # Only the trigger-scrape init container mounts a token for this account.
+    rbac:
+      roles:
+        trigger-scrape:
+          type: Role
+          rules:
+          - apiGroups: [""]
+            resources: ["pods"]
+            verbs: ["get"]
+          - apiGroups: ["batch"]
+            resources: ["cronjobs"]
+            resourceNames: ["czn-data-daily"]
+            verbs: ["get", "patch"]
+          - apiGroups: ["batch"]
+            resources: ["jobs"]
+            verbs: ["get", "list", "watch", "create", "delete"]
+      bindings:
+        trigger-scrape:
+          type: RoleBinding
+          roleRef:
+            identifier: trigger-scrape
+          subjects:
+          - identifier: czn-data
+
+    serviceAccount:
+      czn-data: {}
+
     service:
       app:
         controller: *app
@@ -141,6 +212,28 @@ spec:
           daily:
             app:
             - path: /models
+      kube-api-access:
+        type: custom
+        volumeSpec:
+          projected:
+            sources:
+            - serviceAccountToken:
+                path: token
+            - configMap:
+                name: kube-root-ca.crt
+                items:
+                - key: ca.crt
+                  path: ca.crt
+            - downwardAPI:
+                items:
+                - path: namespace
+                  fieldRef:
+                    fieldPath: metadata.namespace
+        advancedMounts:
+          czn-data:
+            trigger-scrape:
+            - path: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
       tmp:
         type: emptyDir
         globalMounts:
