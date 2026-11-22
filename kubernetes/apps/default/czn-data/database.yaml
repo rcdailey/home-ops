@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/postgresql.cnpg.io/database_v1.json
+# The czn database the Cluster bootstraps, managed declaratively so the operator (a superuser)
+# creates pg_textsearch, which is not a trusted extension: czn-data's owner role cannot.
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: czn-data-postgres-czn
+spec:
+  name: czn
+  owner: czn
+  cluster:
+    name: czn-data-postgres
+  extensions:
+  - name: pg_textsearch
+    ensure: present

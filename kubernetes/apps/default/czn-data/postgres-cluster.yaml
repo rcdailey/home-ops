@@ -6,7 +6,17 @@ metadata:
   name: czn-data-postgres
 spec:
   instances: 2
-  imageName: ghcr.io/cloudnative-pg/postgresql:18
+  # Debian 13 (trixie): the pg_textsearch library below is built for it.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
+  postgresql:
+    # BM25 ranking for czn-data's search tools, built by the chaos-zero-nightmare repository
+    # (projects/czn-data/postgres/Dockerfile).
+    extensions:
+    - name: pg-textsearch
+      image:
+        reference: ghcr.io/rcdailey/czn-data-pg-textsearch:latest
+    shared_preload_libraries:
+    - pg_textsearch
   # No backups: every row is rebuilt from prydwen.gg by the next scrape.
   bootstrap:
     initdb:

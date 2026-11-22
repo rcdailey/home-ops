@@ -5,6 +5,7 @@ kind: Kustomization
 components:
 - ../../../components/cnpg
 resources:
+- database.yaml
 - helmrelease.yaml
 - oidcclient.yaml
 - pocketidapi.yaml

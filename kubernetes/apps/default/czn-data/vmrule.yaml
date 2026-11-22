@@ -180,6 +180,23 @@ spec:
           game's card. VictoriaLogs (`"Prydwen rows matched no e7bot record"`) has the counts;
           fix the name or version matching in czn_data.build.
 
+    - alert: CznSearchRecallLow
+      expr: >-
+        max(
+          last_over_time(czn_search_recall{tool=""}[26h])
+          and tlast_over_time(czn_search_recall{tool=""}[26h])
+            == scalar(max(tlast_over_time(czn_search_recall{tool=""}[26h])))
+        ) < 0.85
+      labels:
+        severity: warning
+      annotations:
+        summary: The search tools found answers to only {{ $value | humanizePercentage }} of their known questions
+        description: >-
+          The daily run measures search_posts, search_game_systems and search_guides on the
+          questions in czn_data/search_eval.toml (recall in the top 5; 0.93 when this alert
+          was written). VictoriaLogs (`"search missed"`) lists each missed question with the
+          passages ranked above its answer; `czn-data eval-search` reruns it.
+
     - alert: CznEnrichStale
       expr: >-
         time() - max(last_over_time(czn_enrich_last_success_timestamp_seconds[7d])) > 36 * 3600
