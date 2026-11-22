@@ -34,7 +34,7 @@ spec:
             resourceClaimTemplateName: silo
         containers:
           app:
-            image: &image
+            image:
               repository: ghcr.io/silo-server/silo-server
               tag: build-2906@sha256:e3dd41a86d5d35a9ca6fba46b6546d09d42a5b32c2743094d058d48e74b1ae7f
             # The image's s6 init requires root; running the binary directly skips it and the
@@ -53,6 +53,14 @@ spec:
               # A single server has no other replica to take requests while it drains.
               SILO_SHUTDOWN_DELAY: "0"
               SILO_METRICS_LISTEN: 0.0.0.0:9091
+              # Declares the sign-in plugin; Silo applies it at startup (config/silo.yaml).
+              SILO_CONFIG_FILE: /etc/silo/silo.yaml
+              # The deployment document refuses a literal secret, so it reads this variable.
+              OIDC_CLIENT_SECRET:
+                valueFrom:
+                  secretKeyRef:
+                    name: silo-oidc-credentials
+                    key: client-secret
             envFrom:
             - secretRef:
                 name: silo-secret
@@ -83,54 +91,11 @@ spec:
                 memory: 8Gi
               claims:
               - name: gpu
-            securityContext: &securityContext
+            securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities:
                 drop: ["ALL"]
-
-      # Silo stores plugins and sign-in settings in its database and exposes no config file, so
-      # this job applies them through the admin API. It fails until the admin API key exists.
-      sign-in:
-        type: cronjob
-        cronjob:
-          schedule: "0 * * * *"
-          backoffLimit: 0
-          concurrencyPolicy: Forbid
-          successfulJobsHistory: 1
-          failedJobsHistory: 1
-          ttlSecondsAfterFinished: 86400
-        pod:
-          restartPolicy: Never
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            runAsNonRoot: true
-        containers:
-          app:
-            # The Silo image ships Node.js, so the job needs no separate image.
-            image: *image
-            command: ["node", "/scripts/reconcile-sign-in.mjs"]
-            env:
-              SILO_URL: http://silo.media:8080
-              OIDC_BUTTON_LABEL: Pocket ID
-              OIDC_ISSUER_URL: https://auth.${SECRET_DOMAIN}
-              OIDC_CLIENT_ID: silo
-              OIDC_CLIENT_SECRET:
-                valueFrom:
-                  secretKeyRef:
-                    name: silo-oidc-credentials
-                    key: client-secret
-            envFrom:
-            - secretRef:
-                name: silo-admin-api
-            resources:
-              requests:
-                cpu: 10m
-                memory: 64Mi
-              limits:
-                memory: 256Mi
-            securityContext: *securityContext
 
     service:
       app:
@@ -193,13 +158,14 @@ spec:
             app:
             - path: /media
               readOnly: true
-      scripts:
+      deployment:
         type: configMap
-        name: silo-scripts
+        name: silo-deployment
         advancedMounts:
-          sign-in:
+          silo:
             app:
-            - path: /scripts
+            - path: /etc/silo/silo.yaml
+              subPath: silo.yaml
               readOnly: true
       # Transcode output and prepared downloads
       tmp:
