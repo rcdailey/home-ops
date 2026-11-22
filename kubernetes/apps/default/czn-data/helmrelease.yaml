@@ -14,6 +14,7 @@ spec:
     defaultPodOptions:
       labels:
         observability.home-ops/logs: "true"
+        observability.home-ops/log-format: json
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
