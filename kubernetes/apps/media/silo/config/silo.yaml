@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Silo-Server/silo-server/main/contracts/plugins/provisioning/v1/schema.json
+# Silo applies this at startup and locks the declared fields in the web app. The plugin's version
+# and update policy stay in the database.
+apiVersion: 1
+plugins:
+  silo.auth.oidc:
+    config:
+      connection:
+        issuer_url: https://auth.${SECRET_DOMAIN}
+        client_id: silo
+        client_secret:
+          fromEnv: OIDC_CLIENT_SECRET
+      display_name:
+        value: Pocket ID
+    auth_binding:
+      capability_id: oidc
+      enabled: true
+      display_order: 0
+      default_login: false
+      # Creates a Silo account on first sign-in; the Pocket ID client limits who can sign in.
+      auto_provision: true
+      # New declared bindings default to the stable callback, which the Pocket ID client does not
+      # register.
+      callback: installation

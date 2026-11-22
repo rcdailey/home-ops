@@ -26,11 +26,8 @@ patches:
         - /artwork/tmdb/
         - /artwork/tvdb/
 configMapGenerator:
-- name: silo-scripts
+- name: silo-deployment
   files:
-  - reconcile-sign-in.mjs=./config/reconcile-sign-in.mjs
+  - silo.yaml=./config/silo.yaml
 generatorOptions:
   disableNameSuffixHash: true
-  # JavaScript template literals use the ${...} syntax that Flux would substitute.
-  annotations:
-    kustomize.toolkit.fluxcd.io/substitute: disabled
