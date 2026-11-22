@@ -55,17 +55,6 @@ _LOG_OPT_IN_LABEL = "observability.home-ops/logs"
 _OTEL_SIDECAR_ANNOTATION = "sidecar.opentelemetry.io/inject"
 
 _PLAIN_LEVELS: dict[str, tuple[re.Pattern[str], dict[str, str]]] = {
-    "recyclarr": (
-        re.compile(r"\[(VRB|DBG|INF|WRN|ERR|FTL)\]"),
-        {
-            "VRB": "debug",
-            "DBG": "debug",
-            "INF": "info",
-            "WRN": "warning",
-            "ERR": "error",
-            "FTL": "critical",
-        },
-    ),
     "sabnzbd": (
         re.compile(r"::(DEBUG|INFO|WARNING|ERROR|CRITICAL)::"),
         {
