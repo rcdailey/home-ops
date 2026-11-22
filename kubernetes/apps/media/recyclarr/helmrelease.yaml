@@ -38,6 +38,7 @@ spec:
     serviceMonitor:
       enabled: true
     podLabels:
+      observability.home-ops/log-format: json
       observability.home-ops/logs: "true"
     resources:
       requests:
