@@ -27,7 +27,7 @@ spec:
           app:
             image:
               repository: ghcr.io/gabeduartem/blocky-ui
-              tag: 2.2.0
+              tag: 2.2.1
             env:
               BLOCKY_UI_CONFIG: /config/blocky-ui.yaml
             probes:
