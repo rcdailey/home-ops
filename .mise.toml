@@ -38,7 +38,7 @@ markdownlint-cli2 = "latest"
 node = "26"
 "github:mitsuhiko/minijinja" = "latest"
 "npm:renovate" = {
-    version = "latest",
+    version = "44.257.9",
     trust_policy_excludes = [
       "@yarnpkg/libzip@3.2.2",
       "fastq@1.20",

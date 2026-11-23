@@ -48,6 +48,17 @@
       allowedVersions: "/^\\d+\\.\\d+$/",
     },
     {
+      // Branch automerge opens no PR, so the Claude review workflow never runs. ignoreTests
+      // because CI runs only on pull requests, leaving the branch without status checks.
+      // Covers both members of the Renovate group: the operator's image and the mise CLI.
+      description: "Auto-merge Renovate minor and patch updates without a PR",
+      matchPackageNames: ["ghcr.io/renovatebot/renovate", "renovate"],
+      matchUpdateTypes: ["minor", "patch"],
+      automerge: true,
+      automergeType: "branch",
+      ignoreTests: true,
+    },
+    {
       description: "Disable auto-merge for all Talos-related packages",
       matchPackageNames: ["/siderolabs/"],
       automerge: false,

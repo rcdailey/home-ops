@@ -47,7 +47,6 @@
     // The Mend-hosted app, whose PRs the self-hosted bot adopted
     "29139614+renovate[bot]@users.noreply.github.com",
   ],
-  ignorePaths: ["**/resources/**"],
   flux: {
     managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
   },

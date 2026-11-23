@@ -41,6 +41,14 @@
       minimumGroupSize: 6,
     },
     {
+      // Keeps the local CLI (mise) and the operator's job image on one version.
+      // Match packageName: mise's depName is npm:renovate.
+      description: "Renovate Group",
+      groupName: "Renovate",
+      matchPackageNames: ["ghcr.io/renovatebot/renovate", "renovate"],
+      minimumGroupSize: 2,
+    },
+    {
       // Groups Kubernetes version upgrades across mise (kubectl), tuppr, and topf.yaml (kubelet).
       // Match depName: mise's kubectl packageName is kubernetes/kubernetes.
       description: "Kubernetes Group",
