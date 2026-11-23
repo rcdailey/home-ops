@@ -22,7 +22,9 @@
   ],
   // Runs after the 03:00-05:00 Talos upgrade window so automerged restarts never overlap drains
   schedule: ["* 5-8 * * *"],
-  dependencyDashboardTitle: "Renovate Dashboard 🤖",
+  dependencyDashboard: {
+    title: "Renovate Dashboard 🤖",
+  },
   suppressNotifications: ["prEditedNotification", "prIgnoreNotification"],
   configMigration: true,
   osvVulnerabilityAlerts: false,
