@@ -62,8 +62,9 @@ spec:
               limits:
                 # The search models (embedding and reranker) bring one process to about 600 MB
                 # (czn-data eval-search, 45 searches); the screenshot
-                # identity models (POST /identify) add about 650 MB once loaded.
-                memory: 1536Mi
+                # identity models (POST /identify) add about 650 MB once loaded, and the gear
+                # model (POST /identify-gear) more; a gear-only process peaks near 570 MB.
+                memory: 2560Mi
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
