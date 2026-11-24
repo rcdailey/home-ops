@@ -15,4 +15,5 @@ spec:
   - https://${SUBDOMAIN:=${APP}}.${SECRET_DOMAIN}
   secret:
     keys:
+      # Envoy Gateway's SecurityPolicy reads only this key name
       clientSecret: client-secret
