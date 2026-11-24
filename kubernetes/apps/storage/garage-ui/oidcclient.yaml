@@ -13,6 +13,3 @@ spec:
   - https://garage.${SECRET_DOMAIN}/auth/oidc/callback
   logoutCallbackUrls:
   - https://garage.${SECRET_DOMAIN}
-  secret:
-    keys:
-      clientSecret: client-secret

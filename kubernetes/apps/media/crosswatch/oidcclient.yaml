@@ -14,6 +14,3 @@ spec:
   allowedUserGroups:
   - name: admins
     namespace: default
-  secret:
-    keys:
-      clientSecret: client-secret

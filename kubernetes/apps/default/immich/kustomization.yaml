@@ -11,6 +11,7 @@ components:
 resources:
 - configmap.yaml
 - helmrelease.yaml
+- oidcclient.yaml
 - postgres-cluster.yaml
 - pvc.yaml
 - resourceclaimtemplate.yaml

@@ -13,6 +13,3 @@ spec:
   - https://git.${SECRET_DOMAIN}/user/oauth2/Pocket%20ID/callback
   logoutCallbackUrls:
   - https://git.${SECRET_DOMAIN}
-  secret:
-    keys:
-      clientSecret: secret

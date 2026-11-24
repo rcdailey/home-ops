@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aclerici38/pocket-id-operator/refs/heads/main/dist/schemas/pocketidoidcclient_v1alpha1.json
+---
+apiVersion: pocketid.internal/v1alpha1
+kind: PocketIDOIDCClient
+metadata:
+  name: qui
+spec:
+  name: qui
+  # Generated when the client was created by hand; kept so the operator adopts it
+  clientID: 1b5bf670-d39d-4318-98d3-9fc8cb74ae61
+  skipConsent: true
+  launchUrl: https://qui.${SECRET_DOMAIN}
+  callbackUrls:
+  - https://qui.${SECRET_DOMAIN}/api/auth/oidc/callback

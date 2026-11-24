@@ -13,6 +13,8 @@ spec:
     namespace: rook-ceph
   - name: global-config
     namespace: flux-system
+  - name: pocket-id-operator
+    namespace: default
   interval: 1h
   path: ./kubernetes/apps/media/qui
   postBuild:

@@ -30,3 +30,5 @@ spec:
     namespace: flux-system
   - name: grafana-operator
     namespace: observability
+  - name: pocket-id-operator
+    namespace: default

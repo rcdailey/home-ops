@@ -61,6 +61,11 @@ spec:
               value: Pocket ID
             - name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
               value: grafana
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-oidc-credentials
+                  key: client_secret
             - name: GF_AUTH_GENERIC_OAUTH_AUTH_URL
               value: https://auth.${SECRET_DOMAIN}/authorize
             - name: GF_AUTH_GENERIC_OAUTH_TOKEN_URL

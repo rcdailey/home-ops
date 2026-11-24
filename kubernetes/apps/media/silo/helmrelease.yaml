@@ -60,7 +60,7 @@ spec:
                 valueFrom:
                   secretKeyRef:
                     name: silo-oidc-credentials
-                    key: client-secret
+                    key: client_secret
             envFrom:
             - secretRef:
                 name: silo-secret

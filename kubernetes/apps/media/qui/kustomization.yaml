@@ -8,4 +8,5 @@ components:
 resources:
 - ./externalsecret.yaml
 - ./helmrelease.yaml
+- ./oidcclient.yaml
 - ./servicemonitor.yaml

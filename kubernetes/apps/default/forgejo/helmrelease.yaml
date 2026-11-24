@@ -86,7 +86,7 @@ spec:
         valueFrom:
           secretKeyRef:
             name: forgejo-oidc-credentials
-            key: secret
+            key: client_secret
       # Inject database password from CNPG
       - name: FORGEJO__database__PASSWD
         valueFrom:
@@ -128,6 +128,8 @@ spec:
 
         session:
           PROVIDER: db
+          # Seconds; Pocket ID sign-ins get no remember-me cookie, so this alone sets the login span
+          SESSION_LIFE_TIME: 604800
 
         queue:
           TYPE: level

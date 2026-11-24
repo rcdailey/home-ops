@@ -38,6 +38,9 @@ spec:
             reloader.stakater.com/auto: "true"
           appUrl: https://auth.${SECRET_DOMAIN}
           timezone: America/Chicago
+          ui:
+            # Minutes; one week instead of the 24-hour default
+            sessionDuration: 10080
           metrics:
             enabled: true
           env:

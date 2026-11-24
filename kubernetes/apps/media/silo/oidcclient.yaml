@@ -18,6 +18,3 @@ spec:
     namespace: default
   - name: users
     namespace: default
-  secret:
-    keys:
-      clientSecret: client-secret

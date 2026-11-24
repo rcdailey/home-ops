@@ -13,6 +13,3 @@ spec:
   - https://wiki.${SECRET_DOMAIN}/auth/oidc.callback
   logoutCallbackUrls:
   - https://wiki.${SECRET_DOMAIN}
-  secret:
-    keys:
-      clientSecret: client-secret

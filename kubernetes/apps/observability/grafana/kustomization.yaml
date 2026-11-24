@@ -10,6 +10,7 @@ resources:
 - ./grafana.yaml
 - ./grafanadatasource.yaml
 - ./dashboards/grafanadashboard.yaml
+- ./oidcclient.yaml
 configMapGenerator:
 - name: otel-kubernetes-dashboard
   files:

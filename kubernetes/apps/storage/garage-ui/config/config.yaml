@@ -23,5 +23,7 @@ auth:
     cookie_secure: true
     cookie_http_only: true
     cookie_same_site: lax
+    # Seconds
+    session_max_age: 604800
   token:
     enabled: false
