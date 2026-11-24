@@ -7,4 +7,4 @@ resources:
 - ./helmrelease.yaml
 - ./httproute.yaml
 - ./rbac.yaml
-- ./externalsecret.yaml
+- ./oidcclient.yaml

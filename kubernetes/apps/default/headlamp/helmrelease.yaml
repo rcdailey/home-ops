@@ -9,11 +9,10 @@ spec:
   chart:
     spec:
       chart: headlamp
-      version: 0.39.0
+      version: 0.46.0
       sourceRef:
         kind: HelmRepository
         name: headlamp
-        namespace: default
   install:
     remediation:
       retries: -1
@@ -32,14 +31,21 @@ spec:
     config:
       baseURL: ""
       pluginsDir: /headlamp/plugins
+      # Seconds
+      sessionTTL: 604800
       oidc:
         secret:
           create: false
         externalSecret:
           enabled: true
-          name: headlamp-oidc-secret
+          name: headlamp-oidc-credentials
           hasScopes: true
-        callbackURL: https://cluster.${SECRET_DOMAIN}/oidc-callback
+
+    env:
+    - name: OIDC_SCOPES
+      value: openid,profile,email,groups
+    - name: OIDC_CALLBACK_URL
+      value: https://cluster.${SECRET_DOMAIN}/oidc-callback
 
     initContainers:
     - name: headlamp-flux-plugin
