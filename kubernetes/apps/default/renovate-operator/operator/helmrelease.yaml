@@ -50,15 +50,26 @@ spec:
         - name: external
           namespace: network
           sectionName: https
+    # Sessions share the Valkey the Renovate jobs use as a cache
+    externalKeyValueStore:
+      host: renovate-valkey.default
+    # The session cookie is encrypted with this secret; without it the operator generates one at
+    # startup, which ends every session on restart
+    extraEnv:
+    - name: OIDC_SESSION_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: renovate-operator-session
+          key: secret
+          optional: true
     auth:
-      # The default cookie store exceeds browser cookie limits with OIDC; sessions end on restart
-      sessionStore: memory
+      sessionDuration: 168h
       oidc:
         enabled: true
         issuerUrl: https://auth.${SECRET_DOMAIN}
         clientId: renovate-operator
         existingSecret: renovate-operator-oidc-credentials
-        secretKey: client-secret
+        secretKey: client_secret
         # TLS terminates at the Gateway, which the chart cannot detect
         redirectScheme: https
     # The Pocket ID client admits only the admins group, so every session gets full access

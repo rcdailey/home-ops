@@ -2,7 +2,12 @@
 # yaml-language-server: $schema=https://www.schemastore.org/kustomization.json
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+# Valkey lives here because the operator exits at startup when it cannot reach it, and the
+# Renovate jobs' Kustomization waits for the operator
+components:
+- ../../../../components/valkey
 resources:
+- ./externalsecret.yaml
 - ./helmrepository.yaml
 - ./helmrelease.yaml
 - ./oidcclient.yaml

@@ -15,6 +15,3 @@ spec:
   - https://renovate.${SECRET_DOMAIN}
   allowedUserGroups:
   - name: admins
-  secret:
-    keys:
-      clientSecret: client-secret

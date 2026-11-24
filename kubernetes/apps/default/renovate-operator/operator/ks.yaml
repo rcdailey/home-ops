@@ -12,6 +12,9 @@ spec:
   interval: 1h
   path: ./kubernetes/apps/default/renovate-operator/operator
   postBuild:
+    substitute:
+      # Names the Valkey renovate-valkey, which the Renovate jobs also use as their cache
+      APP: renovate
     substituteFrom:
     - name: cluster-secrets
       kind: Secret
@@ -28,3 +31,5 @@ spec:
   - name: global-config
     namespace: flux-system
   - name: pocket-id-operator
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
