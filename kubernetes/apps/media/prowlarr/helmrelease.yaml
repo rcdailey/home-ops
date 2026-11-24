@@ -31,7 +31,7 @@ spec:
             nameOverride: prowlarr
             image:
               repository: ghcr.io/home-operations/prowlarr
-              tag: 3.0.2.5780
+              tag: 3.1.0.5799
             env:
               UMASK: "022"
               PROWLARR__APP__INSTANCENAME: Prowlarr
