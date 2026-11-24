@@ -105,6 +105,8 @@
     // just commands: deny by default
     { "action": "shell", "resource": "just *", "effect": "deny" },
     { "action": "shell", "resource": "just ensure-login", "effect": "allow" },
+    // Prints key paths only; `just infisical delete` stays denied by the wildcard above
+    { "action": "shell", "resource": "just infisical list*", "effect": "allow" },
     { "action": "shell", "resource": "just secret *", "effect": "ask" },
     { "action": "shell", "resource": "just talos diff", "effect": "allow" },
     { "action": "shell", "resource": "just talos nodes", "effect": "allow" },

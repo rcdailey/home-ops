@@ -62,6 +62,9 @@ suspend/resume. Those exceptions do not permit unrelated cluster mutations.
   NOT metadata.namespace
 - **NEVER use chart.spec.sourceRef for app-template** - Use chartRef (references OCIRepository).
   Exception: External HelmRepository charts may use chart.spec.sourceRef.
+- **HelmRelease `sourceRef.namespace` MUST match the source's literal `metadata.namespace`** -
+  Renovate compares the written values, not inherited namespaces, and silently skips the chart on a
+  mismatch. Omit both for a source beside the app; set both for a shared source
 - **chartRef REQUIRES namespace for cross-namespace OCIRepository references** - App-template
   OCIRepository is in flux-system namespace; all HelmReleases MUST specify namespace: flux-system
 
@@ -70,6 +73,8 @@ suspend/resume. Those exceptions do not permit unrelated cluster mutations.
 - **App secrets MUST use ExternalSecret with the Infisical ClusterSecretStore**
 - **NEVER use postBuild.substituteFrom for app secrets** - Timing race condition with ExternalSecret
   creation causes failures
+- **Discover Infisical secrets with `just infisical list [path] [regex]`** - Prints full key paths
+  (the ExternalSecret `remoteRef.key` form), never values; the path scopes the recursive search
 - **ONLY use postBuild.substituteFrom for cluster-secrets** - Centrally managed by a
   ClusterExternalSecret
 - **NEVER use raw ConfigMap resources** - ALWAYS use configMapGenerator in kustomization.yaml with
@@ -207,8 +212,10 @@ it.
 This repository is `rcdailey/home-ops`. Current cluster inventory is in
 `docs/reference/cluster-inventory.md`.
 
-Check local applications first. When no local pattern covers the requirement, consult these
-reference repositories before designing a new pattern:
+Check local applications first. Copy an example's patterns, not its incidental values: keep a
+non-default setting only when its reason applies to the new app; otherwise omit it and use the
+default. When no local pattern covers the requirement, consult these reference repositories before
+designing a new pattern:
 
 - onedr0p/home-ops
 - bjw-s-labs/home-ops
