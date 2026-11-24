@@ -15,7 +15,6 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: keel
-        namespace: kube-system
   install:
     remediation:
       retries: -1

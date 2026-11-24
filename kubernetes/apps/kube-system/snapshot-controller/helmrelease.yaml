@@ -4,7 +4,6 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: piraeus
-  namespace: kube-system # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://piraeus.io/helm-charts/
@@ -22,7 +21,6 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: piraeus
-        namespace: kube-system
   install:
     remediation:
       retries: -1

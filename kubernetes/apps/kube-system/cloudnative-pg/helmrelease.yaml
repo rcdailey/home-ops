@@ -22,7 +22,6 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: cloudnative-pg
-        namespace: kube-system
   install:
     remediation:
       retries: -1
