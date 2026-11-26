@@ -52,6 +52,7 @@ def logs(
 @click.option("-t", "--to", "time_to", default=None, help="End time")
 @click.option("-c", "--client", help="Client IP, device name, CIDR, or VLAN")
 @click.option("-d", "--domain", help="Domain substring filter")
+@click.option("-r", "--reason", help="Block reason substring (e.g. nsfw, bypass)")
 @click.option("-l", "--limit", default=100, help="Max rows")
 @click.option("--json", "json_mode", is_flag=True, help="Output NDJSON")
 def blocked(
@@ -59,12 +60,20 @@ def blocked(
     time_to: str | None,
     client: str | None,
     domain: str | None,
+    reason: str | None,
     limit: int,
     json_mode: bool,
 ):
     """Show blocked DNS queries only."""
     query_dns_logs(
-        time_from, time_to, client, domain, limit, json_mode, blocked_only=True
+        time_from,
+        time_to,
+        client,
+        domain,
+        limit,
+        json_mode,
+        blocked_only=True,
+        reason=reason,
     )
 
 
@@ -142,13 +151,21 @@ def top_domains(
 )
 @click.option("-t", "--to", "time_to", default=None, help="End time")
 @click.option("-c", "--client", help="Client IP, device name, CIDR, or VLAN")
+@click.option("-r", "--reason", help="Block reason substring (e.g. nsfw, bypass)")
 @click.option("-l", "--limit", default=50, help="Max rows (default: 50)")
 @click.option("--json", "json_mode", is_flag=True, help="Output NDJSON")
 def top_blocked(
-    time_from: str, time_to: str | None, client: str | None, limit: int, json_mode: bool
+    time_from: str,
+    time_to: str | None,
+    client: str | None,
+    reason: str | None,
+    limit: int,
+    json_mode: bool,
 ):
     """Top blocked domains by count, with matching blocklist reason."""
-    query_top_domains(time_from, time_to, client, limit, json_mode, blocked_only=True)
+    query_top_domains(
+        time_from, time_to, client, limit, json_mode, blocked_only=True, reason=reason
+    )
 
 
 @cli.command("test")

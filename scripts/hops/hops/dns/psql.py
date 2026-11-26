@@ -151,6 +151,7 @@ def build_where(
     client: str | None = None,
     domain: str | None = None,
     blocked_only: bool = False,
+    reason: str | None = None,
 ) -> str:
     """Build WHERE clause for log_entries queries."""
     conditions = []
@@ -190,6 +191,9 @@ def build_where(
 
     if blocked_only:
         conditions.append("response_type = 'BLOCKED'")
+
+    if reason:
+        conditions.append(f"LOWER(reason) LIKE '%{_sql_escape(reason.lower())}%'")
 
     return " AND ".join(conditions)
 

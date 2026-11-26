@@ -43,9 +43,12 @@ def query_dns_logs(
     limit: int,
     json_mode: bool,
     blocked_only: bool = False,
+    reason: str | None = None,
 ) -> None:
     """Shared implementation for logs and blocked commands."""
-    where = build_where(time_from, time_to, client, domain, blocked_only=blocked_only)
+    where = build_where(
+        time_from, time_to, client, domain, blocked_only=blocked_only, reason=reason
+    )
     sql = (
         "SELECT request_ts, client_ip, client_name, question_name, question_type, "
         "reason, response_type, duration_ms, answer "
@@ -76,9 +79,12 @@ def query_top_domains(
     limit: int,
     json_mode: bool,
     blocked_only: bool = False,
+    reason: str | None = None,
 ) -> None:
     """Shared implementation for top-domains and top-blocked commands."""
-    where = build_where(time_from, time_to, client, blocked_only=blocked_only)
+    where = build_where(
+        time_from, time_to, client, blocked_only=blocked_only, reason=reason
+    )
     reason_expr = "STRING_AGG(DISTINCT reason, ', ')" if blocked_only else "''"
     sql = (
         "SELECT question_name, COUNT(*) AS count, "
