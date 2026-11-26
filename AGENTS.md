@@ -232,6 +232,9 @@ Run standalone script help before use rather than relying on a command catalog i
 
 Use the `cf` CLI for Cloudflare work, not raw API requests; load the `cloudflare-cli` skill first.
 
+Reach Windows hosts with `scripts/rps.sh`; `rps.sh list` prints host aliases. Never commit alias
+names or host details; they live only in Bitwarden.
+
 ### Dependency upgrades
 
 Upgrade PRs labeled `status/hold` MUST NOT be merged or approved, even when named explicitly.
