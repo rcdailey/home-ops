@@ -95,7 +95,7 @@ repos:
     entry: scripts/pre-commit/pyright.sh
     language: python
     # PyYAML serves files that run in this hook environment (reloader-validator.py)
-    additional_dependencies: [pyright==1.1.414, PyYAML==6.0.3]
+    additional_dependencies: [pyright==1.1.414, PyYAML==6.0.4]
     types: [python]
     require_serial: true
 
