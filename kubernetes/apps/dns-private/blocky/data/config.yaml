@@ -157,7 +157,7 @@ statistics:
 queryLog:
   type: postgresql
   target: $${DATABASE_URL}
-  logRetentionDays: 7
+  logRetentionDays: 30
 
 ports:
   dns: 5353
