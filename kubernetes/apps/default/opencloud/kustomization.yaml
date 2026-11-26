@@ -5,6 +5,7 @@ kind: Kustomization
 components:
 - ../../../components/nfs-scaler
 - ../../../components/kopiur
+- ../../../components/nfs-offsite
 resources:
 - helmrelease.yaml
 - externalsecret.yaml

@@ -35,6 +35,7 @@ spec:
       APP: immich
       KOPIUR_PVC: immich-profile
       KOPIUR_CAPACITY: 1Gi
+      NFS_OFFSITE_PATH: /mnt/user/photos/immich
     substituteFrom:
     - kind: Secret
       name: cluster-secrets

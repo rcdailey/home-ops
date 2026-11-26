@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/external-secrets.io/externalsecret_v1.json
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: ${APP}-nfs-offsite
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: infisical
+  target:
+    name: ${APP}-nfs-offsite
+    creationPolicy: Owner
+  data:
+  - secretKey: RCLONE_CONFIG_B2_SECRET_ACCESS_KEY
+    remoteRef:
+      key: /storage/nfs-offsite/b2-secret-access-key
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ${APP}-nfs-offsite
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      nfs-offsite:
+        type: cronjob
+        cronjob:
+          schedule: "0 4 * * *"
+          timeZone: America/Chicago
+          backoffLimit: 0
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+          ttlSecondsAfterFinished: 86400
+
+        annotations:
+          reloader.stakater.com/auto: "true"
+
+        pod:
+          labels:
+            observability.home-ops/logs: "true"
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+            runAsNonRoot: true
+
+        containers:
+          app:
+            image:
+              repository: docker.io/rclone/rclone
+              tag: 1.76.0
+            # Deletions on B2 only hide files; Object Lock and the bucket lifecycle rule keep them
+            # restorable for 14 days. --links stores symlinks as .rclonelink files; OpenCloud's
+            # decomposed storage depends on them.
+            args:
+            - sync
+            - /data
+            - b2:rcdailey-homeops-nfs/${APP}
+            - --links
+            - --stats-one-line
+            - --stats=1m
+            - -v
+            env:
+              RCLONE_CONFIG_B2_TYPE: s3
+              RCLONE_CONFIG_B2_PROVIDER: Other
+              RCLONE_CONFIG_B2_ENDPOINT: https://s3.us-east-005.backblazeb2.com
+              RCLONE_CONFIG_B2_REGION: us-east-005
+              RCLONE_CONFIG_B2_ACCESS_KEY_ID: 0052911d2e5508e0000000003
+              # The bucket-scoped key cannot list or create buckets
+              RCLONE_CONFIG_B2_NO_CHECK_BUCKET: "true"
+              # Object Lock buckets reject PutObject without Content-MD5; rclone sends it only when
+              # it applies a lock itself. Matches the bucket's 14-day default retention.
+              RCLONE_CONFIG_B2_OBJECT_LOCK_MODE: COMPLIANCE
+              RCLONE_CONFIG_B2_OBJECT_LOCK_RETAIN_UNTIL_DATE: 14d
+            envFrom:
+            - secretRef:
+                name: ${APP}-nfs-offsite
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 1Gi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+
+    persistence:
+      data:
+        type: nfs
+        server: 192.168.1.58
+        path: ${NFS_OFFSITE_PATH}
+        advancedMounts:
+          nfs-offsite:
+            app:
+            - path: /data
+              readOnly: true
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          nfs-offsite:
+            app:
+            - path: /tmp

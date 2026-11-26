@@ -138,19 +138,26 @@ Database backup coverage is derived from applications that include the `cnpg-bac
 
 ## Offsite copies
 
-Garage object data and the Kopia repository reside on the same NAS, so both are copied daily to
-Backblaze B2 (`s3.us-east-005.backblazeb2.com`):
+Garage object data, the Kopia repository, and NFS application data reside on the same NAS, so they
+are copied daily to Backblaze B2 (`s3.us-east-005.backblazeb2.com`):
 
-| Source           | Copier                                      | B2 bucket                       | Infisical key                                    |
-| ---------------- | ------------------------------------------- | ------------------------------- | ------------------------------------------------ |
-| Kopia repository | `RepositoryReplication/nezuko-b2`, 04:00    | `rcdailey-homeops-kopia`        | `/storage/kopiur/b2-secret-access-key`           |
-| CNPG buckets     | `cnpg-backup` rclone CronJob per app, 04:00 | `rcdailey-homeops-cnpg/${APP}/` | `/storage/cnpg-offsite/b2-secret-access-key`     |
+| Source           | Copier                                       | B2 bucket                       | Infisical key                                |
+| ---------------- | -------------------------------------------- | ------------------------------- | -------------------------------------------- |
+| Kopia repository | `RepositoryReplication/nezuko-b2`, 04:00     | `rcdailey-homeops-kopia`        | `/storage/kopiur/b2-secret-access-key`       |
+| CNPG buckets     | `cnpg-backup` rclone CronJob per app, 04:00  | `rcdailey-homeops-cnpg/${APP}/` | `/storage/cnpg-offsite/b2-secret-access-key` |
+| NFS app data     | `nfs-offsite` rclone CronJob per app, 04:00  | `rcdailey-homeops-nfs/${APP}/`  | `/storage/nfs-offsite/b2-secret-access-key`  |
+
+NFS data has no other backup; Kopiur snapshots only Ceph PVCs. Apps opt in with the
+`kubernetes/components/nfs-offsite` component and set `APP` and `NFS_OFFSITE_PATH` (the NAS export
+path) in `postBuild.substitute`. Immich (`/mnt/user/photos/immich`) and OpenCloud
+(`/mnt/user/opencloud`) use it. The sync reads live files, so the copy is file-level, not a
+consistent point-in-time snapshot. Other NAS shares, including media, are not copied offsite.
 
 Each B2 key ID is not secret and lives in the manifest next to the bucket name.
 
-Both copies mirror deletions. In B2 a deletion only hides a file; each bucket has Object Lock with a
+Every copy mirrors deletions. In B2 a deletion only hides a file; each bucket has Object Lock with a
 14-day compliance-mode default retention and a lifecycle rule that removes hidden files 14 days
-after hiding. A wiped or corrupted source therefore cannot erase the offsite copy for 14 days. Both
+after hiding. A wiped or corrupted source therefore cannot erase the offsite copy for 14 days. These
 bucket settings live in the Backblaze console, outside Git.
 
 The Kopia mirror uses the same repository password as the primary. Keep a copy of
