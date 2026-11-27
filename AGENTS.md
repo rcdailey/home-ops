@@ -90,7 +90,9 @@ suspend/resume. Those exceptions do not permit unrelated cluster mutations.
 ### Scaling
 
 NFS-dependent apps use the `nfs-scaler` component. It creates an HPA that scales from zero to one
-using the external `probe_success` metric. The API server has `HPAScaleToZero` enabled.
+using the external `probe_success` metric. The API server has `HPAScaleToZero` enabled. Unraid
+drains these apps before planned array stops through the same metric; changing the metric query or
+the VictoriaMetrics routes MUST keep `docs/runbooks/unraid-nfs-drain.md` working.
 
 ## Tier 2: Conventions
 
