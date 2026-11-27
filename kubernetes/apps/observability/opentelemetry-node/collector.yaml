@@ -175,6 +175,10 @@ spec:
         error_mode: ignore
         log_conditions:
         - resource.attributes["observability.home-ops/logs"] != "true"
+      filter/blank-lines:
+        error_mode: ignore
+        log_conditions:
+        - IsString(log.body) and IsMatch(log.body, "^\\s*$")
       transform/logs:
         error_mode: ignore
         log_statements:
@@ -280,6 +284,7 @@ spec:
           - k8s_attributes
           - filter/log-opt-in
           - transform/logs
+          - filter/blank-lines
           - batch
           exporters: [otlp_grpc/gateway]
         logs/audit:
