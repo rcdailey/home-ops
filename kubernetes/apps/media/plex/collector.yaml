@@ -27,6 +27,11 @@ spec:
     readOnly: true
   - name: telemetry-data
     mountPath: /var/lib/otelcol
+  # The collector image has no time zone database, which the Plex timestamp location needs.
+  - name: tzdata
+    mountPath: /usr/share/zoneinfo
+    subPath: usr/share/zoneinfo
+    readOnly: true
   config:
     receivers:
       file_log/plex:

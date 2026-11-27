@@ -134,6 +134,13 @@ spec:
         existingClaim: plex-vector-data
         globalMounts: []
 
+      tzdata:
+        type: image
+        image:
+          repository: quay.io/k8tz/tzdata
+          tag: latest
+        globalMounts: []
+
       collector-trigger:
         # Injected sidecars never update in place; this mount makes Reloader roll the pod
         # when collector.yaml changes. See docs/architecture/observability.md.
