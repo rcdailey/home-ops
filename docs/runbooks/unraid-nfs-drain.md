@@ -59,8 +59,8 @@ After a script change, repeat the copy in step 1 and the `install` command in st
 
 ## Test
 
-1. Run a drain without stopping anything. NFS apps scale to zero within about 30 seconds and return
-   about 2 minutes after the script ends.
+1. Run a drain without stopping anything. NFS apps scale to zero about 35 seconds after the script
+   starts and return about 2.5 minutes after it ends.
 
    ```bash
    ssh nezuko 'bash /boot/config/home-ops/nfs-drain test'
