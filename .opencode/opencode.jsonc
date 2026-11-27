@@ -30,12 +30,15 @@
     { "action": "shell", "resource": "*mise e *", "effect": "deny" },
     { "action": "shell", "resource": "*mise e", "effect": "deny" },
     { "action": "shell", "resource": "*mise ev *", "effect": "deny" },
-    // Same subcommands after global flags, e.g. `mise -q env`
-    { "action": "shell", "resource": "*mise * env*", "effect": "deny" },
-    { "action": "shell", "resource": "*mise * e *", "effect": "deny" },
-    { "action": "shell", "resource": "*mise * e", "effect": "deny" },
-    { "action": "shell", "resource": "*mise * ev *", "effect": "deny" },
-    { "action": "shell", "resource": "*mise * set *", "effect": "deny" },
+    // Same subcommands after global flags, e.g. `mise -q env`; the `-` keeps prose that mentions
+    // mise, such as commit messages, from matching
+    { "action": "shell", "resource": "*mise -* env*", "effect": "deny" },
+    { "action": "shell", "resource": "*mise -* e *", "effect": "deny" },
+    { "action": "shell", "resource": "*mise -* e", "effect": "deny" },
+    { "action": "shell", "resource": "*mise -* ev *", "effect": "deny" },
+    { "action": "shell", "resource": "*mise -* set *", "effect": "deny" },
+    // `mise exec -- env` prints the decrypted environment
+    { "action": "shell", "resource": "*mise * -- env*", "effect": "deny" },
     // age.txt only as a whole file name, so names like usage.txt stay usable
     { "action": "shell", "resource": "age.txt*", "effect": "deny" },
     { "action": "shell", "resource": "* age.txt*", "effect": "deny" },
