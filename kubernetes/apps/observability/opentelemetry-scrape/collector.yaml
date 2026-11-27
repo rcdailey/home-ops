@@ -215,6 +215,12 @@ spec:
             - action: replace
               target_label: service
               replacement: blackbox-exporter
+          # node_exporter on Unraid (docs/runbooks/unraid-telemetry.md)
+          - job_name: nezuko
+            static_configs:
+            - targets: ['192.168.1.58:9100']
+              labels:
+                instance: nezuko
           - job_name: victoria-metrics
             static_configs:
             - targets: ['vmsingle-vm.observability:8428']

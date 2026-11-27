@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>node-exporter</Name>
+  <Repository>quay.io/prometheus/node-exporter:v1.13.1</Repository>
+  <Registry>https://quay.io/repository/prometheus/node-exporter</Registry>
+  <Network>host</Network>
+  <MyIP/>
+  <MyMAC/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support/>
+  <Project>https://github.com/prometheus/node_exporter</Project>
+  <ReadMe/>
+  <Overview>Host metrics for the home-ops cluster, scraped on port 9100. Install and update: docs/runbooks/unraid-telemetry.md in rcdailey/home-ops.</Overview>
+  <Category>Tools:</Category>
+  <WebUI/>
+  <TemplateURL/>
+  <Icon/>
+  <ExtraParams>--restart=unless-stopped --pid=host</ExtraParams>
+  <PostArgs>--path.rootfs=/host --collector.textfile.directory=/host/var/local/node-exporter/textfile</PostArgs>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Host root" Target="/host" Default="/" Mode="ro" Description="Read-only host filesystem for host metrics; Unraid's root mount is private, so rslave fails" Type="Path" Display="always" Required="true" Mask="false">/</Config>
+  <TailscaleStateDir/>
+</Container>

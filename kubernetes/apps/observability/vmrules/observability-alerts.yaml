@@ -180,6 +180,20 @@ spec:
       annotations:
         summary: NFS server probe failed, storage is unavailable
 
+    # The unraid-state script on Nezuko writes every 15 seconds; ScrapeTargetDown covers the
+    # exporter, so a missing series alerts only while the exporter itself is up.
+    - alert: UnraidStateStale
+      expr: |
+        time() - max(unraid_state_last_update_timestamp_seconds) > 120
+          or (absent(unraid_state_last_update_timestamp_seconds)
+            and on() max(up{service_name="nezuko"}) == 1)
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Nezuko's Unraid state metrics stopped updating
+        description: See docs/runbooks/unraid-telemetry.md
+
     - alert: KubeHpaMaxedOut
       expr: |
         otel_k8s_hpa_current_replicas == otel_k8s_hpa_max_replicas

@@ -4,11 +4,13 @@ Before nezuko (Unraid) stops its array, it asks the cluster to scale every NFS-d
 and waits 90 seconds so the pods stop while NFS is still up. Without the drain, the cluster notices
 only after NFS is gone, and pods hang in Terminating on dead NFS mounts.
 
+Nezuko's metrics and logs are covered in [Unraid telemetry][telemetry].
+
 ## How it works
 
 1. A planned reboot or shutdown runs `/boot/config/stop` before Unraid starts its 90 second array
    stop timer. A manual "Stop array" runs the emhttp `stopping` event hook. Both run
-   [`unraid/nfs-drain`][script], and Unraid waits for it to finish.
+   [`unraid/nfs-drain.sh`][script], and Unraid waits for it to finish.
 2. The script pushes `nfs_drain_requested 1` every 10 seconds to VictoriaMetrics through the
    internal gateway. Only `192.168.1.58` may write, and only to `/api/v1/import/prometheus`.
 3. prometheus-adapter reports the `probe_success` external metric as 0 while a sample from the last
@@ -26,7 +28,7 @@ the background after Docker has stopped, so Unraid does not wait for them.
 
 | Path                                                | Survives reboot | Purpose                                               |
 | --------------------------------------------------- | --------------- | ----------------------------------------------------- |
-| `/boot/config/home-ops/nfs-drain`                   | yes (flash)     | Drain script, copy of [`unraid/nfs-drain`][script]    |
+| `/boot/config/home-ops/nfs-drain`                   | yes (flash)     | Drain script, copy of [`unraid/nfs-drain.sh`][script] |
 | `/boot/config/home-ops/nfs-drain.env`               | yes (flash)     | `VM_HOST`; not in Git                                 |
 | `/boot/config/home-ops/README`                      | yes (flash)     | Points back to this runbook                           |
 | `/boot/config/home-ops/go.bak`                      | yes (flash)     | `go` file before the hook block was added             |
@@ -46,9 +48,9 @@ Run from a workstation in the repository root. `SECRET_DOMAIN` must be set.
 
    ```bash
    ssh nezuko 'mkdir -p /boot/config/home-ops'
-   scp unraid/nfs-drain nezuko:/boot/config/home-ops/nfs-drain
-   scp unraid/README nezuko:/boot/config/home-ops/README
-   scp unraid/stop nezuko:/boot/config/stop
+   scp unraid/nfs-drain.sh nezuko:/boot/config/home-ops/nfs-drain
+   scp unraid/README.md nezuko:/boot/config/home-ops/README
+   scp unraid/stop.sh nezuko:/boot/config/stop
    ```
 
 2. Write the VictoriaMetrics hostname. Unraid cannot resolve internal names, so the script connects
@@ -105,4 +107,5 @@ ssh nezuko 'rm -rf /boot/config/home-ops /boot/config/stop /usr/local/emhttp/plu
 
 Then delete the hook block from `/boot/config/go`.
 
-[script]: ../../unraid/nfs-drain
+[script]: ../../unraid/nfs-drain.sh
+[telemetry]: ./unraid-telemetry.md
