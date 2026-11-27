@@ -502,11 +502,17 @@ def run_hops(*arguments: str) -> CommandResult:
     return CommandResult("", detail)
 
 
-def latest_query_value(output: str) -> float:
-    """Sum the latest value from each VictoriaMetrics result series."""
+def latest_query_value(output: str) -> float | None:
+    """Sum the latest value from each VictoriaMetrics result series.
+
+    Returns None when no series matched, usually because the metric is not
+    collected, so callers cannot mistake it for a measured zero.
+    """
     payload = json.loads(output)
     total = 0.0
     results = payload["data"]["result"]
+    if not results:
+        return None
     for result in results:
         if values := result.get("values"):
             total += float(values[-1][1])
@@ -530,9 +536,12 @@ def query_counter(promql: str, end: datetime) -> tuple[float | None, str | None]
     if result.error:
         return None, result.error
     try:
-        return latest_query_value(result.output), None
+        value = latest_query_value(result.output)
     except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
         return None, f"invalid VictoriaMetrics response: {error}"
+    if value is None:
+        return None, "no series matched; the metric may not be collected"
+    return value, None
 
 
 def query_series(
@@ -557,6 +566,8 @@ def query_series(
         return [], result.error
     try:
         payload = json.loads(result.output)
+        if not payload["data"]["result"]:
+            return [], "no series matched; the metric may not be collected"
         values = []
         for series in payload["data"]["result"]:
             values.extend(
@@ -940,29 +951,17 @@ def report(arguments: argparse.Namespace) -> int:
         metrics.append(summarize_metric(name, result.output))
 
     range_seconds = max(1, int((end - start).total_seconds()))
-    pod_selector = 'namespace="media",pod=~"plex-.*"'
-    packet_drop_query = (
-        "sum(increase(container_network_receive_packets_dropped_total{"
-        f"{pod_selector}" + f"}}[{range_seconds}s])) + "
-        "sum(increase(container_network_transmit_packets_dropped_total{"
-        f"{pod_selector}" + f"}}[{range_seconds}s]))"
+    pod_errors_query = (
+        "sum(increase(k8s_pod_network_errors_total{"
+        'k8s_namespace_name="media",k8s_pod_name=~"plex-.*"'
+        f"}}[{range_seconds}s]))"
     )
-    nfs_retransmit_query = (
-        f"sum(increase(node_nfs_rpc_retransmissions_total[{range_seconds}s]))"
-    )
-    path_counters = {}
-    for name, query in (
-        ("Plex pod packet drops", packet_drop_query),
-        ("Cluster NFS RPC retransmissions", nfs_retransmit_query),
-    ):
-        value, error = query_counter(query, end)
-        if error:
-            notes.append(f"{name} unavailable: {error}.")
-            failures += 1
-            continue
-        path_counters[name] = value
-        rendered = int(value) if value is not None and value.is_integer() else value
-        metrics.append(f"{name}: {rendered} during the window.")
+    pod_errors, pod_errors_error = query_counter(pod_errors_query, end)
+    if pod_errors_error:
+        notes.append(f"Plex pod network errors unavailable: {pod_errors_error}.")
+        failures += 1
+    elif pod_errors is not None:
+        metrics.append(f"Plex pod network errors: {pod_errors:g} during the window.")
 
     resources_result = run_hops("app", "resources", "plex")
     resource_summary = None
@@ -1006,10 +1005,10 @@ def report(arguments: argparse.Namespace) -> int:
         print(network_assessment(network))
     if pressure := resource_assessment(metric_results, resource_summary):
         print(pressure)
-    if path_counters and all(value == 0 for value in path_counters.values()):
+    if pod_errors == 0:
         print(
-            "No Plex pod packet drops or NFS RPC retransmissions were recorded. "
-            "These counters do not measure switch loss or NFS server latency."
+            "The Plex pod interface recorded no network errors. This counter does not "
+            "measure switch drops, NFS retransmissions, or NFS server latency."
         )
     if connection := client_connection(client_window):
         print(connection)
