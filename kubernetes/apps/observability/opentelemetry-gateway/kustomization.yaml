@@ -7,4 +7,5 @@ components:
 resources:
 - ./collector.yaml
 - ./referencegrant.yaml
+- ./securitypolicy.yaml
 - ./udproute.yaml

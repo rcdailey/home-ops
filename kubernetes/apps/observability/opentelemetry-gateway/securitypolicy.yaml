@@ -1,0 +1,19 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: otel-gateway-syslog
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: UDPRoute
+    name: otel-gateway-syslog
+  # Only Nezuko's syslog is labeled unraid-syslog; other senders are dropped.
+  authorization:
+    defaultAction: Deny
+    rules:
+    - action: Allow
+      principal:
+        clientCIDRs:
+        - 192.168.1.58/32

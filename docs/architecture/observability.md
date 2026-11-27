@@ -99,8 +99,9 @@ Private file formats stay with the application. A sidecar Collector parses those
 normalized OTLP logs. Those streams skip node log collection, which would duplicate the records.
 
 Nezuko (Unraid) forwards its system log as RFC3164 syslog over UDP to port 514 on the internal
-gateway, which passes it to the Gateway Collectors' syslog receiver. Records carry
-`service.name=unraid-syslog` and enter the same queued logs pipeline as other logs.
+gateway, which passes it to the Gateway Collectors' syslog receiver and drops datagrams from any
+other source address. Records carry `service.name=unraid-syslog` and enter the same queued logs
+pipeline as other logs.
 
 #### Sidecar config rollout
 
@@ -185,7 +186,7 @@ and the Target Allocator; trace investigation currently belongs in Grafana.
 | Metrics VMAlert          | `http://vmalert-vm.observability:8080`             |
 | Logs VMAlert             | `http://vmalert-vl.observability:8080`             |
 | Alertmanager             | `http://vmalertmanager-vm.observability:9093`      |
-| Syslog from the LAN      | UDP `192.168.50.72:514` (internal gateway)         |
+| Syslog from Nezuko       | UDP `192.168.50.72:514` (internal gateway)         |
 
 [adr]: ../decisions/015-standardize-observability-on-opentelemetry.md
 [otel-operator-2078]: https://github.com/open-telemetry/opentelemetry-operator/issues/2078

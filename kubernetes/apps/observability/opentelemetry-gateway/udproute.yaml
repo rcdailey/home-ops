@@ -1,7 +1,6 @@
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/gateway.networking.k8s.io/udproute_v1.json
-# Unraid remote syslog (docs/runbooks/unraid-telemetry.md). The internal gateway's address filter
-# applies only to HTTP, so any LAN host can send syslog here.
+# Unraid remote syslog (docs/runbooks/unraid-telemetry.md).
 apiVersion: gateway.networking.k8s.io/v1
 kind: UDPRoute
 metadata:
