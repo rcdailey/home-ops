@@ -7,7 +7,7 @@ metadata:
 spec:
   # Hashed per job so runs spread out; ghcr.io throttles heavily in the first minutes of each hour
   schedule: H(10-59) * * * *
-  image: ghcr.io/renovatebot/renovate:44.264.1
+  image: ghcr.io/renovatebot/renovate:45.3.2
   parallelism: 1
   metadata:
     labels:
