@@ -22,6 +22,22 @@ needs more than 90 seconds to stop still loses NFS.
 The User Scripts plugin's "At Stopping of Array" schedule cannot run the drain: it starts scripts in
 the background after Docker has stopped, so Unraid does not wait for them.
 
+## Files on nezuko
+
+| Path                                                | Survives reboot | Purpose                                               |
+| --------------------------------------------------- | --------------- | ----------------------------------------------------- |
+| `/boot/config/home-ops/nfs-drain`                   | yes (flash)     | Drain script, copy of [`unraid/nfs-drain`][script]    |
+| `/boot/config/home-ops/nfs-drain.env`               | yes (flash)     | `VM_HOST`; not in Git                                 |
+| `/boot/config/home-ops/README`                      | yes (flash)     | Points back to this runbook                           |
+| `/boot/config/home-ops/go.bak`                      | yes (flash)     | `go` file before the hook block was added             |
+| `/boot/config/stop`                                 | yes (flash)     | Runs the drain on reboot or shutdown                  |
+| `/boot/config/go`                                   | yes (flash)     | Hook block at the end installs the event hook at boot |
+| `/usr/local/emhttp/plugins/home-ops/event/stopping` | no (RAM)        | Event hook for manual "Stop array"                    |
+| `/var/run/nfs-drain.done`                           | no (RAM)        | Marker that skips the second drain during a reboot    |
+
+The drain logs to the Unraid syslog with the tag `nfs-drain`. Nothing appears in the User Scripts
+plugin or elsewhere in the web UI.
+
 ## Install
 
 Run from a workstation in the repository root. `SECRET_DOMAIN` must be set.
@@ -31,6 +47,7 @@ Run from a workstation in the repository root. `SECRET_DOMAIN` must be set.
    ```bash
    ssh nezuko 'mkdir -p /boot/config/home-ops'
    scp unraid/nfs-drain nezuko:/boot/config/home-ops/nfs-drain
+   scp unraid/README nezuko:/boot/config/home-ops/README
    scp unraid/stop nezuko:/boot/config/stop
    ```
 

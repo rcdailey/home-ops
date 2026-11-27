@@ -38,10 +38,13 @@ volumes mapped by CSI, not physical disks.
 
 ## Storage
 
-- NFS host Nezuko: `192.168.1.58`, 100Ti media and 10Ti photos storage
+- NFS host Nezuko: `192.168.1.58`, 100Ti media and 10Ti photos storage. Host-side files installed
+  from this repository: [Unraid NFS drain][nfs-drain]
 - Garage S3: `192.168.1.58:3900`, region `garage`, with per-application buckets
 - Kopiur: shared Kopia repository `ClusterRepository/nezuko` in the Garage `kopiur` bucket
 - CloudNativePG: Barman WAL archives in per-application Garage buckets
 
 See `docs/architecture/backup-strategy.md` for backup design and
 `docs/runbooks/ceph-osd-operations.md` for Ceph procedures.
+
+[nfs-drain]: ../runbooks/unraid-nfs-drain.md
