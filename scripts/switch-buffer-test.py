@@ -5,9 +5,10 @@
 # ///
 """Test whether bulk TCP into hanekawa makes its switch port drop a steady stream.
 
-A 40 Mbps UDP probe from Nezuko stands in for a media stream. It runs once alone, then while
-Nezuko and the UDM Pro push bulk TCP into hanekawa. Both senders have 10 GbE links, so the
-Cluster USW Flex 2.5G port to hanekawa is where the traffic steps down to 2.5 GbE. The iperf3
+A 40 Mbps UDP probe from Nezuko stands in for a media stream. It runs alone, then while Nezuko,
+the UDM Pro, and both together push bulk TCP into hanekawa, so each sender's share of the drops
+shows separately. Nezuko links at 2.5 GbE and the UDM Pro at 10 GbE; the Cluster USW Flex 2.5G
+port to hanekawa is where their combined traffic must fit into 2.5 GbE. The iperf3
 servers run in a short-lived pod on hanekawa behind a short-lived NodePort Service that keeps
 traffic on the node. Senders reach the node IP directly on the LAN, as Silo's NFS reads do; pod
 IPs would route through the router instead. The default namespace's Pod Security level rejects
@@ -42,12 +43,22 @@ SWITCH_PORT = 5
 PROBE_PORT = 32201
 NEZUKO_BULK_PORT = 32202
 ROUTER_BULK_PORT = 32203
+BULK_SENDERS = {
+    "Nezuko": (NEZUKO_SSH, NEZUKO_BULK_PORT),
+    "UDM Pro": (ROUTER_SSH, ROUTER_BULK_PORT),
+}
+PHASES = (
+    ("stream alone", ()),
+    ("Nezuko bulk", ("Nezuko",)),
+    ("UDM Pro bulk", ("UDM Pro",)),
+    ("both bulk", ("Nezuko", "UDM Pro")),
+)
 PROBE_RATE = "40M"
 BULK_STREAMS = 8
 BULK_LEAD_SECONDS = 5
 POD_READY_SECONDS = 120
 # The controller refreshes switch counters about every 75 seconds.
-COUNTER_WAIT_SECONDS = 240
+COUNTER_WAIT_SECONDS = 180
 COUNTER_POLL_SECONDS = 10
 LOCAL_ZONE = ZoneInfo("America/Chicago")
 
@@ -72,12 +83,22 @@ class Bulk:
 
 
 @dataclass(frozen=True)
+class ReceiveDrops:
+    """Cumulative drops on hanekawa after the switch, where probe loss can also happen."""
+
+    pod_udp_errors: int
+    node_backlog_drops: int
+
+
+@dataclass(frozen=True)
 class Phase:
     name: str
     probe: dict
     bulk: dict[str, Bulk]
     before: PortSample
     after: PortSample
+    receive_before: ReceiveDrops
+    receive_after: ReceiveDrops
 
 
 def run(command: list[str], timeout: float, stdin: str | None = None) -> str:
@@ -236,15 +257,23 @@ def port_sample() -> PortSample:
         raise TestError(f"invalid UniFi controller response: {error}") from error
 
 
-def port_sample_after(epoch: float) -> PortSample:
-    """Wait for the first controller report taken after a phase ended."""
+def next_port_sample(after: float) -> PortSample:
     deadline = time.monotonic() + COUNTER_WAIT_SECONDS
     while time.monotonic() < deadline:
         sample = port_sample()
-        if sample.seen >= epoch:
+        if sample.seen > after:
             return sample
         time.sleep(COUNTER_POLL_SECONDS)
     raise TestError(f"switch counters did not refresh within {COUNTER_WAIT_SECONDS}s")
+
+
+def port_sample_after(epoch: float) -> PortSample:
+    """Wait for the second controller report after a phase ended.
+
+    Each report carries counters from one report earlier: a phase's traffic first appears in the
+    second report after the phase ends.
+    """
+    return next_port_sample(next_port_sample(epoch).seen)
 
 
 def start_iperf3(host: str, command: list[str]) -> subprocess.Popen[str]:
@@ -270,8 +299,14 @@ def finish_iperf3(source: str, process: subprocess.Popen[str], timeout: float) -
     return parse_iperf3(source, stdout)
 
 
-def start_bulk(host: str, port: int, seconds: int) -> subprocess.Popen[str]:
-    return start_iperf3(host, iperf3_client(port, seconds, "-P", str(BULK_STREAMS)))
+def start_bulk(
+    host: str, port: int, seconds: int, rate_mbps: int | None
+) -> subprocess.Popen[str]:
+    options = ["-P", str(BULK_STREAMS)]
+    if rate_mbps is not None:
+        # iperf3 applies -b to each parallel stream, so split the sender's total.
+        options += ["-b", f"{rate_mbps / BULK_STREAMS:g}M"]
+    return start_iperf3(host, iperf3_client(port, seconds, *options))
 
 
 def finish_bulk(source: str, process: subprocess.Popen[str], timeout: float) -> Bulk:
@@ -281,15 +316,48 @@ def finish_bulk(source: str, process: subprocess.Popen[str], timeout: float) -> 
     )
 
 
-def run_phase(name: str, seconds: int, before: PortSample, with_load: bool) -> Phase:
+def pod_udp_errors(pod: str) -> int:
+    """Read UDP InErrors, which includes receive buffer overflows, in the pod's network."""
+    output = run(
+        ["kubectl", "exec", pod, "-n", NAMESPACE, "-c", f"iperf3-{PROBE_PORT}", "--"]
+        + ["cat", "/proc/net/snmp"],
+        30,
+    )
+    try:
+        header, values = [
+            line.split() for line in output.splitlines() if line.startswith("Udp:")
+        ]
+        return int(values[header.index("InErrors")])
+    except ValueError as error:
+        raise TestError(f"unexpected /proc/net/snmp format: {error}") from error
+
+
+def node_backlog_drops() -> int:
+    """Sum packets the node kernel dropped because a CPU's receive backlog was full."""
+    output = run(["talosctl", "-n", NODE_IP, "read", "/proc/net/softnet_stat"], 30)
+    return sum(int(line.split()[1], 16) for line in output.splitlines() if line.strip())
+
+
+def receive_drops(pod: str) -> ReceiveDrops:
+    return ReceiveDrops(pod_udp_errors(pod), node_backlog_drops())
+
+
+def run_phase(
+    pod: str,
+    name: str,
+    seconds: int,
+    before: PortSample,
+    sources: tuple[str, ...],
+    rate_mbps: int | None,
+) -> Phase:
     bulk_seconds = seconds + 2 * BULK_LEAD_SECONDS
     senders = {}
+    receive_before = receive_drops(pod)
     try:
-        if with_load:
-            senders = {
-                "Nezuko": start_bulk(NEZUKO_SSH, NEZUKO_BULK_PORT, bulk_seconds),
-                "UDM Pro": start_bulk(ROUTER_SSH, ROUTER_BULK_PORT, bulk_seconds),
-            }
+        for source in sources:
+            host, port = BULK_SENDERS[source]
+            senders[source] = start_bulk(host, port, bulk_seconds, rate_mbps)
+        if senders:
             time.sleep(BULK_LEAD_SECONDS)
         probe_command = iperf3_client(PROBE_PORT, seconds, "-u", "-b", PROBE_RATE)
         probe_process = start_iperf3(NEZUKO_SSH, probe_command)
@@ -302,8 +370,9 @@ def run_phase(name: str, seconds: int, before: PortSample, with_load: bool) -> P
         for process in senders.values():
             if process.poll() is None:
                 process.kill()
+    receive_after = receive_drops(pod)
     after = port_sample_after(time.time())
-    return Phase(name, probe, bulk, before, after)
+    return Phase(name, probe, bulk, before, after, receive_before, receive_after)
 
 
 def clock(epoch: int) -> str:
@@ -330,11 +399,16 @@ def print_phase(phase: Phase, seconds: int) -> None:
         f"(controller reports {clock(phase.before.seen)} to {clock(phase.after.seen)}, "
         "including other traffic on the port)"
     )
+    before, after = phase.receive_before, phase.receive_after
+    print(
+        f"  {NODE}: {after.pod_udp_errors - before.pod_udp_errors} pod UDP receive errors, "
+        f"{after.node_backlog_drops - before.node_backlog_drops} kernel backlog drops"
+    )
 
 
 def cli() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Measure probe loss and switch drops with and without bulk TCP into hanekawa.",
+        description="Measure probe loss and switch drops under bulk TCP into hanekawa per sender.",
     )
     parser.add_argument(
         "--duration",
@@ -342,6 +416,12 @@ def cli() -> argparse.ArgumentParser:
         default=60,
         metavar="SECONDS",
         help="length of each probe run (default: 60)",
+    )
+    parser.add_argument(
+        "--bulk-rate",
+        type=int,
+        metavar="MBPS",
+        help="cap each bulk sender's total rate, for example a download limit (default: none)",
     )
     return parser
 
@@ -361,14 +441,22 @@ def main() -> int:
             run(["kubectl", "create", "-f", "-"], 30, json.dumps(resources))
             wait_for_servers(name)
             print(
-                f"Path: Nezuko and UDM Pro (10 GbE) -> Cluster USW Flex 2.5G port "
-                f"{SWITCH_PORT} -> {NODE} (2.5 GbE)\n",
+                f"Path: Nezuko (2.5 GbE) and UDM Pro (10 GbE) -> Cluster USW Flex 2.5G "
+                f"port {SWITCH_PORT} -> {NODE} (2.5 GbE)\n",
                 flush=True,
             )
-            baseline = run_phase("baseline", arguments.duration, port_sample(), False)
-            print_phase(baseline, arguments.duration)
-            load = run_phase("load", arguments.duration, baseline.after, True)
-            print_phase(load, arguments.duration)
+            sample = port_sample()
+            for label, sources in PHASES:
+                phase = run_phase(
+                    name,
+                    label,
+                    arguments.duration,
+                    sample,
+                    sources,
+                    arguments.bulk_rate,
+                )
+                print_phase(phase, arguments.duration)
+                sample = phase.after
         finally:
             # Also cleans up after a partial create, such as a node port already in use.
             subprocess.run(
