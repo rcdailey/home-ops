@@ -7,6 +7,8 @@ metadata:
 spec:
   mode: statefulset
   replicas: 2
+  # The Kubernetes Collector build used by the other roles has no syslog receiver.
+  image: otel/opentelemetry-collector-contrib:0.166.0
   podSecurityContext:
     runAsUser: 1000
     runAsGroup: 1000
@@ -44,6 +46,9 @@ spec:
   - name: otlp-http
     port: 4318
     protocol: TCP
+  - name: syslog
+    port: 5514
+    protocol: UDP
   - name: metrics
     port: 8888
     protocol: TCP
@@ -58,6 +63,23 @@ spec:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
+      # Unraid remote syslog through the internal gateway (docs/runbooks/unraid-telemetry.md).
+      # RFC3164 timestamps carry no zone.
+      syslog:
+        udp:
+          listen_address: 0.0.0.0:5514
+        protocol: rfc3164
+        location: America/Chicago
+        resource:
+          service.name: unraid-syslog
+        operators:
+        - type: move
+          from: attributes.hostname
+          to: resource["host.name"]
+        # The parser leaves the raw line in the body; VictoriaLogs shows the body as the message.
+        - type: move
+          from: attributes.message
+          to: body
     processors:
       resource/cluster:
         attributes:
@@ -226,7 +248,7 @@ spec:
           - batch
           exporters: [otlp_http/victoria-metrics]
         logs:
-          receivers: [otlp]
+          receivers: [otlp, syslog]
           processors:
           - memory_limiter
           - resource/cluster

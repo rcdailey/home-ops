@@ -44,3 +44,9 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
+  - name: syslog
+    protocol: UDP
+    port: 514
+    allowedRoutes:
+      namespaces:
+        from: All
