@@ -42,4 +42,9 @@ spec:
           namespaced: false
         name:
           as: probe_success
-        metricsQuery: max_over_time(<<.Series>>{<<.LabelMatchers>>}[1m])
+        # Unraid pushes nfs_drain_requested before a planned array stop. Its 2m window outlasts the
+        # 1m probe window, so pods stay at zero until the probe itself reports NFS down.
+        metricsQuery: >-
+          max_over_time(<<.Series>>{<<.LabelMatchers>>}[1m])
+          * on() group_left()
+          (1 - (max(last_over_time(nfs_drain_requested[2m])) or on() vector(0)))
