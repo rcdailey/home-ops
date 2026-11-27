@@ -55,10 +55,26 @@ configuration:
         - group: ""
           resources:
             - pods
+    # Control-plane components, kubelets, health probes, and Talos credential reconciliation.
     - level: None
       userGroups:
         - system:serviceaccounts
+        - system:nodes
+        - system:unauthenticated
+    - level: None
+      users:
+        - system:apiserver
+        - system:kube-controller-manager
+        - system:kube-scheduler
+        - talos:admin
+    # Changes made outside Flux, which runs as a service account and is recorded in Git.
     - level: Metadata
+      verbs:
+        - create
+        - update
+        - patch
+        - delete
+        - deletecollection
 ---
 apiVersion: v1alpha1
 kind: KubeAuthenticationConfig
