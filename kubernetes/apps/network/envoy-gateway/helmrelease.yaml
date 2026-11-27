@@ -11,7 +11,9 @@ spec:
     operation: copy
   ref:
     tag: 1.10.0
-  url: oci://docker.io/envoyproxy/gateway-helm
+  # Docker Hub's registry host. flate 0.8.0 can leave the release pending on chart resolution in
+  # changed-only mode when the URL uses the docker.io alias (home-operations/flate#1712).
+  url: oci://registry-1.docker.io/envoyproxy/gateway-helm
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
