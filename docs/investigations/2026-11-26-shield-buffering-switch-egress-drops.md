@@ -118,6 +118,29 @@ Nezuko (Unraid 7.4, kernel 6.18.60) used BBR with fq. CUBIC was not loaded
 (`tcp_available_congestion_control = reno bbr`), and no Unraid config set the value. BBR keeps
 sending at its bandwidth estimate during loss, while CUBIC reduces its window on loss.
 
+### Controlled switch test
+
+On 2026-11-27, `scripts/switch-buffer-test.py` sent a steady 40 Mbps UDP stream from Nezuko to
+hanekawa for 60 seconds, once alone and once while Nezuko and the UDM Pro pushed 8 parallel TCP
+streams each into hanekawa:
+
+| Run              | Stream loss | Bulk received      | `Hanekawa-2.5G` TX drops |
+| ---------------- | ----------- | ------------------ | ------------------------ |
+| Stream alone     | 0.11%       | none               | 0                        |
+| With bulk        | 1.66%       | 0.71 + 1.48 Gbps   | 13,673 of 14.2M packets  |
+
+The bulk senders retransmitted about 256,000 segments. The loss in the stream-alone run happened
+somewhere other than this port.
+
+The first attempt reported 0 drops under load because, for a few minutes, the Cluster USW Flex 2.5G
+controller counters showed about 1 Mbps on its uplink while the Switch Pro 48 sent it 3.4 Gbps. The
+switch had run for 371 days and was restarted before the next run. Hourly counts at both ends of
+that link agreed within about 10% from 2026-11-20 on, so the counters were not stuck for long. The
+controller collects switch counters only every 1 to 2 minutes, so short windows can disagree.
+
+The Flex 2.5G, USW Ultra, and Flex Minis (firmware 2.1) refuse SSH before the key exchange;
+Ubiquiti's Flex Mini datasheet states it does not support SSH.
+
 ### Related report
 
 A Home Operations Discord thread described the same pattern on a USW-Enterprise-24-PoE (2 MB
@@ -166,10 +189,22 @@ Options not taken:
 - Moving LoadBalancer IPs onto the client VLAN to avoid the router hop. The router links showed no
   drops, so this would not change the step-down at the Shield.
 
-To revisit, run a controlled test: stream a steady 40 Mbps UDP flow from Nezuko to a pod on
-hanekawa, then repeat it while the router and Nezuko push bulk TCP into hanekawa. Compare UDP loss
-and `Hanekawa-2.5G` TX drops. Longer-term options are per-destination traffic shaping on Nezuko, a
-Cilium egress-bandwidth cap on media pods, or 10 GbE node links.
+The controlled switch test confirmed that bulk TCP into a node drops packets from a concurrent
+stream at its 2.5 GbE port. It did not show that this loss stalls the Shield. Rerun
+`scripts/switch-buffer-test.py` after each mitigation to compare.
+
+Remaining options:
+
+- Per-destination traffic shaping on Nezuko, so Nezuko alone cannot fill a node's 2.5 GbE link.
+- 10 GbE node links. Every node (four NUC8 models and one NUC7i5BNH) has a Thunderbolt 3 controller
+  linked at PCIe 3.0 x4, enough for a Thunderbolt 10 GbE adapter; the current USB 2.5 GbE adapters
+  run over 5 Gbps USB. This needs five adapters at about 200 USD each and a switch such as the USW
+  Pro XG 8 PoE (eight 10 GbE RJ45 ports, two SFP+ uplinks, 2 MB buffer) in place of the Flex 2.5G,
+  about 1,500 USD in total. It removes the 10 to 2.5 GbE step-down but not the 10 to 1 GbE step-down
+  at the Shield.
+
+A Cilium bandwidth cap does not apply here: it limits only traffic that pods send, and the drops are
+on traffic arriving at the node.
 
 ## Lessons Learned
 
