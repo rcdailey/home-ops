@@ -10,8 +10,6 @@ spec:
     kind: OCIRepository
     name: recyclarr
   values:
-    image:
-      tag: master@sha256:60a22248d21fa99acb2e7e5e8f75f55fa326f26f1f7dd294e8eb41abe1edaffb
     deploymentAnnotations:
       reloader.stakater.com/auto: "true"
     apiKey:
