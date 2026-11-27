@@ -57,6 +57,8 @@ spec:
             parse_from: attributes.timestamp
             layout_type: strptime
             layout: '%b %d, %Y %H:%M:%S.%L'
+            # Plex writes zoneless local timestamps; the sidecar's own zone is UTC.
+            location: America/Chicago
           severity:
             parse_from: attributes.level
         - type: add
