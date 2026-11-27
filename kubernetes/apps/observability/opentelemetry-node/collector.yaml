@@ -10,6 +10,9 @@ metadata:
 spec:
   mode: daemonset
   serviceAccount: otel-node
+  # host_metrics reads network and NFS client statistics from the collector's network namespace.
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
   env:
   - name: K8S_NODE_NAME
     valueFrom:
@@ -128,6 +131,7 @@ spec:
           load: {}
           memory: {}
           network: {}
+          nfs: {}
           paging: {}
           processes: {}
     processors:
