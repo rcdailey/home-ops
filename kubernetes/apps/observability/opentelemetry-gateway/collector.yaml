@@ -210,6 +210,8 @@ spec:
           http://vl.observability:9428/insert/opentelemetry/v1/logs
         headers:
           VL-Stream-Fields: service.name,k8s.namespace.name,k8s.container.name
+          # Kubernetes event bodies are objects, so the message falls back to the event's note.
+          VL-Msg-Field: body,object.note
         retry_on_failure:
           enabled: true
           max_elapsed_time: 0s
