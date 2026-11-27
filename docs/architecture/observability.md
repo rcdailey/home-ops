@@ -17,6 +17,7 @@ flowchart LR
         Sidecars[App-owned parser sidecars]
         Targets[Prometheus endpoints]
         Cluster[Kubernetes and node state]
+        Unraid[Nezuko node_exporter<br/>and remote syslog]
     end
 
     subgraph Collection[Source-facing collection]
@@ -40,6 +41,8 @@ flowchart LR
     Nodes -->|OTLP| Gateway
     Observer -->|OTLP| Gateway
     Scrapers -->|OTLP metrics| Gateway
+    Unraid -->|static scrape| Scrapers
+    Unraid -->|syslog via internal gateway| Gateway
 
     Gateway -->|metrics| VM[VictoriaMetrics]
     Gateway -->|logs| VL[VictoriaLogs]
@@ -57,8 +60,12 @@ flowchart LR
     TA --> Hops
 ```
 
-Every Collector role runs the upstream Kubernetes Collector distribution. Deployment mode and
-configuration define the role.
+Deployment mode and configuration define each Collector role. The node, cluster, and scrape
+Collectors run the upstream Kubernetes Collector build. The Gateway runs the contrib build because
+the Kubernetes build has no syslog receiver.
+
+Node Collectors use the host network, so their host metrics describe each node's real interfaces and
+NFS client activity, not the Collector pod's own network namespace.
 
 ## Signal ownership
 
@@ -71,16 +78,16 @@ the interface documented by that workload:
 - Prometheus endpoints are discovered through ServiceMonitor or PodMonitor resources. The Target
   Allocator partitions targets among the two Scrape Collector replicas, which convert samples to
   OTLP before forwarding them to the Gateway.
-- Static jobs cover cluster endpoints that do not have monitor resources.
+- Static jobs cover endpoints that do not have monitor resources, including node_exporter on Nezuko
+  (Unraid). See the [Unraid telemetry runbook][unraid-telemetry].
 
-One acquisition path owns each metric family. A workload may use both paths only when the families
-are distinct, such as SDK request metrics and unique product metrics from a Prometheus endpoint.
-Equivalent metrics must not enter through both paths.
+Each metric family has one acquisition path, per the Telemetry rules in `AGENTS.md`. A workload uses
+both paths only when the families differ, such as SDK request metrics and unique product metrics
+from a Prometheus endpoint.
 
-Scrape health is represented by the `up` metric. Push health requires a stable emitted metric with
-an absence alert, Kubernetes workload health, and Collector receiver/exporter health. Environment
-variables configure an SDK that already exists; they do not create metrics in an uninstrumented
-application.
+The `up` metric shows scrape health. Push health comes from a stable emitted metric with an absence
+alert, Kubernetes workload health, and Collector receiver and exporter health. Environment variables
+configure an SDK that already exists; they do not create metrics in an uninstrumented application.
 
 ### Logs
 
@@ -88,9 +95,12 @@ The node Collector reads CRI logs only for pods labeled `observability.home-ops/
 pod-level label includes every container. Platform Collectors perform CRI parsing, generic severity
 handling, and Kubernetes enrichment.
 
-Private file formats remain application-owned. A sidecar Collector may parse those files and export
-normalized OTLP logs. The same stream must not also use node log collection because that would
-create duplicate records.
+Private file formats stay with the application. A sidecar Collector parses those files and exports
+normalized OTLP logs. Those streams skip node log collection, which would duplicate the records.
+
+Nezuko (Unraid) forwards its system log as RFC3164 syslog over UDP to port 514 on the internal
+gateway, which passes it to the Gateway Collectors' syslog receiver. Records carry
+`service.name=unraid-syslog` and enter the same queued logs pipeline as other logs.
 
 #### Sidecar config rollout
 
@@ -113,7 +123,7 @@ generatorOptions:
 ```
 
 `reloader.stakater.com/auto` then rolls the workload whenever the Collector manifest changes. The
-mount is required: Reloader ignores ConfigMap volumes that no workload container mounts, and it
+mount matters because Reloader ignores ConfigMap volumes that no workload container mounts, and it
 cannot see the injected sidecar container. `kubernetes/apps/media/plex` is the reference
 implementation.
 
@@ -123,7 +133,7 @@ Applications with documented native OTel support send OTLP directly to the Gatew
 OTLP/HTTP on port 4318 or OTLP/gRPC on port 4317 according to the application's supported exporter.
 They do not need a Collector sidecar. Owned code may use tested Operator auto-instrumentation.
 
-Third-party language agents are enabled only after app-specific runtime and startup validation.
+Third-party language agents are enabled per application, after runtime and startup validation.
 Agents execute inside the application process and can conflict with its runtime, libraries, security
 context, startup hooks, or resource limits. No cluster-wide injection is used.
 
@@ -147,10 +157,10 @@ Node, cluster, scrape, application-sidecar, and Gateway Collectors use persisten
 Queues protect bounded backend outages; they are not telemetry retention or a message bus.
 
 Gateway replicas use stable StatefulSet ordinals and one RWO queue PVC per replica. A restarted
-replica reattaches its queue and resumes accepted batches. Collector replicas never share a bbolt
+replica reattaches its queue and resumes accepted batches. Each Collector replica has its own bbolt
 queue.
 
-Backend ownership is fixed:
+Each signal has one backend:
 
 | Signal  | Backend         | Retention      |
 | ------- | --------------- | -------------- |
@@ -175,6 +185,8 @@ and the Target Allocator; trace investigation currently belongs in Grafana.
 | Metrics VMAlert          | `http://vmalert-vm.observability:8080`             |
 | Logs VMAlert             | `http://vmalert-vl.observability:8080`             |
 | Alertmanager             | `http://vmalertmanager-vm.observability:9093`      |
+| Syslog from the LAN      | UDP `192.168.50.72:514` (internal gateway)         |
 
 [adr]: ../decisions/015-standardize-observability-on-opentelemetry.md
 [otel-operator-2078]: https://github.com/open-telemetry/opentelemetry-operator/issues/2078
+[unraid-telemetry]: ../runbooks/unraid-telemetry.md
