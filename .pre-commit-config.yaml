@@ -53,7 +53,7 @@ repos:
     language_version: system
 
 - repo: https://github.com/zizmorcore/zizmor-pre-commit
-  rev: v1.32.0
+  rev: v1.33.1
   hooks:
   - id: zizmor
 
